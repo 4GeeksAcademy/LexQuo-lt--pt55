@@ -15,8 +15,11 @@ export const Navbar = () => {
 					<Link to="/lawyers">
 						<button className="btn btn-light me-2">Lawyers</button>
 					</Link>
-					<Link to="/admin">
-						<button className="btn btn-light">Admin</button>
+					<Link to="/admins">
+						<button className="btn btn-light me-2">Admins</button>
+					</Link>
+					<Link to="/clients">
+						<button className="btn btn-light">Clients</button>
 					</Link>
 				</div>
 			</div>

@@ -142,7 +142,7 @@ def get_lawyers():
         return jsonify({'error': str(e)}), 500
 
 
-@api.route('/lawyer/<int:lawyer_id>', methods=['GET'])
+@api.route('/lawyers/<int:lawyer_id>', methods=['GET'])
 def get_lawyer(lawyer_id):
     try:
         lawyer = Lawyer.query.get_or_404(lawyer_id)
@@ -151,7 +151,7 @@ def get_lawyer(lawyer_id):
         return jsonify({'error': str(e)}), 404
 
 
-@api.route('/lawyer', methods=['POST'])
+@api.route('/lawyers', methods=['POST'])
 def create_lawyer():
     try:
         data = request.get_json()
@@ -170,6 +170,7 @@ def create_lawyer():
             firstname=data['firstname'],
             lastname=data['lastname'],
             email=data['email'],
+            phone=data['phone'],
             password=generate_password_hash(data['password']),
         )
 
@@ -202,8 +203,15 @@ def update_lawyer(lawyer_id):
         if 'lastname' in data:
             lawyer.lastname = data['lastname']
 
+        if 'phone' in data:
+            lawyer.phone = data['phone']
+
+        if 'is_active' in data:
+            lawyer.is_active = bool(data['is_active'])
+
         if 'password' in data:
             lawyer.password = generate_password_hash(data['password']) 
+        
 
         db.session.commit()
 
@@ -267,6 +275,7 @@ def create_client():
             firstname=data['firstname'],
             lastname=data['lastname'],
             email=data['email'],
+            phone=data['phone'],
             password=generate_password_hash(data['password']),
         )
 
@@ -298,6 +307,9 @@ def update_client(client_id):
 
         if 'lastname' in data:
             client.lastname = data['lastname']
+        
+        if 'phone' in data:
+            client.phone = data['phone']
 
         if 'is_active' in data:
             client.is_active = bool(data['is_active'])

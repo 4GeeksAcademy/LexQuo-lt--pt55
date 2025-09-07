@@ -9,7 +9,6 @@ import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
 import { Single } from "./pages/Single";
 import { Demo } from "./pages/Demo";
-import { Admin } from "./pages/Admin";
 
 import { Courtfiles } from "./pages/Courtfiles";
 import { ViewCourtfile } from "./pages/ViewCourtfile";
@@ -21,8 +20,15 @@ import { ViewLawyer } from "./pages/ViewLawyer";
 import { EditLawyer } from "./pages/EditLawyer";
 import { AddLawyer } from "./pages/AddLawyer";
 
+import { Admins } from "./pages/Admins";
+import { ViewAdmin } from "./pages/ViewAdmin";
+import { EditAdmin } from "./pages/EditAdmin";
+import { AddAdmin } from "./pages/AddAdmin";
 
-
+import { Clients } from "./pages/Clients";
+import { ViewClient } from "./pages/ViewClient";
+import { EditClient } from "./pages/EditClient";
+import { AddClient } from "./pages/AddClient";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -50,7 +56,16 @@ export const router = createBrowserRouter(
       <Route path="/lawyers/addLawyer" element={<AddLawyer />} />
       <Route path="/lawyers/:lawyerId" element={<EditLawyer />} />
 
-      <Route path="/admin" element={<Admin />} />
+      <Route path="/clients" element={<Clients />} />
+      <Route path="/clients/view/:clientId" element={<ViewClient />} />
+      <Route path="/clients/addClient" element={<AddClient />} />
+      <Route path="/clients/:clientId" element={<EditClient />} />
+
+      <Route path="/admins" element={<Admins />} />
+      <Route path="/admins/view/:adminId" element={<ViewAdmin />} />
+      <Route path="/admins/addAdmin" element={<AddAdmin />} />
+      <Route path="/admins/:adminId" element={<EditAdmin />} />
+
     </Route>
   )
 );
