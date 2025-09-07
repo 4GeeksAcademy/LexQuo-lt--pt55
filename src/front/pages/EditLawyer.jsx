@@ -80,7 +80,7 @@ export const EditLawyer = () => {
                 });
 
                 // Redirigir a la lista de Lawyers
-                navigate('/lawyers');
+                navigate('/lawyers/view/:lawyerId');
 
                 alert('Lawyer updated successfully!');
             } else {
