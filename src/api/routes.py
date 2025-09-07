@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import Courtfile, db, User, Lawyer
+from api.models import Courtfile, db, Lawyer, Client, AdminUser
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash
@@ -223,6 +223,206 @@ def delete_lawyer(lawyer_id):
         db.session.commit()
 
         return jsonify({'message': 'Lawyer succesfully deleted'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# -----------------ROUTES PARA CLIENTS--------------------------------------------
+@api.route('/clients', methods=['GET'])
+def get_clients():
+    try:
+        clients = Client.query.all()
+        return jsonify([client.serialize() for client in clients]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/clients/<int:client_id>', methods=['GET'])
+def get_client(client_id):
+    try:
+        client = Client.query.get_or_404(client_id)
+        return jsonify(client.serialize()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
+
+
+@api.route('/clients', methods=['POST'])
+def create_client():
+    try:
+        data = request.get_json()
+
+        required_fields = ['firstname', 'lastname', 'email', 'password']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Required field: {field}'}), 400
+
+        existing = Client.query.filter_by(email=data['email']).first()
+        if existing:
+            return jsonify({'error': 'Email already exists'}), 409
+
+
+        client = Client(
+            firstname=data['firstname'],
+            lastname=data['lastname'],
+            email=data['email'],
+            password=generate_password_hash(data['password']),
+        )
+
+        db.session.add(client)
+        db.session.commit()
+
+        return jsonify(client.serialize()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/clients/<int:client_id>', methods=['PUT'])
+def update_client(client_id):
+    try:
+        client = Client.query.get_or_404(client_id)
+        data = request.get_json()
+
+        if 'email' in data:
+            if data['email'] != client.email:
+                existing = Client.query.filter_by(email=data['email']).first()
+                if existing:
+                    return jsonify({'error': 'Email already exists'}), 409
+            client.email = data['email']
+
+        if 'firstname' in data:
+            client.firstname = data['firstname']
+
+        if 'lastname' in data:
+            client.lastname = data['lastname']
+
+        if 'is_active' in data:
+            client.is_active = bool(data['is_active'])
+
+        if 'password' in data:
+            client.password = generate_password_hash(data['password'])
+
+        db.session.commit()
+
+        return jsonify(client.serialize()), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/clients/<int:client_id>', methods=['DELETE'])
+def delete_client(client_id):
+    try:
+        client = Client.query.get_or_404(client_id)
+
+        db.session.delete(client)
+        db.session.commit()
+
+        return jsonify({'message': 'Client successfully deleted'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# -----------------ROUTES PARA ADMINS--------------------------------------------
+
+@api.route('/admins', methods=['GET'])
+def get_admins():
+    try:
+        admins = AdminUser.query.all()
+        return jsonify([admin.serialize() for admin in admins]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/admins/<int:admin_id>', methods=['GET'])
+def get_admin(admin_id):
+    try:
+        admin = AdminUser.query.get_or_404(admin_id)
+        return jsonify(admin.serialize()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
+
+
+@api.route('/admins', methods=['POST'])
+def create_admin():
+    try:
+        data = request.get_json()
+
+        required_fields = ['firstname', 'lastname', 'email', 'password']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Required field: {field}'}), 400
+
+        existing = AdminUser.query.filter_by(email=data['email']).first()
+        if existing:
+            return jsonify({'error': 'Email already exists'}), 409
+
+        admin = AdminUser(
+            firstname=data['firstname'],
+            lastname=data['lastname'],
+            email=data['email'],
+            password=generate_password_hash(data['password']),
+        )
+
+        db.session.add(admin)
+        db.session.commit()
+
+        return jsonify(admin.serialize()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/admins/<int:admin_id>', methods=['PUT'])
+def update_admin(admin_id):
+    try:
+        admin = AdminUser.query.get_or_404(admin_id)
+        data = request.get_json()
+
+        if 'email' in data:
+            if data['email'] != admin.email:
+                existing = AdminUser.query.filter_by(email=data['email']).first()
+                if existing:
+                    return jsonify({'error': 'Email already exists'}), 409
+            admin.email = data['email']
+
+        if 'firstname' in data:
+            admin.firstname = data['firstname']
+
+        if 'lastname' in data:
+            admin.lastname = data['lastname']
+
+        if 'is_active' in data:
+            admin.is_active = bool(data['is_active'])
+
+        if 'password' in data:
+            admin.password = generate_password_hash(data['password'])
+
+        db.session.commit()
+
+        return jsonify(admin.serialize()), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/admins/<int:admin_id>', methods=['DELETE'])
+def delete_admin(admin_id):
+    try:
+        admin = AdminUser.query.get_or_404(admin_id)
+
+        db.session.delete(admin)
+        db.session.commit()
+
+        return jsonify({'message': 'Admin user successfully deleted'}), 200
 
     except Exception as e:
         db.session.rollback()
