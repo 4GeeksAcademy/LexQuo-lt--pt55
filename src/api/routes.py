@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import Courtfile, db, User, Lawyer
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
+from werkzeug.security import generate_password_hash
 
 api = Blueprint('api', __name__)
 
@@ -169,7 +170,7 @@ def create_lawyer():
             firstname=data['firstname'],
             lastname=data['lastname'],
             email=data['email'],
-            password=data['password'],
+            password=generate_password_hash(data['password']),
         )
 
         db.session.add(lawyer)
@@ -202,7 +203,7 @@ def update_lawyer(lawyer_id):
             lawyer.lastname = data['lastname']
 
         if 'password' in data:
-            lawyer.password = data['password']
+            lawyer.password = generate_password_hash(data['password']) 
 
         db.session.commit()
 
