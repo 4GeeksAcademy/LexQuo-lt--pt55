@@ -55,6 +55,7 @@ class Client(db.Model):
             "firstname": self.firstname,
             "lastname": self.lastname,
             "email": self.email,
+            "phone": self.phone,
             "is_active": self.is_active,
         }
 
