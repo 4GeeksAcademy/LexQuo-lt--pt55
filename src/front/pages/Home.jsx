@@ -1,5 +1,6 @@
 import React, { useEffect } from "react"
 import rigoImageUrl from "../assets/img/rigo-baby.jpg";
+import justiceImage from "../assets/img/justice.gif";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 
 export const Home = () => {
@@ -34,9 +35,9 @@ export const Home = () => {
 
 	return (
 		<div className="text-center mt-5">
-			<h1 className="display-4">Hello Rigo!!</h1>
+			<h1 className="display-4 mb-5">LexQuo</h1>
 			<p className="lead">
-				<img src={rigoImageUrl} className="img-fluid rounded-circle mb-3" alt="Rigo Baby" />
+				<img src={justiceImage} className="img-fluid mb-3" alt="Rigo Baby" />
 			</p>
 			<div className="alert alert-info">
 				{store.message ? (
