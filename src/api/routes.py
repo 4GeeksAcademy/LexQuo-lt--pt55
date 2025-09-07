@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import db, User
+from api.models import Courtfile, db, User, Lawyer
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 
@@ -20,3 +20,209 @@ def handle_hello():
     }
 
     return jsonify(response_body), 200
+
+# -----------------ROUTES PARA COURTFILES--------------------------------------------
+
+
+@api.route('/courtfiles', methods=['GET'])
+def get_courtfiles():
+    try:
+        courtfiles = Courtfile.query.all()
+        return jsonify([courtfile.serialize() for courtfile in courtfiles]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/courtfiles/<int:courtfile_id>', methods=['GET'])
+def get_courtfile(courtfile_id):
+    try:
+        courtfile = Courtfile.query.get_or_404(courtfile_id)
+        return jsonify(courtfile.serialize()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
+
+
+@api.route('/courtfiles', methods=['POST'])
+def create_courtfile():
+    try:
+        data = request.get_json()
+
+        required_fields = ['case_number', 'title',
+                           'description', 'jurisdiction', 'court', 'status']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Required field: {field}'}), 400
+
+        existing = Courtfile.query.filter_by(
+            case_number=data['case_number']).first()
+        if existing:
+            return jsonify({'error': 'Case number already exists'}), 409
+
+        courtfile = Courtfile(
+            case_number=data['case_number'],
+            title=data['title'],
+            description=data['description'],
+            jurisdiction=data['jurisdiction'],
+            court=data['court'],
+            status=data['status']
+        )
+
+        db.session.add(courtfile)
+        db.session.commit()
+
+        return jsonify(courtfile.serialize()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/courtfiles/<int:courtfile_id>', methods=['PUT'])
+def update_courtfile(courtfile_id):
+    try:
+        courtfile = Courtfile.query.get_or_404(courtfile_id)
+        data = request.get_json()
+
+        if 'case_number' in data:
+            if data['case_number'] != courtfile.case_number:
+                existing = Courtfile.query.filter_by(
+                    case_number=data['case_number']).first()
+                if existing:
+                    return jsonify({'error': 'Case number already exists'}), 409
+            courtfile.case_number = data['case_number']
+
+        if 'title' in data:
+            courtfile.title = data['title']
+
+        if 'description' in data:
+            courtfile.description = data['description']
+
+        if 'jurisdiction' in data:
+            courtfile.jurisdiction = data['jurisdiction']
+
+        if 'court' in data:
+            courtfile.court = data['court']
+
+        if 'status' in data:
+            courtfile.status = data['status']
+
+        db.session.commit()
+
+        return jsonify(courtfile.serialize()), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/courtfiles/<int:courtfile_id>', methods=['DELETE'])
+def delete_courtfile(courtfile_id):
+    try:
+        courtfile = Courtfile.query.get_or_404(courtfile_id)
+
+        db.session.delete(courtfile)
+        db.session.commit()
+
+        return jsonify({'message': 'Courtfile succesfully deleted'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# -----------------ROUTES PARA LAWYER's--------------------------------------------
+
+
+@api.route('/lawyers', methods=['GET'])
+def get_lawyers():
+    try:
+        lawyers = Lawyer.query.all()
+        return jsonify([lawyer.serialize() for lawyer in lawyers]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/lawyer/<int:lawyer_id>', methods=['GET'])
+def get_lawyer(lawyer_id):
+    try:
+        lawyer = Lawyer.query.get_or_404(lawyer_id)
+        return jsonify(lawyer.serialize()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
+
+
+@api.route('/lawyer', methods=['POST'])
+def create_lawyer():
+    try:
+        data = request.get_json()
+
+        required_fields = ['firstname', 'lastname', 'email', 'password']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Required field: {field}'}), 400
+
+        existing = Lawyer.query.filter_by(
+            email=data['email']).first()
+        if existing:
+            return jsonify({'error': 'Email already exists'}), 409
+
+        lawyer = Lawyer(
+            firstname=data['firstname'],
+            lastname=data['lastname'],
+            email=data['email'],
+            password=data['password'],
+        )
+
+        db.session.add(lawyer)
+        db.session.commit()
+
+        return jsonify(lawyer.serialize()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/lawyers/<int:lawyer_id>', methods=['PUT'])
+def update_lawyer(lawyer_id):
+    try:
+        lawyer = Lawyer.query.get_or_404(lawyer_id)
+        data = request.get_json()
+
+        if 'email' in data:
+            if data['email'] != lawyer.email:
+                existing = Lawyer.query.filter_by(email=data['email']).first()
+                if existing:
+                    return jsonify({'error': 'Email already exists'}), 409
+            lawyer.email = data['email']
+
+        if 'firstname' in data:
+            lawyer.firstname = data['firstname']
+
+        if 'lastname' in data:
+            lawyer.lastname = data['lastname']
+
+        if 'password' in data:
+            lawyer.password = data['password']
+
+        db.session.commit()
+
+        return jsonify(lawyer.serialize()), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/lawyers/<int:lawyer_id>', methods=['DELETE'])
+def delete_lawyer(lawyer_id):
+    try:
+        lawyer = Lawyer.query.get_or_404(lawyer_id)
+
+        db.session.delete(lawyer)
+        db.session.commit()
+
+        return jsonify({'message': 'Lawyer succesfully deleted'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
