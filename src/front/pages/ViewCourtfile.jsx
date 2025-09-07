@@ -204,5 +204,5 @@ export const ViewCourtfile = () => {
                 </div>
             </div>
         </div>
-    );
-};
+    )
+}

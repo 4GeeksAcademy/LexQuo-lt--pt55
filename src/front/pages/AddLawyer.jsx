@@ -16,9 +16,10 @@ export const AddLawyer = () => {
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [showConfirm, setShowConfirm] = useState(false);
 
     const handleInputChange = (e) => {
-        const { name, value} = e.target;
+        const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
             [name]: value
@@ -133,7 +134,7 @@ export const AddLawyer = () => {
                                         Password *
                                     </label>
                                     <input
-                                        type="password"
+                                        type={showConfirm ? "text" : "password"}
                                         className="form-control"
                                         id="password"
                                         name="password"
@@ -143,6 +144,17 @@ export const AddLawyer = () => {
                                         placeholder="Password"
                                         minLength="6"
                                     />
+                                    <button
+                                        type="button"
+                                        className="btn btn-outline-secondary"
+                                        onClick={() => setShowConfirm(v => !v)}
+                                    >
+                                        {showConfirm ? (
+                                            <i className="bi bi-eye-slash"></i> // Icono para ocultar
+                                        ) : (
+                                            <i className="bi bi-eye"></i> // Icono para mostrar
+                                        )}
+                                    </button>
                                 </div>
 
                                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
