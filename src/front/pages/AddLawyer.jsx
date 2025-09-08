@@ -11,12 +11,14 @@ export const AddLawyer = () => {
         firstname: '',
         lastname: '',
         email: '',
-        password: ''
+        phone: '',
+        password: '',
+        is_active: true,
     });
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [showConfirm, setShowConfirm] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -33,7 +35,7 @@ export const AddLawyer = () => {
 
         try {
 
-            const response = await fetch(`${API}/api/lawyer`, {
+            const response = await fetch(`${API}/api/lawyers`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -130,31 +132,45 @@ export const AddLawyer = () => {
                                 </div>
 
                                 <div className="mb-3">
-                                    <label htmlFor="password" className="form-label">
-                                        Password *
+                                    <label htmlFor="phone" className="form-label">
+                                        Phone *
                                     </label>
                                     <input
-                                        type={showConfirm ? "text" : "password"}
+                                        type="tel"
                                         className="form-control"
-                                        id="password"
-                                        name="password"
-                                        value={formData.password}
+                                        id="phone"
+                                        name="phone"
+                                        value={formData.phone || ""}
                                         onChange={handleInputChange}
                                         required
-                                        placeholder="Password"
-                                        minLength="6"
+                                        placeholder="+54 9 11 5555-5555"
                                     />
-                                    <button
-                                        type="button"
-                                        className="btn btn-outline-secondary"
-                                        onClick={() => setShowConfirm(v => !v)}
-                                    >
-                                        {showConfirm ? (
-                                            <i className="bi bi-eye-slash"></i> // Icono para ocultar
-                                        ) : (
-                                            <i className="bi bi-eye"></i> // Icono para mostrar
-                                        )}
-                                    </button>
+                                </div>
+
+                                <div className="mb-3">
+                                    <label htmlFor="password" className="form-label"> Password * </label>
+                                    <div className="input-group">
+                                        <input
+                                            type={showPassword ? "text" : "password"}
+                                            className="form-control"
+                                            id="password"
+                                            name="password"
+                                            value={formData.password}
+                                            onChange={handleInputChange}
+                                            required
+                                            placeholder="Password"
+                                            minLength="6"
+                                        />
+                                        <button
+                                            type="button"
+                                            className="btn btn-outline-secondary"
+                                            onClick={() => setShowPassword(v => !v)}
+                                            disabled={loading}
+                                            aria-label={showPassword ? "Hide password" : "Show password"}
+                                        >
+                                            {showPassword ? <i className="bi bi-eye-slash"></i> : <i className="bi bi-eye"></i>}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">

@@ -13,6 +13,7 @@ export const EditLawyer = () => {
         firstname: '',
         lastname: '',
         email: '',
+        phone: '',
         password: '',
         is_active: true
     });
@@ -25,7 +26,7 @@ export const EditLawyer = () => {
         try {
             setFetching(true);
 
-            const response = await fetch(`${API}/api/lawyer/${lawyerId}`);
+            const response = await fetch(`${API}/api/lawyers/${lawyerId}`);
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -80,7 +81,7 @@ export const EditLawyer = () => {
                 });
 
                 // Redirigir a la lista de Lawyers
-                navigate('/lawyers/view/:lawyerId');
+                navigate(`/lawyers/view/${lawyerId}`);
 
                 alert('Lawyer updated successfully!');
             } else {
@@ -188,6 +189,22 @@ export const EditLawyer = () => {
                                         onChange={handleInputChange}
                                         required
                                         disabled={loading}
+                                    />
+                                </div>
+
+                                <div className="mb-3">
+                                    <label htmlFor="phone" className="form-label">
+                                        Phone *
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        className="form-control"
+                                        id="phone"
+                                        name="phone"
+                                        value={formData.phone || ""}
+                                        onChange={handleInputChange}
+                                        required
+                                        placeholder="+54 9 11 5555-5555"
                                     />
                                 </div>
 

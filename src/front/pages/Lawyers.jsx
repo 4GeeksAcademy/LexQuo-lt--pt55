@@ -71,6 +71,7 @@ export const Lawyers = () => {
                                 <th>Firstname</th>
                                 <th>Lastname</th>
                                 <th>Email</th>
+                                <th>Phone</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -84,6 +85,7 @@ export const Lawyers = () => {
                                     <td>{lawyer.firstname}</td>
                                     <td>{lawyer.lastname}</td>
                                     <td>{lawyer.email}</td>
+                                    <td>{lawyer.phone}</td>
                                     <td>
                                         <span className={`badge ${lawyer.is_active ? 'bg-success' : 'bg-danger'}`}>
                                             {lawyer.is_active ? 'Active' : 'Inactive'}
