@@ -101,7 +101,7 @@ export const EditCourtfile = () => {
                 });
 
                 // Redirigir a la lista de courtfiles
-                navigate('/courtfiles/view/${courtfileId}');
+                navigate(`/courtfiles/view/${courtfileId}`);
 
                 alert('Courtfile updated successfully!');
             } else {
