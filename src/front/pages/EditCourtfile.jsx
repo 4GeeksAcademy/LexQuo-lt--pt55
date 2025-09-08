@@ -9,12 +9,15 @@ export const EditCourtfile = () => {
 
     const API = import.meta.env.VITE_BACKEND_URL;
 
-    const PROVINCIAS_ARGENTINAS = [
-        'Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Córdoba',
-        'Corrientes', 'Entre Ríos', 'Formosa', 'Jujuy', 'La Pampa',
-        'La Rioja', 'Mendoza', 'Misiones', 'Neuquén', 'Río Negro',
-        'Salta', 'San Juan', 'San Luis', 'Santa Cruz', 'Santa Fe',
-        'Santiago del Estero', 'Tierra del Fuego', 'Tucumán', 'CABA'
+    const JURISDICCIONES_PJN = [
+    'CSJ - Corte Suprema de Justicia de la Nación', 'CIV - Cámara Nacional de Apelaciones en lo Civil', 'CAF - Cámara Nacional de Apelaciones en lo Contencioso Administrativo Federal',
+    'CCF - Cámara Nacional de Apelaciones en lo Civil y Comercial Federal', 'CNE - Cámara Nacional Electoral', 'CSS - Cámara Federal de la Seguridad Social',
+    'CPE - Cámara Nacional de Apelaciones en lo Penal Económico', 'CNT - Cámara Nacional de Apelaciones del Trabajo', 'CFP - Cámara Criminal y Correccional Federal',
+    'CCO - Cámara Nacional de Apelaciones en lo Criminal y Correccional', 'COM - Cámara Nacional de Apelaciones en lo Comercial', 'CPF - Cámara Federal de Casación Penal',
+    'CPN - Cámara Nacional de Casación Penal', 'FBB - Justicia Federal de Bahía Blanca', 'FCR - Justicia Federal de Comodoro Rivadavia', 'FCB - Justicia Federal de Córdoba',
+    'FCT - Justicia Federal de Corrientes', 'FGR - Justicia Federal de General Roca', 'FLP - Justicia Federal de La Plata', 'FMP - Justicia Federal de Mar del Plata',
+    'FMZ - Justicia Federal de Mendoza', 'FPO - Justicia Federal de Posadas', 'FPA - Justicia Federal de Paraná', 'FRE - Justicia Federal de Resistencia',
+    'FSA - Justicia Federal de Salta', 'FRO - Justicia Federal de Rosario', 'FSM - Justicia Federal de San Martín', 'FTU - Justicia Federal de Tucumán'
     ];
 
     const [formData, setFormData] = useState({
@@ -227,9 +230,9 @@ export const EditCourtfile = () => {
                                         disabled={loading}
                                     >
                                         <option value="">Select a jurisdiction</option>
-                                        {PROVINCIAS_ARGENTINAS.map(provincia => (
-                                            <option key={provincia} value={provincia}>
-                                                {provincia}
+                                        {JURISDICCIONES_PJN.map(jurisdiction => (
+                                            <option key={jurisdiction} value={jurisdiction}>
+                                                {jurisdiction}
                                             </option>
                                         ))}
                                     </select>
