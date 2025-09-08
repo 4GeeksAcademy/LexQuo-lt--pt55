@@ -5,6 +5,7 @@ export const initialStore = () => {
     lawyers: [],
     clients: [],
     admins: [],
+    deadlines: [],
     todos: [],
   };
 };
@@ -27,7 +28,6 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
-
     /* COURTFILES */
 
     case "SET_COURTFILES":
@@ -47,9 +47,8 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
-
     /* LAWYERS */
-    
+
     case "SET_LAWYERS":
       return { ...store, lawyers: action.payload };
     case "ADD_LAWYER":
@@ -102,6 +101,28 @@ export default function storeReducer(store, action = {}) {
         ...store,
         admins: store.admins.map((ad) =>
           ad.id === action.payload.id ? action.payload : ad
+        ),
+      };
+
+    /* DEADLINES */
+
+    case "SET_DEADLINES":
+      return { ...store, deadlines: action.payload };
+
+    case "ADD_DEADLINE":
+      return { ...store, deadlines: [...store.deadlines, action.payload] };
+
+    case "DELETE_DEADLINE":
+      return {
+        ...store,
+        deadlines: store.deadlines.filter((dl) => dl.id !== action.payload),
+      };
+
+    case "UPDATE_DEADLINE":
+      return {
+        ...store,
+        deadlines: store.deadlines.map((dl) =>
+          dl.id === action.payload.id ? action.payload : dl
         ),
       };
 
