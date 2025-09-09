@@ -1,6 +1,7 @@
 """
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
+from datetime import datetime
 from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import Courtfile, db, Lawyer, Client, AdminUser, ClientCourtfile
 from api.utils import generate_sitemap, APIException
@@ -441,6 +442,91 @@ def delete_admin(admin_id):
         return jsonify({'error': str(e)}), 500
 
 
+# -----------------ROUTES PARA DEADLINES--------------------------------------------
+
+@api.route('/deadlines', methods=['GET'])
+def get_deadlines():
+    try:
+        deadlines = Deadlines.query.all()
+        return jsonify([deadline.serialize() for deadline in deadlines]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/deadlines/<int:deadline_id>', methods=['GET'])
+def get_deadline(deadline_id):
+    try:
+        deadline = Deadlines.query.get_or_404(deadline_id)
+        return jsonify(deadline.serialize()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
+
+
+@api.route('/deadlines', methods=['POST'])
+def create_deadline():
+    try:
+        data = request.get_json()
+
+        required_fields = ['deadline_type', 'deadline_date', 'deadline_hour', 'priority']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Required field: {field}'}), 400
+
+        deadline_date = data['deadline_date']
+        if isinstance(deadline_date, str):
+            deadline_date = datetime.strptime(deadline_date, '%Y-%m-%d').date()
+        
+        deadline_hour = data['deadline_hour']
+        if isinstance(deadline_hour, str):
+            # Cambiar a formato %H:%M para solo horas y minutos
+            deadline_hour = datetime.strptime(deadline_hour, '%H:%M').time()
+
+        deadline = Deadlines(
+            deadline_type=data['deadline_type'],
+            deadline_date=deadline_date,
+            deadline_hour=deadline_hour,
+            priority=data['priority'],
+        )
+
+        db.session.add(deadline)
+        db.session.commit()
+
+        return jsonify(deadline.serialize()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/deadlines/<int:deadline_id>', methods=['PUT'])
+def update_deadline(deadline_id):
+    try:
+        deadline = Deadlines.query.get_or_404(deadline_id)
+        data = request.get_json()
+
+        if 'deadline_type' in data:
+            deadline.deadline_type = data['deadline_type']
+
+        if 'deadline_date' in data:
+            deadline_date = data['deadline_date']
+            if isinstance(deadline_date, str):
+                deadline_date = datetime.strptime(deadline_date, '%Y-%m-%d').date()
+            deadline.deadline_date = deadline_date
+
+        if 'deadline_hour' in data:
+            deadline_hour = data['deadline_hour']
+            if isinstance(deadline_hour, str):
+                deadline_hour = datetime.strptime(deadline_hour, '%H:%M').time()
+            deadline.deadline_hour = deadline_hour
+
+        if 'priority' in data:
+            deadline.priority = data['priority']
+
+        db.session.commit()
+
+        return jsonify(deadline.serialize()), 200
+
+
 # -----------------ROUTES PARA CLIENTS-COURTFILES--------------------------------------------
 @api.route('/clients-courtfiles', methods=['GET'])
 def get_client_courtfiles():
@@ -491,6 +577,18 @@ def create_client_courtfile():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+@api.route('/deadlines/<int:deadline_id>', methods=['DELETE'])
+def delete_deadline(deadline_id):
+    try:
+        deadline = Deadlines.query.get_or_404(deadline_id)
+
+        db.session.delete(deadline)
+        db.session.commit()
+
+        return jsonify({'message': 'Deadline successfully deleted'}), 200
+
 
 @api.route('/clients-courtfiles/<int:id>', methods=['DELETE'])
 def delete_client_courtfile(id):

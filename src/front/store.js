@@ -5,6 +5,7 @@ export const initialStore = () => {
     lawyers: [],
     clients: [],
     admins: [],
+    deadlines: [],
     clientsCourtfiles: [],
     todos: [],
   };
@@ -28,7 +29,6 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
-
     /* COURTFILES */
 
     case "SET_COURTFILES":
@@ -48,9 +48,8 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
-
     /* LAWYERS */
-    
+
     case "SET_LAWYERS":
       return { ...store, lawyers: action.payload };
     case "ADD_LAWYER":
@@ -106,6 +105,27 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
+    /* DEADLINES */
+
+    case "SET_DEADLINES":
+      return { ...store, deadlines: action.payload };
+
+    case "ADD_DEADLINE":
+      return { ...store, deadlines: [...store.deadlines, action.payload] };
+
+    case "DELETE_DEADLINE":
+      return {
+        ...store,
+        deadlines: store.deadlines.filter((dl) => dl.id !== action.payload),
+      };
+
+    case "UPDATE_DEADLINE":
+      return {
+        ...store,
+        deadlines: store.deadlines.map((dl) =>
+          dl.id === action.payload.id ? action.payload : dl
+        ),
+      };
     /* CLIENT–COURTFILES */
 
     case "SET_CLIENT_COURTFILES":
@@ -119,7 +139,6 @@ export default function storeReducer(store, action = {}) {
         ...store,
         clientsCourtfiles: store.clientsCourtfiles.filter((cc) => cc.id !== action.payload),
       };
-
 
     default:
       throw Error("Unknown action.");

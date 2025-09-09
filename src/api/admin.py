@@ -44,6 +44,7 @@ def setup_admin(app):
     admin.add_view(ModelView(Courtfile, db.session))
     admin.add_view(ModelView(Client, db.session))
     admin.add_view(ModelView(AdminUser, db.session))
+    admin.add_view(ModelView(Deadlines, db.session))
     admin.add_view(ClientCourtfileView(ClientCourtfile, db.session))
 
 

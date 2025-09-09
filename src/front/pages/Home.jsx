@@ -39,15 +39,31 @@ export const Home = () => {
 			<h1 className="display-4 mb-5">LexQuo</h1>
 
 			<div className="ml-auto mb-5">
+				<Link to="/courtfiles">
+					<button className="btn btn-light me-2">Courtfiles</button>
+				</Link>
+				<Link to="/lawyers">
+					<button className="btn btn-light me-2">Lawyers</button>
+				</Link>
+				<Link to="/admins">
+					<button className="btn btn-light me-2">Admins</button>
+				</Link>
+				<Link to="/clients">
+					<button className="btn btn-light me-2">Clients</button>
+				</Link>
+				<Link to="/deadlines">
+					<button className="btn btn-light">Deadlines</button>
+				</Link>
+    
 				<Link to="/ClientsCourtfiles">
 					<button className="btn btn-light me-2">Clients-Courtfiles</button>
 				</Link>
-
 			</div>
 
 			<p className="lead">
 				<img src={justiceImage} className="img-fluid mb-3" alt="Rigo Baby" />
 			</p>
+
 			<div className="alert alert-info">
 				{store.message ? (
 					<span>{store.message}</span>
