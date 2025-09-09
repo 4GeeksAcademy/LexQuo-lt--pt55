@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean, Text
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.orm import Mapped, mapped_column, validates  
+from sqlalchemy import String, Boolean, Text, ForeignKey
+from sqlalchemy.orm import Mapped, Mapped, mapped_column, relationship, validates
+from typing import List
 from werkzeug.security import generate_password_hash
 
 
@@ -43,11 +43,16 @@ class Client(db.Model):
     password: Mapped[str] = mapped_column(String(500), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True, nullable=False)
     
+    courtfiles: Mapped[List["ClientCourtfile"]] = relationship(back_populates="client")
+
     @validates("password")
     def _hash_password(self, key, value):
         if value and not str(value).startswith(("pbkdf2:", "scrypt:")):
             return generate_password_hash(value)
         return value
+    
+    def __str__(self):  
+        return f"{self.firstname} {self.lastname}"
 
     def serialize(self):
         return {
@@ -94,6 +99,11 @@ class Courtfile(db.Model):
     court: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
+    clients: Mapped[List["ClientCourtfile"]] = relationship(back_populates="courtfile")
+
+    def __str__(self):   
+        return self.case_number
+
     def serialize(self):
         return {
             "id": self.id,
@@ -104,3 +114,16 @@ class Courtfile(db.Model):
             "court": self.court,
             "status": self.status,
         }
+
+
+class ClientCourtfile(db.Model):
+    __tablename__ = 'client_courtfile'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    client_id: Mapped[int] = mapped_column(ForeignKey("client.id"), nullable=False, index=True)
+    client: Mapped["Client"] = relationship(back_populates="courtfiles")
+
+    courtfile_id: Mapped[int] = mapped_column(ForeignKey("courtfile.id"), nullable=False, index=True)
+    courtfile: Mapped["Courtfile"] = relationship(back_populates="clients")
+

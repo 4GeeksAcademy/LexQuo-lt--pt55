@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import Courtfile, db, Lawyer, Client, AdminUser
+from api.models import Courtfile, db, Lawyer, Client, AdminUser, ClientCourtfile
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash
@@ -436,6 +436,74 @@ def delete_admin(admin_id):
 
         return jsonify({'message': 'Admin user successfully deleted'}), 200
 
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# -----------------ROUTES PARA CLIENTS-COURTFILES--------------------------------------------
+@api.route('/clients-courtfiles', methods=['GET'])
+def get_client_courtfiles():
+    try:
+        client_courtfiles = ClientCourtfile.query.all()
+        return jsonify([{
+            'id': cc.id,
+            'client_id': cc.client_id,
+            'courtfile_id': cc.courtfile_id,
+            'client_name': f"{cc.client.firstname} {cc.client.lastname}",
+            'courtfile_number': cc.courtfile.case_number
+        } for cc in client_courtfiles]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api.route('/clients-courtfiles', methods=['POST'])
+def create_client_courtfile():
+    try:
+        data = request.get_json()
+        
+        client = Client.query.get(data['client_id'])
+        courtfile = Courtfile.query.get(data['courtfile_id'])
+        
+        if not client or not courtfile:
+            return jsonify({'error': 'Client or Courtfile not found'}), 404
+        
+        existing = ClientCourtfile.query.filter_by(
+            client_id=data['client_id'],
+            courtfile_id=data['courtfile_id']
+        ).first()
+        
+        if existing:
+            return jsonify({'error': 'Relationship already exists'}), 400
+        
+        new_relation = ClientCourtfile(
+            client_id=data['client_id'],
+            courtfile_id=data['courtfile_id']
+        )
+        
+        db.session.add(new_relation)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Relationship created successfully',
+            'id': new_relation.id
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api.route('/clients-courtfiles/<int:id>', methods=['DELETE'])
+def delete_client_courtfile(id):
+    try:
+        relation = ClientCourtfile.query.get(id)
+        if not relation:
+            return jsonify({'error': 'Relationship not found'}), 404
+        
+        db.session.delete(relation)
+        db.session.commit()
+        
+        return jsonify({'message': 'Relationship deleted successfully'}), 200
+        
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
