@@ -54,6 +54,10 @@ export const Home = () => {
 				<Link to="/deadlines">
 					<button className="btn btn-light">Deadlines</button>
 				</Link>
+    
+				<Link to="/ClientsCourtfiles">
+					<button className="btn btn-light me-2">Clients-Courtfiles</button>
+				</Link>
 			</div>
 
 			<p className="lead">
