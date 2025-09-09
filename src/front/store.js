@@ -139,6 +139,20 @@ export default function storeReducer(store, action = {}) {
         ...store,
         clientsCourtfiles: store.clientsCourtfiles.filter((cc) => cc.id !== action.payload),
       };
+    
+    /* DEADLINE–COURTFILES */
+
+    case "SET_DEADLINE_COURTFILES":
+      return { ...store, deadlinesCourtfiles: action.payload };
+
+    case "ADD_DEADLINE_COURTFILE":
+      return { ...store, deadlinesCourtfiles: [...store.deadlinesCourtfiles, action.payload] };
+
+    case "DELETE_DEADLINE_COURTFILE":
+      return {
+        ...store,
+        deadlinesCourtfiles: store.deadlinesCourtfiles.filter((cc) => cc.id !== action.payload),
+      };
 
     default:
       throw Error("Unknown action.");

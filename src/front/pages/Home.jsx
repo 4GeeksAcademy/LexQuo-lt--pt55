@@ -52,11 +52,15 @@ export const Home = () => {
 					<button className="btn btn-light me-2">Clients</button>
 				</Link>
 				<Link to="/deadlines">
-					<button className="btn btn-light">Deadlines</button>
+					<button className="btn btn-light me-2">Deadlines</button>
 				</Link>
     
 				<Link to="/ClientsCourtfiles">
 					<button className="btn btn-light me-2">Clients-Courtfiles</button>
+				</Link>
+
+				<Link to="/DeadlinesCourtfiles">
+					<button className="btn btn-light me-2">Deadlines-Courtfiles</button>
 				</Link>
 			</div>
 
