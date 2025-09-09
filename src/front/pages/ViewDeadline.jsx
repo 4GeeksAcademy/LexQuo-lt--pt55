@@ -31,7 +31,7 @@ export const ViewDeadline = () => {
     };
 
     if (deadlineId) fetchDeadline();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [deadlineId]);
 
   const handleDelete = async () => {

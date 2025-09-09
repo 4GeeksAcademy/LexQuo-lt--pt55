@@ -2,41 +2,39 @@ import { Link, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import { useEffect, useState } from "react";
 
-export const AddClientsCourtfiles = () => {
+export const AddLawyersCourtfiles = () => {
   const { store, dispatch } = useGlobalReducer();
   const navigate = useNavigate();
   const API = import.meta.env.VITE_BACKEND_URL;
 
   const [formData, setFormData] = useState({
-    client_id: "",
+    lawyer_id: "",
     courtfile_id: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Usar datos del store
-  const clients = store.clients || [];
+  const lawyers = store.lawyers || [];
   const courtfiles = store.courtfiles || [];
 
-  const clientLabel = (c) =>
-    `${c.firstname ?? ""} ${c.lastname ?? ""}`.trim() || `Client #${c.id}`;
+  const lawyerLabel = (l) =>
+    `${l.firstname ?? ""} ${l.lastname ?? ""}`.trim() || `Lawyer #${l.id}`;
   
   const courtfileLabel = (cf) =>
     (cf.title ? `${cf.case_number} – ${cf.title}` : cf.case_number) ||
     `Courtfile #${cf.id}`;
 
-  // Cargar datos solo si no están en el store
   useEffect(() => {
     let alive = true;
 
     const loadData = async () => {
       try {
-        if (clients.length === 0) {
-          const response = await fetch(`${API}/api/clients`);
+        if (lawyers.length === 0) {
+          const response = await fetch(`${API}/api/lawyers`);
           if (response.ok) {
             const data = await response.json();
-            if (alive) dispatch({ type: "SET_CLIENTS", payload: data });
+            if (alive) dispatch({ type: "SET_LAWYERS", payload: data });
           }
         }
 
@@ -56,7 +54,7 @@ export const AddClientsCourtfiles = () => {
     loadData();
 
     return () => { alive = false; };
-  }, [API, dispatch, clients.length, courtfiles.length]);
+  }, [API, dispatch, lawyers.length, courtfiles.length]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -70,11 +68,11 @@ export const AddClientsCourtfiles = () => {
 
     try {
       const payload = {
-        client_id: Number(formData.client_id),
+        lawyer_id: Number(formData.lawyer_id),
         courtfile_id: Number(formData.courtfile_id),
       };
 
-      const res = await fetch(`${API}/api/clients-courtfiles`, {
+      const res = await fetch(`${API}/api/lawyers-courtfiles`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -85,14 +83,14 @@ export const AddClientsCourtfiles = () => {
         throw new Error(errData.error || "Failed to create relation");
       }
 
-      const relationsResponse = await fetch(`${API}/api/clients-courtfiles`);
+      const relationsResponse = await fetch(`${API}/api/lawyers-courtfiles`);
       if (relationsResponse.ok) {
         const allRelations = await relationsResponse.json();
-        dispatch({ type: "SET_CLIENT_COURTFILES", payload: allRelations });
+        dispatch({ type: "SET_LAWYER_COURTFILES", payload: allRelations });
       }
 
       alert("Relationship created successfully!");
-      navigate("/ClientsCourtfiles");
+      navigate("/LawyersCourtfiles");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -105,8 +103,8 @@ export const AddClientsCourtfiles = () => {
       <div className="row justify-content-center">
         <div className="col-md-8">
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1>Add Client–Courtfile</h1>
-            <Link to="/ClientsCourtfiles" className="btn btn-outline-secondary">
+            <h1>Add Lawyer–Courtfile</h1>
+            <Link to="/LawyersCourtfiles" className="btn btn-outline-secondary">
               <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
@@ -121,19 +119,19 @@ export const AddClientsCourtfiles = () => {
 
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
-                  <label htmlFor="client_id" className="form-label">Client *</label>
+                  <label htmlFor="lawyer_id" className="form-label">Lawyer *</label>
                   <select
-                    id="client_id"
-                    name="client_id"
+                    id="lawyer_id"
+                    name="lawyer_id"
                     className="form-select"
-                    value={formData.client_id}
+                    value={formData.lawyer_id}
                     onChange={handleChange}
                     required
                     disabled={loading}
                   >
-                    <option value="">Select a client</option>
-                    {clients.map(c => (
-                      <option key={c.id} value={c.id}>{clientLabel(c)}</option>
+                    <option value="">Select a lawyer</option>
+                    {lawyers.map(l => (
+                      <option key={l.id} value={l.id}>{lawyerLabel(l)}</option>
                     ))}
                   </select>
                 </div>
@@ -157,7 +155,7 @@ export const AddClientsCourtfiles = () => {
                 </div>
 
                 <div className="d-flex gap-2 justify-content-end">
-                  <Link to="/ClientsCourtfiles" className="btn btn-secondary">
+                  <Link to="/LawyersCourtfiles" className="btn btn-secondary">
                     Cancel
                   </Link>
                   <button type="submit" className="btn btn-primary" disabled={loading}>

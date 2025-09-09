@@ -94,13 +94,11 @@ export const EditCourtfile = () => {
             if (response.ok) {
                 const updatedCourtfile = await response.json();
 
-                // Actualizar en el estado global
                 dispatch({
                     type: 'UPDATE_COURTFILE',
                     payload: updatedCourtfile
                 });
 
-                // Redirigir a la lista de courtfiles
                 navigate(`/courtfiles/view/${courtfileId}`);
 
                 alert('Courtfile updated successfully!');
