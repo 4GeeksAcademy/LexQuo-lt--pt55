@@ -2,6 +2,7 @@ import React, { useEffect } from "react"
 import rigoImageUrl from "../assets/img/rigo-baby.jpg";
 import justiceImage from "../assets/img/justice.gif";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
+import { Link } from "react-router-dom";
 
 export const Home = () => {
 
@@ -36,6 +37,14 @@ export const Home = () => {
 	return (
 		<div className="text-center mt-5">
 			<h1 className="display-4 mb-5">LexQuo</h1>
+
+			<div className="ml-auto mb-5">
+				<Link to="/ClientsCourtfiles">
+					<button className="btn btn-light me-2">Clients-Courtfiles</button>
+				</Link>
+
+			</div>
+
 			<p className="lead">
 				<img src={justiceImage} className="img-fluid mb-3" alt="Rigo Baby" />
 			</p>
