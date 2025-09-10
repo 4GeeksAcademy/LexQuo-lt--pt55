@@ -1,13 +1,8 @@
 from flask_sqlalchemy import SQLAlchemy
-<<<<<<< HEAD
-from sqlalchemy import String, Boolean, Text, Date, Time, DateTime
+from sqlalchemy import String, Boolean, Text, Date, Time, DateTime, ForeignKey, Time
 from datetime import datetime
-from sqlalchemy.orm import Mapped, mapped_column, validates
-=======
-from sqlalchemy import String, Boolean, Text, ForeignKey, Date, Time
-from sqlalchemy.orm import Mapped, Mapped, mapped_column, relationship, validates
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from typing import List
->>>>>>> develop
 from werkzeug.security import generate_password_hash
 from datetime import date, time
 
@@ -134,7 +129,6 @@ class Courtfile(db.Model):
         }
 
 
-<<<<<<< HEAD
 class Appointment(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -158,7 +152,6 @@ class Appointment(db.Model):
             "ends_at": ends_str,
             "created_at": self.created_at.isoformat()
         }
-=======
 
 class Deadlines(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -217,4 +210,3 @@ class LawyerCourtfile(db.Model):
     courtfile: Mapped["Courtfile"] = relationship(back_populates="lawyers")
 
 
->>>>>>> develop

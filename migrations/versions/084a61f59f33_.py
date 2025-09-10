@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 968e8eed2fd4
+Revision ID: 084a61f59f33
 Revises: 
-Create Date: 2025-09-09 18:59:14.582645
+Create Date: 2025-09-10 08:00:17.493295
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '968e8eed2fd4'
+revision = '084a61f59f33'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -27,6 +27,16 @@ def upgrade():
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
+    )
+    op.create_table('appointment',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('title', sa.String(length=255), nullable=False),
+    sa.Column('date', sa.Date(), nullable=False),
+    sa.Column('location', sa.String(length=500), nullable=True),
+    sa.Column('starts_at', sa.Time(), nullable=False),
+    sa.Column('ends_at', sa.Time(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('client',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -81,6 +91,18 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_client_courtfile_client_id'), ['client_id'], unique=False)
         batch_op.create_index(batch_op.f('ix_client_courtfile_courtfile_id'), ['courtfile_id'], unique=False)
 
+    op.create_table('deadline_courtfile',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('deadline_id', sa.Integer(), nullable=False),
+    sa.Column('courtfile_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['courtfile_id'], ['courtfile.id'], ),
+    sa.ForeignKeyConstraint(['deadline_id'], ['deadlines.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('deadline_courtfile', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_deadline_courtfile_courtfile_id'), ['courtfile_id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_deadline_courtfile_deadline_id'), ['deadline_id'], unique=False)
+
     op.create_table('lawyer_courtfile',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('lawyer_id', sa.Integer(), nullable=False),
@@ -103,6 +125,11 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_lawyer_courtfile_courtfile_id'))
 
     op.drop_table('lawyer_courtfile')
+    with op.batch_alter_table('deadline_courtfile', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_deadline_courtfile_deadline_id'))
+        batch_op.drop_index(batch_op.f('ix_deadline_courtfile_courtfile_id'))
+
+    op.drop_table('deadline_courtfile')
     with op.batch_alter_table('client_courtfile', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_client_courtfile_courtfile_id'))
         batch_op.drop_index(batch_op.f('ix_client_courtfile_client_id'))
@@ -112,5 +139,6 @@ def downgrade():
     op.drop_table('deadlines')
     op.drop_table('courtfile')
     op.drop_table('client')
+    op.drop_table('appointment')
     op.drop_table('admin_user')
     # ### end Alembic commands ###

@@ -1,12 +1,7 @@
 
 import os
 from flask_admin import Admin
-<<<<<<< HEAD
-from .models import db, Lawyer, Courtfile, Client, AdminUser, Appointment
-from flask_admin.contrib.sqla import ModelView
-
-=======
-from .models import db, Lawyer, Courtfile, Client, AdminUser, Deadlines, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile
+from .models import db, Lawyer, Courtfile, Client, AdminUser, Deadlines, Appointment, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile
 from flask_admin.contrib.sqla import ModelView
 
 class ClientCourtfileView(ModelView):
@@ -86,8 +81,6 @@ class LawyerCourtfileView(ModelView):
     }
 
 
->>>>>>> develop
-
 def setup_admin(app):
     app.secret_key = os.environ.get('FLASK_APP_KEY', 'sample key')
     app.config['FLASK_ADMIN_SWATCH'] = 'cerulean'
@@ -98,15 +91,12 @@ def setup_admin(app):
     admin.add_view(ModelView(Courtfile, db.session))
     admin.add_view(ModelView(Client, db.session))
     admin.add_view(ModelView(AdminUser, db.session))
-<<<<<<< HEAD
-    admin.add_view(ModelView(Appointment, db.session))
-=======
     admin.add_view(ModelView(Deadlines, db.session))
+    admin.add_view(ModelView(Appointment, db.session))
     admin.add_view(ClientCourtfileView(ClientCourtfile, db.session))
     admin.add_view(DeadlineCourtfileView(DeadlineCourtfile, db.session))
     admin.add_view(LawyerCourtfileView(LawyerCourtfile, db.session))
 
->>>>>>> develop
 
     # You can duplicate that line to add mew models
     # admin.add_view(ModelView(YourModelName, db.session))
