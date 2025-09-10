@@ -40,6 +40,11 @@ import { ViewAppointment } from "./pages/ViewAppointment";
 import { EditAppointment } from "./pages/EditAppointment";
 import { AddAppointment } from "./pages/AddAppointment";
 
+import { Documents } from "./pages/Documents";
+import { ViewDocument } from "./pages/ViewDocument";
+import { EditDocument } from "./pages/EditDocument";
+import { AddDocument } from "./pages/AddDocument";
+
 import { ClientsCourtfiles } from "./pages/ClientsCourtfiles";
 import { AddClientsCourtfiles } from "./pages/AddClientsCourtfiles";
 
@@ -100,6 +105,11 @@ export const router = createBrowserRouter(
       <Route path="/appointments/view/:appointmentId" element={<ViewAppointment />} />
       <Route path="/appointments/:appointmentId" element={<EditAppointment />} />
 
+      <Route path="/documents" element={<Documents />} />
+      <Route path="/documents/addDocument" element={<AddDocument />} />
+      <Route path="/documents/view/:documentId" element={<ViewDocument />} />
+      <Route path="/documents/:documentId" element={<EditDocument />} />
+      
       <Route path="/ClientsCourtfiles" element={<ClientsCourtfiles />} />
       <Route path="/AddClientsCourtfiles" element={<AddClientsCourtfiles />} />
 

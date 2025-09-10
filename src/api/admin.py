@@ -1,7 +1,7 @@
 
 import os
 from flask_admin import Admin
-from .models import db, Lawyer, Courtfile, Client, AdminUser, Deadlines, Appointment, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile
+from .models import db, Lawyer, Courtfile, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile
 from flask_admin.contrib.sqla import ModelView
 
 class ClientCourtfileView(ModelView):
@@ -111,6 +111,7 @@ def setup_admin(app):
     admin.add_view(ModelView(AdminUser, db.session))
     admin.add_view(ModelView(Deadlines, db.session))
     admin.add_view(ModelView(Appointment, db.session))
+    admin.add_view(ModelView(Document, db.session))
     admin.add_view(ClientCourtfileView(ClientCourtfile, db.session))
     admin.add_view(DeadlineCourtfileView(DeadlineCourtfile, db.session))
     admin.add_view(LawyerCourtfileView(LawyerCourtfile, db.session))
