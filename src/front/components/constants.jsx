@@ -28,11 +28,24 @@ export const JUZGADOS_POR_JURISDICCION = {
     ],
     'CAF - Cámara Nacional de Apelaciones en lo Contencioso Administrativo Federal': [
         'Cámara Nacional de Apelaciones en lo Contencioso Administrativo Federal',
-        'Juzgado Nacional de Primera Instancia en lo Contencioso Administrativo Federal N° 1',
-        'Juzgado Nacional de Primera Instancia en lo Contencioso Administrativo Federal N° 2',
-        'Juzgado Nacional de Primera Instancia en lo Contencioso Administrativo Federal N° 3',
-        'Juzgado Nacional de Primera Instancia en lo Contencioso Administrativo Federal N° 4',
-        'Juzgado Nacional de Primera Instancia en lo Contencioso Administrativo Federal N° 5'
+        'Juzgado Contencioso Administrativo Federal N° 1',
+        'Juzgado Contencioso Administrativo Federal N° 2',
+        'Juzgado Contencioso Administrativo Federal N° 3',
+        'Juzgado Contencioso Administrativo Federal N° 4',
+        'Juzgado Contencioso Administrativo Federal N° 5',
+        'Juzgado Contencioso Administrativo Federal N° 6',
+        'Juzgado Contencioso Administrativo Federal N° 7',
+        'Juzgado Contencioso Administrativo Federal N° 8',
+        'Juzgado Contencioso Administrativo Federal N° 9',
+        'Juzgado Contencioso Administrativo Federal N° 10',
+        'Juzgado Contencioso Administrativo Federal N° 11',
+        'Juzgado Contencioso Administrativo Federal N° 12',
+        'Juzgado Federal de Ejecuciones Fiscales y Tributario N° 1',
+        'Juzgado Federal de Ejecuciones Fiscales y Tributario N° 2',
+        'Juzgado Federal de Ejecuciones Fiscales y Tributario N° 3',
+        'Juzgado Federal de Ejecuciones Fiscales y Tributario N° 4',
+        'Juzgado Federal de Ejecuciones Fiscales y Tributario N° 5',
+        'Juzgado Federal de Ejecuciones Fiscales y Tributario N° 6',
     ],
     'CCF - Cámara Nacional de Apelaciones en lo Civil y Comercial Federal': [
         'Cámara Nacional de Apelaciones en lo Civil y Comercial Federal',
@@ -68,7 +81,10 @@ export const JUZGADOS_POR_JURISDICCION = {
         'Juzgado Nacional de la Seguridad Social N° 9',
         'Juzgado Nacional de la Seguridad Social N° 10',
         'Juzgado Nacional de la Seguridad Social N° 11',
-        'Juzgado Nacional de la Seguridad Social N° 12'
+        'Tribunal Oral en lo Penal Económico N° 1',
+        'Tribunal Oral en lo Penal Económico N° 2',
+        'Tribunal Oral en lo Penal Económico N° 3',
+        'Tribunal Oral en lo Penal Económico N° 4'
     ],
     'CNT - Cámara Nacional de Apelaciones del Trabajo': [
         'Cámara Nacional de Apelaciones del Trabajo',
@@ -136,7 +152,15 @@ export const JUZGADOS_POR_JURISDICCION = {
         'Juzgado Nacional en lo Criminal y Correccional Federal N° 9',
         'Juzgado Nacional en lo Criminal y Correccional Federal N° 10',
         'Juzgado Nacional en lo Criminal y Correccional Federal N° 11',
-        'Juzgado Nacional en lo Criminal y Correccional Federal N° 12'
+        'Juzgado Nacional en lo Criminal y Correccional Federal N° 12',
+        'Tribunal Oral en lo Criminal y Correccional Federal N° 1',
+        'Tribunal Oral en lo Criminal y Correccional Federal N° 2',
+        'Tribunal Oral en lo Criminal y Correccional Federal N° 3',
+        'Tribunal Oral en lo Criminal y Correccional Federal N° 4',
+        'Tribunal Oral en lo Criminal y Correccional Federal N° 5',
+        'Tribunal Oral en lo Criminal y Correccional Federal N° 6',
+        'Tribunal Oral en lo Criminal y Correccional Federal N° 7',
+        'Tribunal Oral en lo Criminal y Correccional Federal N° 8',
     ],
     'CCO - Cámara Nacional de Apelaciones en lo Criminal y Correccional': [
         'Cámara Nacional de Apelaciones en lo Criminal y Correccional',
@@ -155,7 +179,7 @@ export const JUZGADOS_POR_JURISDICCION = {
         'Juzgado Nacional en lo Criminal y Correccional N° 13',
         'Juzgado Nacional en lo Criminal y Correccional N° 14',
         'Juzgado Nacional en lo Criminal y Correccional N° 15',
-        'Juzgado Nacional en lo Criminal and Correccional N° 16',
+        'Juzgado Nacional en lo Criminal y Correccional N° 16',
         'Juzgado Nacional en lo Criminal y Correccional N° 17',
         'Juzgado Nacional en lo Criminal y Correccional N° 18',
         'Juzgado Nacional en lo Criminal y Correccional N° 19',
@@ -231,12 +255,21 @@ export const JUZGADOS_POR_JURISDICCION = {
         'Cámara Federal de Apelaciones de Bahía Blanca',
         'Juzgado Federal de Bahía Blanca N° 1',
         'Juzgado Federal de Bahía Blanca N° 2',
-        'Juzgado Federal de Instrucción de Bahía Blanca N° 1'
+        'Juzgado Federal de Santa Rosa'
     ],
     'FCR - Justicia Federal de Comodoro Rivadavia': [
         'Cámara Federal de Apelaciones de Comodoro Rivadavia',
-        'Juzgado Federal de Comodoro Rivadavia N° 1',
-        'Juzgado Federal de Instrucción de Comodoro Rivadavia N° 1'
+        'Juzgado Federal de Comodoro Rivadavia',
+        'Juzgado Federal de Rawson NRO. 1',
+        'Juzgado Federal de Rawson NRO. 2',
+        'Juzgado Federal de Río Gallegos',
+        'Juzgado Federal de Primera Instancia de Ushuaia',
+        'Juzgado Federal de Río Grande',
+        'Juzgado Federal de Caleta Olivia',
+        'Juzgado Federal de Esquel',
+        'Tribunal Oral en lo Criminal Federal de Comodoro Rivadavia',
+        'Tribunal Oral en lo Criminal Federal de Santa Cruz',
+        'Tribunal Oral en lo Criminal Federal de Tierra del Fuego, Antártida e Islas'
     ],
     'FCB - Justicia Federal de Córdoba': [
         'Cámara Federal de Apelaciones de Córdoba',
@@ -244,30 +277,58 @@ export const JUZGADOS_POR_JURISDICCION = {
         'Juzgado Federal de Córdoba N° 2',
         'Juzgado Federal de Córdoba N° 3',
         'Juzgado Federal de Instrucción de Córdoba N° 1',
-        'Juzgado Federal de Instrucción de Córdoba N° 2'
+        'Juzgado Federal de Instrucción de Córdoba N° 2',
+        'Juzgado Federal de Bell Ville',
+        'Juzgado Federal de Río Cuarto',
+        'Juzgado Federal de Villa María',
+        'Juzgado Federal de La Rioja',
+        'Juzgado Federal de San Francisco'
     ],
     'FCT - Justicia Federal de Corrientes': [
         'Cámara Federal de Apelaciones de Corrientes',
         'Juzgado Federal de Corrientes N° 1',
-        'Juzgado Federal de Instrucción de Corrientes N° 1'
+        'Juzgado Federal de Corrientes N° 2',
+        'Juzgado Federal de Paso de los Libres',
+        'Juzgado Federal de Goya',
+        'Tribunal Oral en lo Criminal Federal de Corrientes'
     ],
     'FGR - Justicia Federal de General Roca': [
         'Cámara Federal de Apelaciones de General Roca',
-        'Juzgado Federal de General Roca N° 1',
-        'Juzgado Federal de Instrucción de General Roca N° 1'
+        'Juzgado Federal de General Roca',
+        'Juzgado Federal de San Carlos de Bariloche',
+        'Juzgado Federal de Viedma',
+        'Juzgado Federal de Zapala',
+        'Juzgado Federal de Neuquén N° 1',
+        'Juzgado Federal de Neuquén N° 2',
+        'Tribunal Oral en lo Criminal Federal de General Roca',
+        'Tribunal Oral en lo Criminal Federal de Neuquén'
     ],
     'FLP - Justicia Federal de La Plata': [
         'Cámara Federal de Apelaciones de La Plata',
-        'Juzgado Federal de La Plata N° 1',
-        'Juzgado Federal de La Plata N° 2',
-        'Juzgado Federal de La Plata N° 3',
-        'Juzgado Federal de Instrucción de La Plata N° 1',
-        'Juzgado Federal de Instrucción de La Plata N° 2'
+        'Juzgado Federal de La Plata N° 1 - Penal y Electoral',
+        'Juzgado Federal de La Plata N° 2 - Civil, Comercial y Contencioso Administrativo',
+        'Juzgado Federal de La Plata N° 3 - Penal',
+        'Juzgado Federal de La Plata N° 4 - Civil y Comercial',
+        'Juzgado Federal en lo Criminal y Correccional de Lomas de Zamora N° 1',
+        'Juzgado Federal en lo Criminal y Correccional de Lomas de Zamora N° 2',
+        'Juzgado Federal de Lomas de Zamora N° 3 - Civil, Comercial y Contencioso Administrativo',
+        'Juzgado Federal de Quilmes',
+        'Juzgado Federal de Junín',
+        'Juzgado Federal de Pehuajó',
+        'Tribunal Oral en lo Criminal Federal de La Plata N° 1',
+        'Tribunal Oral en lo Criminal Federal de La Plata N° 2'
     ],
     'FMP - Justicia Federal de Mar del Plata': [
         'Cámara Federal de Apelaciones de Mar del Plata',
-        'Juzgado Federal de Mar del Plata N° 1',
-        'Juzgado Federal de Instrucción de Mar del Plata N° 1'
+        'Juzgado Federal de Mar del Plata N° 1 - Penal',
+        'Juzgado Federal de Mar del Plata N° 2 - Civil, Comercial y Laboral',
+        'Juzgado Federal de Mar del Plata N° 3',
+        'Juzgado Federal de Mar del Plata N° 4',
+        'Juzgado Federal de Azul N° 1',
+        'Juzgado Federal de Azul N° 2',
+        'Juzgado Federal de Dolores',
+        'Juzgado Federal de Necochea',
+        'Tribunal Oral en lo Criminal Federal de Mar del Plata'
     ],
     'FMZ - Justicia Federal de Mendoza': [
         'Cámara Federal de Apelaciones de Mendoza',

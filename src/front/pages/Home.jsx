@@ -2,6 +2,7 @@ import React, { useEffect } from "react"
 import rigoImageUrl from "../assets/img/rigo-baby.jpg";
 import justiceImage from "../assets/img/justice.gif";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
+import { Link } from "react-router-dom";
 
 export const Home = () => {
 
@@ -36,9 +37,37 @@ export const Home = () => {
 	return (
 		<div className="text-center mt-5">
 			<h1 className="display-4 mb-5">LexQuo</h1>
+
+			<div className="ml-auto mb-5">
+				<Link to="/courtfiles">
+					<button className="btn btn-light me-2">Courtfiles</button>
+				</Link>
+				<Link to="/lawyers">
+					<button className="btn btn-light me-2">Lawyers</button>
+				</Link>
+				<Link to="/admins">
+					<button className="btn btn-light me-2">Admins</button>
+				</Link>
+				<Link to="/clients">
+					<button className="btn btn-light me-2">Clients</button>
+				</Link>
+				<Link to="/deadlines">
+					<button className="btn btn-light me-2">Deadlines</button>
+				</Link>
+				<Link to="/ClientsCourtfiles">
+					<button className="btn btn-light me-2">Clients-Courtfiles</button>
+				</Link>
+				<Link to="/DeadlinesCourtfiles">
+					<button className="btn btn-light me-2">Deadlines-Courtfiles</button>
+				<Link to="/LawyersCourtfiles">
+					<button className="btn btn-light me-2">Lawyers-Courtfiles</button>
+				</Link>
+			</div>
+
 			<p className="lead">
 				<img src={justiceImage} className="img-fluid mb-3" alt="Rigo Baby" />
 			</p>
+
 			<div className="alert alert-info">
 				{store.message ? (
 					<span>{store.message}</span>

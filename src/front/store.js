@@ -5,6 +5,8 @@ export const initialStore = () => {
     lawyers: [],
     clients: [],
     admins: [],
+    deadlines: [],
+    clientsCourtfiles: [],
     todos: [],
     appointments: []
   };
@@ -28,7 +30,6 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
-
     /* COURTFILES */
 
     case "SET_COURTFILES":
@@ -48,9 +49,8 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
-
     /* LAWYERS */
-    
+
     case "SET_LAWYERS":
       return { ...store, lawyers: action.payload };
     case "ADD_LAWYER":
@@ -106,6 +106,7 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
+<<<<<<< HEAD
       /* APPOINTMENTS */
     
     case "SET_APPOINTMENTS":
@@ -125,6 +126,71 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
+=======
+    /* DEADLINES */
+
+    case "SET_DEADLINES":
+      return { ...store, deadlines: action.payload };
+
+    case "ADD_DEADLINE":
+      return { ...store, deadlines: [...store.deadlines, action.payload] };
+
+    case "DELETE_DEADLINE":
+      return {
+        ...store,
+        deadlines: store.deadlines.filter((dl) => dl.id !== action.payload),
+      };
+
+    case "UPDATE_DEADLINE":
+      return {
+        ...store,
+        deadlines: store.deadlines.map((dl) =>
+          dl.id === action.payload.id ? action.payload : dl
+        ),
+      };
+    
+    /* CLIENT–COURTFILES */
+
+    case "SET_CLIENT_COURTFILES":
+      return { ...store, clientsCourtfiles: action.payload };
+
+    case "ADD_CLIENT_COURTFILE":
+      return { ...store, clientsCourtfiles: [...store.clientsCourtfiles, action.payload] };
+
+    case "DELETE_CLIENT_COURTFILE":
+      return {
+        ...store,
+        clientsCourtfiles: store.clientsCourtfiles.filter((cc) => cc.id !== action.payload),
+      };
+    
+    /* DEADLINE–COURTFILES */
+
+    case "SET_DEADLINE_COURTFILES":
+      return { ...store, deadlinesCourtfiles: action.payload };
+
+    case "ADD_DEADLINE_COURTFILE":
+      return { ...store, deadlinesCourtfiles: [...store.deadlinesCourtfiles, action.payload] };
+
+    case "DELETE_DEADLINE_COURTFILE":
+      return {
+        ...store,
+        deadlinesCourtfiles: store.deadlinesCourtfiles.filter((cc) => cc.id !== action.payload),
+      };
+
+    /* LAWYER–COURTFILES */
+
+    case "SET_LAWYER_COURTFILES":
+      return { ...store, lawyersCourtfiles: action.payload };
+
+    case "ADD_LAWYER_COURTFILE":
+      return { ...store, lawyersCourtfiles: [...store.lawyersCourtfiles, action.payload] };
+
+    case "DELETE_LAWYER_COURTFILE":
+      return {
+        ...store,
+        lawyersCourtfiles: store.lawyersCourtfiles.filter((cc) => cc.id !== action.payload),
+      };
+>>>>>>> develop
 
 
     default:

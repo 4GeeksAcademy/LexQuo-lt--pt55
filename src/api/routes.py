@@ -1,8 +1,13 @@
 """
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
+from datetime import datetime
 from flask import Flask, request, jsonify, url_for, Blueprint
+<<<<<<< HEAD
 from api.models import Courtfile, db, Lawyer, Client, AdminUser, Appointment
+=======
+from api.models import Courtfile, db, Lawyer, Client, AdminUser, Deadlines, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile
+>>>>>>> develop
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash
@@ -442,6 +447,7 @@ def delete_admin(admin_id):
         return jsonify({'error': str(e)}), 500
 
 
+<<<<<<< HEAD
 # -----------------ROUTES PARA APPOIMENT--------------------------------------------
 
 @api.route('/appointments', methods=['GET'])
@@ -557,3 +563,320 @@ def delete_appointment(id):
     db.session.delete(appointment)
     db.session.commit()
     return jsonify({'message': 'Appointment eliminado exitosamente'})
+=======
+# -----------------ROUTES PARA DEADLINES--------------------------------------------
+
+@api.route('/deadlines', methods=['GET'])
+def get_deadlines():
+    try:
+        deadlines = Deadlines.query.all()
+        return jsonify([deadline.serialize() for deadline in deadlines]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/deadlines/<int:deadline_id>', methods=['GET'])
+def get_deadline(deadline_id):
+    try:
+        deadline = Deadlines.query.get_or_404(deadline_id)
+        return jsonify(deadline.serialize()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
+
+
+@api.route('/deadlines', methods=['POST'])
+def create_deadline():
+    try:
+        data = request.get_json()
+
+        required_fields = ['deadline_type', 'deadline_date', 'deadline_hour', 'priority']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Required field: {field}'}), 400
+
+        deadline_date = data['deadline_date']
+        if isinstance(deadline_date, str):
+            deadline_date = datetime.strptime(deadline_date, '%Y-%m-%d').date()
+        
+        deadline_hour = data['deadline_hour']
+        if isinstance(deadline_hour, str):
+            # Cambiar a formato %H:%M para solo horas y minutos
+            deadline_hour = datetime.strptime(deadline_hour, '%H:%M').time()
+
+        deadline = Deadlines(
+            deadline_type=data['deadline_type'],
+            deadline_date=deadline_date,
+            deadline_hour=deadline_hour,
+            priority=data['priority'],
+        )
+
+        db.session.add(deadline)
+        db.session.commit()
+
+        return jsonify(deadline.serialize()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/deadlines/<int:deadline_id>', methods=['PUT'])
+def update_deadline(deadline_id):
+    try:
+        deadline = Deadlines.query.get_or_404(deadline_id)
+        data = request.get_json()
+
+        if 'deadline_type' in data:
+            deadline.deadline_type = data['deadline_type']
+
+        if 'deadline_date' in data:
+            deadline_date = data['deadline_date']
+            if isinstance(deadline_date, str):
+                deadline_date = datetime.strptime(deadline_date, '%Y-%m-%d').date()
+            deadline.deadline_date = deadline_date
+
+        if 'deadline_hour' in data:
+            deadline_hour = data['deadline_hour']
+            if isinstance(deadline_hour, str):
+                deadline_hour = datetime.strptime(deadline_hour, '%H:%M').time()
+            deadline.deadline_hour = deadline_hour
+
+        if 'priority' in data:
+            deadline.priority = data['priority']
+
+        db.session.commit()
+
+        return jsonify(deadline.serialize()), 200
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/deadlines/<int:deadline_id>', methods=['DELETE'])
+def delete_deadline(deadline_id):
+    try:
+        deadline = Deadlines.query.get_or_404(deadline_id)
+
+        db.session.delete(deadline)
+        db.session.commit()
+
+        return jsonify({'message': 'Deadline successfully deleted'}), 200
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# -----------------ROUTES PARA CLIENTS-COURTFILES--------------------------------------------
+@api.route('/clients-courtfiles', methods=['GET'])
+def get_client_courtfiles():
+    try:
+        client_courtfiles = ClientCourtfile.query.all()
+        return jsonify([{
+            'id': cc.id,
+            'client_id': cc.client_id,
+            'courtfile_id': cc.courtfile_id,
+            'client_name': f"{cc.client.firstname} {cc.client.lastname}",
+            'courtfile_number': cc.courtfile.case_number
+        } for cc in client_courtfiles]), 200
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api.route('/clients-courtfiles', methods=['POST'])
+def create_client_courtfile():
+    try:
+        data = request.get_json()
+        
+        client = Client.query.get(data['client_id'])
+        courtfile = Courtfile.query.get(data['courtfile_id'])
+        
+        if not client or not courtfile:
+            return jsonify({'error': 'Client or Courtfile not found'}), 404
+        
+        existing = ClientCourtfile.query.filter_by(
+            client_id=data['client_id'],
+            courtfile_id=data['courtfile_id']
+        ).first()
+        
+        if existing:
+            return jsonify({'error': 'Relationship already exists'}), 400
+        
+        new_relation = ClientCourtfile(
+            client_id=data['client_id'],
+            courtfile_id=data['courtfile_id']
+        )
+        
+        db.session.add(new_relation)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Relationship created successfully',
+            'id': new_relation.id
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/clients-courtfiles/<int:id>', methods=['DELETE'])
+def delete_client_courtfile(id):
+    try:
+        relation = ClientCourtfile.query.get(id)
+        if not relation:
+            return jsonify({'error': 'Relationship not found'}), 404
+        
+        db.session.delete(relation)
+        db.session.commit()
+        
+        return jsonify({'message': 'Relationship deleted successfully'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+    
+
+# -----------------ROUTES PARA LAWYERS-COURTFILES--------------------------------------------
+@api.route('/lawyers-courtfiles', methods=['GET'])
+def get_lawyers_courtfiles():
+    try:
+        lawyer_courtfiles = LawyerCourtfile.query.all()
+        return jsonify([{
+            'id': lc.id,
+            'lawyer_id': lc.lawyer_id,
+            'courtfile_id': lc.courtfile_id,
+            'lawyer_name': f"{lc.lawyer.firstname} {lc.lawyer.lastname}",
+            'courtfile_number': lc.courtfile.case_number
+        } for lc in lawyer_courtfiles]), 200
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api.route('/lawyers-courtfiles', methods=['POST'])
+def create_lawyer_courtfile():
+    try:
+        data = request.get_json()
+        
+        lawyer = Lawyer.query.get(data['lawyer_id'])
+        courtfile = Courtfile.query.get(data['courtfile_id'])
+        
+        if not lawyer or not courtfile:
+            return jsonify({'error': 'Lawyer or Courtfile not found'}), 404
+        
+        existing = LawyerCourtfile.query.filter_by(
+            lawyer_id=data['lawyer_id'],
+            courtfile_id=data['courtfile_id']
+        ).first()
+        
+        if existing:
+            return jsonify({'error': 'Relationship already exists'}), 400
+        
+        new_relation = LawyerCourtfile(
+            lawyer_id=data['lawyer_id'],
+            courtfile_id=data['courtfile_id']
+        )
+        
+        db.session.add(new_relation)
+        db.session.commit()
+        
+        return jsonify({
+            'message': 'Relationship created successfully',
+            'id': new_relation.id
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api.route('/lawyers-courtfiles/<int:id>', methods=['DELETE'])
+def delete_lawyer_courtfile(id):
+    try:
+        relation = LawyerCourtfile.query.get(id)
+        if not relation:
+            return jsonify({'error': 'Relationship not found'}), 404
+        
+        db.session.delete(relation)
+        db.session.commit()
+        
+        return jsonify({'message': 'Relationship deleted successfully'}), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# -----------------ROUTES PARA Deadlines-COURTFILES--------------------------------------------
+@api.route('/deadlines-courtfiles', methods=['GET'])
+def get_deadlines_courtfiles():
+    try:
+        deadlines_courtfiles = DeadlineCourtfile.query.all()
+        return jsonify([{
+            'id': dc.id,
+            'deadline_id': dc.deadline_id,
+            'courtfile_id': dc.courtfile_id,
+            'deadline_type': dc.deadlines.deadline_type,
+            'deadline_date': dc.deadlines.deadline_date.isoformat(),
+            'deadline_hour': dc.deadlines.deadline_hour.strftime('%H:%M'),
+            'priority': dc.deadlines.priority,
+            'courtfile_number': dc.courtfile.case_number,
+            'courtfile_title': dc.courtfile.title
+        } for dc in deadlines_courtfiles]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/deadlines-courtfiles', methods=['POST'])
+def create_deadline_courtfile():
+    try:
+        data = request.get_json()
+
+        deadline = Deadlines.query.get(data['deadline_id'])
+        courtfile = Courtfile.query.get(data['courtfile_id'])
+
+        if not deadline or not courtfile:
+            return jsonify({'error': 'Deadline or Courtfile not found'}), 404
+
+        existing = DeadlineCourtfile.query.filter_by(
+            deadline_id=data['deadline_id'],
+            courtfile_id=data['courtfile_id']
+        ).first()
+
+        if existing:
+            return jsonify({'error': 'Relationship already exists'}), 400
+
+        new_relation = DeadlineCourtfile(
+            deadline_id=data['deadline_id'],
+            courtfile_id=data['courtfile_id']
+        )
+
+        db.session.add(new_relation)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Relationship created successfully',
+            'id': new_relation.id
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/deadlines-courtfiles/<int:id>', methods=['DELETE'])
+def delete_deadline_courtfile(id):
+    try:
+        relation = DeadlineCourtfile.query.get(id)
+        if not relation:
+            return jsonify({'error': 'Relationship not found'}), 404
+
+        db.session.delete(relation)
+        db.session.commit()
+
+        return jsonify({'message': 'Relationship deleted successfully'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+>>>>>>> develop
