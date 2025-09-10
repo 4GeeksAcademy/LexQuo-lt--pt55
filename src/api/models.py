@@ -179,6 +179,26 @@ class Deadlines(db.Model):
             "deadline_hour": self.deadline_hour.strftime('%H:%M') if self.deadline_hour else None,  
             "priority": self.priority,
         }
+    
+class Document(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    type: Mapped[str] = mapped_column(String(50), nullable=False)
+    url_route: Mapped[str] = mapped_column(String(500), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    category: Mapped[str] = mapped_column(String(100), nullable=True)
+    create_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "type": self.type,
+            "url_route": self.url_route,
+            "description": self.description,
+            "category": self.category,
+            "create_at": self.create_at.isoformat()
+        }
 
 class ClientCourtfile(db.Model):
     __tablename__ = 'client_courtfile'

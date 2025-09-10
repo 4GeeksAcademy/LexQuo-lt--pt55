@@ -3,7 +3,7 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 """
 from datetime import datetime
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import Courtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile
+from api.models import Courtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash
@@ -660,6 +660,108 @@ def delete_deadline(deadline_id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
+# -----------------ROUTES PARA DOCUMENTS--------------------------------------------
+
+@api.route('/documents', methods=['GET'])
+def get_documents():
+    try:
+        documents = Document.query.all()
+        return jsonify([document.serialize() for document in documents]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/documents/<int:document_id>', methods=['GET'])
+def get_document(document_id):
+    try:
+        document = Document.query.get_or_404(document_id)
+        return jsonify(document.serialize()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
+
+
+@api.route('/documents', methods=['POST'])
+def create_document():
+    try:
+        data = request.get_json()
+
+        required_fields = ['name', 'type', 'url_route']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Required field: {field}'}), 400
+
+        existing = Document.query.filter_by(
+            url_route=data['url_route']).first()
+        if existing:
+            return jsonify({'error': 'URL route already exists'}), 409
+
+        document = Document(
+            name=data['name'],
+            type=data['type'],
+            url_route=data['url_route'],
+            description=data.get('description'),
+            category=data.get('category')
+        )
+
+        db.session.add(document)
+        db.session.commit()
+
+        return jsonify(document.serialize()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/documents/<int:document_id>', methods=['PUT'])
+def update_document(document_id):
+    try:
+        document = Document.query.get_or_404(document_id)
+        data = request.get_json()
+
+        if 'name' in data:
+            document.name = data['name']
+
+        if 'type' in data:
+            document.type = data['type']
+
+        if 'url_route' in data:
+            if data['url_route'] != document.url_route:
+                existing = Document.query.filter_by(
+                    url_route=data['url_route']).first()
+                if existing:
+                    return jsonify({'error': 'URL route already exists'}), 409
+            document.url_route = data['url_route']
+
+        if 'description' in data:
+            document.description = data['description']
+
+        if 'category' in data:
+            document.category = data['category']
+
+        db.session.commit()
+
+        return jsonify(document.serialize()), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/documents/<int:document_id>', methods=['DELETE'])
+def delete_document(document_id):
+    try:
+        document = Document.query.get_or_404(document_id)
+
+        db.session.delete(document)
+        db.session.commit()
+
+        return jsonify({'message': 'Document succesfully deleted'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 # -----------------ROUTES PARA CLIENTS-COURTFILES--------------------------------------------
 @api.route('/clients-courtfiles', methods=['GET'])
