@@ -30,6 +30,11 @@ import { ViewClient } from "./pages/ViewClient";
 import { EditClient } from "./pages/EditClient";
 import { AddClient } from "./pages/AddClient";
 
+import { Appointments } from "./pages/Appointments";
+import { ViewAppointment } from "./pages/ViewAppointment";
+import { EditAppointment } from "./pages/EditAppointment";
+import { AddAppointment } from "./pages/AddAppointment";
+
 export const router = createBrowserRouter(
   createRoutesFromElements(
     // CreateRoutesFromElements function allows you to build route elements declaratively.
@@ -65,6 +70,11 @@ export const router = createBrowserRouter(
       <Route path="/admins/view/:adminId" element={<ViewAdmin />} />
       <Route path="/admins/addAdmin" element={<AddAdmin />} />
       <Route path="/admins/:adminId" element={<EditAdmin />} />
+
+      <Route path="/appointments" element={<Appointments />} />
+      <Route path="/appointments/view/:appointmentId" element={<ViewAppointment />} />
+      <Route path="/appointments/addAppointment" element={<AddAppointment />} />
+      <Route path="/appointments/:appointmentId" element={<EditAppointment />} />
 
     </Route>
   )
