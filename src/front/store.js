@@ -110,18 +110,18 @@ export default function storeReducer(store, action = {}) {
     
     case "SET_APPOINTMENTS":
       return { ...store, appointments: action.payload };
-    case "ADD_LAWYER":
+    case "ADD_APPOINTMENT":
       return { ...store, appointments: [...store.appointments, action.payload] };
-    case "DELETE_LAWYER":
+    case "DELETE_APPOINTMENT":
       return {
         ...store,
-        appointments: store.appointments.filter((cf) => cf.id !== action.payload),
+        appointments: store.appointments.filter((ap) => ap.id !== action.payload),
       };
-    case "UPDATE_LAWYER":
+    case "UPDATE_APPOINTMENT":
       return {
         ...store,
-        appointments: store.appointments.map((cf) =>
-          cf.id === action.payload.id ? action.payload : cf
+        appointments: store.appointments.map((ap) =>
+          ap.id === action.payload.id ? action.payload : ap
         ),
       };
 
