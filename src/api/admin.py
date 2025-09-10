@@ -1,7 +1,7 @@
   
 import os
 from flask_admin import Admin
-from .models import db, Lawyer, Courtfile, Client, AdminUser, Deadlines, ClientCourtfile, LawyerCourtfile
+from .models import db, Lawyer, Courtfile, Client, AdminUser, Deadlines, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile
 from flask_admin.contrib.sqla import ModelView
 
 class ClientCourtfileView(ModelView):
@@ -32,6 +32,26 @@ class ClientCourtfileView(ModelView):
         'courtfile': _format_courtfile
     }
 
+
+class DeadlineCourtfileView(ModelView):
+    column_list = ['id', 'deadlines', 'courtfile']
+    column_auto_select_related = True
+          
+    def _format_deadline(self, context, model, name):
+        if model.deadlines:
+            return f"{model.deadlines.deadline_type} ({model.deadlines.priority}) - {model.deadlines.deadline_date}"
+        return "N/A"
+    
+    def _format_courtfile(self, context, model, name):
+        if model.courtfile:
+            return model.courtfile.case_number
+        return "N/A"
+
+    column_formatters = {
+        'deadlines': _format_deadline,
+        'courtfile': _format_courtfile
+    }
+    
 class LawyerCourtfileView(ModelView):
     column_list = ['id', 'lawyer', 'courtfile']
 
@@ -75,6 +95,7 @@ def setup_admin(app):
     admin.add_view(ModelView(AdminUser, db.session))
     admin.add_view(ModelView(Deadlines, db.session))
     admin.add_view(ClientCourtfileView(ClientCourtfile, db.session))
+    admin.add_view(DeadlineCourtfileView(DeadlineCourtfile, db.session))
     admin.add_view(LawyerCourtfileView(LawyerCourtfile, db.session))
 
 

@@ -51,9 +51,7 @@ class Client(db.Model):
     phone: Mapped[str] = mapped_column(String(30), nullable=True)
     password: Mapped[str] = mapped_column(String(500), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True, nullable=False)
-    
-    courtfiles: Mapped[List["ClientCourtfile"]] = relationship(back_populates="client")
-    
+    courtfiles: Mapped[List["ClientCourtfile"]] = relationship(back_populates="client")    
 
     @validates("password")
     def _hash_password(self, key, value):
@@ -112,6 +110,7 @@ class Courtfile(db.Model):
     status: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
     clients: Mapped[List["ClientCourtfile"]] = relationship(back_populates="courtfile")
+    deadlines: Mapped[List["DeadlineCourtfile"]] = relationship(back_populates="courtfile")
     lawyers: Mapped[List["LawyerCourtfile"]] = relationship(back_populates="courtfile")
 
     def __str__(self):   
@@ -137,6 +136,11 @@ class Deadlines(db.Model):
     deadline_hour: Mapped[time] = mapped_column(Time, nullable=False)
     priority: Mapped[str] = mapped_column(String(120), nullable=False)
 
+    courtfiles: Mapped[List["DeadlineCourtfile"]] = relationship(back_populates="deadlines")
+
+    def __str__(self):  
+        return f"{self.deadline_type} ({self.priority}) - {self.deadline_date}"
+
     def serialize(self):
         return {
             "id": self.id,
@@ -158,6 +162,18 @@ class ClientCourtfile(db.Model):
     courtfile: Mapped["Courtfile"] = relationship(back_populates="clients")
 
 
+class DeadlineCourtfile(db.Model):
+    __tablename__ = 'deadline_courtfile'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    deadline_id: Mapped[int] = mapped_column(ForeignKey("deadlines.id"), nullable=False, index=True)
+    deadlines: Mapped["Deadlines"] = relationship(back_populates="courtfiles")
+
+    courtfile_id: Mapped[int] = mapped_column(ForeignKey("courtfile.id"), nullable=False, index=True)
+    courtfile: Mapped["Courtfile"] = relationship(back_populates="deadlines")
+
+
 class LawyerCourtfile(db.Model):
     __tablename__ = 'lawyer_courtfile'
 
@@ -168,4 +184,5 @@ class LawyerCourtfile(db.Model):
 
     courtfile_id: Mapped[int] = mapped_column(ForeignKey("courtfile.id"), nullable=False, index=True)
     courtfile: Mapped["Courtfile"] = relationship(back_populates="lawyers")
+
 
