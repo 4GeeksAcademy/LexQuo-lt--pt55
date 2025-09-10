@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean, Text
-from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy.orm import Mapped, mapped_column, validates  
+from sqlalchemy import String, Boolean, Text, Date, Time, DateTime
+from datetime import datetime
+from sqlalchemy.orm import Mapped, mapped_column, validates
 from werkzeug.security import generate_password_hash
 
 
@@ -103,4 +103,29 @@ class Courtfile(db.Model):
             "jurisdiction": self.jurisdiction,
             "court": self.court,
             "status": self.status,
+        }
+
+
+class Appointment(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    date: Mapped[Date] = mapped_column(Date, nullable=False)
+    location: Mapped[str] = mapped_column(String(500), nullable=True)
+    starts_at: Mapped[Time] = mapped_column(Time, nullable=False)
+    ends_at: Mapped[Time] = mapped_column(Time, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    def serialize(self):
+        date_str = self.date.strftime('%Y-%m-%d')
+        starts_str = self.starts_at.strftime('%H:%M')
+        ends_str = self.ends_at.strftime('%H:%M')
+        
+        return {
+            "id": self.id,
+            "title": self.title,
+            "date": date_str,
+            "location": self.location,
+            "starts_at": starts_str,
+            "ends_at": ends_str,
+            "created_at": self.created_at.isoformat()
         }
