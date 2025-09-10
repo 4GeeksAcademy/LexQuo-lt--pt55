@@ -3,7 +3,7 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 """
 from datetime import datetime
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import Courtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile
+from api.models import Courtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash
@@ -861,6 +861,80 @@ def create_deadline_courtfile():
 def delete_deadline_courtfile(id):
     try:
         relation = DeadlineCourtfile.query.get(id)
+        if not relation:
+            return jsonify({'error': 'Relationship not found'}), 404
+
+        db.session.delete(relation)
+        db.session.commit()
+
+        return jsonify({'message': 'Relationship deleted successfully'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# -----------------ROUTES PARA APPOINTMENTS-COURTFILES--------------------------------------------
+@api.route('/appointments-courtfiles', methods=['GET'])
+def get_appointments_courtfiles():
+    try:
+        appointments_courtfiles = AppointmentCourtfile.query.all()
+        return jsonify([{
+            'id': ac.id,
+            'appointment_id': ac.appointment_id,
+            'courtfile_id': ac.courtfile_id,
+            'appointment_title': ac.appointment.title,
+            'appointment_date': ac.appointment.date.isoformat(),
+            'appointment_location': ac.appointment.location,
+            'starts_at': ac.appointment.starts_at.strftime('%H:%M'),
+            'ends_at': ac.appointment.ends_at.strftime('%H:%M'),
+            'courtfile_number': ac.courtfile.case_number,
+            'courtfile_title': ac.courtfile.title
+        } for ac in appointments_courtfiles]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/appointments-courtfiles', methods=['POST'])
+def create_appointment_courtfile():
+    try:
+        data = request.get_json()
+
+        appointment = Appointment.query.get(data['appointment_id'])
+        courtfile = Courtfile.query.get(data['courtfile_id'])
+
+        if not appointment or not courtfile:
+            return jsonify({'error': 'Appointment or Courtfile not found'}), 404
+
+        existing = AppointmentCourtfile.query.filter_by(
+            appointment_id=data['appointment_id'],
+            courtfile_id=data['courtfile_id']
+        ).first()
+
+        if existing:
+            return jsonify({'error': 'Relationship already exists'}), 400
+
+        new_relation = AppointmentCourtfile(
+            appointment_id=data['appointment_id'],
+            courtfile_id=data['courtfile_id']
+        )
+
+        db.session.add(new_relation)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Relationship created successfully',
+            'id': new_relation.id
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/appointments-courtfiles/<int:id>', methods=['DELETE'])
+def delete_appointment_courtfile(id):
+    try:
+        relation = AppointmentCourtfile.query.get(id)
         if not relation:
             return jsonify({'error': 'Relationship not found'}), 404
 

@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 084a61f59f33
+Revision ID: 5e6385ac366e
 Revises: 
-Create Date: 2025-09-10 08:00:17.493295
+Create Date: 2025-09-10 17:42:15.111679
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '084a61f59f33'
+revision = '5e6385ac366e'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -79,6 +79,18 @@ def upgrade():
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
     )
+    op.create_table('appointment_courtfile',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('appointment_id', sa.Integer(), nullable=False),
+    sa.Column('courtfile_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['appointment_id'], ['appointment.id'], ),
+    sa.ForeignKeyConstraint(['courtfile_id'], ['courtfile.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('appointment_courtfile', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_appointment_courtfile_appointment_id'), ['appointment_id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_appointment_courtfile_courtfile_id'), ['courtfile_id'], unique=False)
+
     op.create_table('client_courtfile',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('client_id', sa.Integer(), nullable=False),
@@ -135,6 +147,11 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_client_courtfile_client_id'))
 
     op.drop_table('client_courtfile')
+    with op.batch_alter_table('appointment_courtfile', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_appointment_courtfile_courtfile_id'))
+        batch_op.drop_index(batch_op.f('ix_appointment_courtfile_appointment_id'))
+
+    op.drop_table('appointment_courtfile')
     op.drop_table('lawyer')
     op.drop_table('deadlines')
     op.drop_table('courtfile')

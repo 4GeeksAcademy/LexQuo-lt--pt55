@@ -49,6 +49,10 @@ import { AddDeadlinesCourtfiles } from "./pages/AddDeadlinesCourtfiles";
 import { LawyersCourtfiles } from "./pages/LawyersCourtfiles";
 import { AddLawyersCourtfiles } from "./pages/AddLawyersCourtfiles";
 
+import { AppointmentsCourtfiles } from "./pages/AppointmentsCourtfiles";
+import { AddAppointmentsCourtfiles } from "./pages/AddAppointmentsCourtfiles";
+
+
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -104,6 +108,9 @@ export const router = createBrowserRouter(
 
       <Route path="/LawyersCourtfiles" element={<LawyersCourtfiles />} />
       <Route path="/AddLawyersCourtfiles" element={<AddLawyersCourtfiles />} />
+
+      <Route path="/AppointmentsCourtfiles" element={<AppointmentsCourtfiles />} />
+      <Route path="/AddAppointmentsCourtfiles" element={<AddAppointmentsCourtfiles />} />
 
     </Route>
   )

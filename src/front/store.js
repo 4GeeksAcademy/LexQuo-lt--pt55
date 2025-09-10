@@ -1,14 +1,17 @@
 export const initialStore = () => {
   return {
     message: null,
+    todos: [],
     courtfiles: [],
     lawyers: [],
     clients: [],
     admins: [],
     deadlines: [],
+    appointments: [],
     clientsCourtfiles: [],
-    todos: [],
-    appointments: []
+    deadlinesCourtfiles: [],
+    lawyersCourtfiles: [],
+    appointmentssCourtfiles: []
   };
 };
 
@@ -187,6 +190,20 @@ export default function storeReducer(store, action = {}) {
       return {
         ...store,
         lawyersCourtfiles: store.lawyersCourtfiles.filter((cc) => cc.id !== action.payload),
+      };
+
+    /* APPOINTMENTS–COURTFILES */
+
+    case "SET_APPOINTMENT_COURTFILES":
+      return { ...store, appointmentsCourtfiles: action.payload };
+
+    case "ADD_APPOINTMENT_COURTFILE":
+      return { ...store, appointmentsCourtfiles: [...store.appointmentsCourtfiles, action.payload] };
+
+    case "DELETE_APPOINTMENT_COURTFILE":
+      return {
+        ...store,
+        appointmentsCourtfiles: store.appointmentsCourtfiles.filter((cc) => cc.id !== action.payload),
       };
 
 
