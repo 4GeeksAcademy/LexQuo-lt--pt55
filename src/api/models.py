@@ -20,11 +20,16 @@ class Lawyer(db.Model):
     is_active: Mapped[bool] = mapped_column(
         Boolean(), default=True, nullable=False)
 
+    courtfiles: Mapped[List["LawyerCourtfile"]] = relationship(back_populates="lawyer")
+
     @validates("password")
     def _hash_password(self, key, value):
         if value and not str(value).startswith(("pbkdf2:", "scrypt:")):
             return generate_password_hash(value)
         return value
+    
+    def __str__(self):  
+        return f"{self.firstname} {self.lastname}"
 
     def serialize(self):
         return {
@@ -46,6 +51,7 @@ class Client(db.Model):
     phone: Mapped[str] = mapped_column(String(30), nullable=True)
     password: Mapped[str] = mapped_column(String(500), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True, nullable=False)
+    
     courtfiles: Mapped[List["ClientCourtfile"]] = relationship(back_populates="client")
     
 
@@ -106,6 +112,7 @@ class Courtfile(db.Model):
     status: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
     clients: Mapped[List["ClientCourtfile"]] = relationship(back_populates="courtfile")
+    lawyers: Mapped[List["LawyerCourtfile"]] = relationship(back_populates="courtfile")
 
     def __str__(self):   
         return self.case_number
@@ -149,4 +156,16 @@ class ClientCourtfile(db.Model):
 
     courtfile_id: Mapped[int] = mapped_column(ForeignKey("courtfile.id"), nullable=False, index=True)
     courtfile: Mapped["Courtfile"] = relationship(back_populates="clients")
+
+
+class LawyerCourtfile(db.Model):
+    __tablename__ = 'lawyer_courtfile'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    lawyer_id: Mapped[int] = mapped_column(ForeignKey("lawyer.id"), nullable=False, index=True)
+    lawyer: Mapped["Lawyer"] = relationship(back_populates="courtfiles")
+
+    courtfile_id: Mapped[int] = mapped_column(ForeignKey("courtfile.id"), nullable=False, index=True)
+    courtfile: Mapped["Courtfile"] = relationship(back_populates="lawyers")
 

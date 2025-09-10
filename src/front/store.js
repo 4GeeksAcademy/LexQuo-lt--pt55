@@ -126,6 +126,7 @@ export default function storeReducer(store, action = {}) {
           dl.id === action.payload.id ? action.payload : dl
         ),
       };
+    
     /* CLIENT–COURTFILES */
 
     case "SET_CLIENT_COURTFILES":
@@ -139,6 +140,21 @@ export default function storeReducer(store, action = {}) {
         ...store,
         clientsCourtfiles: store.clientsCourtfiles.filter((cc) => cc.id !== action.payload),
       };
+
+    /* LAWYER–COURTFILES */
+
+    case "SET_LAWYER_COURTFILES":
+      return { ...store, lawyersCourtfiles: action.payload };
+
+    case "ADD_LAWYER_COURTFILE":
+      return { ...store, lawyersCourtfiles: [...store.lawyersCourtfiles, action.payload] };
+
+    case "DELETE_LAWYER_COURTFILE":
+      return {
+        ...store,
+        lawyersCourtfiles: store.lawyersCourtfiles.filter((cc) => cc.id !== action.payload),
+      };
+
 
     default:
       throw Error("Unknown action.");

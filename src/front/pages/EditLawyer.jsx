@@ -43,7 +43,6 @@ export const EditLawyer = () => {
         }
     };
 
-    // Cargar los datos del lawyer al montar el componente
 
     useEffect(() => {
         fetchLawyer();
@@ -74,13 +73,11 @@ export const EditLawyer = () => {
             if (response.ok) {
                 const updatedLawyer = await response.json();
 
-                // Actualizar en el estado global
                 dispatch({
                     type: 'UPDATE_LAWYER',
                     payload: updatedLawyer
                 });
 
-                // Redirigir a la lista de Lawyers
                 navigate(`/lawyers/view/${lawyerId}`);
 
                 alert('Lawyer updated successfully!');

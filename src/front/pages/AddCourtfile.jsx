@@ -7,7 +7,6 @@ export const AddCourtfile = () => {
     const navigate = useNavigate();
     const API = import.meta.env.VITE_BACKEND_URL;
 
-    // Estado inicial del formulario
     const [formData, setFormData] = useState({
         case_number: '',
         title: '',
