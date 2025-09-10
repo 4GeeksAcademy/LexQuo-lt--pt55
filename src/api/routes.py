@@ -3,10 +3,12 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 """
 from datetime import datetime
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import Courtfile, db, Lawyer, Client, AdminUser, Deadlines, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile
+from api.models import Courtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash
+
+from api.validators import parse_iso_date, parse_24h_time, is_valid_24h_time, validate_required_fields, validate_time_order, create_error_response
 
 api = Blueprint('api', __name__)
 
@@ -211,8 +213,7 @@ def update_lawyer(lawyer_id):
             lawyer.is_active = bool(data['is_active'])
 
         if 'password' in data:
-            lawyer.password = generate_password_hash(data['password']) 
-        
+            lawyer.password = generate_password_hash(data['password'])
 
         db.session.commit()
 
@@ -271,7 +272,6 @@ def create_client():
         if existing:
             return jsonify({'error': 'Email already exists'}), 409
 
-
         client = Client(
             firstname=data['firstname'],
             lastname=data['lastname'],
@@ -308,7 +308,7 @@ def update_client(client_id):
 
         if 'lastname' in data:
             client.lastname = data['lastname']
-        
+
         if 'phone' in data:
             client.phone = data['phone']
 
@@ -401,7 +401,8 @@ def update_admin(admin_id):
 
         if 'email' in data:
             if data['email'] != admin.email:
-                existing = AdminUser.query.filter_by(email=data['email']).first()
+                existing = AdminUser.query.filter_by(
+                    email=data['email']).first()
                 if existing:
                     return jsonify({'error': 'Email already exists'}), 409
             admin.email = data['email']
@@ -442,6 +443,121 @@ def delete_admin(admin_id):
         return jsonify({'error': str(e)}), 500
 
 
+# -----------------ROUTES PARA APPOINTMENTS--------------------------------------------
+
+@api.route('/appointments', methods=['GET'])
+def get_appointments():
+    appointments = Appointment.query.order_by(
+        Appointment.date, Appointment.starts_at).all()
+    return jsonify([appt.serialize() for appt in appointments])
+
+
+@api.route('/appointments/<int:appointment_id>', methods=['GET'])
+def get_appointment(appointment_id):
+    appointment = Appointment.query.get_or_404(appointment_id)
+    return jsonify(appointment.serialize()), 200
+
+@api.route('/appointments', methods=['POST'])
+def create_appointment():
+    try:
+        data = request.get_json()
+        
+        required_fields = ['title', 'date', 'starts_at', 'location', 'ends_at']
+        missing_fields = validate_required_fields(data, required_fields)
+
+        if missing_fields:
+            return create_error_response(
+                f'Required fields are missing: {", ".join(missing_fields)}'
+            )
+            
+        appointment_date = parse_iso_date(data['date'])
+        if not appointment_date:
+            return create_error_response(
+                'Invalid date format. Use YYYY-MM-DD (e.g., 2024-01-15)'
+            )
+            
+        if not is_valid_24h_time(data['starts_at']):
+            return create_error_response(
+                'Invalid start time format. Use HH:MM in 24h format (e.g., 09:30 or 14:45)'
+            )
+            
+        if not is_valid_24h_time(data['ends_at']):
+            return create_error_response(
+                'Invalid end time format. Use HH:MM in 24h format (e.g., 09:30 or 14:45)'
+            )
+            
+        start_time = parse_24h_time(data['starts_at'])
+        end_time = parse_24h_time(data['ends_at'])
+            
+        if not validate_time_order(start_time, end_time):
+            return create_error_response(
+                'Start time must be before end time'
+            )
+        
+        new_appointment = Appointment(
+            title=data['title'].strip(),
+            date=appointment_date,
+            location=data.get('location', '').strip(),
+            starts_at=start_time,
+            ends_at=end_time
+        )
+        
+        db.session.add(new_appointment)
+        db.session.commit()
+        
+        return jsonify(new_appointment.serialize()), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return create_error_response(f'Error interno del servidor: {str(e)}', 500)
+
+
+@api.route('/appointments/<int:id>', methods=['PUT'])
+def update_appointment(id):
+    try:
+        appointment = Appointment.query.get_or_404(id)
+        data = request.get_json()
+        
+        if 'title' in data:
+            appointment.title = data['title'].strip()
+        
+        if 'date' in data:
+            appointment_date = parse_iso_date(data['date'])
+            if not appointment_date:
+                return create_error_response('Invalid date format. Use YYYY-MM-DD')
+            appointment.date = appointment_date
+            
+        if 'starts_at' in data:
+            if not is_valid_24h_time(data['starts_at']):
+                return create_error_response('Invalid start time format')
+            appointment.starts_at = parse_24h_time(data['starts_at'])
+            
+        if 'ends_at' in data:
+            if not is_valid_24h_time(data['ends_at']):
+                return create_error_response('Invalid end time format')
+            appointment.ends_at = parse_24h_time(data['ends_at'])
+            
+        if 'location' in data:
+            appointment.location = data['location'].strip()
+            
+        if not validate_time_order(appointment.starts_at, appointment.ends_at):
+            return create_error_response('Start time must be before end time')
+            
+        db.session.commit()
+            
+        return jsonify(appointment.serialize())
+        
+    except Exception as e:
+        db.session.rollback()
+        return create_error_response(f'Server error: {str(e)}', 500)
+
+
+@api.route('/appointments/<int:id>', methods=['DELETE'])
+def delete_appointment(id):
+    appointment = Appointment.query.get_or_404(id)
+    db.session.delete(appointment)
+    db.session.commit()
+    return jsonify({'message': 'Appointment eliminado exitosamente'})
 # -----------------ROUTES PARA DEADLINES--------------------------------------------
 
 @api.route('/deadlines', methods=['GET'])
@@ -478,7 +594,6 @@ def create_deadline():
         
         deadline_hour = data['deadline_hour']
         if isinstance(deadline_hour, str):
-            # Cambiar a formato %H:%M para solo horas y minutos
             deadline_hour = datetime.strptime(deadline_hour, '%H:%M').time()
 
         deadline = Deadlines(

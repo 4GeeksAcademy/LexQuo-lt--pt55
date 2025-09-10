@@ -8,6 +8,7 @@ export const initialStore = () => {
     deadlines: [],
     clientsCourtfiles: [],
     todos: [],
+    appointments: []
   };
 };
 
@@ -102,6 +103,25 @@ export default function storeReducer(store, action = {}) {
         ...store,
         admins: store.admins.map((ad) =>
           ad.id === action.payload.id ? action.payload : ad
+        ),
+      };
+
+      /* APPOINTMENTS */
+    
+    case "SET_APPOINTMENTS":
+      return { ...store, appointments: action.payload };
+    case "ADD_APPOINTMENT":
+      return { ...store, appointments: [...store.appointments, action.payload] };
+    case "DELETE_APPOINTMENT":
+      return {
+        ...store,
+        appointments: store.appointments.filter((ap) => ap.id !== action.payload),
+      };
+    case "UPDATE_APPOINTMENT":
+      return {
+        ...store,
+        appointments: store.appointments.map((ap) =>
+          ap.id === action.payload.id ? action.payload : ap
         ),
       };
 

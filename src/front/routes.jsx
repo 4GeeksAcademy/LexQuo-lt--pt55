@@ -1,10 +1,10 @@
 // Import necessary components and functions from react-router-dom.
-
 import {
   createBrowserRouter,
   createRoutesFromElements,
   Route,
 } from "react-router-dom";
+
 import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
 import { Single } from "./pages/Single";
@@ -35,6 +35,11 @@ import { ViewDeadline } from "./pages/ViewDeadline";
 import { EditDeadline } from "./pages/EditDeadline";
 import { AddDeadline } from "./pages/AddDeadline";
 
+import { Appointments } from "./pages/Appointments";
+import { ViewAppointment } from "./pages/ViewAppointment";
+import { EditAppointment } from "./pages/EditAppointment";
+import { AddAppointment } from "./pages/AddAppointment";
+
 import { ClientsCourtfiles } from "./pages/ClientsCourtfiles";
 import { AddClientsCourtfiles } from "./pages/AddClientsCourtfiles";
 
@@ -62,29 +67,34 @@ export const router = createBrowserRouter(
       <Route path="/demo" element={<Demo />} />
 
       <Route path="/courtfiles" element={<Courtfiles />} />
-      <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} />
       <Route path="/courtfiles/addcourtfile" element={<AddCourtfile />} />
+      <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} />
       <Route path="/courtfiles/:courtfileId" element={<EditCourtfile />} />
 
       <Route path="/lawyers" element={<Lawyers />} />
-      <Route path="/lawyers/view/:lawyerId" element={<ViewLawyer />} />
       <Route path="/lawyers/addLawyer" element={<AddLawyer />} />
+      <Route path="/lawyers/view/:lawyerId" element={<ViewLawyer />} />
       <Route path="/lawyers/:lawyerId" element={<EditLawyer />} />
 
       <Route path="/clients" element={<Clients />} />
-      <Route path="/clients/view/:clientId" element={<ViewClient />} />
       <Route path="/clients/addClient" element={<AddClient />} />
+      <Route path="/clients/view/:clientId" element={<ViewClient />} />
       <Route path="/clients/:clientId" element={<EditClient />} />
 
       <Route path="/admins" element={<Admins />} />
-      <Route path="/admins/view/:adminId" element={<ViewAdmin />} />
       <Route path="/admins/addAdmin" element={<AddAdmin />} />
+      <Route path="/admins/view/:adminId" element={<ViewAdmin />} />
       <Route path="/admins/:adminId" element={<EditAdmin />} />
 
       <Route path="/deadlines" element={<Deadlines />} />
-      <Route path="/deadlines/view/:deadlineId" element={<ViewDeadline />} />
       <Route path="/deadlines/addDeadline" element={<AddDeadline />} />
+      <Route path="/deadlines/view/:deadlineId" element={<ViewDeadline />} />
       <Route path="/deadlines/:deadlineId" element={<EditDeadline />} />
+
+      <Route path="/appointments" element={<Appointments />} />
+      <Route path="/appointments/addAppointment" element={<AddAppointment />} />
+      <Route path="/appointments/view/:appointmentId" element={<ViewAppointment />} />
+      <Route path="/appointments/:appointmentId" element={<EditAppointment />} />
 
       <Route path="/ClientsCourtfiles" element={<ClientsCourtfiles />} />
       <Route path="/AddClientsCourtfiles" element={<AddClientsCourtfiles />} />
@@ -94,7 +104,6 @@ export const router = createBrowserRouter(
 
       <Route path="/LawyersCourtfiles" element={<LawyersCourtfiles />} />
       <Route path="/AddLawyersCourtfiles" element={<AddLawyersCourtfiles />} />
-
 
     </Route>
   )
