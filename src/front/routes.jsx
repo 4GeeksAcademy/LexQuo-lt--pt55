@@ -10,52 +10,52 @@ import { Home } from "./pages/Home";
 import { Single } from "./pages/Single";
 import { Demo } from "./pages/Demo";
 
-import { Courtfiles } from "./pages/Courtfiles";
-import { ViewCourtfile } from "./pages/ViewCourtfile";
-import { EditCourtfile } from "./pages/EditCourtfile";
-import { AddCourtfile } from "./pages/AddCourtfile";
+import { Courtfiles } from "./pages/Courtfile/Courtfiles";
+import { ViewCourtfile } from "./pages/Courtfile/ViewCourtfile";
+import { EditCourtfile } from "./pages/Courtfile/EditCourtfile";
+import { AddCourtfile } from "./pages/Courtfile/AddCourtfile";
 
-import { Lawyers } from "./pages/Lawyers";
-import { ViewLawyer } from "./pages/ViewLawyer";
-import { EditLawyer } from "./pages/EditLawyer";
-import { AddLawyer } from "./pages/AddLawyer";
+import { Lawyers } from "./pages/Lawyer/Lawyers";
+import { ViewLawyer } from "./pages/Lawyer/ViewLawyer";
+import { EditLawyer } from "./pages/Lawyer/EditLawyer";
+import { AddLawyer } from "./pages/Lawyer/AddLawyer";
 
-import { Admins } from "./pages/Admins";
-import { ViewAdmin } from "./pages/ViewAdmin";
-import { EditAdmin } from "./pages/EditAdmin";
-import { AddAdmin } from "./pages/AddAdmin";
+import { Admins } from "./pages/AdminUser/Admins";
+import { ViewAdmin } from "./pages/AdminUser/ViewAdmin";
+import { EditAdmin } from "./pages/AdminUser/EditAdmin";
+import { AddAdmin } from "./pages/AdminUser/AddAdmin";
 
-import { Clients } from "./pages/Clients";
-import { ViewClient } from "./pages/ViewClient";
-import { EditClient } from "./pages/EditClient";
-import { AddClient } from "./pages/AddClient";
+import { Clients } from "./pages/Client/Clients";
+import { ViewClient } from "./pages/Client/ViewClient";
+import { EditClient } from "./pages/Client/EditClient";
+import { AddClient } from "./pages/Client/AddClient";
 
-import { Deadlines } from "./pages/Deadlines";
-import { ViewDeadline } from "./pages/ViewDeadline";
-import { EditDeadline } from "./pages/EditDeadline";
-import { AddDeadline } from "./pages/AddDeadline";
+import { Deadlines } from "./pages/Deadline/Deadlines";
+import { ViewDeadline } from "./pages/Deadline/ViewDeadline";
+import { EditDeadline } from "./pages/Deadline/EditDeadline";
+import { AddDeadline } from "./pages/Deadline/AddDeadline";
 
-import { Appointments } from "./pages/Appointments";
-import { ViewAppointment } from "./pages/ViewAppointment";
-import { EditAppointment } from "./pages/EditAppointment";
-import { AddAppointment } from "./pages/AddAppointment";
+import { Appointments } from "./pages/Appointment/Appointments";
+import { ViewAppointment } from "./pages/Appointment/ViewAppointment";
+import { EditAppointment } from "./pages/Appointment/EditAppointment";
+import { AddAppointment } from "./pages/Appointment/AddAppointment";
 
-import { Documents } from "./pages/Documents";
-import { ViewDocument } from "./pages/ViewDocument";
-import { EditDocument } from "./pages/EditDocument";
-import { AddDocument } from "./pages/AddDocument";
+import { Documents } from "./pages/Document/Documents";
+import { ViewDocument } from "./pages/Document/ViewDocument";
+import { EditDocument } from "./pages/Document/EditDocument";
+import { AddDocument } from "./pages/Document/AddDocument";
 
-import { ClientsCourtfiles } from "./pages/ClientsCourtfiles";
-import { AddClientsCourtfiles } from "./pages/AddClientsCourtfiles";
+import { ClientsCourtfiles } from "./pages/Relations/ClientsCourtfiles";
+import { AddClientsCourtfiles } from "./pages/Relations/AddClientsCourtfiles";
 
-import { DeadlinesCourtfiles } from "./pages/DeadlinesCourtfiles";
-import { AddDeadlinesCourtfiles } from "./pages/AddDeadlinesCourtfiles";
+import { DeadlinesCourtfiles } from "./pages/Relations/DeadlinesCourtfiles";
+import { AddDeadlinesCourtfiles } from "./pages/Relations/AddDeadlinesCourtfiles";
 
-import { LawyersCourtfiles } from "./pages/LawyersCourtfiles";
-import { AddLawyersCourtfiles } from "./pages/AddLawyersCourtfiles";
+import { LawyersCourtfiles } from "./pages/Relations/LawyersCourtfiles";
+import { AddLawyersCourtfiles } from "./pages/Relations/AddLawyersCourtfiles";
 
-import { AppointmentsCourtfiles } from "./pages/AppointmentsCourtfiles";
-import { AddAppointmentsCourtfiles } from "./pages/AddAppointmentsCourtfiles";
+import { AppointmentsCourtfiles } from "./pages/Relations/AppointmentsCourtfiles";
+import { AddAppointmentsCourtfiles } from "./pages/Relations/AddAppointmentsCourtfiles";
 
 
 
@@ -109,7 +109,7 @@ export const router = createBrowserRouter(
       <Route path="/documents/addDocument" element={<AddDocument />} />
       <Route path="/documents/view/:documentId" element={<ViewDocument />} />
       <Route path="/documents/:documentId" element={<EditDocument />} />
-      
+
       <Route path="/ClientsCourtfiles" element={<ClientsCourtfiles />} />
       <Route path="/AddClientsCourtfiles" element={<AddClientsCourtfiles />} />
 

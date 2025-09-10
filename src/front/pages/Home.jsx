@@ -74,6 +74,10 @@ export const Home = () => {
 				</Link>
 			</div>
 
+			<div className="container mt-5">
+				<h1>LOGIN</h1>
+			</div>
+
 			<p className="lead">
 				<img src={justiceImage} className="img-fluid mb-3" alt="Rigo Baby" />
 			</p>
