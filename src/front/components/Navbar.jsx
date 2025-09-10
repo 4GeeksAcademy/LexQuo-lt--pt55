@@ -19,7 +19,10 @@ export const Navbar = () => {
 						<button className="btn btn-light me-2">Admins</button>
 					</Link>
 					<Link to="/clients">
-						<button className="btn btn-light">Clients</button>
+						<button className="btn btn-light me-2">Clients</button>
+					</Link>
+					<Link to="/appointments">
+						<button className="btn btn-light me-2">Appointments</button>
 					</Link>
 				</div>
 			</div>
