@@ -9,10 +9,10 @@ export const Appointments = () => {
 
     const fetchAppointments = async () => {
         try {
-            const response = await fetch(`${API}/api/lawyers`);
+            const response = await fetch(`${API}/api/appointments`);
             if (response.ok) {
                 const data = await response.json();
-                dispatch({ type: 'SET_APPOINTMENT', payload: data });
+                dispatch({ type: 'SET_APPOINTMENTS', payload: data });
             } else {
                 console.error("Error fetching appointments");
             }
@@ -60,7 +60,7 @@ export const Appointments = () => {
                 <i className="bi bi-plus-circle"></i> New Appointment
             </Link>
 
-            {store.lawyers && store.appointments.length > 0 ? (
+            {store.appointments && store.appointments.length > 0 ? (
                 <div className="table-responsive">
                     <table className="table table-striped table-hover">
                         <thead className="table-dark">
@@ -95,7 +95,7 @@ export const Appointments = () => {
                                             <i className="bi bi-eye"></i>
                                         </Link>
                                         <Link
-                                            to={`/lawyers/${appointment.id}`}
+                                            to={`/appointments/${appointment.id}`}
                                             className="btn btn-sm btn-warning me-1"
                                             title="Edit"
                                         >
