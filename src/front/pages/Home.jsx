@@ -66,6 +66,9 @@ export const Home = () => {
 				<Link to="/LawyersCourtfiles">
 					<button className="btn btn-light me-2">Lawyers-Courtfiles</button>
 				</Link>
+				<Link to="/AppointmentsCourtfiles">
+					<button className="btn btn-light me-2">Appointments-Courtfiles</button>
+				</Link>
 			</div>
 
 			<p className="lead">

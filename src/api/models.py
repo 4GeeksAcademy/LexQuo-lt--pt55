@@ -113,6 +113,7 @@ class Courtfile(db.Model):
     clients: Mapped[List["ClientCourtfile"]] = relationship(back_populates="courtfile")
     deadlines: Mapped[List["DeadlineCourtfile"]] = relationship(back_populates="courtfile")
     lawyers: Mapped[List["LawyerCourtfile"]] = relationship(back_populates="courtfile")
+    appointment: Mapped[List["AppointmentCourtfile"]] = relationship(back_populates="courtfile")
 
     def __str__(self):   
         return self.case_number
@@ -137,6 +138,11 @@ class Appointment(db.Model):
     starts_at: Mapped[Time] = mapped_column(Time, nullable=False)
     ends_at: Mapped[Time] = mapped_column(Time, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    courtfiles: Mapped[List["AppointmentCourtfile"]] = relationship(back_populates="appointment")
+
+    def __str__(self):  
+        return f"{self.title} - {self.date}"
 
     def serialize(self):
         date_str = self.date.strftime('%Y-%m-%d')
@@ -210,3 +216,13 @@ class LawyerCourtfile(db.Model):
     courtfile: Mapped["Courtfile"] = relationship(back_populates="lawyers")
 
 
+class AppointmentCourtfile(db.Model):
+    __tablename__ = 'appointment_courtfile'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    appointment_id: Mapped[int] = mapped_column(ForeignKey("appointment.id"), nullable=False, index=True)
+    appointment: Mapped["Appointment"] = relationship(back_populates="courtfiles")
+
+    courtfile_id: Mapped[int] = mapped_column(ForeignKey("courtfile.id"), nullable=False, index=True)
+    courtfile: Mapped["Courtfile"] = relationship(back_populates="appointment")

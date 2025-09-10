@@ -1,7 +1,7 @@
 
 import os
 from flask_admin import Admin
-from .models import db, Lawyer, Courtfile, Client, AdminUser, Deadlines, Appointment, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile
+from .models import db, Lawyer, Courtfile, Client, AdminUser, Deadlines, Appointment, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile
 from flask_admin.contrib.sqla import ModelView
 
 class ClientCourtfileView(ModelView):
@@ -80,6 +80,24 @@ class LawyerCourtfileView(ModelView):
         'courtfile': _format_courtfile
     }
 
+class AppointmentCourtfileView(ModelView):
+    column_list = ['id', 'appointment', 'courtfile']
+    column_auto_select_related = True
+          
+    def _format_appointment(self, context, model, name):
+        if model.appointment:
+            return f"{model.appointment.title} - {model.appointment.date}"
+        return "N/A"
+    
+    def _format_courtfile(self, context, model, name):
+        if model.courtfile:
+            return model.courtfile.case_number
+        return "N/A"
+
+    column_formatters = {
+        'appointment': _format_appointment,
+        'courtfile': _format_courtfile
+    }
 
 def setup_admin(app):
     app.secret_key = os.environ.get('FLASK_APP_KEY', 'sample key')
@@ -96,6 +114,7 @@ def setup_admin(app):
     admin.add_view(ClientCourtfileView(ClientCourtfile, db.session))
     admin.add_view(DeadlineCourtfileView(DeadlineCourtfile, db.session))
     admin.add_view(LawyerCourtfileView(LawyerCourtfile, db.session))
+    admin.add_view(AppointmentCourtfileView(AppointmentCourtfile, db.session))
 
 
     # You can duplicate that line to add mew models
