@@ -8,7 +8,6 @@ export const Navbar = () => {
 				<Link to="/" className="text-decoration-none">
 					<span className="navbar-brand mx-2 my-2 h1">Home</span>
 				</Link>
-<<<<<<< HEAD
 				<div className="ml-auto">
 					<Link to="/courtfiles">
 						<button className="btn btn-light me-2">Courtfiles</button>
@@ -26,9 +25,6 @@ export const Navbar = () => {
 						<button className="btn btn-light me-2">Appointments</button>
 					</Link>
 				</div>
-=======
-				
->>>>>>> develop
 			</div>
 		</nav>
 	);

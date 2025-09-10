@@ -106,7 +106,6 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
-<<<<<<< HEAD
       /* APPOINTMENTS */
     
     case "SET_APPOINTMENTS":
@@ -126,7 +125,6 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
-=======
     /* DEADLINES */
 
     case "SET_DEADLINES":
@@ -190,7 +188,6 @@ export default function storeReducer(store, action = {}) {
         ...store,
         lawyersCourtfiles: store.lawyersCourtfiles.filter((cc) => cc.id !== action.payload),
       };
->>>>>>> develop
 
 
     default:

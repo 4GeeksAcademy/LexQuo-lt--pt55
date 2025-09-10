@@ -3,11 +3,7 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 """
 from datetime import datetime
 from flask import Flask, request, jsonify, url_for, Blueprint
-<<<<<<< HEAD
-from api.models import Courtfile, db, Lawyer, Client, AdminUser, Appointment
-=======
-from api.models import Courtfile, db, Lawyer, Client, AdminUser, Deadlines, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile
->>>>>>> develop
+from api.models import Courtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash
@@ -447,8 +443,7 @@ def delete_admin(admin_id):
         return jsonify({'error': str(e)}), 500
 
 
-<<<<<<< HEAD
-# -----------------ROUTES PARA APPOIMENT--------------------------------------------
+# -----------------ROUTES PARA APPOINTMENTS--------------------------------------------
 
 @api.route('/appointments', methods=['GET'])
 def get_appointments():
@@ -563,7 +558,6 @@ def delete_appointment(id):
     db.session.delete(appointment)
     db.session.commit()
     return jsonify({'message': 'Appointment eliminado exitosamente'})
-=======
 # -----------------ROUTES PARA DEADLINES--------------------------------------------
 
 @api.route('/deadlines', methods=['GET'])
@@ -600,7 +594,6 @@ def create_deadline():
         
         deadline_hour = data['deadline_hour']
         if isinstance(deadline_hour, str):
-            # Cambiar a formato %H:%M para solo horas y minutos
             deadline_hour = datetime.strptime(deadline_hour, '%H:%M').time()
 
         deadline = Deadlines(
@@ -879,4 +872,3 @@ def delete_deadline_courtfile(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
->>>>>>> develop
