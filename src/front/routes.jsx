@@ -30,7 +30,6 @@ import { ViewClient } from "./pages/ViewClient";
 import { EditClient } from "./pages/EditClient";
 import { AddClient } from "./pages/AddClient";
 
-
 import { Deadlines } from "./pages/Deadlines";
 import { ViewDeadline } from "./pages/ViewDeadline";
 import { EditDeadline } from "./pages/EditDeadline";
@@ -41,6 +40,9 @@ import { AddClientsCourtfiles } from "./pages/AddClientsCourtfiles";
 
 import { DeadlinesCourtfiles } from "./pages/DeadlinesCourtfiles";
 import { AddDeadlinesCourtfiles } from "./pages/AddDeadlinesCourtfiles";
+
+import { LawyersCourtfiles } from "./pages/LawyersCourtfiles";
+import { AddLawyersCourtfiles } from "./pages/AddLawyersCourtfiles";
 
 
 export const router = createBrowserRouter(
@@ -90,6 +92,8 @@ export const router = createBrowserRouter(
       <Route path="/DeadlinesCourtfiles" element={<DeadlinesCourtfiles />} />
       <Route path="/AddDeadlinesCourtfiles" element={<AddDeadlinesCourtfiles />} />
 
+      <Route path="/LawyersCourtfiles" element={<LawyersCourtfiles />} />
+      <Route path="/AddLawyersCourtfiles" element={<AddLawyersCourtfiles />} />
 
 
     </Route>

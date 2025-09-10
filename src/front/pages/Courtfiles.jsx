@@ -3,7 +3,7 @@ import useGlobalReducer from "../hooks/useGlobalReducer";
 import React, { useEffect, useState } from "react"
 
 export const Courtfiles = () => {
-    // Access the global state and dispatch function using the useGlobalReducer hook.
+
     const { store, dispatch } = useGlobalReducer()
     const API = import.meta.env.VITE_BACKEND_URL;
 

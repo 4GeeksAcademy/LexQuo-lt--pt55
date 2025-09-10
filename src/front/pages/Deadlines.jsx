@@ -22,7 +22,6 @@ export const Deadlines = () => {
 
   useEffect(() => {
     fetchDeadlines();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDeleteDeadline = async (id) => {

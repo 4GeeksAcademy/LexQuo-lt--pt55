@@ -32,7 +32,7 @@ export const EditAdmin = () => {
       setFormData(prev => ({
         ...prev,
         ...data,
-        password: "",           // no mostrar hash
+        password: "",          
       }));
       setError(null);
     } catch (err) {
@@ -45,7 +45,7 @@ export const EditAdmin = () => {
 
   useEffect(() => {
     if (adminId) fetchAdmin();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [adminId]);
 
   const handleInputChange = (e) => {
