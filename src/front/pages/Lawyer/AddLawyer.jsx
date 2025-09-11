@@ -33,14 +33,39 @@ export const AddLawyer = () => {
         setLoading(true);
         setError(null);
 
+        if (!formData.firstname?.trim() || !formData.lastname?.trim() || !formData.email?.trim() || !formData.phone?.trim() || !formData.password) {
+            setError("Firstname, Lastname, Email, Phone and Password are required.");
+            setLoading(false);
+            return;
+        }
+        if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            setError("Invalid email.");
+            setLoading(false);
+            return;
+        }
+        if (formData.password.length < 8) {
+            setError("Password must have at least 8 characters.");
+            setLoading(false);
+            return;
+        }
+
         try {
+
+            const payload = {
+                firstname: formData.firstname.trim(),
+                lastname: formData.lastname.trim(),
+                email: formData.email.trim().toLowerCase(),
+                phone: formData.phone?.trim(),
+                password: formData.password,
+                is_active: !!formData.is_active,
+            };
 
             const response = await fetch(`${API}/api/lawyers`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(payload), 
             });
 
             if (response.ok) {
@@ -48,16 +73,20 @@ export const AddLawyer = () => {
 
                 dispatch({ type: 'ADD_LAWYER', payload: newLawyer });
 
+                alert('Lawyer created successfully!');
+
                 navigate('/lawyers');
 
-                alert('Lawyer created successfully!');
-            } else {
+            } else if (response.status === 409) { 
                 const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to create lawyer');
+                throw new Error(errorData.error || "Email already exists");
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
             }
-        } catch (error) {
-            console.error('Error creating Lawyer:', error);
-            setError(error.message);
+        } catch (err) {
+            console.error("Error creating Lawyer:", err);
+            setError(err.message || "Failed to create lawyer");
         } finally {
             setLoading(false);
         }

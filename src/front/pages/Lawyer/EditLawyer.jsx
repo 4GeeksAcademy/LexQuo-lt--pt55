@@ -33,7 +33,14 @@ export const EditLawyer = () => {
             }
 
             const data = await response.json();
-            setFormData(data);
+            setFormData({
+                firstname: data.firstname ?? "",
+                lastname: data.lastname ?? "",
+                email: data.email ?? "",
+                phone: data.phone ?? "",
+                password: "",
+                is_active: !!data.is_active,
+            });
             setError(null);
         } catch (error) {
             console.error('Error fetching lawyer:', error);
@@ -46,7 +53,7 @@ export const EditLawyer = () => {
 
     useEffect(() => {
         fetchLawyer();
-    }, [lawyerId]);
+    }, [lawyerId, API]);
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -60,34 +67,67 @@ export const EditLawyer = () => {
         e.preventDefault();
         setLoading(true);
         setError(null);
+
+        if (
+            !formData.firstname?.trim() ||
+            !formData.lastname?.trim() ||
+            !formData.email?.trim() ||
+            !formData.phone?.trim()
+        ) {
+            setError("Firstname, Lastname, Email and Phone are required.");
+            setLoading(false);
+            return;
+        }
+        if (!/\S+@\S+\.\S+/.test(formData.email)) {
+            setError("Invalid email.");
+            setLoading(false);
+            return;
+        }
+        if (formData.password && formData.password.length < 8) {
+            setError("Password must have at least 8 characters.");
+            setLoading(false);
+            return;
+        }
+
+
         try {
 
+            const payload = {
+                firstname: formData.firstname.trim(),
+                lastname: formData.lastname.trim(),
+                email: formData.email.trim().toLowerCase(), // normalizar email
+                phone: formData.phone.trim(),
+                is_active: !!formData.is_active,
+            };
+            if (formData.password) payload.password = formData.password;
+
             const response = await fetch(`${API}/api/lawyers/${lawyerId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData)
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
             });
+
 
             if (response.ok) {
                 const updatedLawyer = await response.json();
+                dispatch({ type: "UPDATE_LAWYER", payload: updatedLawyer });
 
-                dispatch({
-                    type: 'UPDATE_LAWYER',
-                    payload: updatedLawyer
-                });
-
+                alert("Lawyer updated successfully!");
                 navigate(`/lawyers/view/${lawyerId}`);
 
-                alert('Lawyer updated successfully!');
+            } else if (response.status === 409) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || "Email already exists");
+
             } else {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to update Lawyer');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || "Failed to update Lawyer");
             }
+
         } catch (error) {
-            console.error('Error updating Lawyer:', error);
+            console.error("Error updating Lawyer:", error);
             setError(error.message);
+            
         } finally {
             setLoading(false);
         }
