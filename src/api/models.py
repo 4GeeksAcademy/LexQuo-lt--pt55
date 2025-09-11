@@ -1,9 +1,10 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean, Text
+from sqlalchemy import String, Boolean, Text, Float, DateTime, Enum
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.orm import Mapped, mapped_column, validates  
 from werkzeug.security import generate_password_hash
-
+from datetime import datetime
+import enum
 
 db = SQLAlchemy()
 
@@ -103,4 +104,27 @@ class Courtfile(db.Model):
             "jurisdiction": self.jurisdiction,
             "court": self.court,
             "status": self.status,
+        }
+    
+class PaymentStatus(enum.Enum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
+
+class Payment(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    amount: Mapped[float] = mapped_column(Float, nullable=False)
+    currency: Mapped[str] = mapped_column(String(10), nullable=False)
+    status: Mapped[enum.Enum] = mapped_column(Enum(PaymentStatus), nullable=False, default=PaymentStatus.pending)
+    paid_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    means: Mapped[str] = mapped_column(String(50), nullable=True)
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "amount": self.amount,
+            "currency": self.currency,
+            "status": self.status.value,
+            "paid_at": self.paid_at.isoformat() if self.paid_at else None,
+            "means": self.means
         }

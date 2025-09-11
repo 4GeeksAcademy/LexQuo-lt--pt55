@@ -5,6 +5,7 @@ export const initialStore = () => {
     lawyers: [],
     clients: [],
     admins: [],
+    payments: [],
     todos: [],
   };
 };
@@ -102,6 +103,25 @@ export default function storeReducer(store, action = {}) {
         ...store,
         admins: store.admins.map((ad) =>
           ad.id === action.payload.id ? action.payload : ad
+        ),
+      };
+
+    /* PAYMENTS */
+
+    case "SET_PAYMENTS":
+      return { ...store, payments: action.payload };
+    case "ADD_PAYMENT":
+      return { ...store, payments: [...store.payments, action.payload] };
+    case "DELETE_PAYMENT":
+      return {
+        ...store,
+        payments: store.payments.filter((pa) => pa.id !== action.payload),
+      };
+    case "UPDATE_PAYMENT":
+      return {
+        ...store,
+        payments: store.payments.map((pa) =>
+          pa.id === action.payload.id ? action.payload : pa
         ),
       };
 
