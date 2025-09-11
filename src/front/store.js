@@ -1,4 +1,10 @@
 export const initialStore = () => {
+
+  const persistedAuth = (() => { 
+    try { return JSON.parse(sessionStorage.getItem("auth") || "null"); } catch { return null; } 
+  })(); 
+
+
   return {
     message: null,
     todos: [],
@@ -12,7 +18,8 @@ export const initialStore = () => {
     clientsCourtfiles: [],
     deadlinesCourtfiles: [],
     lawyersCourtfiles: [],
-    appointmentssCourtfiles: []
+    appointmentsCourtfiles: [],
+    auth: persistedAuth || null,
   };
 };
 
@@ -33,6 +40,20 @@ export default function storeReducer(store, action = {}) {
           todo.id === id ? { ...todo, background: color } : todo
         ),
       };
+
+
+    /* AUTH (nuevo) */
+    case "SET_AUTH": { 
+      return { ...store, auth: action.payload }; 
+    }
+    case "CLEAR_AUTH": { 
+      return { ...store, auth: null }; 
+    }
+    case "UPDATE_AUTH_USER": { 
+      if (!store.auth) return store; 
+      return { ...store, auth: { ...store.auth, user: { ...store.auth.user, ...action.payload } } }; 
+    }
+
 
     /* COURTFILES */
 

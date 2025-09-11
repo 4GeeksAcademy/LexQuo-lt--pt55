@@ -6,7 +6,8 @@ from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import Courtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 
 from api.validators import parse_iso_date, parse_24h_time, is_valid_24h_time, validate_required_fields, validate_time_order, create_error_response
 
@@ -153,28 +154,28 @@ def get_lawyer(lawyer_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 404
 
-
 @api.route('/lawyers', methods=['POST'])
 def create_lawyer():
     try:
         data = request.get_json()
 
-        required_fields = ['firstname', 'lastname', 'email', 'password']
+        required_fields = ['firstname', 'lastname', 'email', 'phone', 'password']
         for field in required_fields:
             if field not in data:
                 return jsonify({'error': f'Required field: {field}'}), 400
 
-        existing = Lawyer.query.filter_by(
-            email=data['email']).first()
+        email = (data.get('email') or '').strip().lower()  
+        existing = Lawyer.query.filter_by(email=email).first()  
         if existing:
             return jsonify({'error': 'Email already exists'}), 409
 
         lawyer = Lawyer(
             firstname=data['firstname'],
             lastname=data['lastname'],
-            email=data['email'],
-            phone=data['phone'],
+            email=email,  
+            phone=data.get('phone'),
             password=generate_password_hash(data['password']),
+            is_active=True if data.get('is_active', True) else False
         )
 
         db.session.add(lawyer)
@@ -186,7 +187,6 @@ def create_lawyer():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-
 @api.route('/lawyers/<int:lawyer_id>', methods=['PUT'])
 def update_lawyer(lawyer_id):
     try:
@@ -194,11 +194,12 @@ def update_lawyer(lawyer_id):
         data = request.get_json()
 
         if 'email' in data:
-            if data['email'] != lawyer.email:
-                existing = Lawyer.query.filter_by(email=data['email']).first()
+            new_email = (data.get('email') or '').strip().lower()  
+            if new_email != lawyer.email:  
+                existing = Lawyer.query.filter_by(email=new_email).first()  
                 if existing:
                     return jsonify({'error': 'Email already exists'}), 409
-            lawyer.email = data['email']
+            lawyer.email = new_email  
 
         if 'firstname' in data:
             lawyer.firstname = data['firstname']
@@ -236,6 +237,42 @@ def delete_lawyer(lawyer_id):
 
     except Exception as e:
         db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+    
+@api.route('/lawyers/login', methods=['POST'])
+def lawyer_login():
+    try:
+        data = request.get_json()
+
+        if not data or 'email' not in data or 'password' not in data:
+            return jsonify({'error': 'Email and password required'}), 400
+
+        email = (data.get('email') or '').strip().lower()                            
+
+        lawyer = Lawyer.query.filter_by(email=email).first()
+        
+        if not lawyer:
+            return jsonify({'error': 'Invalid credentials'}), 401
+
+        if not check_password_hash(lawyer.password, data['password']):
+            return jsonify({'error': 'Invalid credentials'}), 401
+
+        if hasattr(lawyer, 'is_active') and not lawyer.is_active:
+            return jsonify({'error': 'Account deactivated'}), 403
+
+        token = create_access_token(  
+            identity=str(lawyer.id),  
+            additional_claims={"role": "lawyer"}  
+        )
+
+        return jsonify({
+            'message': 'Login successful',
+            'token': token,
+            'role': 'lawyer', 
+            'lawyer': lawyer.serialize()
+        }), 200
+
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 

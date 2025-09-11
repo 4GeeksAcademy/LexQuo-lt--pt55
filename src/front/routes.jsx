@@ -19,6 +19,9 @@ import { Lawyers } from "./pages/Lawyer/Lawyers";
 import { ViewLawyer } from "./pages/Lawyer/ViewLawyer";
 import { EditLawyer } from "./pages/Lawyer/EditLawyer";
 import { AddLawyer } from "./pages/Lawyer/AddLawyer";
+import { SignUpLawyer } from "./pages/Lawyer/SignUpLawyer";
+import { LoginLawyer } from "./pages/Lawyer/LoginLawyer";
+import { DashboardLawyer } from "./pages/Lawyer/DashboardLawyer";
 
 import { Admins } from "./pages/AdminUser/Admins";
 import { ViewAdmin } from "./pages/AdminUser/ViewAdmin";
@@ -121,6 +124,10 @@ export const router = createBrowserRouter(
 
       <Route path="/AppointmentsCourtfiles" element={<AppointmentsCourtfiles />} />
       <Route path="/AddAppointmentsCourtfiles" element={<AddAppointmentsCourtfiles />} />
+
+      <Route path="/SignUpLawyer" element={<SignUpLawyer />} />
+      <Route path="/LoginLawyer" element={<LoginLawyer />} />
+      <Route path="/DashboardLawyer" element={<DashboardLawyer />} />
 
     </Route>
   )

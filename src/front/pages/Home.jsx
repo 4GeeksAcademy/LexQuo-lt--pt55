@@ -75,7 +75,13 @@ export const Home = () => {
 			</div>
 
 			<div className="container mt-5">
-				<h1>LOGIN</h1>
+				<h1>LOGIN LAWYER</h1>
+				<Link to="/LoginLawyer">
+					<button className="btn btn-light me-2">Login Lawyer</button>
+				</Link>
+				<Link to="/SignUpLawyer">
+					<button className="btn btn-light me-2">Sign Up Lawyer</button>
+				</Link>
 			</div>
 
 			<p className="lead">
