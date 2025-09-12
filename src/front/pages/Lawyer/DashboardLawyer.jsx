@@ -21,6 +21,12 @@ export const DashboardLawyer = () => {
         }
     }, [store?.auth, auth, dispatch]);
 
+    useEffect(() => {
+        if (store?.auth && store.auth !== auth) {
+            setAuth(store.auth);
+        }
+    }, [store?.auth]); 
+
     const authed = !!auth?.token;
 
     const name =
@@ -54,7 +60,7 @@ export const DashboardLawyer = () => {
                 setLoadingCases(false);
             }
         })();
-    }, [API, authed, auth?.token]);
+    }, [API, authed, auth?.token, dispatch]);
 
     return (
         <div className="container text-center mt-5">

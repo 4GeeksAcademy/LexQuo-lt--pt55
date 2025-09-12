@@ -77,7 +77,7 @@ export const Home = () => {
 				</Link>
 			</div>
 
-			<div className="container mt-5">
+			<div className="container mt-5 mb-5">
 				<h1>LOGIN LAWYER</h1>
 				<Link to="/LoginLawyer">
 					<button className="btn btn-light me-2">Login Lawyer</button>
@@ -90,10 +90,7 @@ export const Home = () => {
 				</Link>
 			</div>
 
-			<p className="lead">
-				<img src={justiceImage} className="img-fluid mb-3" alt="Rigo Baby" />
-			</p>
-
+			
 			<div className="alert alert-info">
 				{store.message ? (
 					<span>{store.message}</span>

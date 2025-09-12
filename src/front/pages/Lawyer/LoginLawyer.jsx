@@ -43,7 +43,7 @@ export const LoginLawyer = () => {
 
 
                 // ======= AUTH UNIFICADO ======= //
-                const role = data?.role || "lawyer";                              
+                const role = data?.role;                              
                 const user = data?.lawyer;                                        
                 const token = data?.token;                                        
                 const auth = { role, token, user };                               
