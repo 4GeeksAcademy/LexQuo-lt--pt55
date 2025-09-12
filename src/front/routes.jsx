@@ -73,8 +73,6 @@ import { EditPayment } from "./pages/Payments/EditPayment";
 import { AddPayment } from "./pages/Payments/AddPayment";
 
 
-
-
 export const router = createBrowserRouter(
   createRoutesFromElements(
     // CreateRoutesFromElements function allows you to build route elements declaratively.
