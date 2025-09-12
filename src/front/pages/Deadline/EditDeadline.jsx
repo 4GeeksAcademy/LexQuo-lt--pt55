@@ -20,6 +20,12 @@ export const EditDeadline = () => {
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState(null);
 
+  const Deadline_Categories = ["Contestación de demanda", "Traslado / Vista", "Ofrecimiento de prueba", "Producción de prueba", "Audiencia",
+    "Recurso / Apelación", "Ejecución / Cumplimiento", "Caducidad de instancia", "Plazo penal (excarcelación, preventiva, etc.)",
+    "Mediación obligatoria", "Vencimiento de contrato", "Pago de tasa de justicia / aportes", "Vencimiento administrativo (AFIP, IGJ, etc.)",
+    "Documentación del cliente", "Recordatorio interno / reunión con cliente", "Otros"
+  ]
+
   const fetchDeadline = async () => {
     try {
       setFetching(true);
@@ -127,16 +133,22 @@ export const EditDeadline = () => {
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                   <label htmlFor="deadline_type" className="form-label">Deadline Type *</label>
-                  <input
-                    type="text"
-                    className="form-control"
+                  <select
+                    className="form-select"
                     id="deadline_type"
                     name="deadline_type"
                     value={formData.deadline_type}
                     onChange={handleInputChange}
                     required
                     disabled={loading}
-                  />
+                  >
+                    <option value="">Select a Type</option>
+                    {Deadline_Categories.map(type => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="mb-3">
