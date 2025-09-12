@@ -75,6 +75,9 @@ export const Home = () => {
 				<Link to="/LawyersClients">
 					<button className="btn btn-light me-2">Lawyers-Clients</button>
 				</Link>
+				<Link to="/CourtfilesDocuments">
+					<button className="btn btn-light me-2">Courtfile-Documents</button>
+				</Link>
 			</div>
 
 			<div className="container mt-5">
