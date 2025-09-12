@@ -38,7 +38,7 @@ export const Home = () => {
 		<div className="text-center mt-5">
 			<h1 className="display-4 mb-5">LexQuo</h1>
 
-			<div className="ml-auto mb-5">
+			<div className="ml-auto mt-5 mb-5">
 				<Link to="/courtfiles">
 					<button className="btn btn-light me-2">Courtfiles</button>
 				</Link>
@@ -79,18 +79,20 @@ export const Home = () => {
 
 			<div className="container mt-5 mb-5">
 				<h1>LOGIN LAWYER</h1>
-				<Link to="/LoginLawyer">
-					<button className="btn btn-light me-2">Login Lawyer</button>
-				</Link>
-				<Link to="/SignUpLawyer">
-					<button className="btn btn-light me-2">Sign Up Lawyer</button>
-				</Link>
-				<Link to="/DashboardLawyer">
-					<button className="btn btn-light me-2">Dashboard Lawyer</button>
-				</Link>
+				<div className="ml-auto mt-5 mb-5">
+					<Link to="/LoginLawyer">
+						<button className="btn btn-light me-2">Login Lawyer</button>
+					</Link>
+					<Link to="/SignUpLawyer">
+						<button className="btn btn-light me-2">Sign Up Lawyer</button>
+					</Link>
+					<Link to="/DashboardLawyer">
+						<button className="btn btn-light me-2">Dashboard Lawyer</button>
+					</Link>
+				</div>
 			</div>
 
-			
+
 			<div className="alert alert-info">
 				{store.message ? (
 					<span>{store.message}</span>
