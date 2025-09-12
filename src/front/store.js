@@ -1,12 +1,31 @@
 export const initialStore = () => {
+  const persistedAuth = (() => {
+    try {
+      return JSON.parse(sessionStorage.getItem("auth") || "null");
+    } catch {
+      return null;
+    }
+  })();
+
   return {
     message: null,
+    todos: [],
     courtfiles: [],
     lawyers: [],
     clients: [],
     admins: [],
     payments: [],
     todos: [],
+    deadlines: [],
+    appointments: [],
+    documents: [],
+    clientsCourtfiles: [],
+    deadlinesCourtfiles: [],
+    lawyersCourtfiles: [],
+    appointmentsCourtfiles: [],
+    lawyerClient: [],
+    courtfileDocument: [],
+    auth: persistedAuth || null,
   };
 };
 
@@ -28,6 +47,23 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
+    /* AUTH (nuevo) */
+    case "SET_AUTH": {
+      return { ...store, auth: action.payload };
+    }
+    case "CLEAR_AUTH": {
+      return { ...store, auth: null };
+    }
+    case "UPDATE_AUTH_USER": {
+      if (!store.auth) return store;
+      return {
+        ...store,
+        auth: {
+          ...store.auth,
+          user: { ...store.auth.user, ...action.payload },
+        },
+      };
+    }
 
     /* COURTFILES */
 
@@ -48,9 +84,8 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
-
     /* LAWYERS */
-    
+
     case "SET_LAWYERS":
       return { ...store, lawyers: action.payload };
     case "ADD_LAWYER":
@@ -125,6 +160,188 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
+    /* APPOINTMENTS */
+
+    case "SET_APPOINTMENTS":
+      return { ...store, appointments: action.payload };
+    case "ADD_APPOINTMENT":
+      return {
+        ...store,
+        appointments: [...store.appointments, action.payload],
+      };
+    case "DELETE_APPOINTMENT":
+      return {
+        ...store,
+        appointments: store.appointments.filter(
+          (ap) => ap.id !== action.payload
+        ),
+      };
+    case "UPDATE_APPOINTMENT":
+      return {
+        ...store,
+        appointments: store.appointments.map((ap) =>
+          ap.id === action.payload.id ? action.payload : ap
+        ),
+      };
+
+    /* DOCUMENTS */
+
+    case "SET_DOCUMENTS":
+      return { ...store, documents: action.payload };
+    case "ADD_DOCUMENT":
+      return { ...store, documents: [...store.documents, action.payload] };
+    case "DELETE_DOCUMENT":
+      return {
+        ...store,
+        documents: store.documents.filter((doc) => doc.id !== action.payload),
+      };
+    case "UPDATE_DOCUMENT":
+      return {
+        ...store,
+        documents: store.documents.map((doc) =>
+          doc.id === action.payload.id ? action.payload : doc
+        ),
+      };
+
+    /* DEADLINES */
+
+    case "SET_DEADLINES":
+      return { ...store, deadlines: action.payload };
+
+    case "ADD_DEADLINE":
+      return { ...store, deadlines: [...store.deadlines, action.payload] };
+
+    case "DELETE_DEADLINE":
+      return {
+        ...store,
+        deadlines: store.deadlines.filter((dl) => dl.id !== action.payload),
+      };
+
+    case "UPDATE_DEADLINE":
+      return {
+        ...store,
+        deadlines: store.deadlines.map((dl) =>
+          dl.id === action.payload.id ? action.payload : dl
+        ),
+      };
+
+    /* CLIENT–COURTFILES */
+
+    case "SET_CLIENT_COURTFILES":
+      return { ...store, clientsCourtfiles: action.payload };
+
+    case "ADD_CLIENT_COURTFILE":
+      return {
+        ...store,
+        clientsCourtfiles: [...store.clientsCourtfiles, action.payload],
+      };
+
+    case "DELETE_CLIENT_COURTFILE":
+      return {
+        ...store,
+        clientsCourtfiles: store.clientsCourtfiles.filter(
+          (cc) => cc.id !== action.payload
+        ),
+      };
+
+    /* DEADLINE–COURTFILES */
+
+    case "SET_DEADLINE_COURTFILES":
+      return { ...store, deadlinesCourtfiles: action.payload };
+
+    case "ADD_DEADLINE_COURTFILE":
+      return {
+        ...store,
+        deadlinesCourtfiles: [...store.deadlinesCourtfiles, action.payload],
+      };
+
+    case "DELETE_DEADLINE_COURTFILE":
+      return {
+        ...store,
+        deadlinesCourtfiles: store.deadlinesCourtfiles.filter(
+          (cc) => cc.id !== action.payload
+        ),
+      };
+
+    /* LAWYER–COURTFILES */
+
+    case "SET_LAWYER_COURTFILES":
+      return { ...store, lawyersCourtfiles: action.payload };
+
+    case "ADD_LAWYER_COURTFILE":
+      return {
+        ...store,
+        lawyersCourtfiles: [...store.lawyersCourtfiles, action.payload],
+      };
+
+    case "DELETE_LAWYER_COURTFILE":
+      return {
+        ...store,
+        lawyersCourtfiles: store.lawyersCourtfiles.filter(
+          (cc) => cc.id !== action.payload
+        ),
+      };
+
+    /* APPOINTMENTS–COURTFILES */
+
+    case "SET_APPOINTMENT_COURTFILES":
+      return { ...store, appointmentsCourtfiles: action.payload };
+
+    case "ADD_APPOINTMENT_COURTFILE":
+      return {
+        ...store,
+        appointmentsCourtfiles: [
+          ...store.appointmentsCourtfiles,
+          action.payload,
+        ],
+      };
+
+    case "DELETE_APPOINTMENT_COURTFILE":
+      return {
+        ...store,
+        appointmentsCourtfiles: store.appointmentsCourtfiles.filter(
+          (cc) => cc.id !== action.payload
+        ),
+      };
+
+    /* LAWYER–CLIENT */
+
+    case "SET_LAWYER_CLIENT":
+      return { ...store, lawyerClient: action.payload };
+
+    case "ADD_LAWYER_CLIENT":
+      return {
+        ...store,
+        lawyerClient: [...store.lawyerClient, action.payload],
+      };
+
+    case "DELETE_LAWYER_CLIENT":
+      return {
+        ...store,
+        lawyerClient: store.lawyerClient.filter(
+          (lc) => lc.id !== action.payload
+        ),
+      };
+
+    /* COURTFILE-DOCUMENT */
+
+    case "SET_COURTFILE_DOCUMENT":
+      return { ...store, courtfileDocument: action.payload };
+
+    case "ADD_COURTFILE_DOCUMENT":
+      return {
+        ...store,
+        courtfileDocument: [...store.courtfileDocument, action.payload],
+      };
+
+    case "DELETE_COURTFILE_DOCUMENT":
+      return {
+        ...store,
+        courtfileDocument: store.courtfileDocument.filter(
+          (cd) => cd.id !== action.payload
+        ),
+      };
+      s;
     default:
       throw Error("Unknown action.");
   }
