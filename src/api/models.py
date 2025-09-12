@@ -22,6 +22,7 @@ class Lawyer(db.Model):
         Boolean(), default=True, nullable=False)
 
     courtfiles: Mapped[List["LawyerCourtfile"]] = relationship(back_populates="lawyer")
+    client_associations: Mapped[List["LawyerClient"]] = relationship(back_populates="lawyer")
 
     @validates("password")
     def _hash_password(self, key, value):
@@ -52,7 +53,9 @@ class Client(db.Model):
     phone: Mapped[str] = mapped_column(String(30), nullable=True)
     password: Mapped[str] = mapped_column(String(500), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True, nullable=False)
-    courtfiles: Mapped[List["ClientCourtfile"]] = relationship(back_populates="client")    
+
+    courtfiles: Mapped[List["ClientCourtfile"]] = relationship(back_populates="client")
+    lawyer_associations: Mapped[List["LawyerClient"]] = relationship(back_populates="client")
 
     @validates("password")
     def _hash_password(self, key, value):
@@ -246,3 +249,14 @@ class AppointmentCourtfile(db.Model):
 
     courtfile_id: Mapped[int] = mapped_column(ForeignKey("courtfile.id"), nullable=False, index=True)
     courtfile: Mapped["Courtfile"] = relationship(back_populates="appointment")
+
+class LawyerClient(db.Model):
+    __tablename__ = 'lawyer_client'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    lawyer_id: Mapped[int] = mapped_column(ForeignKey("lawyer.id"), nullable=False, index=True)
+    lawyer: Mapped["Lawyer"] = relationship(back_populates="client_associations")
+
+    client_id: Mapped[int] = mapped_column(ForeignKey("client.id"), nullable=False, index=True)
+    client: Mapped["Client"] = relationship(back_populates="lawyer_associations")
