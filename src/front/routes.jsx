@@ -67,10 +67,10 @@ import { CourtfilesDocuments } from "./pages/Relations/CourtfilesDocuments";
 import { AddCourtfilesDocuments } from "./pages/Relations/AddCourtfilesDocuments";
 
 
-import { Payments } from "./pages/Payments";
-import { ViewPayment } from "./pages/ViewPayment";
-import { EditPayment } from "./pages/EditPayment";
-import { AddPayment } from "./pages/AddPayment";
+import { Payments } from "./pages/Payments/Payments";
+import { ViewPayment } from "./pages/Payments/ViewPayment";
+import { EditPayment } from "./pages/Payments/EditPayment";
+import { AddPayment } from "./pages/Payments/AddPayment";
 
 
 

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import React, { useEffect } from "react";
-import useGlobalReducer from "../hooks/useGlobalReducer";
+import useGlobalReducer from "../../hooks/useGlobalReducer";
 
 export const Payments = () => {
   const { store, dispatch } = useGlobalReducer();

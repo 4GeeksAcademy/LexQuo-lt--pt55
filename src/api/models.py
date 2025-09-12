@@ -179,11 +179,6 @@ class Deadlines(db.Model):
     def serialize(self):
         return {
             "id": self.id,
-            "amount": self.amount,
-            "currency": self.currency,
-            "status": self.status.value,
-            "paid_at": self.paid_at.isoformat() if self.paid_at else None,
-            "means": self.means,
             "deadline_type": self.deadline_type,
             "deadline_date": self.deadline_date.isoformat() if self.deadline_date else None,  
             "deadline_hour": self.deadline_hour.strftime('%H:%M') if self.deadline_hour else None,  

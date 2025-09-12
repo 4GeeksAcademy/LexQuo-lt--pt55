@@ -1,47 +1,20 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
-import useGlobalReducer from "../hooks/useGlobalReducer";
-import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import useGlobalReducer from "../../hooks/useGlobalReducer";
+import { useState } from "react";
 
-export const EditPayment = () => {
+export const AddPayment = () => {
   const { dispatch } = useGlobalReducer();
-  const { paymentId } = useParams();
   const navigate = useNavigate();
-
   const API = import.meta.env.VITE_BACKEND_URL;
 
   const [formData, setFormData] = useState({
     amount: "",
     currency: "",
-    status: "",
     means: "",
   });
 
   const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
   const [error, setError] = useState(null);
-
-  const fetchPayment = async () => {
-    try {
-      setFetching(true);
-      const response = await fetch(`${API}/api/payments/${paymentId}`); // singular
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-      setFormData(prev => ({
-        ...prev,
-        ...data
-      }));
-      setError(null);
-    } catch (err) {
-      console.error("Error fetching payment:", err);
-      setError("Failed to load payment data");
-    } finally {
-      setFetching(false);
-    }
-  };
-
-  useEffect(() => {
-    if (paymentId) fetchPayment();
-  }, [paymentId]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -52,54 +25,32 @@ export const EditPayment = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
     try {
       const payload = { ...formData };
-      if (!payload.password) delete payload.password;
-      
-      const response = await fetch(`${API}/api/payments/${paymentId}`, {
-        method: "PUT",
+
+      const response = await fetch(`${API}/api/payments`, {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
 
       if (response.ok) {
-        const updatedPayment = await response.json();
-        dispatch({ type: "UPDATE_PAYMENT", payload: updatedPayment });
-        navigate(`/payments/view/${paymentId}`);
-        alert("Payment updated successfully!");
+        const newPayment = await response.json();
+        dispatch({ type: "ADD_PAYMENT", payload: newPayment });
+        navigate("/payments");
+        alert("Payment created successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to update Payment");
+        throw new Error(errorData.error || "Failed to create payment");
       }
     } catch (err) {
-      console.error("Error updating Payment:", err);
+      console.error("Error creating Payment:", err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
-
-  if (fetching) {
-    return (
-      <div className="container mt-4">
-        <div className="text-center">
-          <div className="spinner-border" role="status"><span className="visually-hidden">Loading...</span></div>
-          <p>Loading Payment data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error && !formData.amount) {
-    return (
-      <div className="container mt-4">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle"></i> {error}
-        </div>
-        <Link to="/payments" className="btn btn-primary">Back to Payments</Link>
-      </div>
-    );
-  }
 
   return (
     <div className="container mt-4">
@@ -107,13 +58,13 @@ export const EditPayment = () => {
         <div className="col-md-8">
           {/* Header */}
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1>Edit Payment</h1>
+            <h1>Add New Payment</h1>
             <Link to="/payments" className="btn btn-outline-secondary">
               <i className="bi bi-arrow-left"></i> Back to List
             </Link>
           </div>
 
-          {/* Form */}
+          {/* Card */}
           <div className="card">
             <div className="card-body">
               {error && (
@@ -133,6 +84,7 @@ export const EditPayment = () => {
                     value={formData.amount}
                     onChange={handleInputChange}
                     required
+                    placeholder="Amount"
                     disabled={loading}
                   />
                 </div>
@@ -147,26 +99,9 @@ export const EditPayment = () => {
                     value={formData.currency}
                     onChange={handleInputChange}
                     required
+                    placeholder="currency"
                     disabled={loading}
                   />
-                </div>
-
-                <div className="mb-3">
-                  <label htmlFor="status" className="form-label">Status *</label>
-                  <select class="form-select" aria-label="Default select example"
-                    id="status"
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                    defaultValue={""}
-                  >
-                    <option value="">Select status</option>
-                    <option value="pending">Pending</option>
-                    <option value="approved">Approved</option>
-                    <option value="rejected">Rejected</option>
-                  </select>
                 </div>
 
                 <div className="mb-3">
@@ -185,16 +120,16 @@ export const EditPayment = () => {
                 </div>
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to={`/payments/view/${paymentId}`} className="btn btn-secondary me-md-2">Cancel</Link>
+                  <Link to="/payments" className="btn btn-secondary me-md-2">Cancel</Link>
                   <button type="submit" className="btn btn-primary" disabled={loading}>
                     {loading ? (
                       <>
                         <span className="spinner-border spinner-border-sm" role="status"></span>
-                        Updating...
+                        Creating...
                       </>
                     ) : (
                       <>
-                        <i className="bi bi-check-circle"></i> Update Payment
+                        <i className="bi bi-plus-circle"></i> Create Payment
                       </>
                     )}
                   </button>

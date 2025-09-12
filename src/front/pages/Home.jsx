@@ -60,6 +60,9 @@ export const Home = () => {
 				<Link to="/documents">
 					<button className="btn btn-light me-2">Documents</button>
 				</Link>
+				<Link to="/payments">
+						<button className="btn btn-light me-2">Payments</button>
+					</Link>
 				<Link to="/ClientsCourtfiles">
 					<button className="btn btn-light me-2">Clients-Courtfiles</button>
 				</Link>

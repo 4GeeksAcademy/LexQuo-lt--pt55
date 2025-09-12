@@ -658,11 +658,6 @@ def create_deadline():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-# @api.route('/payments', methods=['GET'])
-# def get_payments():
-#     try:
-#         payments = Payment.query.all()
-#         return jsonify([payment.serialize() for payment in payments]), 200
 
 @api.route('/deadlines/<int:deadline_id>', methods=['PUT'])
 def update_deadline(deadline_id):
@@ -724,39 +719,7 @@ def get_documents():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-@api.route('/payments/<int:payment_id>', methods=['GET'])
-def get_payment(payment_id):
-    try:
-        payment = Payment.query.get_or_404(payment_id)
-        return jsonify(payment.serialize()), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 404
-
-# @api.route('/payments/<int:payment_id>', methods=['PUT'])
-# def update_payment(payment_id):
-#     try:
-#         payment = Payment.query.get_or_404(payment_id)
-#         data = request.get_json()
-
-#         if 'amount' in data:
-#             payment.amount = data['amount']
-
-#         if 'currency' in data:
-#             payment.currency = data['currency']
-
-#         if 'status' in data:
-#             payment.status = data['status']
-#             if data['status'] == "approved":
-#                 payment.paid_at = datetime.now(UTC)
-
-#         if 'means' in data:
-#             payment.means = data['means']
-
-#         db.session.commit()
-
-#         return jsonify(payment.serialize()), 200
-    
+  
 @api.route('/documents/<int:document_id>', methods=['GET'])
 def get_document(document_id):
     try:
@@ -798,16 +761,6 @@ def create_document():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-
-# @api.route('/payments/<int:payment_id>', methods=['DELETE'])
-# def delete_payment(payment_id):
-#     try:
-#         payment = Payment.query.get_or_404(payment_id)
-
-#         db.session.delete(payment)
-#         db.session.commit()
-
-#         return jsonify({'message': 'Payment successfully deleted'}), 200
     
 @api.route('/documents/<int:document_id>', methods=['PUT'])
 def update_document(document_id):

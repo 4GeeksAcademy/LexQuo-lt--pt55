@@ -15,7 +15,6 @@ export const initialStore = () => {
     clients: [],
     admins: [],
     payments: [],
-    todos: [],
     deadlines: [],
     appointments: [],
     documents: [],

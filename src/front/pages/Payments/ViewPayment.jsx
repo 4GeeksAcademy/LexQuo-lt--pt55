@@ -1,5 +1,5 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
-import useGlobalReducer from "../hooks/useGlobalReducer";
+import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
 export const ViewPayment = () => {
