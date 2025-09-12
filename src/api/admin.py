@@ -107,22 +107,6 @@ class LawyerClientView(ModelView):
     column_list = ['id', 'lawyer', 'client']
     column_auto_select_related = True
 
-    def lawyer_name(self, model):
-        lawyer = Lawyer.query.get(model.lawyer_id)
-        if lawyer:
-            return f"{lawyer.firstname} {lawyer.lastname}"
-        return "N/A"
-
-    def client_name(self, model):
-        client = Client.query.get(model.client_id)
-        if client:
-            return f"{client.firstname} {client.lastname}"
-        return "N/A"
-
-    column_formatters = {
-        'lawyer': lawyer_name,
-        'client': client_name
-    }
 
 
 def setup_admin(app):
