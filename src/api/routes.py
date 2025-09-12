@@ -2,6 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from datetime import datetime
+from sqlalchemy import select   
 from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import Courtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument
 from api.utils import generate_sitemap, APIException
@@ -883,6 +884,13 @@ def delete_client_courtfile(id):
 
 
 # -----------------ROUTES PARA LAWYERS-COURTFILES--------------------------------------------
+def _get_role_and_identity():  # [NUEVO]
+    try:
+        claims = get_jwt()
+        return claims.get("role"), get_jwt_identity()
+    except Exception:
+        return None, None
+
 @api.route('/lawyers-courtfiles', methods=['GET'])
 # !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
 @jwt_required(optional=True)
@@ -891,17 +899,7 @@ def get_lawyers_courtfiles():
         # query param opcional para filtrar (útil para admins o herramientas)
         requested_lawyer_id = request.args.get('lawyer_id', type=int)
 
-        claims = None
-        try:
-            claims = get_jwt()
-        except Exception:
-            claims = None
-
-        current_id = None
-        role = None
-        if claims:
-            role = claims.get("role")
-            current_id = get_jwt_identity()
+        role, current_id = _get_role_and_identity() 
 
         if role == "lawyer":
             requested_lawyer_id = int(current_id)
@@ -933,14 +931,7 @@ def create_lawyer_courtfile():
         lawyer_id = data.get('lawyer_id')
         courtfile_id = data.get('courtfile_id')
 
-        # --- Permisos (dual) ---
-        claims = None
-        try:
-            claims = get_jwt()
-        except Exception:
-            claims = None
-        role = claims.get("role") if claims else None
-        current_id = get_jwt_identity() if claims else None
+        role, current_id = _get_role_and_identity()
 
         # Si es lawyer autenticado, solo puede crear relaciones para SÍ MISMO
         if role == "lawyer":
@@ -989,14 +980,7 @@ def delete_lawyer_courtfile(id):
         if not relation:
             return jsonify({'error': 'Relationship not found'}), 404
 
-        claims = None
-        try:
-            claims = get_jwt()
-        except Exception:
-            claims = None
-
-        role = claims.get("role") if claims else None
-        current_id = get_jwt_identity() if claims else None
+        role, current_id = _get_role_and_identity()  
 
         # Si es lawyer autenticado, solo puede borrar relaciones suyas
         if role == "lawyer" and str(relation.lawyer_id) != str(current_id):
@@ -1015,9 +999,30 @@ def delete_lawyer_courtfile(id):
 
 
 @api.route('/deadlines-courtfiles', methods=['GET'])
+# !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
+@jwt_required(optional=True)
 def get_deadlines_courtfiles():
     try:
-        deadlines_courtfiles = DeadlineCourtfile.query.all()
+        requested_lawyer_id = request.args.get('lawyer_id', type=int)   
+        requested_courtfile_id = request.args.get('courtfile_id', type=int)  
+
+        role, current_id = _get_role_and_identity()  
+        if role == "lawyer":                         
+            requested_lawyer_id = int(current_id)    
+
+        query = DeadlineCourtfile.query
+
+        if requested_lawyer_id is not None:          
+            subq = select(LawyerCourtfile.courtfile_id).where(
+                LawyerCourtfile.lawyer_id == requested_lawyer_id
+            )
+            query = query.filter(DeadlineCourtfile.courtfile_id.in_(subq))
+
+        if requested_courtfile_id is not None:      
+            query = query.filter_by(courtfile_id=requested_courtfile_id)
+
+        deadlines_courtfiles = query.all()
+
         return jsonify([{
             'id': dc.id,
             'deadline_id': dc.deadline_id,
@@ -1034,27 +1039,42 @@ def get_deadlines_courtfiles():
 
 
 @api.route('/deadlines-courtfiles', methods=['POST'])
+# !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
+@jwt_required(optional=True)
 def create_deadline_courtfile():
     try:
-        data = request.get_json()
+        data = request.get_json() or {}  
+        deadline_id = data.get('deadline_id') 
+        courtfile_id = data.get('courtfile_id')  
 
-        deadline = Deadlines.query.get(data['deadline_id'])
-        courtfile = Courtfile.query.get(data['courtfile_id'])
+        if not deadline_id or not courtfile_id: 
+            return jsonify({'error': 'deadline_id and courtfile_id required'}), 400
+
+        deadline = Deadlines.query.get(deadline_id)
+        courtfile = Courtfile.query.get(courtfile_id)
 
         if not deadline or not courtfile:
             return jsonify({'error': 'Deadline or Courtfile not found'}), 404
 
+        role, current_id = _get_role_and_identity() 
+        if role == "lawyer":
+            linked = LawyerCourtfile.query.filter_by(
+                lawyer_id=int(current_id), courtfile_id=int(courtfile_id)
+            ).first()
+            if not linked:
+                return jsonify({'error': 'Forbidden for this courtfile'}), 403  
+            
         existing = DeadlineCourtfile.query.filter_by(
-            deadline_id=data['deadline_id'],
-            courtfile_id=data['courtfile_id']
+            deadline_id=deadline_id,
+            courtfile_id=courtfile_id
         ).first()
 
         if existing:
             return jsonify({'error': 'Relationship already exists'}), 400
 
         new_relation = DeadlineCourtfile(
-            deadline_id=data['deadline_id'],
-            courtfile_id=data['courtfile_id']
+            deadline_id=deadline_id,
+            courtfile_id=courtfile_id
         )
 
         db.session.add(new_relation)
@@ -1070,12 +1090,25 @@ def create_deadline_courtfile():
         return jsonify({'error': str(e)}), 500
 
 
+
 @api.route('/deadlines-courtfiles/<int:id>', methods=['DELETE'])
+# !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
+@jwt_required(optional=True)
 def delete_deadline_courtfile(id):
     try:
         relation = DeadlineCourtfile.query.get(id)
         if not relation:
             return jsonify({'error': 'Relationship not found'}), 404
+
+        role, current_id = _get_role_and_identity()  # [NUEVO]
+
+        # [NUEVO] si es lawyer, solo puede borrar si está vinculado a ese courtfile
+        if role == "lawyer":
+            linked = LawyerCourtfile.query.filter_by(
+                lawyer_id=int(current_id), courtfile_id=int(relation.courtfile_id)
+            ).first()
+            if not linked:
+                return jsonify({'error': 'Forbidden'}), 403
 
         db.session.delete(relation)
         db.session.commit()
@@ -1088,11 +1121,31 @@ def delete_deadline_courtfile(id):
 
 # -----------------ROUTES PARA APPOINTMENTS-COURTFILES--------------------------------------------
 
-
 @api.route('/appointments-courtfiles', methods=['GET'])
+# !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
+@jwt_required(optional=True)
 def get_appointments_courtfiles():
     try:
-        appointments_courtfiles = AppointmentCourtfile.query.all()
+        requested_lawyer_id = request.args.get('lawyer_id', type=int)
+        requested_courtfile_id = request.args.get('courtfile_id', type=int)
+
+        role, current_id = _get_role_and_identity()
+        if role == "lawyer":
+            requested_lawyer_id = int(current_id)
+
+        query = AppointmentCourtfile.query
+
+        if requested_lawyer_id is not None:
+            subq = select(LawyerCourtfile.courtfile_id).where(
+                LawyerCourtfile.lawyer_id == requested_lawyer_id
+            )
+            query = query.filter(AppointmentCourtfile.courtfile_id.in_(subq))
+
+        if requested_courtfile_id is not None:
+            query = query.filter_by(courtfile_id=requested_courtfile_id)
+
+        appointments_courtfiles = query.all()
+
         return jsonify([{
             'id': ac.id,
             'appointment_id': ac.appointment_id,
@@ -1110,27 +1163,42 @@ def get_appointments_courtfiles():
 
 
 @api.route('/appointments-courtfiles', methods=['POST'])
+# !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
+@jwt_required(optional=True)
 def create_appointment_courtfile():
     try:
-        data = request.get_json()
+        data = request.get_json() or {}
+        appointment_id = data.get('appointment_id')
+        courtfile_id = data.get('courtfile_id')
 
-        appointment = Appointment.query.get(data['appointment_id'])
-        courtfile = Courtfile.query.get(data['courtfile_id'])
+        if not appointment_id or not courtfile_id:
+            return jsonify({'error': 'appointment_id and courtfile_id required'}), 400
+
+        appointment = Appointment.query.get(appointment_id)
+        courtfile = Courtfile.query.get(courtfile_id)
 
         if not appointment or not courtfile:
             return jsonify({'error': 'Appointment or Courtfile not found'}), 404
 
+        role, current_id = _get_role_and_identity()
+        if role == "lawyer":
+            linked = LawyerCourtfile.query.filter_by(
+                lawyer_id=int(current_id), courtfile_id=int(courtfile_id)
+            ).first()
+            if not linked:
+                return jsonify({'error': 'Forbidden for this courtfile'}), 403
+
         existing = AppointmentCourtfile.query.filter_by(
-            appointment_id=data['appointment_id'],
-            courtfile_id=data['courtfile_id']
+            appointment_id=appointment_id,
+            courtfile_id=courtfile_id
         ).first()
 
         if existing:
             return jsonify({'error': 'Relationship already exists'}), 400
 
         new_relation = AppointmentCourtfile(
-            appointment_id=data['appointment_id'],
-            courtfile_id=data['courtfile_id']
+            appointment_id=appointment_id,
+            courtfile_id=courtfile_id
         )
 
         db.session.add(new_relation)
@@ -1147,11 +1215,22 @@ def create_appointment_courtfile():
 
 
 @api.route('/appointments-courtfiles/<int:id>', methods=['DELETE'])
+# !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
+@jwt_required(optional=True)
 def delete_appointment_courtfile(id):
     try:
         relation = AppointmentCourtfile.query.get(id)
         if not relation:
             return jsonify({'error': 'Relationship not found'}), 404
+
+        role, current_id = _get_role_and_identity()
+
+        if role == "lawyer":
+            linked = LawyerCourtfile.query.filter_by(
+                lawyer_id=int(current_id), courtfile_id=int(relation.courtfile_id)
+            ).first()
+            if not linked:
+                return jsonify({'error': 'Forbidden'}), 403
 
         db.session.delete(relation)
         db.session.commit()

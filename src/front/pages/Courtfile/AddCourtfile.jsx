@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -6,6 +6,13 @@ export const AddCourtfile = () => {
     const { store, dispatch } = useGlobalReducer();
     const navigate = useNavigate();
     const API = import.meta.env.VITE_BACKEND_URL;
+
+    const location = useLocation();
+    const linkToLawyer = location.state?.linkToLawyer === true;
+    const returnTo = location.state?.returnTo || "/courtfiles";
+
+    const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
+    const token = auth?.token;
 
     const [formData, setFormData] = useState({
         case_number: '',
@@ -18,6 +25,7 @@ export const AddCourtfile = () => {
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [linking, setLinking] = useState(false);
 
     const JURISDICCIONES_PJN = [
         'CSJ - Corte Suprema de Justicia de la Nación', 'CIV - Cámara Nacional de Apelaciones en lo Civil', 'CAF - Cámara Nacional de Apelaciones en lo Contencioso Administrativo Federal',
@@ -49,6 +57,7 @@ export const AddCourtfile = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    ...(token ? { Authorization: `Bearer ${token}` } : {})
                 },
                 body: JSON.stringify(formData)
             });
@@ -56,9 +65,26 @@ export const AddCourtfile = () => {
             if (response.ok) {
                 const newCourtfile = await response.json();
 
-                dispatch({ type: 'ADD_COURTFILE', payload: newCourtfile });
+                dispatch({ type: 'ADD_COURTFILE', payload: newCourtfile }); if (linkToLawyer) {
+                    if (!token) {
+                        throw new Error("No token found to link the courtfile with the lawyer.");
+                    }
+                    setLinking(true);
+                    const relResp = await fetch(`${API}/api/lawyers-courtfiles`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ courtfile_id: newCourtfile.id })
+                    });
+                    if (!relResp.ok) {
+                        const e = await relResp.json().catch(() => ({}));
+                        throw new Error(e.error || `Failed to link courtfile (HTTP ${relResp.status})`);
+                    }
+                }
 
-                navigate('/courtfiles');
+                navigate(returnTo); // [CAMBIO]
 
                 alert('Courtfile created successfully!');
             } else {
@@ -69,6 +95,7 @@ export const AddCourtfile = () => {
             console.error('Error creating courtfile:', error);
             setError(error.message);
         } finally {
+            setLinking(false); 
             setLoading(false);
         }
     };

@@ -1,11 +1,17 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export const AddAppointment = () => {
-  const { dispatch } = useGlobalReducer();
+  const { store, dispatch } = useGlobalReducer();
   const navigate = useNavigate();
+  const location = useLocation();
   const API = import.meta.env.VITE_BACKEND_URL;
+
+  const returnTo = location.state?.returnTo || "/appointments";
+
+  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
+  const token = auth?.token;
 
   const [formData, setFormData] = useState({
     title: "",
@@ -13,10 +19,41 @@ export const AddAppointment = () => {
     date: "",
     starts_at: "",
     ends_at: "",
+    courtfile_id: "",
   });
 
   const [loading, setLoading] = useState(false);
+  const [linking, setLinking] = useState(false);
   const [error, setError] = useState(null);
+
+  const [myCases, setMyCases] = useState([]);
+  const [loadingCases, setLoadingCases] = useState(false);
+
+  useEffect(() => {
+    const fetchCases = async () => {
+      try {
+        setLoadingCases(true);
+        
+        const endpoint = token ? `${API}/api/lawyers-courtfiles` : `${API}/api/courtfiles`;
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const resp = await fetch(endpoint, { headers });
+        if (!resp.ok) {
+          const e = await resp.json().catch(() => ({}));
+          throw new Error(e.error || `HTTP ${resp.status}`);
+        }
+        const data = await resp.json();
+        const mapped = token
+          ? data.map(r => ({ id: r.courtfile.id, number: r.courtfile.case_number, title: r.courtfile.title }))
+          : data.map(cf => ({ id: cf.id, number: cf.case_number, title: cf.title }));
+        setMyCases(mapped);
+      } catch (err) {
+        setError(err.message || "Error fetching courtfiles");
+      } finally {
+        setLoadingCases(false);
+      }
+    };
+    fetchCases();
+  }, [API, token]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -27,34 +64,68 @@ export const AddAppointment = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
-    try {
-      const payload = { ...formData };
+    if (!formData.courtfile_id) {
+      setError("Please select a courtfile to link this appointment.");
+      return;
+    }
 
-      const response = await fetch(`${API}/api/appointments`, {
+    setLoading(true);
+    try {
+      
+      const resp = await fetch(`${API}/api/appointments`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          location: formData.location,
+          date: formData.date,           
+          starts_at: formData.starts_at, 
+          ends_at: formData.ends_at      
+        })
       });
 
-      if (response.ok) {
-        const newAppointment = await response.json();
-        dispatch({ type: "ADD_APPOINTMENT", payload: newAppointment });
-        navigate("/appointments");
-        alert("Appointment created successfully!");
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to create appointment");
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error(e.error || "Failed to create appointment");
       }
+
+      const newAppointment = await resp.json();
+      dispatch?.({ type: "ADD_APPOINTMENT", payload: newAppointment });
+
+      setLinking(true);
+      const linkResp = await fetch(`${API}/api/appointments-courtfiles`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          appointment_id: newAppointment.id,
+          courtfile_id: Number(formData.courtfile_id)
+        })
+      });
+
+      if (!linkResp.ok) {
+        const e = await linkResp.json().catch(() => ({}));
+        throw new Error(e.error || `Failed to link appointment (HTTP ${linkResp.status})`);
+      }
+
+      alert("Appointment created and linked successfully!");
+      navigate(returnTo);
     } catch (err) {
-      console.error("Error creating appointment:", err);
+      console.error("Error creating/linking appointment:", err);
       setError(err.message);
     } finally {
+      setLinking(false);
       setLoading(false);
     }
   };
+
 
   return (
     <div className="container mt-4">
@@ -78,6 +149,26 @@ export const AddAppointment = () => {
               )}
 
               <form onSubmit={handleSubmit}>
+                <div className="mb-3">
+                  <label htmlFor="courtfile_id" className="form-label">Link to Courtfile *</label>
+                  <select
+                    className="form-select"
+                    id="courtfile_id"
+                    name="courtfile_id"
+                    value={formData.courtfile_id}
+                    onChange={handleInputChange}
+                    required
+                    disabled={loading || loadingCases}
+                  >
+                    <option value="">Select a courtfile</option>
+                    {myCases.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.number} — {c.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
                 <div className="mb-3">
                   <label htmlFor="title" className="form-label">Title *</label>
                   <input
