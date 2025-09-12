@@ -22,7 +22,7 @@ class Lawyer(db.Model):
         Boolean(), default=True, nullable=False)
 
     courtfiles: Mapped[List["LawyerCourtfile"]] = relationship(back_populates="lawyer")
-    client_associations: Mapped[List["LawyerClient"]] = relationship(back_populates="lawyer")
+    client: Mapped[List["LawyerClient"]] = relationship(back_populates="lawyer")
 
     @validates("password")
     def _hash_password(self, key, value):
@@ -55,7 +55,7 @@ class Client(db.Model):
     is_active: Mapped[bool] = mapped_column(Boolean(), default=True, nullable=False)
 
     courtfiles: Mapped[List["ClientCourtfile"]] = relationship(back_populates="client")
-    lawyer_associations: Mapped[List["LawyerClient"]] = relationship(back_populates="client")
+    lawyer: Mapped[List["LawyerClient"]] = relationship(back_populates="client")
 
     @validates("password")
     def _hash_password(self, key, value):
@@ -117,6 +117,7 @@ class Courtfile(db.Model):
     deadlines: Mapped[List["DeadlineCourtfile"]] = relationship(back_populates="courtfile")
     lawyers: Mapped[List["LawyerCourtfile"]] = relationship(back_populates="courtfile")
     appointment: Mapped[List["AppointmentCourtfile"]] = relationship(back_populates="courtfile")
+    document: Mapped[List["CourtfileDocument"]] = relationship(back_populates="courtfile")
 
     def __str__(self):   
         return self.case_number
@@ -192,6 +193,8 @@ class Document(db.Model):
     category: Mapped[str] = mapped_column(String(100), nullable=True)
     create_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
+    courtfile: Mapped[List["CourtfileDocument"]] = relationship(back_populates="document")
+
     def serialize(self):
         return {
             "id": self.id,
@@ -256,7 +259,18 @@ class LawyerClient(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
 
     lawyer_id: Mapped[int] = mapped_column(ForeignKey("lawyer.id"), nullable=False, index=True)
-    lawyer: Mapped["Lawyer"] = relationship(back_populates="client_associations")
+    lawyer: Mapped["Lawyer"] = relationship(back_populates="client")
 
     client_id: Mapped[int] = mapped_column(ForeignKey("client.id"), nullable=False, index=True)
-    client: Mapped["Client"] = relationship(back_populates="lawyer_associations")
+    client: Mapped["Client"] = relationship(back_populates="lawyer")
+
+class CourtfileDocument(db.Model):
+    __tablename__ = 'courtfile_document'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    courtfile_id: Mapped[int] = mapped_column(ForeignKey("courtfile.id"), nullable=False, index=True)
+    courtfile: Mapped["Courtfile"] = relationship(back_populates="document")
+
+    document_id: Mapped[int] = mapped_column(ForeignKey("document.id"), nullable=False, index=True)
+    document: Mapped["Document"] = relationship(back_populates="courtfile")

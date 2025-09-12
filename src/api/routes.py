@@ -3,7 +3,7 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 """
 from datetime import datetime
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import Courtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient
+from api.models import Courtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -1224,6 +1224,80 @@ def create_lawyer_client():
 def delete_lawyer_client(id):
     try:
         relation = LawyerClient.query.get(id)
+        if not relation:
+            return jsonify({'error': 'Relationship not found'}), 404
+
+        db.session.delete(relation)
+        db.session.commit()
+
+        return jsonify({'message': 'Relationship deleted successfully'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+    
+
+# -----------------ROUTES PARA COURTFILE-DOCUMENT--------------------------------------------
+
+@api.route('/courtfile-document', methods=['GET'])
+def get_courtfile_document():
+    try:
+        courtfile_document = CourtfileDocument.query.all()
+        return jsonify([{
+            'id': cd.id,
+            'courtfile_id': cd.courtfile_id,
+            'document_id': cd.document_id,
+            'courtfile_number': cd.courtfile.case_number if cd.courtfile else None,
+            'courtfile_title': cd.courtfile.title if cd.courtfile else None,
+            'document_name': cd.document.name if cd.document else None,
+            'document_type': cd.document.type if cd.document else None,
+            'document_url': cd.document.url_route if cd.document else None
+        } for cd in courtfile_document]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/courtfile-document', methods=['POST'])
+def create_courtfile_document():
+    try:
+        data = request.get_json()
+
+        courtfile = Courtfile.query.get(data['courtfile_id'])
+        document = Document.query.get(data['document_id'])
+
+        if not courtfile or not document:
+            return jsonify({'error': 'Courtfile or Document not found'}), 404
+
+        existing = CourtfileDocument.query.filter_by(
+            courtfile_id=data['courtfile_id'],
+            document_id=data['document_id']
+        ).first()
+
+        if existing:
+            return jsonify({'error': 'Relationship already exists'}), 400
+
+        new_relation = CourtfileDocument(
+            courtfile_id=data['courtfile_id'],
+            document_id=data['document_id']
+        )
+
+        db.session.add(new_relation)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Relationship created successfully',
+            'id': new_relation.id
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/courtfile-document/<int:id>', methods=['DELETE'])
+def delete_courtfile_document(id):
+    try:
+        relation = CourtfileDocument.query.get(id)
         if not relation:
             return jsonify({'error': 'Relationship not found'}), 404
 

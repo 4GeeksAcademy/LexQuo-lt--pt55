@@ -22,6 +22,7 @@ export const initialStore = () => {
     lawyersCourtfiles: [],
     appointmentsCourtfiles: [],
     lawyerClient: [],
+    courtfileDocument: [],
     auth: persistedAuth || null,
   };
 };
@@ -301,6 +302,25 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
+    /* COURTFILE-DOCUMENT */
+
+    case "SET_COURTFILE_DOCUMENT":
+      return { ...store, courtfileDocument: action.payload };
+
+    case "ADD_COURTFILE_DOCUMENT":
+      return {
+        ...store,
+        courtfileDocument: [...store.courtfileDocument, action.payload],
+      };
+
+    case "DELETE_COURTFILE_DOCUMENT":
+      return {
+        ...store,
+        courtfileDocument: store.courtfileDocument.filter(
+          (cd) => cd.id !== action.payload
+        ),
+      };
+      s;
     default:
       throw Error("Unknown action.");
   }
