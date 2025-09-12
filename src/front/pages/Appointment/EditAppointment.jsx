@@ -154,13 +154,14 @@ export const EditAppointment = () => {
                 <div className="mb-3">
                   <label htmlFor="date" className="form-label">Date *</label>
                   <input
-                    type="text"
+                    type="date"
                     className="form-control"
                     id="date"
                     name="date"
                     value={formData.date}
                     onChange={handleInputChange}
                     required
+                    placeholder="example: 2025-11-25"
                     disabled={loading}
                   />
                 </div>
@@ -168,14 +169,13 @@ export const EditAppointment = () => {
                 <div className="mb-3">
                   <label htmlFor="starts_at" className="form-label">Starts At *</label>
                   <input
-                    type="text"
+                    type="time"
                     className="form-control"
                     id="starts_at"
                     name="starts_at"
                     value={formData.starts_at}
                     onChange={handleInputChange}
                     required
-                    placeholder="example: 17:30"
                     disabled={loading}
                   />
                 </div>
@@ -183,14 +183,13 @@ export const EditAppointment = () => {
                 <div className="mb-3">
                   <label htmlFor="ends_at" className="form-label">Ends At *</label>
                   <input
-                    type="text"
+                    type="time"
                     className="form-control"
                     id="ends_at"
                     name="ends_at"
                     value={formData.ends_at}
                     onChange={handleInputChange}
                     required
-                    placeholder="example: 17:45"
                     disabled={loading}
                   />
                 </div>

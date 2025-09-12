@@ -70,7 +70,7 @@ export const LawyersCourtfiles = () => {
                 <tr key={lc.id}>
                   <td><strong>{lc.id}</strong></td>
                   <td>{lc.lawyer_name}</td>
-                  <td>{lc.courtfile_number}</td>
+                  <td>{lc.courtfile.case_number}</td>
                   <td>
                     <button
                       className="btn btn-sm btn-danger"

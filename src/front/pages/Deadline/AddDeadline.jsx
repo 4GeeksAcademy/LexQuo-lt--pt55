@@ -7,6 +7,12 @@ export const AddDeadline = () => {
   const navigate = useNavigate();
   const API = import.meta.env.VITE_BACKEND_URL;
 
+  const Deadline_Categories = ["Contestación de demanda", "Traslado / Vista", "Ofrecimiento de prueba", "Producción de prueba", "Audiencia",
+    "Recurso / Apelación", "Ejecución / Cumplimiento", "Caducidad de instancia", "Plazo penal (excarcelación, preventiva, etc.)",
+    "Mediación obligatoria", "Vencimiento de contrato", "Pago de tasa de justicia / aportes", "Vencimiento administrativo (AFIP, IGJ, etc.)",
+    "Documentación del cliente", "Recordatorio interno / reunión con cliente", "Otros"
+  ]
+
   const [formData, setFormData] = useState({
     deadline_type: "",
     deadline_date: "",
@@ -76,17 +82,22 @@ export const AddDeadline = () => {
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                   <label htmlFor="deadline_type" className="form-label">Deadline Type *</label>
-                  <input
-                    type="text"
-                    className="form-control"
+                  <select
+                    className="form-select"
                     id="deadline_type"
                     name="deadline_type"
                     value={formData.deadline_type}
                     onChange={handleInputChange}
                     required
-                    placeholder="e.g., Court Hearing, Document Submission"
                     disabled={loading}
-                  />
+                  >
+                    <option value="">Select a Type</option>
+                    {Deadline_Categories.map(type => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="mb-3">
