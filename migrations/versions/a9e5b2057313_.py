@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 32758cf6e01e
+Revision ID: a9e5b2057313
 Revises: 
-Create Date: 2025-09-10 22:04:59.966134
+Create Date: 2025-09-12 12:50:54.568321
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '32758cf6e01e'
+revision = 'a9e5b2057313'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -125,6 +125,18 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_deadline_courtfile_courtfile_id'), ['courtfile_id'], unique=False)
         batch_op.create_index(batch_op.f('ix_deadline_courtfile_deadline_id'), ['deadline_id'], unique=False)
 
+    op.create_table('lawyer_client',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('lawyer_id', sa.Integer(), nullable=False),
+    sa.Column('client_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['client_id'], ['client.id'], ),
+    sa.ForeignKeyConstraint(['lawyer_id'], ['lawyer.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('lawyer_client', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_lawyer_client_client_id'), ['client_id'], unique=False)
+        batch_op.create_index(batch_op.f('ix_lawyer_client_lawyer_id'), ['lawyer_id'], unique=False)
+
     op.create_table('lawyer_courtfile',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('lawyer_id', sa.Integer(), nullable=False),
@@ -147,6 +159,11 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_lawyer_courtfile_courtfile_id'))
 
     op.drop_table('lawyer_courtfile')
+    with op.batch_alter_table('lawyer_client', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_lawyer_client_lawyer_id'))
+        batch_op.drop_index(batch_op.f('ix_lawyer_client_client_id'))
+
+    op.drop_table('lawyer_client')
     with op.batch_alter_table('deadline_courtfile', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_deadline_courtfile_deadline_id'))
         batch_op.drop_index(batch_op.f('ix_deadline_courtfile_courtfile_id'))
