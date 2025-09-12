@@ -1,8 +1,9 @@
 
 import os
 from flask_admin import Admin
-from .models import db, Lawyer, Courtfile, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile
+from .models import db, Lawyer, Courtfile, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient
 from flask_admin.contrib.sqla import ModelView
+
 
 class ClientCourtfileView(ModelView):
     column_list = ['id', 'client', 'courtfile']
@@ -14,16 +15,16 @@ class ClientCourtfileView(ModelView):
         if client:
             return f"{client.firstname} {client.lastname}"
         return "N/A"
-    
+
     def courtfile_name(self, model):
         courtfile = Courtfile.query.get(model.courtfile_id)
         if courtfile:
             return courtfile.case_number
         return "N/A"
-          
+
     def _format_client(self, context, model, name):
         return f"{model.client.firstname} {model.client.lastname}"
-    
+
     def _format_courtfile(self, context, model, name):
         return model.courtfile.case_number
 
@@ -36,12 +37,12 @@ class ClientCourtfileView(ModelView):
 class DeadlineCourtfileView(ModelView):
     column_list = ['id', 'deadlines', 'courtfile']
     column_auto_select_related = True
-          
+
     def _format_deadline(self, context, model, name):
         if model.deadlines:
             return f"{model.deadlines.deadline_type} ({model.deadlines.priority}) - {model.deadlines.deadline_date}"
         return "N/A"
-    
+
     def _format_courtfile(self, context, model, name):
         if model.courtfile:
             return model.courtfile.case_number
@@ -51,7 +52,8 @@ class DeadlineCourtfileView(ModelView):
         'deadlines': _format_deadline,
         'courtfile': _format_courtfile
     }
-    
+
+
 class LawyerCourtfileView(ModelView):
     column_list = ['id', 'lawyer', 'courtfile']
 
@@ -62,16 +64,16 @@ class LawyerCourtfileView(ModelView):
         if lawyer:
             return f"{lawyer.firstname} {lawyer.lastname}"
         return "N/A"
-    
+
     def courtfile_name(self, model):
         courtfile = Courtfile.query.get(model.courtfile_id)
         if courtfile:
             return courtfile.case_number
         return "N/A"
-          
+
     def _format_lawyer(self, context, model, name):
         return f"{model.lawyer.firstname} {model.lawyer.lastname}"
-    
+
     def _format_courtfile(self, context, model, name):
         return model.courtfile.case_number
 
@@ -80,15 +82,16 @@ class LawyerCourtfileView(ModelView):
         'courtfile': _format_courtfile
     }
 
+
 class AppointmentCourtfileView(ModelView):
     column_list = ['id', 'appointment', 'courtfile']
     column_auto_select_related = True
-          
+
     def _format_appointment(self, context, model, name):
         if model.appointment:
             return f"{model.appointment.title} - {model.appointment.date}"
         return "N/A"
-    
+
     def _format_courtfile(self, context, model, name):
         if model.courtfile:
             return model.courtfile.case_number
@@ -98,6 +101,29 @@ class AppointmentCourtfileView(ModelView):
         'appointment': _format_appointment,
         'courtfile': _format_courtfile
     }
+
+
+class LawyerClientView(ModelView):
+    column_list = ['id', 'lawyer', 'client']
+    column_auto_select_related = True
+
+    def lawyer_name(self, model):
+        lawyer = Lawyer.query.get(model.lawyer_id)
+        if lawyer:
+            return f"{lawyer.firstname} {lawyer.lastname}"
+        return "N/A"
+
+    def client_name(self, model):
+        client = Client.query.get(model.client_id)
+        if client:
+            return f"{client.firstname} {client.lastname}"
+        return "N/A"
+
+    column_formatters = {
+        'lawyer': lawyer_name,
+        'client': client_name
+    }
+
 
 def setup_admin(app):
     app.secret_key = os.environ.get('FLASK_APP_KEY', 'sample key')
@@ -117,7 +143,7 @@ def setup_admin(app):
     admin.add_view(DeadlineCourtfileView(DeadlineCourtfile, db.session))
     admin.add_view(LawyerCourtfileView(LawyerCourtfile, db.session))
     admin.add_view(AppointmentCourtfileView(AppointmentCourtfile, db.session))
-
+    admin.add_view(LawyerClientView(LawyerClient, db.session))
 
     # You can duplicate that line to add mew models
     # admin.add_view(ModelView(YourModelName, db.session))
