@@ -1,10 +1,11 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean, Text, Date, Time, DateTime, ForeignKey, Time
+import enum
+from sqlalchemy import String, Boolean, Text, Date, Time, DateTime, ForeignKey, Time, Float, Enum
 from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from typing import List
 from werkzeug.security import generate_password_hash
-from datetime import date, time
+from datetime import date, time, datetime
 
 
 db = SQLAlchemy()
@@ -178,6 +179,11 @@ class Deadlines(db.Model):
     def serialize(self):
         return {
             "id": self.id,
+            "amount": self.amount,
+            "currency": self.currency,
+            "status": self.status.value,
+            "paid_at": self.paid_at.isoformat() if self.paid_at else None,
+            "means": self.means,
             "deadline_type": self.deadline_type,
             "deadline_date": self.deadline_date.isoformat() if self.deadline_date else None,  
             "deadline_hour": self.deadline_hour.strftime('%H:%M') if self.deadline_hour else None,  

@@ -8,7 +8,23 @@ export const Navbar = () => {
 				<Link to="/" className="text-decoration-none">
 					<span className="navbar-brand mx-2 my-2 h1">Home</span>
 				</Link>
-				
+				<div className="ml-auto">
+					<Link to="/courtfiles">
+						<button className="btn btn-light me-2">Courtfiles</button>
+					</Link>
+					<Link to="/lawyers">
+						<button className="btn btn-light me-2">Lawyers</button>
+					</Link>
+					<Link to="/admins">
+						<button className="btn btn-light me-2">Admins</button>
+					</Link>
+					<Link to="/clients">
+						<button className="btn btn-light me-2">Clients</button>
+					</Link>
+					<Link to="/payments">
+						<button className="btn btn-light">Payments</button>
+					</Link>
+				</div>
 			</div>
 		</nav>
 	);

@@ -67,6 +67,14 @@ import { CourtfilesDocuments } from "./pages/Relations/CourtfilesDocuments";
 import { AddCourtfilesDocuments } from "./pages/Relations/AddCourtfilesDocuments";
 
 
+import { Payments } from "./pages/Payments";
+import { ViewPayment } from "./pages/ViewPayment";
+import { EditPayment } from "./pages/EditPayment";
+import { AddPayment } from "./pages/AddPayment";
+
+
+
+
 export const router = createBrowserRouter(
   createRoutesFromElements(
     // CreateRoutesFromElements function allows you to build route elements declaratively.
@@ -102,6 +110,11 @@ export const router = createBrowserRouter(
       <Route path="/admins/addAdmin" element={<AddAdmin />} />
       <Route path="/admins/view/:adminId" element={<ViewAdmin />} />
       <Route path="/admins/:adminId" element={<EditAdmin />} />
+
+      <Route path="/payments" element={<Payments />} />
+      <Route path="/payments/view/:paymentId" element={<ViewPayment />} />
+      <Route path="/payments/addPayment" element={<AddPayment />} />
+      <Route path="/payments/:paymentId" element={<EditPayment />} />
 
       <Route path="/deadlines" element={<Deadlines />} />
       <Route path="/deadlines/addDeadline" element={<AddDeadline />} />
