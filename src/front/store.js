@@ -1,9 +1,11 @@
 export const initialStore = () => {
-
-  const persistedAuth = (() => { 
-    try { return JSON.parse(sessionStorage.getItem("auth") || "null"); } catch { return null; } 
-  })(); 
-
+  const persistedAuth = (() => {
+    try {
+      return JSON.parse(sessionStorage.getItem("auth") || "null");
+    } catch {
+      return null;
+    }
+  })();
 
   return {
     message: null,
@@ -19,6 +21,7 @@ export const initialStore = () => {
     deadlinesCourtfiles: [],
     lawyersCourtfiles: [],
     appointmentsCourtfiles: [],
+    lawyerClient: [],
     auth: persistedAuth || null,
   };
 };
@@ -41,19 +44,23 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
-
     /* AUTH (nuevo) */
-    case "SET_AUTH": { 
-      return { ...store, auth: action.payload }; 
+    case "SET_AUTH": {
+      return { ...store, auth: action.payload };
     }
-    case "CLEAR_AUTH": { 
-      return { ...store, auth: null }; 
+    case "CLEAR_AUTH": {
+      return { ...store, auth: null };
     }
-    case "UPDATE_AUTH_USER": { 
-      if (!store.auth) return store; 
-      return { ...store, auth: { ...store.auth, user: { ...store.auth.user, ...action.payload } } }; 
+    case "UPDATE_AUTH_USER": {
+      if (!store.auth) return store;
+      return {
+        ...store,
+        auth: {
+          ...store.auth,
+          user: { ...store.auth.user, ...action.payload },
+        },
+      };
     }
-
 
     /* COURTFILES */
 
@@ -131,16 +138,21 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
-      /* APPOINTMENTS */
-    
+    /* APPOINTMENTS */
+
     case "SET_APPOINTMENTS":
       return { ...store, appointments: action.payload };
     case "ADD_APPOINTMENT":
-      return { ...store, appointments: [...store.appointments, action.payload] };
+      return {
+        ...store,
+        appointments: [...store.appointments, action.payload],
+      };
     case "DELETE_APPOINTMENT":
       return {
         ...store,
-        appointments: store.appointments.filter((ap) => ap.id !== action.payload),
+        appointments: store.appointments.filter(
+          (ap) => ap.id !== action.payload
+        ),
       };
     case "UPDATE_APPOINTMENT":
       return {
@@ -151,23 +163,23 @@ export default function storeReducer(store, action = {}) {
       };
 
     /* DOCUMENTS */
-    
+
     case "SET_DOCUMENTS":
-        return { ...store, documents: action.payload };
+      return { ...store, documents: action.payload };
     case "ADD_DOCUMENT":
-        return { ...store, documents: [...store.documents, action.payload] };
+      return { ...store, documents: [...store.documents, action.payload] };
     case "DELETE_DOCUMENT":
-        return {
-            ...store,
-            documents: store.documents.filter((doc) => doc.id !== action.payload),
-        };
+      return {
+        ...store,
+        documents: store.documents.filter((doc) => doc.id !== action.payload),
+      };
     case "UPDATE_DOCUMENT":
-        return {
-            ...store,
-            documents: store.documents.map((doc) =>
-                doc.id === action.payload.id ? action.payload : doc
-            ),
-        };
+      return {
+        ...store,
+        documents: store.documents.map((doc) =>
+          doc.id === action.payload.id ? action.payload : doc
+        ),
+      };
 
     /* DEADLINES */
 
@@ -190,33 +202,43 @@ export default function storeReducer(store, action = {}) {
           dl.id === action.payload.id ? action.payload : dl
         ),
       };
-    
+
     /* CLIENT–COURTFILES */
 
     case "SET_CLIENT_COURTFILES":
       return { ...store, clientsCourtfiles: action.payload };
 
     case "ADD_CLIENT_COURTFILE":
-      return { ...store, clientsCourtfiles: [...store.clientsCourtfiles, action.payload] };
+      return {
+        ...store,
+        clientsCourtfiles: [...store.clientsCourtfiles, action.payload],
+      };
 
     case "DELETE_CLIENT_COURTFILE":
       return {
         ...store,
-        clientsCourtfiles: store.clientsCourtfiles.filter((cc) => cc.id !== action.payload),
+        clientsCourtfiles: store.clientsCourtfiles.filter(
+          (cc) => cc.id !== action.payload
+        ),
       };
-    
+
     /* DEADLINE–COURTFILES */
 
     case "SET_DEADLINE_COURTFILES":
       return { ...store, deadlinesCourtfiles: action.payload };
 
     case "ADD_DEADLINE_COURTFILE":
-      return { ...store, deadlinesCourtfiles: [...store.deadlinesCourtfiles, action.payload] };
+      return {
+        ...store,
+        deadlinesCourtfiles: [...store.deadlinesCourtfiles, action.payload],
+      };
 
     case "DELETE_DEADLINE_COURTFILE":
       return {
         ...store,
-        deadlinesCourtfiles: store.deadlinesCourtfiles.filter((cc) => cc.id !== action.payload),
+        deadlinesCourtfiles: store.deadlinesCourtfiles.filter(
+          (cc) => cc.id !== action.payload
+        ),
       };
 
     /* LAWYER–COURTFILES */
@@ -225,12 +247,17 @@ export default function storeReducer(store, action = {}) {
       return { ...store, lawyersCourtfiles: action.payload };
 
     case "ADD_LAWYER_COURTFILE":
-      return { ...store, lawyersCourtfiles: [...store.lawyersCourtfiles, action.payload] };
+      return {
+        ...store,
+        lawyersCourtfiles: [...store.lawyersCourtfiles, action.payload],
+      };
 
     case "DELETE_LAWYER_COURTFILE":
       return {
         ...store,
-        lawyersCourtfiles: store.lawyersCourtfiles.filter((cc) => cc.id !== action.payload),
+        lawyersCourtfiles: store.lawyersCourtfiles.filter(
+          (cc) => cc.id !== action.payload
+        ),
       };
 
     /* APPOINTMENTS–COURTFILES */
@@ -239,14 +266,40 @@ export default function storeReducer(store, action = {}) {
       return { ...store, appointmentsCourtfiles: action.payload };
 
     case "ADD_APPOINTMENT_COURTFILE":
-      return { ...store, appointmentsCourtfiles: [...store.appointmentsCourtfiles, action.payload] };
+      return {
+        ...store,
+        appointmentsCourtfiles: [
+          ...store.appointmentsCourtfiles,
+          action.payload,
+        ],
+      };
 
     case "DELETE_APPOINTMENT_COURTFILE":
       return {
         ...store,
-        appointmentsCourtfiles: store.appointmentsCourtfiles.filter((cc) => cc.id !== action.payload),
+        appointmentsCourtfiles: store.appointmentsCourtfiles.filter(
+          (cc) => cc.id !== action.payload
+        ),
       };
 
+    /* LAWYER–CLIENT */
+
+    case "SET_LAWYER_CLIENT":
+      return { ...store, lawyerClient: action.payload };
+
+    case "ADD_LAWYER_CLIENT":
+      return {
+        ...store,
+        lawyerClient: [...store.lawyerClient, action.payload],
+      };
+
+    case "DELETE_LAWYER_CLIENT":
+      return {
+        ...store,
+        lawyerClient: store.lawyerClient.filter(
+          (lc) => lc.id !== action.payload
+        ),
+      };
 
     default:
       throw Error("Unknown action.");
