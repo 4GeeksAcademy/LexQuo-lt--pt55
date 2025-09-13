@@ -118,6 +118,7 @@ class Courtfile(db.Model):
     lawyers: Mapped[List["LawyerCourtfile"]] = relationship(back_populates="courtfile")
     appointment: Mapped[List["AppointmentCourtfile"]] = relationship(back_populates="courtfile")
     document: Mapped[List["CourtfileDocument"]] = relationship(back_populates="courtfile")
+    payment: Mapped[List["PaymentCourtfile"]] = relationship(back_populates="courtfile")
 
     def __str__(self):   
         return self.case_number
@@ -281,12 +282,15 @@ class PaymentStatus(enum.Enum):
     rejected = "rejected"
 
 class Payment(db.Model):
+    __tablename__ = 'payment'
+    
     id: Mapped[int] = mapped_column(primary_key=True)
     amount: Mapped[float] = mapped_column(Float, nullable=False)
     currency: Mapped[str] = mapped_column(String(10), nullable=False)
     status: Mapped[enum.Enum] = mapped_column(Enum(PaymentStatus), nullable=False, default=PaymentStatus.pending)
     paid_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     means: Mapped[str] = mapped_column(String(50), nullable=True)
+    payment: Mapped[List["PaymentCourtfile"]] = relationship(back_populates="payment")
 
     def serialize(self):
         return {
@@ -297,3 +301,14 @@ class Payment(db.Model):
             "paid_at": self.paid_at.isoformat() if self.paid_at else None,
             "means": self.means
         }
+
+class PaymentCourtfile(db.Model):
+    __tablename__ = 'payment_courtfile'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    payment_id: Mapped[int] = mapped_column(ForeignKey("payment.id"), nullable=False, index=True)
+    payment: Mapped["Payment"] = relationship(back_populates="courtfile")
+
+    courtfile_id: Mapped[int] = mapped_column(ForeignKey("courtfile.id"), nullable=False, index=True)
+    courtfile: Mapped["Courtfile"] = relationship(back_populates="payment")
