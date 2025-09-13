@@ -14,6 +14,7 @@ import { Courtfiles } from "./pages/Courtfile/Courtfiles";
 import { ViewCourtfile } from "./pages/Courtfile/ViewCourtfile";
 import { EditCourtfile } from "./pages/Courtfile/EditCourtfile";
 import { AddCourtfile } from "./pages/Courtfile/AddCourtfile";
+import { ViewCourtfileLawyer } from "./pages/Courtfile/ViewCourtfileLawyer";
 
 import { Lawyers } from "./pages/Lawyer/Lawyers";
 import { ViewLawyer } from "./pages/Lawyer/ViewLawyer";
@@ -93,7 +94,8 @@ export const router = createBrowserRouter(
       <Route path="/courtfiles/addcourtfile" element={<AddCourtfile />} />
       <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} />
       <Route path="/courtfiles/:courtfileId" element={<EditCourtfile />} />
-
+      <Route path="/courtfiles/ViewCourtfileLawyer/:courtfileId" element={<ViewCourtfileLawyer />} />
+      
       <Route path="/lawyers" element={<Lawyers />} />
       <Route path="/lawyers/addLawyer" element={<AddLawyer />} />
       <Route path="/lawyers/view/:lawyerId" element={<ViewLawyer />} />

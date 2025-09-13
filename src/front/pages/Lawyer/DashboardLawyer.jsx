@@ -332,7 +332,7 @@ export const DashboardLawyer = () => {
                                             </td>
                                             <td className="text-end">
                                                 <Link
-                                                    to={`/courtfiles/view/${cf.id}`}
+                                                    to={`/courtfiles/ViewCourtfileLawyer/${cf.id}`}
                                                     className="btn btn-sm btn-info me-1"
                                                     title="View"
                                                 >
