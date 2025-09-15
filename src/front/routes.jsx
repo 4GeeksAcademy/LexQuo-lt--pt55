@@ -32,6 +32,8 @@ import { Clients } from "./pages/Client/Clients";
 import { ViewClient } from "./pages/Client/ViewClient";
 import { EditClient } from "./pages/Client/EditClient";
 import { AddClient } from "./pages/Client/AddClient";
+import { SignUpClient } from "./pages/Client/SignUpClient";
+import { LoginClient } from "./pages/Client/LoginClient";
 
 import { Deadlines } from "./pages/Deadline/Deadlines";
 import { ViewDeadline } from "./pages/Deadline/ViewDeadline";
@@ -65,6 +67,7 @@ import { AddLawyersClients } from "./pages/Relations/AddLawyersClients";
 
 import { CourtfilesDocuments } from "./pages/Relations/CourtfilesDocuments";
 import { AddCourtfilesDocuments } from "./pages/Relations/AddCourtfilesDocuments";
+
 
 
 export const router = createBrowserRouter(
@@ -139,6 +142,9 @@ export const router = createBrowserRouter(
       <Route path="/SignUpLawyer" element={<SignUpLawyer />} />
       <Route path="/LoginLawyer" element={<LoginLawyer />} />
       <Route path="/DashboardLawyer" element={<DashboardLawyer />} />
+
+      <Route path="/SignUpClient" element={<SignUpClient />} />
+      <Route path="/LoginClient" element={<LoginClient />} />
 
     </Route>
   )
