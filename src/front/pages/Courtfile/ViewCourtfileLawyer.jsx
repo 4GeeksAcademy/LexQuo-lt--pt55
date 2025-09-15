@@ -1,5 +1,5 @@
 
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import React, { useState, useEffect } from "react";
 
@@ -13,6 +13,7 @@ export const ViewCourtfileLawyer = () => {
   const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
   const token = auth?.token;
   const authed = !!token;
+  if (auth?.role !== 'lawyer') return <Navigate to="/403" replace />;
 
   // ------------------- COURTFILE -------------------
   const [courtfile, setCourtfile] = useState(null);
@@ -36,6 +37,13 @@ export const ViewCourtfileLawyer = () => {
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [documentsErr, setDocumentsErr] = useState("");
   const [deletingDocRelId, setDeletingDocRelId] = useState(null);
+
+  // ------------------- CLIENTS (YA FILTRADOS) -------------------
+  const [caseClients, setCaseClients] = useState([]);
+  const [loadingClients, setLoadingClients] = useState(false);
+  const [clientsErr, setClientsErr] = useState("");
+  const [deletingClientRelId, setDeletingClientRelId] = useState(null);
+  
 
   // ------------------- FETCHERS -------------------
   const fetchCourtfile = async () => {
@@ -140,6 +148,34 @@ export const ViewCourtfileLawyer = () => {
     }
   };
 
+  const fetchClients = async () => {
+  try {
+    setLoadingClients(true);
+    setClientsErr("");
+    const resp = await fetch(
+      `${API}/api/clients-courtfiles?courtfile_id=${Number(courtfileId)}`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+    );
+    if (!resp.ok) {
+      const e = await resp.json().catch(() => ({}));
+      throw new Error(e.error || `HTTP ${resp.status}`);
+    }
+    const data = await resp.json();
+    const normalized = data.map(r => ({
+      relation_id: r.id,
+      courtfile_id: r.courtfile_id,
+      client_id: r.client_id,
+      client_name: r.client_name
+    }));
+    setCaseClients(normalized);
+  } catch (e) {
+    setClientsErr(e.message || "Error fetching clients");
+  } finally {
+    setLoadingClients(false);
+  }
+};
+
+
   // ------------------- EFFECTS -------------------
   useEffect(() => {
     if (!courtfileId) return;
@@ -151,6 +187,7 @@ export const ViewCourtfileLawyer = () => {
     fetchDeadlines();
     fetchAppointments();
     fetchDocuments();
+    fetchClients();
   }, [API, authed, token, courtfileId]);
 
   // ------------------- HELPERS -------------------
@@ -250,6 +287,27 @@ export const ViewCourtfileLawyer = () => {
       alert(err.message || "Error unlinking document");
     } finally {
       setDeletingDocRelId(null);
+    }
+  };
+
+  const handleDeleteClientRelation = async (relationId) => {
+    if (!authed) return;
+    if (!window.confirm("Unlink this client from the case?")) return;
+    try {
+      setDeletingClientRelId(relationId);
+      const resp = await fetch(`${API}/api/clients-courtfiles/${relationId}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error(e.error || `HTTP ${resp.status}`);
+      }
+      await fetchClients();
+    } catch (err) {
+      alert(err.message || "Error unlinking client");
+    } finally {
+      setDeletingClientRelId(null);
     }
   };
 
@@ -576,6 +634,69 @@ export const ViewCourtfileLawyer = () => {
                             onClick={() => handleDeleteAppointmentRelation(ap.relation_id)}
                           >
                             {deletingApptRelId === ap.relation_id ? (
+                              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            ) : (
+                              <i className="bi bi-trash"></i>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-5">
+            <div className="d-flex justify-content-between align-items-center">
+              <h3 className="m-0">CLIENTS</h3>
+              <Link
+                to="/clients/link-or-create"
+                state={{
+                  courtfileId: courtfile.id,
+                  courtfileNumber: courtfile.case_number,
+                  courtfileTitle: courtfile.title,
+                  returnTo: `/courtfiles/view/${courtfile.id}`
+                }}
+                className="btn btn-sm btn-success"
+              >
+                + Add Client
+              </Link>
+            </div>
+
+            {loadingClients && <p className="mt-3">Loading clients...</p>}
+            {clientsErr && <div className="alert alert-danger mt-3">{clientsErr}</div>}
+            {!loadingClients && !clientsErr && caseClients.length === 0 && (
+              <div className="alert alert-info mt-3">No clients linked yet. Please add one!</div>
+            )}
+
+            {!loadingClients && caseClients.length > 0 && (
+              <div className="table-responsive mt-3">
+                <table className="table table-striped table-hover">
+                  <thead className="table-dark">
+                    <tr>
+                      <th>Client ID</th>
+                      <th>Name</th>
+                      <th className="text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {caseClients.map(cl => (
+                      <tr key={cl.relation_id}>
+                        <td>{cl.client_id}</td>
+                        <td>{cl.client_name || "—"}</td>
+                        <td className="text-end">
+                          <Link to={`/clients/view/${cl.client_id}`} className="btn btn-sm btn-info me-1" title="View">
+                            <i className="bi bi-eye"></i>
+                          </Link>
+                          <button
+                            className="btn btn-sm btn-danger"
+                            title={cl.relation_id ? "Unlink" : "No link available"}
+                            disabled={!cl.relation_id || deletingClientRelId === cl.relation_id}
+                            onClick={() => handleDeleteClientRelation(cl.relation_id)}
+                          >
+                            {deletingClientRelId === cl.relation_id ? (
                               <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                             ) : (
                               <i className="bi bi-trash"></i>
