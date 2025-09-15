@@ -427,7 +427,7 @@ export const ViewCourtfileLawyer = () => {
 
           <div className="mt-4">
             <div className="d-flex justify-content-between align-items-center">
-              <h3 className="m-0">CASE TIMELINE — Documents</h3>
+              <h3 className="m-0">DOCUMENTS</h3>
               <Link
                 to="/documents/addDocument"
                 state={{
