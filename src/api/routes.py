@@ -771,22 +771,27 @@ def create_document():
     try:
         data = request.get_json()
 
-        required_fields = ['name', 'type', 'url_route']
+        required_fields = ['name', 'type', 'url_route', 'document_date']
         for field in required_fields:
             if field not in data:
                 return jsonify({'error': f'Required field: {field}'}), 400
-
-        existing = Document.query.filter_by(
-            url_route=data['url_route']).first()
-        if existing:
-            return jsonify({'error': 'URL route already exists'}), 409
+        
+        from datetime import datetime
+        try:
+            if len(data['document_date']) == 10: 
+                doc_date = datetime.strptime(data['document_date'], "%Y-%m-%d")
+            else:
+                doc_date = datetime.fromisoformat(data['document_date'])
+        except Exception:
+            return jsonify({'error': 'Invalid document_date format'}), 400
 
         document = Document(
             name=data['name'],
             type=data['type'],
             url_route=data['url_route'],
             description=data.get('description'),
-            category=data.get('category')
+            category=data.get('category'),
+            document_date=doc_date
         )
 
         db.session.add(document)
@@ -812,11 +817,6 @@ def update_document(document_id):
             document.type = data['type']
 
         if 'url_route' in data:
-            if data['url_route'] != document.url_route:
-                existing = Document.query.filter_by(
-                    url_route=data['url_route']).first()
-                if existing:
-                    return jsonify({'error': 'URL route already exists'}), 409
             document.url_route = data['url_route']
 
         if 'description' in data:
@@ -1359,8 +1359,25 @@ def delete_lawyer_client(id):
 # -----------------ROUTES PARA COURTFILE-DOCUMENT--------------------------------------------
 
 @api.route('/courtfile-document', methods=['GET'])
+@jwt_required(optional=True)
 def get_courtfile_document():
     try:
+        requested_courtfile_id = request.args.get('courtfile_id', type=int) 
+
+        role, current_id = _get_role_and_identity()
+        query = CourtfileDocument.query
+
+        if role == "lawyer":
+            subq = select(LawyerCourtfile.courtfile_id).where(
+                LawyerCourtfile.lawyer_id == int(current_id)
+            )
+            query = query.filter(CourtfileDocument.courtfile_id.in_(subq))
+
+        if requested_courtfile_id is not None:
+            query = query.filter_by(courtfile_id=requested_courtfile_id)
+
+
+
         courtfile_document = CourtfileDocument.query.all()
         return jsonify([{
             'id': cd.id,
@@ -1370,7 +1387,9 @@ def get_courtfile_document():
             'courtfile_title': cd.courtfile.title if cd.courtfile else None,
             'document_name': cd.document.name if cd.document else None,
             'document_type': cd.document.type if cd.document else None,
-            'document_url': cd.document.url_route if cd.document else None
+            'document_url': cd.document.url_route if cd.document else None,
+            'document_date': cd.document.document_date.isoformat() if (cd.document and cd.document.document_date) else None,  
+            'create_at': cd.document.create_at.isoformat() if (cd.document and cd.document.create_at) else None              
         } for cd in courtfile_document]), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

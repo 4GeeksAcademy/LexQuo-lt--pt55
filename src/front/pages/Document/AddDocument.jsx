@@ -1,11 +1,20 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState } from "react";
 
 export const AddDocument = () => {
-  const { dispatch } = useGlobalReducer();
+  const { store, dispatch } = useGlobalReducer();
+  const location = useLocation();
   const navigate = useNavigate();
   const API = import.meta.env.VITE_BACKEND_URL;
+
+  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
+  const token = auth?.token;
+
+  const preselectedCourtfileId = location.state?.courtfileId || null;
+  const preselectedCourtfileNumber = location.state?.courtfileNumber || null;
+  const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
+  const returnTo = location.state?.returnTo || "/documents";
 
   const [formData, setFormData] = useState({
     name: "",
@@ -13,9 +22,11 @@ export const AddDocument = () => {
     url_route: "",
     description: "",
     category: "",
+    document_date: ""
   });
 
   const [loading, setLoading] = useState(false);
+  const [linking, setLinking] = useState(false);
   const [error, setError] = useState(null);
 
   const documentTypes = [
@@ -42,15 +53,39 @@ export const AddDocument = () => {
     try {
       const response = await fetch(`${API}/api/documents`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(formData),
       });
 
       if (response.ok) {
         const newDocument = await response.json();
         dispatch({ type: "ADD_DOCUMENT", payload: newDocument });
-        navigate("/documents");
-        alert("Document created successfully!");
+
+        if (preselectedCourtfileId) {
+          setLinking(true);
+          const linkResp = await fetch(`${API}/api/courtfile-document`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify({
+              document_id: newDocument.id,
+              courtfile_id: Number(preselectedCourtfileId)
+            })
+          });
+
+          if (!linkResp.ok) {
+            const e = await linkResp.json().catch(() => ({}));
+            throw new Error(e.error || `Document created, but failed to link (HTTP ${linkResp.status})`);
+          }
+        }
+
+        alert(preselectedCourtfileId ? "Document created and linked!" : "Document created successfully!");
+        navigate(returnTo);
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to create document");
@@ -59,6 +94,7 @@ export const AddDocument = () => {
       console.error("Error creating Document:", err);
       setError(err.message);
     } finally {
+      setLinking(false);
       setLoading(false);
     }
   };
@@ -69,8 +105,17 @@ export const AddDocument = () => {
         <div className="col-md-8">
           {/* Header */}
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1>Add New Document</h1>
-            <Link to="/documents" className="btn btn-outline-secondary">
+            <div>
+              <h1>Add New Document</h1>
+              {preselectedCourtfileId && (
+                <span className="badge bg-info mt-2">
+                  Linked to Case {preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
+                  {preselectedCourtfileTitle ? ` — ${preselectedCourtfileTitle}` : ""}
+                </span>
+              )}
+            </div>
+
+            <Link to={returnTo} className="btn btn-outline-secondary">
               <i className="bi bi-arrow-left"></i> Back to List
             </Link>
           </div>
@@ -122,6 +167,21 @@ export const AddDocument = () => {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* input fecha del documento */}
+                <div className="mb-3">
+                  <label htmlFor="document_date" className="form-label">Document Date</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    id="document_date"
+                    name="document_date"
+                    value={formData.document_date}
+                    onChange={handleInputChange}
+                    disabled={loading}
+                  />
+                  <div className="form-text">Used for the case timeline</div>
                 </div>
 
                 <div className="mb-3">
@@ -182,18 +242,12 @@ export const AddDocument = () => {
                 </div>
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to="/documents" className="btn btn-secondary me-md-2">
-                    Cancel
-                  </Link>
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={loading}
-                  >
-                    {loading ? (
+                  <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>   {/* [CHANGED] */}
+                  <button type="submit" className="btn btn-primary" disabled={loading || linking}>
+                    {loading || linking ? (
                       <>
-                        <span className="spinner-border spinner-border-sm" role="status"></span>
-                        Creating...
+                        <span className="spinner-border spinner-border-sm" role="status" />
+                        {linking ? " Linking..." : " Creating..."}
                       </>
                     ) : (
                       <>
@@ -207,6 +261,6 @@ export const AddDocument = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
