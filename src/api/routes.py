@@ -2,7 +2,7 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 from datetime import datetime
-from sqlalchemy import select   
+from sqlalchemy import select
 from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import Courtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument
 from api.utils import generate_sitemap, APIException
@@ -384,7 +384,44 @@ def delete_client(client_id):
         return jsonify({'error': str(e)}), 500
 
 
+@api.route('/clients/login', methods=['POST'])
+def client_login():
+    try:
+        data = request.get_json()
+
+        if not data or 'email' not in data or 'password' not in data:
+            return jsonify({'error': 'Email and password required'}), 400
+
+        email = (data.get('email') or '').strip().lower()
+
+        client = Client.query.filter_by(email=email).first()
+
+        if not client:
+            return jsonify({'error': 'Invalid credentials'}), 401
+
+        if not check_password_hash(client.password, data['password']):
+            return jsonify({'error': 'Invalid credentials'}), 401
+
+        if hasattr(client, 'is_active') and not client.is_active:
+            return jsonify({'error': 'Account deactivated'}), 403
+
+        token = create_access_token(
+            identity=str(client.id),
+            additional_claims={"role": "client"}
+        )
+
+        return jsonify({
+            'message': 'Login successful',
+            'token': token,
+            'role': 'client',
+            'client': client.serialize()
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 # -----------------ROUTES PARA ADMINS--------------------------------------------
+
 
 @api.route('/admins', methods=['GET'])
 def get_admins():
@@ -891,6 +928,7 @@ def _get_role_and_identity():  # [NUEVO]
     except Exception:
         return None, None
 
+
 @api.route('/lawyers-courtfiles', methods=['GET'])
 # !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
 @jwt_required(optional=True)
@@ -899,7 +937,7 @@ def get_lawyers_courtfiles():
         # query param opcional para filtrar (útil para admins o herramientas)
         requested_lawyer_id = request.args.get('lawyer_id', type=int)
 
-        role, current_id = _get_role_and_identity() 
+        role, current_id = _get_role_and_identity()
 
         if role == "lawyer":
             requested_lawyer_id = int(current_id)
@@ -980,7 +1018,7 @@ def delete_lawyer_courtfile(id):
         if not relation:
             return jsonify({'error': 'Relationship not found'}), 404
 
-        role, current_id = _get_role_and_identity()  
+        role, current_id = _get_role_and_identity()
 
         # Si es lawyer autenticado, solo puede borrar relaciones suyas
         if role == "lawyer" and str(relation.lawyer_id) != str(current_id):
@@ -1003,22 +1041,22 @@ def delete_lawyer_courtfile(id):
 @jwt_required(optional=True)
 def get_deadlines_courtfiles():
     try:
-        requested_lawyer_id = request.args.get('lawyer_id', type=int)   
-        requested_courtfile_id = request.args.get('courtfile_id', type=int)  
+        requested_lawyer_id = request.args.get('lawyer_id', type=int)
+        requested_courtfile_id = request.args.get('courtfile_id', type=int)
 
-        role, current_id = _get_role_and_identity()  
-        if role == "lawyer":                         
-            requested_lawyer_id = int(current_id)    
+        role, current_id = _get_role_and_identity()
+        if role == "lawyer":
+            requested_lawyer_id = int(current_id)
 
         query = DeadlineCourtfile.query
 
-        if requested_lawyer_id is not None:          
+        if requested_lawyer_id is not None:
             subq = select(LawyerCourtfile.courtfile_id).where(
                 LawyerCourtfile.lawyer_id == requested_lawyer_id
             )
             query = query.filter(DeadlineCourtfile.courtfile_id.in_(subq))
 
-        if requested_courtfile_id is not None:      
+        if requested_courtfile_id is not None:
             query = query.filter_by(courtfile_id=requested_courtfile_id)
 
         deadlines_courtfiles = query.all()
@@ -1043,11 +1081,11 @@ def get_deadlines_courtfiles():
 @jwt_required(optional=True)
 def create_deadline_courtfile():
     try:
-        data = request.get_json() or {}  
-        deadline_id = data.get('deadline_id') 
-        courtfile_id = data.get('courtfile_id')  
+        data = request.get_json() or {}
+        deadline_id = data.get('deadline_id')
+        courtfile_id = data.get('courtfile_id')
 
-        if not deadline_id or not courtfile_id: 
+        if not deadline_id or not courtfile_id:
             return jsonify({'error': 'deadline_id and courtfile_id required'}), 400
 
         deadline = Deadlines.query.get(deadline_id)
@@ -1056,14 +1094,14 @@ def create_deadline_courtfile():
         if not deadline or not courtfile:
             return jsonify({'error': 'Deadline or Courtfile not found'}), 404
 
-        role, current_id = _get_role_and_identity() 
+        role, current_id = _get_role_and_identity()
         if role == "lawyer":
             linked = LawyerCourtfile.query.filter_by(
                 lawyer_id=int(current_id), courtfile_id=int(courtfile_id)
             ).first()
             if not linked:
-                return jsonify({'error': 'Forbidden for this courtfile'}), 403  
-            
+                return jsonify({'error': 'Forbidden for this courtfile'}), 403
+
         existing = DeadlineCourtfile.query.filter_by(
             deadline_id=deadline_id,
             courtfile_id=courtfile_id
@@ -1088,7 +1126,6 @@ def create_deadline_courtfile():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-
 
 
 @api.route('/deadlines-courtfiles/<int:id>', methods=['DELETE'])
@@ -1120,6 +1157,7 @@ def delete_deadline_courtfile(id):
         return jsonify({'error': str(e)}), 500
 
 # -----------------ROUTES PARA APPOINTMENTS-COURTFILES--------------------------------------------
+
 
 @api.route('/appointments-courtfiles', methods=['GET'])
 # !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
@@ -1243,6 +1281,7 @@ def delete_appointment_courtfile(id):
 
 # -----------------ROUTES PARA LAWYER-CLIENT--------------------------------------------
 
+
 @api.route('/lawyer-client', methods=['GET'])
 def get_lawyer_client():
     try:
@@ -1314,7 +1353,7 @@ def delete_lawyer_client(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-    
+
 
 # -----------------ROUTES PARA COURTFILE-DOCUMENT--------------------------------------------
 
