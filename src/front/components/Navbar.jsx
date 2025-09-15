@@ -8,7 +8,6 @@ export const Navbar = () => {
 				<Link to="/" className="text-decoration-none">
 					<span className="navbar-brand mx-2 my-2 h1">Home</span>
 				</Link>
-				
 			</div>
 		</nav>
 	);

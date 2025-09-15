@@ -8,6 +8,9 @@ export const AddDeadline = () => {
   const location = useLocation();
   const API = import.meta.env.VITE_BACKEND_URL;
 
+  const preselectedCourtfileId = location.state?.courtfileId || null;
+  const preselectedCourtfileNumber = location.state?.courtfileNumber || null;
+  const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
   const returnTo = location.state?.returnTo || "/deadlines";
 
   const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
@@ -24,7 +27,7 @@ export const AddDeadline = () => {
     deadline_date: "",
     deadline_hour: "",
     priority: "medium",
-    courtfile_id: "",
+    courtfile_id: preselectedCourtfileId ? String(preselectedCourtfileId) : "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -34,10 +37,26 @@ export const AddDeadline = () => {
   const [myCases, setMyCases] = useState([]);
   const [loadingCases, setLoadingCases] = useState(false);
 
+  const [preselectedCf, setPreselectedCf] = useState(
+    preselectedCourtfileNumber ? { case_number: preselectedCourtfileNumber, title: preselectedCourtfileTitle } : null
+  );
+
   useEffect(() => {
     const fetchCases = async () => {
       try {
         setLoadingCases(true);
+
+        if (preselectedCourtfileId) {
+          if (!preselectedCf) {
+            const r = await fetch(`${API}/api/courtfiles/${preselectedCourtfileId}`);
+            if (r.ok) {
+              const d = await r.json();
+              setPreselectedCf({ case_number: d.case_number, title: d.title });
+            }
+          }
+          setMyCases([]);
+          return;
+        }
 
         const endpoint = token
           ? `${API}/api/lawyers-courtfiles`
@@ -55,15 +74,15 @@ export const AddDeadline = () => {
 
         const mapped = token
           ? data.map(r => ({
-              id: r.courtfile.id,
-              number: r.courtfile.case_number,
-              title: r.courtfile.title
-            }))
+            id: r.courtfile.id,
+            number: r.courtfile.case_number,
+            title: r.courtfile.title
+          }))
           : data.map(cf => ({
-              id: cf.id,
-              number: cf.case_number,
-              title: cf.title
-            }));
+            id: cf.id,
+            number: cf.case_number,
+            title: cf.title
+          }));
 
         setMyCases(mapped);
       } catch (err) {
@@ -73,7 +92,7 @@ export const AddDeadline = () => {
       }
     };
     fetchCases();
-  }, [API, token]);
+  }, [API, token, preselectedCourtfileId, preselectedCf]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -165,25 +184,35 @@ export const AddDeadline = () => {
               )}
 
               <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label htmlFor="courtfile_id" className="form-label">Link to Courtfile *</label>
-                  <select
-                    className="form-select"
-                    id="courtfile_id"
-                    name="courtfile_id"
-                    value={formData.courtfile_id}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading || loadingCases}
-                  >
-                    <option value="">Select a courtfile</option>
-                    {myCases.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.number} — {c.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {preselectedCourtfileId ? (
+                  <div className="mb-3">
+                    <label className="form-label">Linked Courtfile</label>
+                    <div className="form-control-plaintext">
+                      Expediente {preselectedCf?.case_number || "—"}                
+                      {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mb-3">
+                    <label htmlFor="courtfile_id" className="form-label">Link to Courtfile *</label>
+                    <select
+                      className="form-select"
+                      id="courtfile_id"
+                      name="courtfile_id"
+                      value={formData.courtfile_id}
+                      onChange={handleInputChange}
+                      required
+                      disabled={loading || loadingCases}
+                    >
+                      <option value="">Select a courtfile</option>
+                      {myCases.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.number} — {c.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div className="mb-3">
                   <label htmlFor="deadline_type" className="form-label">Deadline Type *</label>

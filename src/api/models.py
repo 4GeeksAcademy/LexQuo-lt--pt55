@@ -1,10 +1,10 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean, Text, Date, Time, DateTime, ForeignKey, Time
-from datetime import datetime
+from sqlalchemy import String, Boolean, Text, Date, Time, DateTime, ForeignKey, Time, Float, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from typing import List
 from werkzeug.security import generate_password_hash
-from datetime import date, time
+from datetime import date, time, datetime
+import enum
 
 
 db = SQLAlchemy()
@@ -274,3 +274,26 @@ class CourtfileDocument(db.Model):
 
     document_id: Mapped[int] = mapped_column(ForeignKey("document.id"), nullable=False, index=True)
     document: Mapped["Document"] = relationship(back_populates="courtfile")
+
+class PaymentStatus(enum.Enum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
+
+class Payment(db.Model):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    amount: Mapped[float] = mapped_column(Float, nullable=False)
+    currency: Mapped[str] = mapped_column(String(10), nullable=False)
+    status: Mapped[enum.Enum] = mapped_column(Enum(PaymentStatus), nullable=False, default=PaymentStatus.pending)
+    paid_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    means: Mapped[str] = mapped_column(String(50), nullable=True)
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "amount": self.amount,
+            "currency": self.currency,
+            "status": self.status.value,
+            "paid_at": self.paid_at.isoformat() if self.paid_at else None,
+            "means": self.means
+        }

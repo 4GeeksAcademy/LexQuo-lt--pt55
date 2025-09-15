@@ -4,8 +4,9 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 from datetime import datetime
 from sqlalchemy import select
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import Courtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument
+from api.models import Courtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment
 from api.utils import generate_sitemap, APIException
+from datetime import datetime, UTC
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
@@ -755,7 +756,7 @@ def get_documents():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
+  
 @api.route('/documents/<int:document_id>', methods=['GET'])
 def get_document(document_id):
     try:
@@ -797,7 +798,7 @@ def create_document():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-
+    
 @api.route('/documents/<int:document_id>', methods=['PUT'])
 def update_document(document_id):
     try:
@@ -1423,6 +1424,95 @@ def delete_courtfile_document(id):
         db.session.commit()
 
         return jsonify({'message': 'Relationship deleted successfully'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# -----------------ROUTES PARA PAYMENTS--------------------------------------------
+@api.route('/payments', methods=['POST'])
+def create_payment():
+    try:
+        data = request.get_json()
+
+        required_fields = ['amount', 'currency', 'means']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': f'Required field: {field}'}), 400
+
+
+        payment = Payment(
+            amount=data['amount'],
+            currency=data['currency'],
+            # paid_at=datetime.now(UTC) 
+            means=data['means']
+        )
+
+        db.session.add(payment)
+        db.session.commit()
+
+        return jsonify(payment.serialize()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api.route('/payments', methods=['GET'])
+def get_payments():
+    try:
+        payments = Payment.query.all()
+        return jsonify([payment.serialize() for payment in payments]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/payments/<int:payment_id>', methods=['GET'])
+def get_payment(payment_id):
+    try:
+        payment = Payment.query.get_or_404(payment_id)
+        return jsonify(payment.serialize()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
+
+@api.route('/payments/<int:payment_id>', methods=['PUT'])
+def update_payment(payment_id):
+    try:
+        payment = Payment.query.get_or_404(payment_id)
+        data = request.get_json()
+
+        if 'amount' in data:
+            payment.amount = data['amount']
+
+        if 'currency' in data:
+            payment.currency = data['currency']
+
+        if 'status' in data:
+            payment.status = data['status']
+            if data['status'] == "approved":
+                payment.paid_at = datetime.now(UTC)
+
+        if 'means' in data:
+            payment.means = data['means']
+
+        db.session.commit()
+
+        return jsonify(payment.serialize()), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/payments/<int:payment_id>', methods=['DELETE'])
+def delete_payment(payment_id):
+    try:
+        payment = Payment.query.get_or_404(payment_id)
+
+        db.session.delete(payment)
+        db.session.commit()
+
+        return jsonify({'message': 'Payment successfully deleted'}), 200
 
     except Exception as e:
         db.session.rollback()
