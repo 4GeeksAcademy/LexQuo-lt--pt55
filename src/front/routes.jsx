@@ -155,6 +155,8 @@ export const router = createBrowserRouter(
       <Route path="/LoginLawyer" element={<LoginLawyer />} />
       <Route path="/DashboardLawyer" element={<DashboardLawyer />} />
 
+      <Route path="/SignUpClient" element={<SignUpClient />} />
+      <Route path="/LoginClient" element={<LoginClient />} />
     </Route>
   )
 );
