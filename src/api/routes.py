@@ -156,6 +156,22 @@ def get_lawyer(lawyer_id):
         return jsonify(lawyer.serialize()), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 404
+    
+@api.route('/lawyers/lookup', methods=['GET'])
+@jwt_required(optional=True)
+def lookup_lawyer_by_email():
+    try:
+        email = (request.args.get('email') or '').strip().lower()
+        if not email:
+            return jsonify({'error': 'email required'}), 400
+
+        lawyer = Lawyer.query.filter(func.lower(Lawyer.email) == email).first()
+        if not lawyer:
+            return jsonify({'found': False}), 200
+
+        return jsonify({'found': True, 'lawyer': lawyer.serialize()}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @api.route('/lawyers', methods=['POST'])
@@ -982,31 +998,42 @@ def _get_role_and_identity():
 
 
 @api.route('/lawyers-courtfiles', methods=['GET'])
-# !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
 @jwt_required(optional=True)
 def get_lawyers_courtfiles():
     try:
-        # query param opcional para filtrar (útil para admins o herramientas)
         requested_lawyer_id = request.args.get('lawyer_id', type=int)
+        requested_courtfile_id = request.args.get('courtfile_id', type=int)
 
         role, current_id = _get_role_and_identity()
+        query = LawyerCourtfile.query
 
         if role == "lawyer":
-            requested_lawyer_id = int(current_id)
+            if requested_courtfile_id:
+                # Solo si el lawyer actual está vinculado a ese caso puede ver sus miembros
+                is_linked = LawyerCourtfile.query.filter_by(
+                    lawyer_id=int(current_id), courtfile_id=requested_courtfile_id
+                ).first()
+                if not is_linked:
+                    return jsonify({'error': 'You are not linked to this courtfile'}), 403
+                query = query.filter_by(courtfile_id=requested_courtfile_id)
+            else:
+                # Sin courtfile_id: limitar a ver sus propios vínculos
+                requested_lawyer_id = int(current_id)
 
-        query = LawyerCourtfile.query
         if requested_lawyer_id is not None:
             query = query.filter_by(lawyer_id=requested_lawyer_id)
+        if requested_courtfile_id is not None:
+            query = query.filter_by(courtfile_id=requested_courtfile_id)
 
-        lawyer_courtfiles = query.all()
-
+        rows = query.all()
         return jsonify([{
-            'id': lc.id,
-            'lawyer_id': lc.lawyer_id,
-            'courtfile_id': lc.courtfile_id,
-            'lawyer_name': f"{lc.lawyer.firstname} {lc.lawyer.lastname}",
-            'courtfile': lc.courtfile.serialize(),
-        } for lc in lawyer_courtfiles]), 200
+            'id': r.id,
+            'lawyer_id': r.lawyer_id,
+            'courtfile_id': r.courtfile_id,
+            'lawyer_name': f"{r.lawyer.firstname} {r.lawyer.lastname}".strip(),
+            'lawyer_email': r.lawyer.email,
+            'courtfile': r.courtfile.serialize(),
+        } for r in rows]), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -1023,38 +1050,38 @@ def create_lawyer_courtfile():
 
         role, current_id = _get_role_and_identity()
 
-        # Si es lawyer autenticado, solo puede crear relaciones para SÍ MISMO
         if role == "lawyer":
-            lawyer_id = int(current_id)
+            if not lawyer_id:
+                # sin target explícito, se asume self
+                lawyer_id = int(current_id)
+            elif int(lawyer_id) != int(current_id):
+                # invitante debe estar vinculado a ese expediente
+                inviter_rel = LawyerCourtfile.query.filter_by(
+                    lawyer_id=int(current_id), courtfile_id=int(courtfile_id)
+                ).first()
+                if not inviter_rel:
+                    return jsonify({'error': 'You are not linked to this courtfile'}), 403
+        # ------------------------------------------------------------------------------
 
         if not lawyer_id or not courtfile_id:
             return jsonify({'error': 'lawyer_id and courtfile_id required'}), 400
 
         lawyer = Lawyer.query.get(lawyer_id)
         courtfile = Courtfile.query.get(courtfile_id)
-
         if not lawyer or not courtfile:
             return jsonify({'error': 'Lawyer or Courtfile not found'}), 404
 
         existing = LawyerCourtfile.query.filter_by(
             lawyer_id=lawyer_id, courtfile_id=courtfile_id
         ).first()
-
         if existing:
-            return jsonify({'error': 'Relationship already exists'}), 400
+            return jsonify({'message': 'Relationship already exists'}), 200  # <- 200 en vez de 400
 
-        new_relation = LawyerCourtfile(
-            lawyer_id=lawyer_id,
-            courtfile_id=courtfile_id
-        )
-
+        new_relation = LawyerCourtfile(lawyer_id=lawyer_id, courtfile_id=courtfile_id)
         db.session.add(new_relation)
         db.session.commit()
 
-        return jsonify({
-            'message': 'Relationship created successfully',
-            'id': new_relation.id
-        }), 201
+        return jsonify({'message': 'Relationship created successfully', 'id': new_relation.id}), 201
 
     except Exception as e:
         db.session.rollback()
