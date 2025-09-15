@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { LogoutButton } from "../../components/LogoutButton";
 import { Link, useParams } from "react-router-dom";
 import PropTypes from "prop-types";
@@ -28,6 +28,8 @@ export const DashboardLawyer = () => {
     }, [store?.auth]);
 
     const authed = !!auth?.token;
+
+    if (auth?.role !== 'lawyer') return <Navigate to="/403" replace />;
 
     const name =
         auth?.user
@@ -149,7 +151,6 @@ export const DashboardLawyer = () => {
                 throw new Error(e.error || `HTTP ${resp.status}`);
             }
             const data = await resp.json();
-            // guardo relation_id para poder borrar vínculos
             setCases(data.map(r => ({ relation_id: r.id, ...(r.courtfile || r) })));
         } catch (e) {
             setCasesErr(e.message || "Error fetching courtfiles");
@@ -265,11 +266,57 @@ export const DashboardLawyer = () => {
         }
     };
 
+    // ....................... FLUJO COMPLETO PARA CLIENTS ..........................................
+    const [clients, setClients] = useState([]);
+    const [loadingClients, setLoadingClients] = useState(false);
+    const [clientsErr, setClientsErr] = useState("");
+
+    const fetchClients = async () => {
+        try {
+            setLoadingClients(true);
+            setClientsErr("");
+
+            const resp = await fetch(
+                `${API}/api/clients-courtfiles`,
+                { headers: { Authorization: `Bearer ${auth.token}` } }
+            );
+            if (!resp.ok) {
+                const e = await resp.json().catch(() => ({}));
+                throw new Error(e.error || `HTTP ${resp.status}`);
+            }
+            const data = await resp.json();
+
+            const byId = {};
+            for (const r of data) {
+                if (!byId[r.client_id]) {
+                    byId[r.client_id] = {
+                        client_id: r.client_id,
+                        client_name: r.client_name,
+                        client_email: r.client_email,
+                        client_phone: r.client_phone,
+                        cases: new Set(),
+                    };
+                }
+                byId[r.client_id].cases.add(r.courtfile_id);
+            }
+            const deduped = Object.values(byId).map(c => ({
+                ...c,
+                case_count: c.cases.size
+            }));
+            setClients(deduped);
+        } catch (e) {
+            setClientsErr(e.message || "Error fetching clients");
+        } finally {
+            setLoadingClients(false);
+        }
+    };
+
     useEffect(() => {
         if (!authed) return;
         fetchCases();
         fetchDeadlines();
         fetchAppointments();
+        fetchClients();
     }, [API, authed, auth?.token, dispatch]);
 
 
@@ -532,6 +579,55 @@ export const DashboardLawyer = () => {
                                                             <i className="bi bi-trash"></i>
                                                         )}
                                                     </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="mt-5 text-start">  {/* [NEW] */}
+                        <div className="d-flex justify-content-between align-items-center">
+                            <h3>CLIENTS</h3>
+                        </div>
+
+                        {loadingClients && <p className="mt-3">Loading clients...</p>}
+                        {clientsErr && <div className="alert alert-danger mt-3">{clientsErr}</div>}
+                        {!loadingClients && !clientsErr && clients.length === 0 && (
+                            <div className="alert alert-info mt-3">No clients yet. Please add one!</div>
+                        )}
+
+                        {!loadingClients && clients.length > 0 && (
+                            <div className="table-responsive mt-3">
+                                <table className="table table-striped table-hover">
+                                    <thead className="table-dark">
+                                        <tr>
+                                            <th>Client ID</th>
+                                            <th>Name</th>
+                                            <th>Email</th>
+                                            <th>Phone</th>
+                                            <th># Cases</th>
+                                            <th className="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {clients.map(c => (
+                                            <tr key={c.client_id}>
+                                                <td>{c.client_id}</td>
+                                                <td>{c.client_name || "—"}</td>
+                                                <td>{c.client_email || "—"}</td>
+                                                <td>{c.client_phone || "—"}</td>
+                                                <td>{c.case_count}</td>
+                                                <td className="text-end">
+                                                    <Link
+                                                        to={`/clients/view/${c.client_id}`}
+                                                        className="btn btn-sm btn-info"
+                                                        title="View"
+                                                    >
+                                                        <i className="bi bi-eye"></i>
+                                                    </Link>
                                                 </td>
                                             </tr>
                                         ))}

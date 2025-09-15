@@ -74,6 +74,10 @@ import { AddLawyersClients } from "./pages/Relations/AddLawyersClients";
 import { CourtfilesDocuments } from "./pages/Relations/CourtfilesDocuments";
 import { AddCourtfilesDocuments } from "./pages/Relations/AddCourtfilesDocuments";
 
+import { Forbidden } from "./pages/Forbidden";
+
+import { LawyerLinkOrCreateClient } from "./pages/Client/LawyerLinkOrCreateClient";
+
 
 
 export const router = createBrowserRouter(
@@ -157,6 +161,10 @@ export const router = createBrowserRouter(
 
       <Route path="/SignUpClient" element={<SignUpClient />} />
       <Route path="/LoginClient" element={<LoginClient />} />
+
+      <Route path="/403" element={<Forbidden />} />
+
+      <Route path="/clients/link-or-create" element={<LawyerLinkOrCreateClient />} />
     </Route>
   )
 );
