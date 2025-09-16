@@ -24,7 +24,14 @@ const LocationAutocomplete = ({ onLocationSelect, value, onChange }) => {
 
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`,
+        {
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'LexQuoApp/1.0 (ayelen@example.com)' 
+          }
+        }
+
       );
       const data = await response.json();
       setSuggestions(data);
@@ -33,11 +40,18 @@ const LocationAutocomplete = ({ onLocationSelect, value, onChange }) => {
     }
   };
 
+
+  const timeoutRef = useRef(null);
+
   const handleInputChange = (e) => {
     const value = e.target.value;
     onChange(value);
-    fetchSuggestions(value);
     setShowSuggestions(true);
+
+    clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      fetchSuggestions(value);
+    }, 300);
   };
 
   const handleSuggestionClick = (suggestion) => {
@@ -61,7 +75,7 @@ const LocationAutocomplete = ({ onLocationSelect, value, onChange }) => {
         placeholder="Buscar ubicación..."
         onFocus={() => setShowSuggestions(true)}
       />
-      
+
       {showSuggestions && suggestions.length > 0 && (
         <div className="list-group position-absolute w-100" style={{ zIndex: 1000, maxHeight: '200px', overflowY: 'auto' }}>
           {suggestions.map((suggestion, index) => (

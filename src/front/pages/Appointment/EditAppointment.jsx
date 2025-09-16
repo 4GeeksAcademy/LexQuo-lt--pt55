@@ -14,6 +14,7 @@ export const EditAppointment = () => {
   const [formData, setFormData] = useState({
     title: "",
     location: "",
+    details: "",
     date: "",
     starts_at: "",
     ends_at: "",
@@ -83,7 +84,7 @@ export const EditAppointment = () => {
     setError(null);
     try {
       const payload = { ...formData };
-      if (!payload.password) delete payload.password;
+      if (!payload.password) delete payload.password; // Esto podría ser un error si `password` no es parte del formulario de citas
 
       const response = await fetch(`${API}/api/appointments/${appointmentId}`, {
         method: "PUT",
@@ -125,7 +126,7 @@ export const EditAppointment = () => {
         <div className="alert alert-danger">
           <i className="bi bi-exclamation-triangle"></i> {error}
         </div>
-        <Link to="/appointments" className="btn btn-primary">Back to Appointment</Link>
+        <Link to="/appointments" className="btn btn-primary">Back to Appointments</Link>
       </div>
     );
   }
@@ -174,7 +175,23 @@ export const EditAppointment = () => {
                     onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
                   />
                   <div className="form-text">
-                    Busca una ubicación o arrastra el marcador en el mapa
+                    Search for a location or drag the marker on the map
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label htmlFor="details" className="form-label">Add details</label>
+                  <textarea
+                    className="form-control"
+                    id="details"
+                    name="details"
+                    value={formData.details}
+                    onChange={handleInputChange}
+                    placeholder="floor, appartment, reference, etc."
+                    disabled={loading}
+                  />
+                  <div className="form-text">
+                    Additional information such as floor, apartment, or references
                   </div>
                 </div>
 
@@ -182,6 +199,7 @@ export const EditAppointment = () => {
                 <div className="mb-3">
                   <label className="form-label">Mapa</label>
                   <MapComponent
+                    key={mapPosition ? `edit-${mapPosition[0]}-${mapPosition[1]}` : 'edit-null'}
                     position={mapPosition}
                     onPositionChange={handleMapPositionChange}
                     readonly={false}
@@ -251,11 +269,9 @@ export const EditAppointment = () => {
                     )}
                   </button>
                 </div>
-
               </form>
             </div>
           </div>
-
         </div>
       </div>
     </div>
