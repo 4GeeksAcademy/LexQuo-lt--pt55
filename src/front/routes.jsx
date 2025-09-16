@@ -14,6 +14,7 @@ import { Courtfiles } from "./pages/Courtfile/Courtfiles";
 import { ViewCourtfile } from "./pages/Courtfile/ViewCourtfile";
 import { EditCourtfile } from "./pages/Courtfile/EditCourtfile";
 import { AddCourtfile } from "./pages/Courtfile/AddCourtfile";
+import { ViewCourtfileLawyer } from "./pages/Courtfile/ViewCourtfileLawyer";
 
 import { Lawyers } from "./pages/Lawyer/Lawyers";
 import { ViewLawyer } from "./pages/Lawyer/ViewLawyer";
@@ -32,6 +33,8 @@ import { Clients } from "./pages/Client/Clients";
 import { ViewClient } from "./pages/Client/ViewClient";
 import { EditClient } from "./pages/Client/EditClient";
 import { AddClient } from "./pages/Client/AddClient";
+import { SignUpClient } from "./pages/Client/SignUpClient";
+import { LoginClient } from "./pages/Client/LoginClient";
 
 import { Deadlines } from "./pages/Deadline/Deadlines";
 import { ViewDeadline } from "./pages/Deadline/ViewDeadline";
@@ -42,6 +45,11 @@ import { Appointments } from "./pages/Appointment/Appointments";
 import { ViewAppointment } from "./pages/Appointment/ViewAppointment";
 import { EditAppointment } from "./pages/Appointment/EditAppointment";
 import { AddAppointment } from "./pages/Appointment/AddAppointment";
+
+import { Payments } from "./pages/Payments/Payments";
+import { ViewPayment } from "./pages/Payments/ViewPayment";
+import { EditPayment } from "./pages/Payments/EditPayment";
+import { AddPayment } from "./pages/Payments/AddPayment";
 
 import { Documents } from "./pages/Document/Documents";
 import { ViewDocument } from "./pages/Document/ViewDocument";
@@ -66,11 +74,11 @@ import { AddLawyersClients } from "./pages/Relations/AddLawyersClients";
 import { CourtfilesDocuments } from "./pages/Relations/CourtfilesDocuments";
 import { AddCourtfilesDocuments } from "./pages/Relations/AddCourtfilesDocuments";
 
+import { Forbidden } from "./pages/Forbidden";
 
-import { Payments } from "./pages/Payments/Payments";
-import { ViewPayment } from "./pages/Payments/ViewPayment";
-import { EditPayment } from "./pages/Payments/EditPayment";
-import { AddPayment } from "./pages/Payments/AddPayment";
+import { LawyerLinkOrCreateClient } from "./pages/Client/LawyerLinkOrCreateClient";
+import { LawyerLinkOrInviteLawyer } from "./pages/Lawyer/LawyerLinkOrInviteLawyer";
+
 
 import { PaymentCourtfiles } from "./pages/Relations/PaymentCourtfiles";
 import { AddPaymentCourtfile } from "./pages/Relations/AddPaymentCourtfile";
@@ -97,7 +105,8 @@ export const router = createBrowserRouter(
       <Route path="/courtfiles/addcourtfile" element={<AddCourtfile />} />
       <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} />
       <Route path="/courtfiles/:courtfileId" element={<EditCourtfile />} />
-
+      <Route path="/courtfiles/ViewCourtfileLawyer/:courtfileId" element={<ViewCourtfileLawyer />} />
+      
       <Route path="/lawyers" element={<Lawyers />} />
       <Route path="/lawyers/addLawyer" element={<AddLawyer />} />
       <Route path="/lawyers/view/:lawyerId" element={<ViewLawyer />} />
@@ -159,6 +168,13 @@ export const router = createBrowserRouter(
       <Route path="/AddPaymentCourtfile" element={<AddPaymentCourtfile />} />
 
 
+      <Route path="/SignUpClient" element={<SignUpClient />} />
+      <Route path="/LoginClient" element={<LoginClient />} />
+
+      <Route path="/403" element={<Forbidden />} />
+
+      <Route path="/clients/link-or-create" element={<LawyerLinkOrCreateClient />} />
+      <Route path="/lawyers/link-or-invite" element={<LawyerLinkOrInviteLawyer />} />
 
     </Route>
   )

@@ -1,11 +1,20 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState } from "react";
 
 export const AddClient = () => {
-  const { dispatch } = useGlobalReducer();
+  const { store, dispatch } = useGlobalReducer();
   const navigate = useNavigate();
+  const location = useLocation();
   const API = import.meta.env.VITE_BACKEND_URL;
+
+  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
+  const token = auth?.token;
+
+  const preselectedCourtfileId = location.state?.courtfileId || null;
+  const preselectedCourtfileNumber = location.state?.courtfileNumber || null;
+  const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
+  const returnTo = location.state?.returnTo || "/clients";
 
   const [formData, setFormData] = useState({
     firstname: "",
@@ -17,6 +26,7 @@ export const AddClient = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [linking, setLinking] = useState(false);
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -33,25 +43,50 @@ export const AddClient = () => {
     try {
       const payload = { ...formData };
 
+      // 1) crear cliente
       const response = await fetch(`${API}/api/clients`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify(payload)
       });
 
-      if (response.ok) {
-        const newClient = await response.json();
-        dispatch({ type: "ADD_CLIENT", payload: newClient });
-        navigate("/clients");
-        alert("Client created successfully!");
-      } else {
+      if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to create client");
       }
+
+      const newClient = await response.json();
+      dispatch({ type: "ADD_CLIENT", payload: newClient });
+
+      if (preselectedCourtfileId) {
+        setLinking(true);
+        const linkResp = await fetch(`${API}/api/clients-courtfiles`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            client_id: newClient.id,
+            courtfile_id: Number(preselectedCourtfileId)
+          })
+        });
+        if (!linkResp.ok) {
+          const e = await linkResp.json().catch(() => ({}));
+          throw new Error(e.error || `Client created, but failed to link (HTTP ${linkResp.status})`);
+        }
+      }
+
+      alert(preselectedCourtfileId ? "Client created and linked!" : "Client created successfully!");
+      navigate(returnTo); 
     } catch (err) {
       console.error("Error creating Client:", err);
       setError(err.message);
     } finally {
+      setLinking(false);
       setLoading(false);
     }
   };
@@ -62,8 +97,16 @@ export const AddClient = () => {
         <div className="col-md-8">
           {/* Header */}
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1>Add New Client</h1>
-            <Link to="/clients" className="btn btn-outline-secondary">
+            <div>                                                                  
+              <h1>Add New Client</h1>
+              {preselectedCourtfileId && (
+                <span className="badge bg-info mt-2">
+                  Linked to Case {preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
+                  {preselectedCourtfileTitle ? ` — ${preselectedCourtfileTitle}` : ""}
+                </span>
+              )}
+            </div>
+            <Link to={returnTo} className="btn btn-outline-secondary"> 
               <i className="bi bi-arrow-left"></i> Back to List
             </Link>
           </div>
@@ -89,7 +132,7 @@ export const AddClient = () => {
                     onChange={handleInputChange}
                     required
                     placeholder="Firstname"
-                    disabled={loading}
+                    disabled={loading || linking}
                   />
                 </div>
 
@@ -104,7 +147,7 @@ export const AddClient = () => {
                     onChange={handleInputChange}
                     required
                     placeholder="Lastname"
-                    disabled={loading}
+                    disabled={loading || linking}
                   />
                 </div>
 
@@ -119,7 +162,7 @@ export const AddClient = () => {
                     onChange={handleInputChange}
                     required
                     placeholder="example@email.com"
-                    disabled={loading}
+                    disabled={loading || linking}
                   />
                 </div>
 
@@ -134,7 +177,7 @@ export const AddClient = () => {
                     onChange={handleInputChange}
                     required
                     placeholder="+54 9 11 5555-5555"
-                    disabled={loading}
+                    disabled={loading || linking}
                   />
                 </div>
 
@@ -151,13 +194,13 @@ export const AddClient = () => {
                       required
                       placeholder="Password"
                       minLength={6}
-                      disabled={loading}
+                      disabled={loading || linking}
                     />
                     <button
                       type="button"
                       className="btn btn-outline-secondary"
                       onClick={() => setShowPassword(v => !v)}
-                      disabled={loading}
+                      disabled={loading || linking}
                       aria-label={showPassword ? "Hide password" : "Show password"}
                     >
                       {showPassword ? <i className="bi bi-eye-slash"></i> : <i className="bi bi-eye"></i>}
@@ -173,18 +216,18 @@ export const AddClient = () => {
                     name="is_active"
                     checked={formData.is_active}
                     onChange={handleInputChange}
-                    disabled={loading}
+                    disabled={loading || linking}
                   />
                   <label htmlFor="is_active" className="form-check-label">Active Client</label>
                 </div>
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
                   <Link to="/clients" className="btn btn-secondary me-md-2">Cancel</Link>
-                  <button type="submit" className="btn btn-primary" disabled={loading}>
+                  <button type="submit" className="btn btn-primary" disabled={loading || linking}>
                     {loading ? (
                       <>
                         <span className="spinner-border spinner-border-sm" role="status"></span>
-                        Creating...
+                        {linking ? " Linking..." : " Creating..."}
                       </>
                     ) : (
                       <>

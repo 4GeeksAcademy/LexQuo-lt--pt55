@@ -194,6 +194,7 @@ class Document(db.Model):
     description: Mapped[str] = mapped_column(Text, nullable=True)
     category: Mapped[str] = mapped_column(String(100), nullable=True)
     create_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    document_date: Mapped[date] = mapped_column(Date, nullable=True)
 
     courtfile: Mapped[List["CourtfileDocument"]] = relationship(back_populates="document")
 
@@ -205,7 +206,8 @@ class Document(db.Model):
             "url_route": self.url_route,
             "description": self.description,
             "category": self.category,
-            "create_at": self.create_at.isoformat()
+            "create_at": self.create_at.isoformat(),
+            "document_date": self.document_date.isoformat() 
         }
 
 class ClientCourtfile(db.Model):

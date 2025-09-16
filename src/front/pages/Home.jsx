@@ -101,6 +101,18 @@ export const Home = () => {
 				</div>
 			</div>
 
+			<div className="container mt-5 mb-5">
+				<h2>LOGIN CLIENT</h2>
+				<div className="ml-auto mt-3 mb-3">
+					<Link to="/LoginClient">
+						<button className="btn btn-light me-2">Login Client</button>
+					</Link>
+					<Link to="/SignUpClient">
+						<button className="btn btn-light me-2">Sign Up Client</button>
+					</Link>
+				</div>
+			</div>
+
 
 			<div className="alert alert-info">
 				{store.message ? (
