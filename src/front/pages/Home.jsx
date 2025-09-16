@@ -61,8 +61,8 @@ export const Home = () => {
 					<button className="btn btn-light me-2">Documents</button>
 				</Link>
 				<Link to="/payments">
-						<button className="btn btn-light me-2">Payments</button>
-					</Link>
+					<button className="btn btn-light me-2">Payments</button>
+				</Link>
 				<Link to="/ClientsCourtfiles">
 					<button className="btn btn-light me-2">Clients-Courtfiles</button>
 				</Link>
@@ -106,6 +106,9 @@ export const Home = () => {
 					</Link>
 					<Link to="/SignUpClient">
 						<button className="btn btn-light me-2">Sign Up Client</button>
+					</Link>
+					<Link to="/DashboardClient">
+						<button className="btn btn-light me-2">Dashboard Client</button>
 					</Link>
 				</div>
 			</div>

@@ -59,6 +59,7 @@ export const LoginClient = () => {
                 dispatch({ type: "SET_AUTH", payload: auth });
 
                 setOkMsg("Session started successfully");
+                navigate("/DashboardClient");
 
             })
             .catch((err) => setErrMsg(err.message || "unexpected error"))
