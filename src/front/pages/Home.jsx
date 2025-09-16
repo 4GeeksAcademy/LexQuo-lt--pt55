@@ -81,6 +81,9 @@ export const Home = () => {
 				<Link to="/CourtfilesDocuments">
 					<button className="btn btn-light me-2">Courtfile-Documents</button>
 				</Link>
+				<Link to="/PaymentCourtfiles">
+					<button className="btn btn-light me-2">Payments-Courtfile</button>
+				</Link>
 			</div>
 
 			<div className="container mt-5 mb-5">

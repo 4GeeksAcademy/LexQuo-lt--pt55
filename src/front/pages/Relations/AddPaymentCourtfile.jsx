@@ -112,7 +112,7 @@ export const AddPaymentCourtfile = () => {
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                   <label htmlFor="payment" className="form-label">Payment *</label>
-                  <select class="form-select" aria-label="Default select example"
+                  <select className="form-select" aria-label="Default select example"
                     id="payment"
                     name="payment"
                     value={formData.payment}
@@ -132,7 +132,7 @@ export const AddPaymentCourtfile = () => {
 
                                 <div className="mb-3">
                   <label htmlFor="courtfile" className="form-label">Status *</label>
-                  <select class="form-select" aria-label="Default select example"
+                  <select className="form-select" aria-label="Default select example"
                     id="courtfile"
                     name="courtfile"
                     value={formData.courtfile}
