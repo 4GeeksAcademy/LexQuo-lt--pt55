@@ -31,6 +31,7 @@ const LocationAutocomplete = ({ onLocationSelect, value, onChange }) => {
             'User-Agent': 'LexQuoApp/1.0 (ayelen@example.com)' 
           }
         }
+
       );
       const data = await response.json();
       setSuggestions(data);
@@ -38,6 +39,7 @@ const LocationAutocomplete = ({ onLocationSelect, value, onChange }) => {
       console.error('Error fetching location suggestions:', error);
     }
   };
+
 
   const timeoutRef = useRef(null);
 

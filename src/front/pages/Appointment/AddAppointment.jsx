@@ -265,6 +265,7 @@ export const AddAppointment = () => {
                     onChange={handleInputChange}
                     placeholder="floor, appartment, reference, etc."
                     disabled={loading}
+                    rows="3"
                   />
                   <div className="form-text">
                     Additional information such as floor, apartment, or references
