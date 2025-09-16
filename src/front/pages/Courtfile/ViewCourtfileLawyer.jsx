@@ -1,7 +1,7 @@
 
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
-import React, { useState, useEffect } from "react"; 
+import React, { useState, useEffect } from "react";
 
 export const ViewCourtfileLawyer = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -10,9 +10,10 @@ export const ViewCourtfileLawyer = () => {
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null"); 
-  const token = auth?.token; 
-  const authed = !!token;    
+  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
+  const token = auth?.token;
+  const authed = !!token;
+  if (auth?.role !== 'lawyer') return <Navigate to="/403" replace />;
 
   // ------------------- COURTFILE -------------------
   const [courtfile, setCourtfile] = useState(null);
@@ -20,16 +21,35 @@ export const ViewCourtfileLawyer = () => {
   const [error, setError] = useState(null);
 
   // ------------------- DEADLINES (YA FILTRADOS) -------------------
-  const [caseDeadlines, setCaseDeadlines] = useState([]);                 
-  const [loadingDeadlines, setLoadingDeadlines] = useState(false);        
-  const [deadlinesErr, setDeadlinesErr] = useState("");                   
+  const [caseDeadlines, setCaseDeadlines] = useState([]);
+  const [loadingDeadlines, setLoadingDeadlines] = useState(false);
+  const [deadlinesErr, setDeadlinesErr] = useState("");
   const [deletingDeadlineRelId, setDeletingDeadlineRelId] = useState(null);
 
   // ------------------- APPOINTMENTS (YA FILTRADOS) -------------------
-  const [caseAppointments, setCaseAppointments] = useState([]);          
-  const [loadingAppointments, setLoadingAppointments] = useState(false);  
-  const [appointmentsErr, setAppointmentsErr] = useState("");             
+  const [caseAppointments, setCaseAppointments] = useState([]);
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
+  const [appointmentsErr, setAppointmentsErr] = useState("");
   const [deletingApptRelId, setDeletingApptRelId] = useState(null);
+
+  // ------------------- DOCUMENTS (YA FILTRADOS) -------------------
+  const [caseDocuments, setCaseDocuments] = useState([]);
+  const [loadingDocuments, setLoadingDocuments] = useState(false);
+  const [documentsErr, setDocumentsErr] = useState("");
+  const [deletingDocRelId, setDeletingDocRelId] = useState(null);
+
+  // ------------------- CLIENTS (YA FILTRADOS) -------------------
+  const [caseClients, setCaseClients] = useState([]);
+  const [loadingClients, setLoadingClients] = useState(false);
+  const [clientsErr, setClientsErr] = useState("");
+  const [deletingClientRelId, setDeletingClientRelId] = useState(null);
+
+  // ------------------- LAWYERS (NUEVO) -------------------
+  const [caseLawyers, setCaseLawyers] = useState([]);
+  const [loadingLawyers, setLoadingLawyers] = useState(false);
+  const [lawyersErr, setLawyersErr] = useState("");
+  const [deletingLawyerRelId, setDeletingLawyerRelId] = useState(null);
+
 
   // ------------------- FETCHERS -------------------
   const fetchCourtfile = async () => {
@@ -63,12 +83,12 @@ export const ViewCourtfileLawyer = () => {
         throw new Error(e.error || `HTTP ${resp.status}`);
       }
       const data = await resp.json();
-      const idNum = Number(courtfileId);                                              
-      const enriched = data.map(d => ({ relation_id: d.id, ...d }));                  
-      const filtered = enriched.filter(d =>                                          
+      const idNum = Number(courtfileId);
+      const enriched = data.map(d => ({ relation_id: d.id, ...d }));
+      const filtered = enriched.filter(d =>
         d.courtfile_id === idNum || d?.courtfile?.id === idNum
       );
-      setCaseDeadlines(filtered);                                                     
+      setCaseDeadlines(filtered);
     } catch (e) {
       setDeadlinesErr(e.message || "Error fetching deadlines");
     } finally {
@@ -89,18 +109,111 @@ export const ViewCourtfileLawyer = () => {
         throw new Error(e.error || `HTTP ${resp.status}`);
       }
       const data = await resp.json();
-      const idNum = Number(courtfileId);                                              
-      const enriched = data.map(a => ({ relation_id: a.id, ...a }));                  
-      const filtered = enriched.filter(a =>                                          
+      const idNum = Number(courtfileId);
+      const enriched = data.map(a => ({ relation_id: a.id, ...a }));
+      const filtered = enriched.filter(a =>
         a.courtfile_id === idNum || a?.courtfile?.id === idNum
       );
-      setCaseAppointments(filtered);                                                  
+      setCaseAppointments(filtered);
     } catch (e) {
       setAppointmentsErr(e.message || "Error fetching appointments");
     } finally {
       setLoadingAppointments(false);
     }
   };
+
+  const fetchDocuments = async () => {
+    try {
+      setLoadingDocuments(true);
+      setDocumentsErr("");
+      const resp = await fetch(
+        `${API}/api/courtfile-document?courtfile_id=${Number(courtfileId)}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error(e.error || `HTTP ${resp.status}`);
+      }
+      const data = await resp.json();
+
+      const normalized = data.map(r => ({
+        relation_id: r.id,
+        courtfile_id: r.courtfile_id,
+        document_id: r.document_id,
+        type: r.document_type,
+        description: r.document_name,
+        url_route: r.document_url,
+        document_date: r.document_date,
+        create_at: r.create_at
+      }));
+      setCaseDocuments(normalized);
+    } catch (e) {
+      setDocumentsErr(e.message || "Error fetching documents");
+    } finally {
+      setLoadingDocuments(false);
+    }
+  };
+
+  const fetchClients = async () => {
+    try {
+      setLoadingClients(true);
+      setClientsErr("");
+      const resp = await fetch(
+        `${API}/api/clients-courtfiles?courtfile_id=${Number(courtfileId)}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error(e.error || `HTTP ${resp.status}`);
+      }
+      const data = await resp.json();
+      const normalized = data.map(r => ({
+        relation_id: r.id,
+        courtfile_id: r.courtfile_id,
+        client_id: r.client_id,
+        client_name: r.client_name
+      }));
+      setCaseClients(normalized);
+    } catch (e) {
+      setClientsErr(e.message || "Error fetching clients");
+    } finally {
+      setLoadingClients(false);
+    }
+  };
+
+  const currentLawyerId = auth?.user?.id;
+
+  const fetchCaseLawyers = async () => {
+    try {
+      setLoadingLawyers(true);
+      setLawyersErr("");
+      const resp = await fetch(
+        `${API}/api/lawyers-courtfiles?courtfile_id=${Number(courtfileId)}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+
+      // ⬇️ excluye a la/el lawyer logueado
+      const filtered = (Array.isArray(data) ? data : []).filter(
+        (r) => r.lawyer_id !== currentLawyerId
+      );
+
+      setCaseLawyers(
+        filtered.map(r => ({
+          relation_id: r.id,
+          lawyer_id: r.lawyer_id,
+          lawyer_name: r.lawyer_name,
+          lawyer_email: r.lawyer_email
+        }))
+      );
+    } catch (e) {
+      setLawyersErr(e.message || "Error fetching lawyers");
+    } finally {
+      setLoadingLawyers(false);
+    }
+  };
+
 
   // ------------------- EFFECTS -------------------
   useEffect(() => {
@@ -112,7 +225,10 @@ export const ViewCourtfileLawyer = () => {
     if (!authed || !courtfileId) return;
     fetchDeadlines();
     fetchAppointments();
-  }, [API, authed, token, courtfileId]); 
+    fetchDocuments();
+    fetchClients();
+    fetchCaseLawyers();
+  }, [API, authed, token, courtfileId]);
 
   // ------------------- HELPERS -------------------
   const getPriorityBadgeClass = (priority = "") => {
@@ -123,6 +239,11 @@ export const ViewCourtfileLawyer = () => {
       case "urgent": return "bg-danger";
       default: return "bg-secondary";
     }
+  };
+
+  const parseDate = (d) => {
+    const c = d.document_date || d.create_at;
+    return c ? new Date(c) : new Date(0);
   };
 
   const handleDelete = async () => {
@@ -159,7 +280,7 @@ export const ViewCourtfileLawyer = () => {
         const e = await resp.json().catch(() => ({}));
         throw new Error(e.error || `HTTP ${resp.status}`);
       }
-      await fetchDeadlines(); 
+      await fetchDeadlines();
     } catch (err) {
       alert(err.message || "Error deleting relation");
     } finally {
@@ -180,11 +301,118 @@ export const ViewCourtfileLawyer = () => {
         const e = await resp.json().catch(() => ({}));
         throw new Error(e.error || `HTTP ${resp.status}`);
       }
-      await fetchAppointments(); 
+      await fetchAppointments();
     } catch (err) {
       alert(err.message || "Error deleting relation");
     } finally {
       setDeletingApptRelId(null);
+    }
+  };
+
+  const handleDeleteDocumentRelation = async (relationId) => {
+    if (!authed) return;
+    if (!window.confirm("Unlink this document from the case?")) return;
+    try {
+      setDeletingDocRelId(relationId);
+      const resp = await fetch(`${API}/api/courtfile-document/${relationId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error(e.error || `HTTP ${resp.status}`);
+      }
+      await fetchDocuments();
+    } catch (err) {
+      alert(err.message || "Error unlinking document");
+    } finally {
+      setDeletingDocRelId(null);
+    }
+  };
+
+  const handleDeleteClientRelation = async (relationId) => {
+    if (!authed) return;
+    if (!window.confirm("Unlink this client from the case?")) return;
+    try {
+      setDeletingClientRelId(relationId);
+      const resp = await fetch(`${API}/api/clients-courtfiles/${relationId}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error(e.error || `HTTP ${resp.status}`);
+      }
+      await fetchClients();
+    } catch (err) {
+      alert(err.message || "Error unlinking client");
+    } finally {
+      setDeletingClientRelId(null);
+    }
+  };
+
+  const handleAddPeerLawyer = async () => {
+    if (!authed) return;
+    const email = window.prompt("Email del/a abogado/a a invitar o linkear:");
+    if (!email) return;
+
+    try {
+      // 1) lookup 
+      const lookup = await fetch(`${API}/api/lawyers/lookup?email=${encodeURIComponent(email)}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      const ldata = await lookup.json();
+      if (!lookup.ok) throw new Error(ldata.error || `HTTP ${lookup.status}`);
+
+      if (ldata.found && ldata.lawyer?.id) {
+        // 2) link peer usando TU POST /lawyers-courtfiles (con ajuste de backend para permitir peer) 
+        const resp = await fetch(`${API}/api/lawyers-courtfiles`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            lawyer_id: ldata.lawyer.id,
+            courtfile_id: courtfile.id
+          })
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+        alert("Abogado/a vinculado/a al expediente ✅");
+        await fetchCaseLawyers();
+        return;
+      }
+
+      // 3) no existe → ir a signup con datos pre-cargados (igual que con client) 
+      const params = new URLSearchParams({
+        role: "lawyer",
+        email: email,
+        courtfile_id: String(courtfile.id),
+        returnTo: `/courtfiles/view/${courtfile.id}`
+      });
+      navigate(`/SignUpLawyer?${params.toString()}`);
+    } catch (e) {
+      alert(e.message || "Error al linkear/invitar abogado/a");
+    }
+  };
+
+  const handleDeleteLawyerRelation = async (relationId) => {
+    if (!authed) return;
+    if (!window.confirm("¿Salir de este caso?")) return;
+    try {
+      setDeletingLawyerRelId(relationId);
+      const resp = await fetch(`${API}/api/lawyers-courtfiles/${relationId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
+      await fetchCaseLawyers();
+    } catch (err) {
+      alert(err.message || "Error deleting relation");
+    } finally {
+      setDeletingLawyerRelId(null);
     }
   };
 
@@ -228,6 +456,18 @@ export const ViewCourtfileLawyer = () => {
             <div className="d-flex gap-2">
               <Link to="/DashboardLawyer" className="btn btn-outline-secondary">
                 <i className="bi bi-grid"></i> Dashboard
+              </Link>
+              <Link
+                to="/lawyers/link-or-invite"
+                state={{
+                  courtfileId: courtfile.id,
+                  courtfileNumber: courtfile.case_number,
+                  courtfileTitle: courtfile.title,
+                  returnTo: `/courtfiles/view/${courtfile.id}`
+                }}
+                className="btn btn-outline-primary"
+              >
+                <i className="bi bi-person-plus"></i> Add Lawyer
               </Link>
               <Link to={`/courtfiles/${courtfile.id}`} className="btn btn-warning">
                 <i className="bi bi-pencil"></i> Edit
@@ -300,6 +540,134 @@ export const ViewCourtfileLawyer = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="mt-4">
+            <div className="d-flex justify-content-between align-items-center">
+              <h3 className="m-0">DOCUMENTS</h3>
+              <Link
+                to="/documents/addDocument"
+                state={{
+                  courtfileId: courtfile.id,
+                  courtfileNumber: courtfile.case_number,
+                  courtfileTitle: courtfile.title,
+                  returnTo: `/courtfiles/view/${courtfile.id}`
+                }}
+                className="btn btn-sm btn-success"
+              >+ Add Document</Link>
+            </div>
+
+            {loadingDocuments && <p className="mt-3">Loading documents...</p>}
+            {documentsErr && <div className="alert alert-danger mt-3">{documentsErr}</div>}
+            {!loadingDocuments && !documentsErr && caseDocuments.length === 0 && (
+              <div className="alert alert-info mt-3">No documents linked yet.</div>
+            )}
+
+            {!loadingDocuments && caseDocuments.length > 0 && (
+              <div className="table-responsive mt-3">
+                <table className="table table-striped table-hover">
+                  <thead className="table-dark">
+                    <tr>
+                      <th style={{ width: "120px" }}>Date</th>
+                      <th>Type</th>
+                      <th>Description</th>
+                      <th>File</th>
+                      <th className="text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...caseDocuments]
+                      .sort((a, b) => parseDate(b) - parseDate(a))
+                      .map(doc => (
+                        <tr key={doc.relation_id}>
+                          <td>{parseDate(doc).toLocaleDateString()}</td>
+                          <td>{doc.type || doc.document_type || "—"}</td>
+                          <td>{doc.description || doc.document_description || doc.name}</td>
+                          <td>
+                            {(doc.url_route || doc.document_url) ? (
+                              <a href={doc.url_route || doc.document_url}
+                                target="_blank" rel="noreferrer">Open</a>
+                            ) : "—"}
+                          </td>
+                          <td className="text-end">
+                            <Link
+                              to={`/documents/view/${doc.document_id || doc.document?.id || doc.id}`}
+                              className="btn btn-sm btn-info me-1" title="View"
+                            ><i className="bi bi-eye"></i></Link>
+                            <button
+                              className="btn btn-sm btn-danger"
+                              title={doc.relation_id ? "Unlink" : "No link available"}
+                              disabled={!doc.relation_id || deletingDocRelId === doc.relation_id}
+                              onClick={() => handleDeleteDocumentRelation(doc.relation_id)}
+                            >
+                              {deletingDocRelId === doc.relation_id ? (
+                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                              ) : (
+                                <i className="bi bi-trash"></i>
+                              )}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* LAWYERS */}
+          <div className="mt-4">
+            <div className="d-flex justify-content-between align-items-center">
+              <h3 className="m-0">LAWYERS</h3>
+            </div>
+
+            {loadingLawyers && <p className="mt-3">Loading lawyers...</p>}
+            {lawyersErr && <div className="alert alert-danger mt-3">{lawyersErr}</div>}
+            {!loadingLawyers && !lawyersErr && caseLawyers.length === 0 && (
+              <div className="alert alert-info mt-3">No lawyers linked yet. Add one!</div>
+            )}
+
+            {!loadingLawyers && caseLawyers.length > 0 && (
+              <div className="table-responsive mt-3">
+                <table className="table table-striped table-hover">
+                  <thead className="table-dark">
+                    <tr>
+                      <th>Lawyer ID</th>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th className="text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {caseLawyers.map(lw => (
+                      <tr key={lw.relation_id}>
+                        <td>{lw.lawyer_id}</td>
+                        <td>{lw.lawyer_name || "—"}</td>
+                        <td>{lw.lawyer_email || "—"}</td>
+                        <td className="text-end">
+                          <button
+                            className="btn btn-sm btn-danger"
+                            title={lw.relation_id ? "Unlink (leave case)" : "No link available"}
+                            disabled={
+                              !lw.relation_id ||
+                              deletingLawyerRelId === lw.relation_id ||
+                              lw.lawyer_id !== currentLawyerId
+                            }
+                            onClick={() => handleDeleteLawyerRelation(lw.relation_id)}
+                          >
+                            {deletingLawyerRelId === lw.relation_id ? (
+                              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            ) : (
+                              <i className="bi bi-trash"></i>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* DEADLINES */}
@@ -438,6 +806,69 @@ export const ViewCourtfileLawyer = () => {
                             onClick={() => handleDeleteAppointmentRelation(ap.relation_id)}
                           >
                             {deletingApptRelId === ap.relation_id ? (
+                              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            ) : (
+                              <i className="bi bi-trash"></i>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-5">
+            <div className="d-flex justify-content-between align-items-center">
+              <h3 className="m-0">CLIENTS</h3>
+              <Link
+                to="/clients/link-or-create"
+                state={{
+                  courtfileId: courtfile.id,
+                  courtfileNumber: courtfile.case_number,
+                  courtfileTitle: courtfile.title,
+                  returnTo: `/courtfiles/view/${courtfile.id}`
+                }}
+                className="btn btn-sm btn-success"
+              >
+                + Add Client
+              </Link>
+            </div>
+
+            {loadingClients && <p className="mt-3">Loading clients...</p>}
+            {clientsErr && <div className="alert alert-danger mt-3">{clientsErr}</div>}
+            {!loadingClients && !clientsErr && caseClients.length === 0 && (
+              <div className="alert alert-info mt-3">No clients linked yet. Please add one!</div>
+            )}
+
+            {!loadingClients && caseClients.length > 0 && (
+              <div className="table-responsive mt-3">
+                <table className="table table-striped table-hover">
+                  <thead className="table-dark">
+                    <tr>
+                      <th>Client ID</th>
+                      <th>Name</th>
+                      <th className="text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {caseClients.map(cl => (
+                      <tr key={cl.relation_id}>
+                        <td>{cl.client_id}</td>
+                        <td>{cl.client_name || "—"}</td>
+                        <td className="text-end">
+                          <Link to={`/clients/view/${cl.client_id}`} className="btn btn-sm btn-info me-1" title="View">
+                            <i className="bi bi-eye"></i>
+                          </Link>
+                          <button
+                            className="btn btn-sm btn-danger"
+                            title={cl.relation_id ? "Unlink" : "No link available"}
+                            disabled={!cl.relation_id || deletingClientRelId === cl.relation_id}
+                            onClick={() => handleDeleteClientRelation(cl.relation_id)}
+                          >
+                            {deletingClientRelId === cl.relation_id ? (
                               <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                             ) : (
                               <i className="bi bi-trash"></i>

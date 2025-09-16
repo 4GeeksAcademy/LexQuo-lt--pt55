@@ -1,6 +1,8 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import MapComponent from "../../components/Map/MapComponent";
+import LocationAutocomplete from "../../components/Map/LocationAutocomplete";
 
 export const ViewAppointment = () => {
   const { dispatch } = useGlobalReducer();
@@ -109,6 +111,10 @@ export const ViewAppointment = () => {
                     <label className="fw-bold text-muted">Location</label>
                     <p className="fs-6">{appointment.location || "-"}</p>
                   </div>
+                  <div className="mb-3">
+                    <label className="fw-bold text-muted">Aditional details</label>
+                    <p className="fs-6">{appointment.details || "-"}</p>
+                  </div>
                 </div>
                 <div className="col-md-6">
                   <div className="mb-3">
@@ -123,13 +129,21 @@ export const ViewAppointment = () => {
                     <label className="fw-bold text-muted">Ends At</label>
                     <p className="fs-6">{appointment.ends_at || "-"}</p>
                   </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Created At</label>
-                    <p className="fs-6">{appointment.created_at || "-"}</p>
-                  </div>
                 </div>
               </div>
             </div>
+            {appointment.latitud && appointment.longitud && (
+              <div className="mb-3">
+                <label className="fw-bold text-muted">Ubicación en Mapa</label>
+                <MapComponent
+                  position={[appointment.latitud, appointment.longitud]}
+                  readonly={true}
+                />
+                <div className="form-text">
+                  Coordenadas: {appointment.latitud}, {appointment.longitud}
+                </div>
+              </div>
+            )}
 
             <div className="card-footer bg-light">
               <div className="d-flex gap-2 justify-content-end">

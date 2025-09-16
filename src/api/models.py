@@ -113,11 +113,13 @@ class Courtfile(db.Model):
     court: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
+
     clients: Mapped[List["ClientCourtfile"]] = relationship(back_populates="courtfile")
     deadlines: Mapped[List["DeadlineCourtfile"]] = relationship(back_populates="courtfile")
     lawyers: Mapped[List["LawyerCourtfile"]] = relationship(back_populates="courtfile")
     appointment: Mapped[List["AppointmentCourtfile"]] = relationship(back_populates="courtfile")
     document: Mapped[List["CourtfileDocument"]] = relationship(back_populates="courtfile")
+    payment_courtfiles: Mapped[List["PaymentCourtfile"]] = relationship(back_populates="courtfile")
 
     def __str__(self):   
         return self.case_number
@@ -139,9 +141,12 @@ class Appointment(db.Model):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     date: Mapped[Date] = mapped_column(Date, nullable=False)
     location: Mapped[str] = mapped_column(String(500), nullable=True)
+    details: Mapped[str] = mapped_column(String(255), nullable=False)
     starts_at: Mapped[Time] = mapped_column(Time, nullable=False)
     ends_at: Mapped[Time] = mapped_column(Time, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    latitud: Mapped[float] = mapped_column(Float, nullable=True)
+    longitud: Mapped[float] = mapped_column(Float, nullable=True)
 
     courtfiles: Mapped[List["AppointmentCourtfile"]] = relationship(back_populates="appointment")
 
@@ -158,9 +163,12 @@ class Appointment(db.Model):
             "title": self.title,
             "date": date_str,
             "location": self.location,
+            "details": self.details,
             "starts_at": starts_str,
             "ends_at": ends_str,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat(),
+            "latitud": self.latitud, 
+            "longitud": self.longitud 
         }
 
 class Deadlines(db.Model):
@@ -192,6 +200,7 @@ class Document(db.Model):
     description: Mapped[str] = mapped_column(Text, nullable=True)
     category: Mapped[str] = mapped_column(String(100), nullable=True)
     create_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    document_date: Mapped[date] = mapped_column(Date, nullable=True)
 
     courtfile: Mapped[List["CourtfileDocument"]] = relationship(back_populates="document")
 
@@ -203,7 +212,8 @@ class Document(db.Model):
             "url_route": self.url_route,
             "description": self.description,
             "category": self.category,
-            "create_at": self.create_at.isoformat()
+            "create_at": self.create_at.isoformat(),
+            "document_date": self.document_date.isoformat() 
         }
 
 class ClientCourtfile(db.Model):
@@ -281,12 +291,15 @@ class PaymentStatus(enum.Enum):
     rejected = "rejected"
 
 class Payment(db.Model):
+    __tablename__ = 'payment'
+    
     id: Mapped[int] = mapped_column(primary_key=True)
     amount: Mapped[float] = mapped_column(Float, nullable=False)
     currency: Mapped[str] = mapped_column(String(10), nullable=False)
     status: Mapped[enum.Enum] = mapped_column(Enum(PaymentStatus), nullable=False, default=PaymentStatus.pending)
     paid_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     means: Mapped[str] = mapped_column(String(50), nullable=True)
+    payment_courtfiles: Mapped[List["PaymentCourtfile"]] = relationship(back_populates="payment")
 
     def serialize(self):
         return {
@@ -296,4 +309,22 @@ class Payment(db.Model):
             "status": self.status.value,
             "paid_at": self.paid_at.isoformat() if self.paid_at else None,
             "means": self.means
+        }
+
+class PaymentCourtfile(db.Model):
+    __tablename__ = 'payment_courtfile'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    payment_id: Mapped[int] = mapped_column(ForeignKey("payment.id"), nullable=False, index=True)
+    payment: Mapped["Payment"] = relationship(back_populates="payment_courtfiles")
+
+    courtfile_id: Mapped[int] = mapped_column(ForeignKey("courtfile.id"), nullable=False, index=True)
+    courtfile: Mapped["Courtfile"] = relationship(back_populates="payment_courtfiles")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "payment_id": self.payment_id,
+            "courtfile_id": self.courtfile_id
         }

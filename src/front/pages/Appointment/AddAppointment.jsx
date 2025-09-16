@@ -1,6 +1,8 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import MapComponent from "../../components/Map/MapComponent";
+import LocationAutocomplete from "../../components/Map/LocationAutocomplete";
 
 export const AddAppointment = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -19,11 +21,17 @@ export const AddAppointment = () => {
   const [formData, setFormData] = useState({
     title: "",
     location: "",
+    details: "",
     date: "",
     starts_at: "",
     ends_at: "",
     courtfile_id: preselectedCourtfileId ? String(preselectedCourtfileId) : "",
+    latitud: null,
+    longitud: null
   });
+
+  const [mapPosition, setMapPosition] = useState(null);
+
 
   const [loading, setLoading] = useState(false);
   const [linking, setLinking] = useState(false);
@@ -81,6 +89,25 @@ export const AddAppointment = () => {
     }));
   };
 
+  const handleLocationSelect = (locationData) => {
+    setFormData(prev => ({
+      ...prev,
+      location: locationData.address,
+      latitud: locationData.lat,
+      longitud: locationData.lng
+    }));
+    setMapPosition([locationData.lat, locationData.lng]);
+  };
+
+  const handleMapPositionChange = (lat, lng) => {
+    setFormData(prev => ({
+      ...prev,
+      latitud: lat,
+      longitud: lng
+    }));
+    setMapPosition([lat, lng]);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -104,7 +131,9 @@ export const AddAppointment = () => {
           location: formData.location,
           date: formData.date,
           starts_at: formData.starts_at,
-          ends_at: formData.ends_at
+          ends_at: formData.ends_at,
+          latitud: formData.latitud,
+          longitud: formData.longitud
         })
       });
 
@@ -149,7 +178,7 @@ export const AddAppointment = () => {
   return (
     <div className="container mt-4">
       <div className="row justify-content-center">
-        <div className="col-md-8">
+        <div className="col-md-12">
           {/* Header */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h1>Add New Appointment</h1>
@@ -172,7 +201,7 @@ export const AddAppointment = () => {
                   <div className="mb-3">
                     <label className="form-label">Linked Courtfile</label>
                     <div className="form-control-plaintext">
-                      Expediente {preselectedCf?.case_number || "—"}                     
+                      Expediente {preselectedCf?.case_number || "—"}
                       {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
                     </div>
                   </div>
@@ -215,17 +244,46 @@ export const AddAppointment = () => {
 
                 <div className="mb-3">
                   <label htmlFor="location" className="form-label">Location *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="location"
-                    name="location"
+                  <LocationAutocomplete
+                    onLocationSelect={handleLocationSelect}
                     value={formData.location}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="location"
-                    disabled={loading}
+                    onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
                   />
+                  <div className="form-text">
+                    Busca una ubicación o arrastra el marcador en el mapa
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label htmlFor="details" className="form-label">Add details</label>
+                  <textarea
+                    className="form-control"
+                    id="details"
+                    name="details"
+                    value={formData.details}
+                    onChange={handleInputChange}
+                    placeholder="floor, appartment, reference, etc."
+                    disabled={loading}
+                    rows="3"
+                  />
+                  <div className="form-text">
+                    Información adicional como piso, departamento, o referencias
+                  </div>
+                </div>
+
+                {/* Mapa */}
+                <div className="mb-3">
+                  <label className="form-label">Mapa</label>
+                  <MapComponent
+                    position={mapPosition}
+                    onPositionChange={handleMapPositionChange}
+                    readonly={false}
+                  />
+                  {formData.latitud && formData.longitud && (
+                    <div className="form-text">
+                      Coordenadas: {formData.latitud?.toFixed(6)}, {formData.longitud?.toFixed(6)}
+                    </div>
+                  )}
                 </div>
 
                 <div className="mb-3">

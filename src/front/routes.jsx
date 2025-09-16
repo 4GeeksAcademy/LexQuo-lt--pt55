@@ -76,6 +76,15 @@ import { AddLawyersClients } from "./pages/Relations/AddLawyersClients";
 import { CourtfilesDocuments } from "./pages/Relations/CourtfilesDocuments";
 import { AddCourtfilesDocuments } from "./pages/Relations/AddCourtfilesDocuments";
 
+import { Forbidden } from "./pages/Forbidden";
+
+import { LawyerLinkOrCreateClient } from "./pages/Client/LawyerLinkOrCreateClient";
+import { LawyerLinkOrInviteLawyer } from "./pages/Lawyer/LawyerLinkOrInviteLawyer";
+
+
+import { PaymentCourtfiles } from "./pages/Relations/PaymentCourtfiles";
+import { AddPaymentCourtfile } from "./pages/Relations/AddPaymentCourtfile";
+
 
 
 export const router = createBrowserRouter(
@@ -158,9 +167,18 @@ export const router = createBrowserRouter(
       <Route path="/LoginLawyer" element={<LoginLawyer />} />
       <Route path="/DashboardLawyer" element={<DashboardLawyer />} />
 
+      <Route path="/PaymentCourtfiles" element={<PaymentCourtfiles />} />
+      <Route path="/AddPaymentCourtfile" element={<AddPaymentCourtfile />} />
+
       <Route path="/SignUpClient" element={<SignUpClient />} />
       <Route path="/LoginClient" element={<LoginClient />} />
       <Route path="/DashboardClient" element={<DashboardClient />} />
+
+      <Route path="/403" element={<Forbidden />} />
+
+      <Route path="/clients/link-or-create" element={<LawyerLinkOrCreateClient />} />
+      <Route path="/lawyers/link-or-invite" element={<LawyerLinkOrInviteLawyer />} />
+
     </Route>
   )
 );

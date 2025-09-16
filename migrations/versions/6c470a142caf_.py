@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: f27e4ae0ea1a
+Revision ID: 6c470a142caf
 Revises: 
-Create Date: 2025-09-12 22:02:18.132127
+Create Date: 2025-09-16 00:26:31.059305
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'f27e4ae0ea1a'
+revision = '6c470a142caf'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -33,9 +33,12 @@ def upgrade():
     sa.Column('title', sa.String(length=255), nullable=False),
     sa.Column('date', sa.Date(), nullable=False),
     sa.Column('location', sa.String(length=500), nullable=True),
+    sa.Column('details', sa.String(length=255), nullable=False),
     sa.Column('starts_at', sa.Time(), nullable=False),
     sa.Column('ends_at', sa.Time(), nullable=False),
     sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('latitud', sa.Float(), nullable=True),
+    sa.Column('longitud', sa.Float(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('client',
@@ -76,6 +79,7 @@ def upgrade():
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('category', sa.String(length=100), nullable=True),
     sa.Column('create_at', sa.DateTime(), nullable=False),
+    sa.Column('document_date', sa.Date(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('lawyer',
@@ -88,6 +92,15 @@ def upgrade():
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
+    )
+    op.create_table('payment',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('amount', sa.Float(), nullable=False),
+    sa.Column('currency', sa.String(length=10), nullable=False),
+    sa.Column('status', sa.Enum('pending', 'approved', 'rejected', name='paymentstatus'), nullable=False),
+    sa.Column('paid_at', sa.DateTime(), nullable=True),
+    sa.Column('means', sa.String(length=50), nullable=True),
+    sa.PrimaryKeyConstraint('id')
     )
     op.create_table('appointment_courtfile',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -196,6 +209,7 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_appointment_courtfile_appointment_id'))
 
     op.drop_table('appointment_courtfile')
+    op.drop_table('payment')
     op.drop_table('lawyer')
     op.drop_table('document')
     op.drop_table('deadlines')
