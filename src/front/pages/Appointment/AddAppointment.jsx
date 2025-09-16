@@ -129,6 +129,7 @@ export const AddAppointment = () => {
         body: JSON.stringify({
           title: formData.title,
           location: formData.location,
+          details: formData.details, 
           date: formData.date,
           starts_at: formData.starts_at,
           ends_at: formData.ends_at,
@@ -250,7 +251,7 @@ export const AddAppointment = () => {
                     onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
                   />
                   <div className="form-text">
-                    Busca una ubicación o arrastra el marcador en el mapa
+                    Search for a location or drag the marker on the map
                   </div>
                 </div>
 
@@ -264,10 +265,9 @@ export const AddAppointment = () => {
                     onChange={handleInputChange}
                     placeholder="floor, appartment, reference, etc."
                     disabled={loading}
-                    rows="3"
                   />
                   <div className="form-text">
-                    Información adicional como piso, departamento, o referencias
+                    Additional information such as floor, apartment, or references
                   </div>
                 </div>
 
