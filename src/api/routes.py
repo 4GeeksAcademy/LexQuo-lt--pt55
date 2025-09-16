@@ -453,6 +453,79 @@ def client_login():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# -----------------ROUTES PARA COURTFILES, APPOINTMENTS Y DOCUMENTS DEL CLIENT--------------------------------------------
+
+
+@api.route('/clients/<int:client_id>/get-courtfiles', methods=['GET'])
+@jwt_required(optional=True)
+def get_courtfiles_client(client_id):
+    try:
+        claims = get_jwt()
+        current_client_id = get_jwt_identity()
+
+        if claims.get('role') != 'client' or int(current_client_id) != client_id:
+            return jsonify({'error': 'Access denied'}), 403
+
+        client_courtfiles = ClientCourtfile.query.filter_by(
+            client_id=client_id).all()
+
+        courtfiles = []
+        for relation in client_courtfiles:
+            courtfile_data = relation.courtfile.serialize()
+            lawyers = LawyerCourtfile.query.filter_by(
+                courtfile_id=relation.courtfile_id).all()
+            courtfile_data['assigned_lawyers'] = [{
+                'id': lc.lawyer.id,
+                'name': f"{lc.lawyer.firstname} {lc.lawyer.lastname}",
+                'email': lc.lawyer.email
+            } for lc in lawyers]
+
+            courtfiles.append(courtfile_data)
+
+        return jsonify(courtfiles), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/clients/<int:client_id>/get-appointments', methods=['GET'])
+@jwt_required()
+def get_client_appointments(client_id):
+    try:
+        claims = get_jwt()
+        current_client_id = get_jwt_identity()
+
+        if claims.get('role') != 'client' or int(current_client_id) != client_id:
+            return jsonify({'error': 'Access denied'}), 403
+
+        client_courtfiles = ClientCourtfile.query.filter_by(
+            client_id=client_id).all()
+        courtfile_ids = [
+            relation.courtfile_id for relation in client_courtfiles]
+
+        appointments = []
+        for courtfile_id in courtfile_ids:
+            courtfile_appointments = (AppointmentCourtfile.query
+                                      .filter_by(courtfile_id=courtfile_id)
+                                      .options(
+                                          db.joinedload(
+                                              AppointmentCourtfile.appointment),
+                                          db.joinedload(
+                                              AppointmentCourtfile.courtfile)
+                                      )
+                                      .all())
+            for relation in courtfile_appointments:
+                appointment_data = relation.appointment.serialize()
+                appointment_data['courtfile_case_number'] = relation.courtfile.case_number
+                appointment_data['courtfile_title'] = relation.courtfile.title
+                appointments.append(appointment_data)
+
+        return jsonify(appointments), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # -----------------ROUTES PARA ADMINS--------------------------------------------
 
 
@@ -833,7 +906,7 @@ def get_documents():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-  
+
 @api.route('/documents/<int:document_id>', methods=['GET'])
 def get_document(document_id):
     try:
@@ -880,7 +953,7 @@ def create_document():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-    
+
 @api.route('/documents/<int:document_id>', methods=['PUT'])
 def update_document(document_id):
     try:
@@ -1538,11 +1611,10 @@ def create_payment():
             if field not in data:
                 return jsonify({'error': f'Required field: {field}'}), 400
 
-
         payment = Payment(
             amount=data['amount'],
             currency=data['currency'],
-            # paid_at=datetime.now(UTC) 
+            # paid_at=datetime.now(UTC)
             means=data['means']
         )
 
@@ -1554,6 +1626,7 @@ def create_payment():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
 
 @api.route('/payments', methods=['GET'])
 def get_payments():
@@ -1571,6 +1644,7 @@ def get_payment(payment_id):
         return jsonify(payment.serialize()), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 404
+
 
 @api.route('/payments/<int:payment_id>', methods=['PUT'])
 def update_payment(payment_id):

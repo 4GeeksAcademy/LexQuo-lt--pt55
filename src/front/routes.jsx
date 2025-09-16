@@ -15,6 +15,7 @@ import { ViewCourtfile } from "./pages/Courtfile/ViewCourtfile";
 import { EditCourtfile } from "./pages/Courtfile/EditCourtfile";
 import { AddCourtfile } from "./pages/Courtfile/AddCourtfile";
 import { ViewCourtfileLawyer } from "./pages/Courtfile/ViewCourtfileLawyer";
+import { ViewCourtfileClient } from "./pages/Courtfile/ViewCourtfileClient";
 
 import { Lawyers } from "./pages/Lawyer/Lawyers";
 import { ViewLawyer } from "./pages/Lawyer/ViewLawyer";
@@ -35,6 +36,7 @@ import { EditClient } from "./pages/Client/EditClient";
 import { AddClient } from "./pages/Client/AddClient";
 import { SignUpClient } from "./pages/Client/SignUpClient";
 import { LoginClient } from "./pages/Client/LoginClient";
+import { DashboardClient } from "./pages/Client/DashboardClient";
 
 import { Deadlines } from "./pages/Deadline/Deadlines";
 import { ViewDeadline } from "./pages/Deadline/ViewDeadline";
@@ -106,7 +108,8 @@ export const router = createBrowserRouter(
       <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} />
       <Route path="/courtfiles/:courtfileId" element={<EditCourtfile />} />
       <Route path="/courtfiles/ViewCourtfileLawyer/:courtfileId" element={<ViewCourtfileLawyer />} />
-      
+      <Route path="/courtfiles/viewclient/:courtfileId" element={<ViewCourtfileClient />} />
+
       <Route path="/lawyers" element={<Lawyers />} />
       <Route path="/lawyers/addLawyer" element={<AddLawyer />} />
       <Route path="/lawyers/view/:lawyerId" element={<ViewLawyer />} />
@@ -167,9 +170,9 @@ export const router = createBrowserRouter(
       <Route path="/PaymentCourtfiles" element={<PaymentCourtfiles />} />
       <Route path="/AddPaymentCourtfile" element={<AddPaymentCourtfile />} />
 
-
       <Route path="/SignUpClient" element={<SignUpClient />} />
       <Route path="/LoginClient" element={<LoginClient />} />
+      <Route path="/DashboardClient" element={<DashboardClient />} />
 
       <Route path="/403" element={<Forbidden />} />
 
