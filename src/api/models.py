@@ -113,12 +113,13 @@ class Courtfile(db.Model):
     court: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[bool] = mapped_column(Boolean, nullable=False)
 
+
     clients: Mapped[List["ClientCourtfile"]] = relationship(back_populates="courtfile")
     deadlines: Mapped[List["DeadlineCourtfile"]] = relationship(back_populates="courtfile")
     lawyers: Mapped[List["LawyerCourtfile"]] = relationship(back_populates="courtfile")
     appointment: Mapped[List["AppointmentCourtfile"]] = relationship(back_populates="courtfile")
     document: Mapped[List["CourtfileDocument"]] = relationship(back_populates="courtfile")
-    payment: Mapped[List["PaymentCourtfile"]] = relationship(back_populates="courtfile")
+    payment_courtfiles: Mapped[List["PaymentCourtfile"]] = relationship(back_populates="courtfile")
 
     def __str__(self):   
         return self.case_number
@@ -290,7 +291,7 @@ class Payment(db.Model):
     status: Mapped[enum.Enum] = mapped_column(Enum(PaymentStatus), nullable=False, default=PaymentStatus.pending)
     paid_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
     means: Mapped[str] = mapped_column(String(50), nullable=True)
-    payment: Mapped[List["PaymentCourtfile"]] = relationship(back_populates="payment")
+    payment_courtfiles: Mapped[List["PaymentCourtfile"]] = relationship(back_populates="payment")
 
     def serialize(self):
         return {
@@ -308,7 +309,14 @@ class PaymentCourtfile(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
 
     payment_id: Mapped[int] = mapped_column(ForeignKey("payment.id"), nullable=False, index=True)
-    payment: Mapped["Payment"] = relationship(back_populates="courtfile")
+    payment: Mapped["Payment"] = relationship(back_populates="payment_courtfiles")
 
     courtfile_id: Mapped[int] = mapped_column(ForeignKey("courtfile.id"), nullable=False, index=True)
-    courtfile: Mapped["Courtfile"] = relationship(back_populates="payment")
+    courtfile: Mapped["Courtfile"] = relationship(back_populates="payment_courtfiles")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "payment_id": self.payment_id,
+            "courtfile_id": self.courtfile_id
+        }
