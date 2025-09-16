@@ -72,6 +72,10 @@ import { ViewPayment } from "./pages/Payments/ViewPayment";
 import { EditPayment } from "./pages/Payments/EditPayment";
 import { AddPayment } from "./pages/Payments/AddPayment";
 
+import { PaymentCourtfiles } from "./pages/Relations/PaymentCourtfiles";
+import { AddPaymentCourtfile } from "./pages/Relations/AddPaymentCourtfile";
+
+
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -150,6 +154,11 @@ export const router = createBrowserRouter(
       <Route path="/SignUpLawyer" element={<SignUpLawyer />} />
       <Route path="/LoginLawyer" element={<LoginLawyer />} />
       <Route path="/DashboardLawyer" element={<DashboardLawyer />} />
+
+      <Route path="/PaymentCourtfiles" element={<PaymentCourtfiles />} />
+      <Route path="/AddPaymentCourtfile" element={<AddPaymentCourtfile />} />
+
+
 
     </Route>
   )
