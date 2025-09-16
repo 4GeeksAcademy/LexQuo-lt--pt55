@@ -80,6 +80,10 @@ import { LawyerLinkOrCreateClient } from "./pages/Client/LawyerLinkOrCreateClien
 import { LawyerLinkOrInviteLawyer } from "./pages/Lawyer/LawyerLinkOrInviteLawyer";
 
 
+import { PaymentCourtfiles } from "./pages/Relations/PaymentCourtfiles";
+import { AddPaymentCourtfile } from "./pages/Relations/AddPaymentCourtfile";
+
+
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
@@ -159,6 +163,10 @@ export const router = createBrowserRouter(
       <Route path="/SignUpLawyer" element={<SignUpLawyer />} />
       <Route path="/LoginLawyer" element={<LoginLawyer />} />
       <Route path="/DashboardLawyer" element={<DashboardLawyer />} />
+
+      <Route path="/PaymentCourtfiles" element={<PaymentCourtfiles />} />
+      <Route path="/AddPaymentCourtfile" element={<AddPaymentCourtfile />} />
+
 
       <Route path="/SignUpClient" element={<SignUpClient />} />
       <Route path="/LoginClient" element={<LoginClient />} />

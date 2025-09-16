@@ -4,7 +4,7 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 from datetime import datetime
 from sqlalchemy import select, func
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import Courtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment
+from api.models import Courtfile, PaymentCourtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment
 from api.utils import generate_sitemap, APIException
 from datetime import datetime, UTC
 from flask_cors import CORS
@@ -1614,3 +1614,83 @@ def delete_payment(payment_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+# end payments
+
+# -----------------ROUTES PARA PAYMENTS COURTFILE--------------------------------------------
+@api.route('/payments-courtfile', methods=['POST'])
+def create_payment_courtfile():
+    try:
+        data = request.get_json()
+
+        required_fields = ['payment_id', 'courtfile_id']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'error': 'Required field: {field}'}), 400
+
+
+        payment_courtfile =PaymentCourtfile(
+            payment_id=data['payment_id'],
+            courtfile_id=data['courtfile_id']
+        )
+
+        db.session.add(payment_courtfile)
+        db.session.commit()
+
+        return jsonify(payment_courtfile.serialize()), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@api.route('/payments-courtfile', methods=['GET'])
+def get_payments_courtfile():
+    try:
+        payments_courtfile = PaymentCourtfile.query.all()
+        return jsonify([pc.serialize() for pc in payments_courtfile]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/payments-courtfile/<int:id>', methods=['GET'])
+def get_payment_courtfile(id):
+    try:
+        pc = PaymentCourtfile.query.get_or_404(id)
+        return jsonify(pc.serialize()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 404
+
+@api.route('/payments-courtfile/<int:id>', methods=['PUT'])
+def update_payment_courtfile(id):
+    try:
+        payment_courtfile = PaymentCourtfile.query.get_or_404(id)
+        data = request.get_json()
+
+        if 'payment_id' in data:
+            payment_courtfile.payment_id = data['payment_id']
+
+        if 'courtfile_id' in data:
+            payment_courtfile.courtfile_id = data['courtfile_id']
+
+        db.session.commit()
+
+        return jsonify(payment_courtfile.serialize()), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/payments-courtfile/<int:id>', methods=['DELETE'])
+def delete_payment_courtfile(id):
+    try:
+        payment_courtfile = PaymentCourtfile.query.get_or_404(id)
+
+        db.session.delete(payment_courtfile)
+        db.session.commit()
+
+        return jsonify({'message': 'PaymentCourtfile successfully deleted'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+#-----------------------------END PAYMENTS COURTFILE ROUTES-----------------------------------------------------
