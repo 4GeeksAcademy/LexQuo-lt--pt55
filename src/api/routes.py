@@ -606,13 +606,37 @@ def create_appointment():
             return create_error_response(
                 'Start time must be before end time'
             )
+        
+        latitud = None
+        longitud = None
+        
+        if 'latitud' in data:
+            try:
+                latitud = float(data['latitud'])
+                if not (-90 <= latitud <= 90):
+                    return create_error_response('Latitude must be between -90 and 90')
+            except (ValueError, TypeError):
+                return create_error_response('Latitude must be a valid number')
+        
+        if 'longitud' in data:
+            try:
+                longitud = float(data['longitud'])
+                if not (-180 <= longitud <= 180):
+                    return create_error_response('Longitude must be between -180 and 180')
+            except (ValueError, TypeError):
+                return create_error_response('Longitude must be a valid number')
+
+        details = data.get('details', '').strip()
 
         new_appointment = Appointment(
             title=data['title'].strip(),
             date=appointment_date,
             location=data.get('location', '').strip(),
+            details=details,
             starts_at=start_time,
-            ends_at=end_time
+            ends_at=end_time,
+            latitud=latitud,
+            longitud=longitud
         )
 
         db.session.add(new_appointment)
@@ -652,6 +676,27 @@ def update_appointment(id):
 
         if 'location' in data:
             appointment.location = data['location'].strip()
+
+        if 'details' in data:
+            appointment.details = data['details'].strip()
+
+        if 'latitud' in data:
+            try:
+                latitud = float(data['latitud'])
+                if not (-90 <= latitud <= 90):
+                    return create_error_response('Latitude must be between -90 and 90')
+                appointment.latitud = latitud
+            except (ValueError, TypeError):
+                return create_error_response('Latitude must be a valid number')
+        
+        if 'longitud' in data:
+            try:
+                longitud = float(data['longitud'])
+                if not (-180 <= longitud <= 180):
+                    return create_error_response('Longitude must be between -180 and 180')
+                appointment.longitud = longitud
+            except (ValueError, TypeError):
+                return create_error_response('Longitude must be a valid number')
 
         if not validate_time_order(appointment.starts_at, appointment.ends_at):
             return create_error_response('Start time must be before end time')
@@ -1236,7 +1281,6 @@ def delete_deadline_courtfile(id):
         return jsonify({'error': str(e)}), 500
 
 # -----------------ROUTES PARA APPOINTMENTS-COURTFILES--------------------------------------------
-
 
 @api.route('/appointments-courtfiles', methods=['GET'])
 # !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR

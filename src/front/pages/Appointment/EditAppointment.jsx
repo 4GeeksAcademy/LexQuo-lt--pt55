@@ -1,6 +1,8 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import MapComponent from "../../components/Map/MapComponent";
+import LocationAutocomplete from "../../components/Map/LocationAutocomplete";
 
 export const EditAppointment = () => {
   const { dispatch } = useGlobalReducer();
@@ -15,8 +17,11 @@ export const EditAppointment = () => {
     date: "",
     starts_at: "",
     ends_at: "",
+    latitud: null,
+    longitud: null
   });
 
+  const [mapPosition, setMapPosition] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState(null);
@@ -30,6 +35,11 @@ export const EditAppointment = () => {
       }
       const data = await response.json();
       setFormData(data);
+
+      if (data.latitud && data.longitud) {
+        setMapPosition([data.latitud, data.longitud]);
+      }
+
       setError(null);
     } catch (err) {
       console.error("Error fetching appointment:", err);
@@ -46,6 +56,25 @@ export const EditAppointment = () => {
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+  };
+
+  const handleLocationSelect = (locationData) => {
+    setFormData(prev => ({
+      ...prev,
+      location: locationData.address,
+      latitud: locationData.lat,
+      longitud: locationData.lng
+    }));
+    setMapPosition([locationData.lat, locationData.lng]);
+  };
+
+  const handleMapPositionChange = (lat, lng) => {
+    setFormData(prev => ({
+      ...prev,
+      latitud: lat,
+      longitud: lng
+    }));
+    setMapPosition([lat, lng]);
   };
 
   const handleSubmit = async (e) => {
@@ -139,16 +168,29 @@ export const EditAppointment = () => {
 
                 <div className="mb-3">
                   <label htmlFor="location" className="form-label">Location *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="location"
-                    name="location"
+                  <LocationAutocomplete
+                    onLocationSelect={handleLocationSelect}
                     value={formData.location}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
+                    onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
                   />
+                  <div className="form-text">
+                    Busca una ubicación o arrastra el marcador en el mapa
+                  </div>
+                </div>
+
+                {/* Mapa */}
+                <div className="mb-3">
+                  <label className="form-label">Mapa</label>
+                  <MapComponent
+                    position={mapPosition}
+                    onPositionChange={handleMapPositionChange}
+                    readonly={false}
+                  />
+                  {formData.latitud && formData.longitud && (
+                    <div className="form-text">
+                      Coordenadas: {formData.latitud?.toFixed(6)}, {formData.longitud?.toFixed(6)}
+                    </div>
+                  )}
                 </div>
 
                 <div className="mb-3">

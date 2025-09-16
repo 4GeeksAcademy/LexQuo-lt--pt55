@@ -141,9 +141,12 @@ class Appointment(db.Model):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     date: Mapped[Date] = mapped_column(Date, nullable=False)
     location: Mapped[str] = mapped_column(String(500), nullable=True)
+    details: Mapped[str] = mapped_column(String(255), nullable=False)
     starts_at: Mapped[Time] = mapped_column(Time, nullable=False)
     ends_at: Mapped[Time] = mapped_column(Time, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    latitud: Mapped[float] = mapped_column(Float, nullable=True)
+    longitud: Mapped[float] = mapped_column(Float, nullable=True)
 
     courtfiles: Mapped[List["AppointmentCourtfile"]] = relationship(back_populates="appointment")
 
@@ -160,9 +163,12 @@ class Appointment(db.Model):
             "title": self.title,
             "date": date_str,
             "location": self.location,
+            "details": self.details,
             "starts_at": starts_str,
             "ends_at": ends_str,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat(),
+            "latitud": self.latitud, 
+            "longitud": self.longitud 
         }
 
 class Deadlines(db.Model):
