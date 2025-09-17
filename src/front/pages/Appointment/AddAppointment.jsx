@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import MapComponent from "../../components/Map/MapComponent";
 import LocationAutocomplete from "../../components/Map/LocationAutocomplete";
 
+
 export const AddAppointment = () => {
   const { store, dispatch } = useGlobalReducer();
   const navigate = useNavigate();
@@ -129,7 +130,7 @@ export const AddAppointment = () => {
         body: JSON.stringify({
           title: formData.title,
           location: formData.location,
-          details: formData.details, 
+          details: formData.details,
           date: formData.date,
           starts_at: formData.starts_at,
           ends_at: formData.ends_at,
@@ -174,6 +175,43 @@ export const AddAppointment = () => {
       setLoading(false);
     }
   };
+
+  // helpers (fuera del componente o arriba)
+  const timeToMinutes = (hhmm) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  };
+  const addMinutes = (hhmm, delta) => {
+    const base = new Date(2000, 0, 1, ...hhmm.split(":").map(Number), 0);
+    const plus = new Date(base.getTime() + delta * 60000);
+    const hh = String(plus.getHours()).padStart(2, "0");
+    const mm = String(plus.getMinutes()).padStart(2, "0");
+    return `${hh}:${mm}`;
+  };
+
+  // dentro del componente:
+  const times15 = Array.from({ length: (24 * 60) / 15 }, (_, i) => {
+    const total = i * 15;
+    const hh = String(Math.floor(total / 60)).padStart(2, "0");
+    const mm = String(total % 60).padStart(2, "0");
+    return `${hh}:${mm}`;
+  });
+
+  const handleStartSelect = (e) => {
+    const starts = e.target.value;             // ej "19:30"
+    const ends = addMinutes(starts, 30);       // +30’
+    setFormData(prev => ({ ...prev, starts_at: starts, ends_at: ends }));
+  };
+
+  const handleEndSelect = (e) => {
+    const ends = e.target.value;
+    setFormData(prev => ({ ...prev, ends_at: ends }));
+  };
+
+  // si querés que "Ends" sólo muestre opciones >= start:
+  const endOptions = formData.starts_at
+    ? times15.filter(t => timeToMinutes(t) >= timeToMinutes(formData.starts_at))
+    : times15;
 
 
   return (
@@ -302,31 +340,31 @@ export const AddAppointment = () => {
                 </div>
 
                 <div className="mb-3">
-                  <label htmlFor="starts_at" className="form-label">Starts At *</label>
-                  <input
-                    type="time"
-                    className="form-control"
-                    id="starts_at"
-                    name="starts_at"
-                    value={formData.starts_at}
-                    onChange={handleInputChange}
+                  <label className="form-label">Starts At *</label>
+                  <select
+                    className="form-select"
+                    value={formData.starts_at || ""}
+                    onChange={handleStartSelect}
                     required
                     disabled={loading}
-                  />
+                  >
+                    <option value="" disabled>Select…</option>
+                    {times15.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
                 </div>
 
                 <div className="mb-3">
-                  <label htmlFor="ends_at" className="form-label">Ends At *</label>
-                  <input
-                    type="time"
-                    className="form-control"
-                    id="ends_at"
-                    name="ends_at"
-                    value={formData.ends_at}
-                    onChange={handleInputChange}
+                  <label className="form-label">Ends At *</label>
+                  <select
+                    className="form-select"
+                    value={formData.ends_at || ""}
+                    onChange={handleEndSelect}
                     required
                     disabled={loading}
-                  />
+                  >
+                    <option value="" disabled>Select…</option>
+                    {endOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
                 </div>
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">

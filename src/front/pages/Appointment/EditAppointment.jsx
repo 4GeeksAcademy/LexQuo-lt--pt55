@@ -34,8 +34,19 @@ export const EditAppointment = () => {
       if (!response.ok) {
         throw new Error(`Failed to load appointment data. Status: ${response.status}`);
       }
+      const toHHMM = (v) => {
+        if (!v) return "";
+        // acepta "19:30" o "19:30:00"
+        const m = String(v).match(/^(\d{2}):(\d{2})/);
+        return m ? `${m[1]}:${m[2]}` : "";
+      };
+
       const data = await response.json();
-      setFormData(data);
+      setFormData({
+        ...data,
+        starts_at: toHHMM(data.starts_at),
+        ends_at: toHHMM(data.ends_at),
+      });
 
       if (data.latitud && data.longitud) {
         setMapPosition([data.latitud, data.longitud]);
@@ -49,6 +60,46 @@ export const EditAppointment = () => {
       setFetching(false);
     }
   };
+
+  // helpers
+  const timeToMinutes = (hhmm) => {
+    if (!hhmm) return 0;
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  };
+  const addMinutes = (hhmm, delta) => {
+    if (!hhmm) return "";
+    const [h, m] = hhmm.split(":").map(Number);
+    const base = new Date(2000, 0, 1, h, m, 0);
+    const plus = new Date(base.getTime() + delta * 60000);
+    const hh = String(plus.getHours()).padStart(2, "0");
+    const mm = String(plus.getMinutes()).padStart(2, "0");
+    return `${hh}:${mm}`;
+  };
+
+  // opciones 00:00, 00:15, ... 23:45
+  const times15 = Array.from({ length: (24 * 60) / 15 }, (_, i) => {
+    const total = i * 15;
+    const hh = String(Math.floor(total / 60)).padStart(2, "0");
+    const mm = String(total % 60).padStart(2, "0");
+    return `${hh}:${mm}`;
+  });
+
+  // handlers
+  const handleStartSelect = (e) => {
+    const starts = e.target.value;
+    const ends = addMinutes(starts, 30); // +30’
+    setFormData(prev => ({ ...prev, starts_at: starts, ends_at: ends }));
+  };
+  const handleEndSelect = (e) => {
+    const ends = e.target.value;
+    setFormData(prev => ({ ...prev, ends_at: ends }));
+  };
+
+  // mostrar en Ends sólo >= Starts (opcional)
+  const endOptions = formData.starts_at
+    ? times15.filter(t => timeToMinutes(t) >= timeToMinutes(formData.starts_at))
+    : times15;
 
   useEffect(() => {
     if (appointmentId) fetchAppointment();
@@ -199,7 +250,6 @@ export const EditAppointment = () => {
                 <div className="mb-3">
                   <label className="form-label">Mapa</label>
                   <MapComponent
-                    key={mapPosition ? `edit-${mapPosition[0]}-${mapPosition[1]}` : 'edit-null'}
                     position={mapPosition}
                     onPositionChange={handleMapPositionChange}
                     readonly={false}
@@ -227,31 +277,31 @@ export const EditAppointment = () => {
                 </div>
 
                 <div className="mb-3">
-                  <label htmlFor="starts_at" className="form-label">Starts At *</label>
-                  <input
-                    type="time"
-                    className="form-control"
-                    id="starts_at"
-                    name="starts_at"
-                    value={formData.starts_at}
-                    onChange={handleInputChange}
+                  <label className="form-label">Starts At *</label>
+                  <select
+                    className="form-select"
+                    value={formData.starts_at || ""}
+                    onChange={handleStartSelect}
                     required
                     disabled={loading}
-                  />
+                  >
+                    <option value="" disabled>Select…</option>
+                    {times15.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
                 </div>
 
                 <div className="mb-3">
-                  <label htmlFor="ends_at" className="form-label">Ends At *</label>
-                  <input
-                    type="time"
-                    className="form-control"
-                    id="ends_at"
-                    name="ends_at"
-                    value={formData.ends_at}
-                    onChange={handleInputChange}
+                  <label className="form-label">Ends At *</label>
+                  <select
+                    className="form-select"
+                    value={formData.ends_at || ""}
+                    onChange={handleEndSelect}
                     required
                     disabled={loading}
-                  />
+                  >
+                    <option value="" disabled>Select…</option>
+                    {endOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
                 </div>
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
