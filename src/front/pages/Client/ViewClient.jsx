@@ -99,6 +99,18 @@ export const ViewClient = () => {
             </div>
 
             <div className="card-body">
+              <div className="d-flex justify-content-center mb-4">
+                {client.url_img ? (
+                  <img
+                    src={client.url_img}
+                    alt="Client Profile"
+                    className="rounded-circle border border-2 shadow-sm"
+                    style={{ width: '150px', height: '150px', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <i className="bi bi-person-circle text-muted" style={{ fontSize: '150px' }}></i>
+                )}
+              </div>
               <div className="row">
                 <div className="col-md-6">
                   <div className="mb-3">
