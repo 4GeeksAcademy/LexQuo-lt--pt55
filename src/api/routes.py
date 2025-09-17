@@ -263,7 +263,6 @@ def update_lawyer(lawyer_id):
         if 'is_active' in data:
             lawyer.is_active = data['is_active'].lower() in ['true', '1']
 
-        # Asegura que no se guarde una contraseña vacía
         if 'password' in data and data['password']:
             lawyer.password = generate_password_hash(data['password'])
 
@@ -399,8 +398,23 @@ def create_client():
 @api.route('/clients/<int:client_id>', methods=['PUT'])
 def update_client(client_id):
     try:
+
         client = Client.query.get_or_404(client_id)
-        data = request.get_json()
+        
+        data = request.form
+        file = request.files.get('file')
+
+        if file:
+            filename = file.filename
+            file_ext = os.path.splitext(filename)[1].lower()
+            allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+
+            if file_ext not in allowed_extensions:
+                return jsonify({'error': 'Invalid file type. Only image formats are allowed.'}), 400
+
+            upload_result = cloudinary.uploader.upload(
+                file, resource_type='image')
+            client.url_img = upload_result['secure_url']
 
         if 'email' in data:
             if data['email'] != client.email:
