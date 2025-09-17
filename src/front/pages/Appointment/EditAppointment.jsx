@@ -84,7 +84,7 @@ export const EditAppointment = () => {
     setError(null);
     try {
       const payload = { ...formData };
-      if (!payload.password) delete payload.password; // Esto podría ser un error si `password` no es parte del formulario de citas
+      if (!payload.password) delete payload.password;
 
       const response = await fetch(`${API}/api/appointments/${appointmentId}`, {
         method: "PUT",
@@ -126,7 +126,7 @@ export const EditAppointment = () => {
         <div className="alert alert-danger">
           <i className="bi bi-exclamation-triangle"></i> {error}
         </div>
-        <Link to="/appointments" className="btn btn-primary">Back to Appointments</Link>
+        <Link to="/appointments" className="btn btn-primary">Back to Appointment</Link>
       </div>
     );
   }
@@ -269,9 +269,11 @@ export const EditAppointment = () => {
                     )}
                   </button>
                 </div>
+
               </form>
             </div>
           </div>
+
         </div>
       </div>
     </div>
