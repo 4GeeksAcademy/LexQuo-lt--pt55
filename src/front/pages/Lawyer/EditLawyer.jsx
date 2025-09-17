@@ -69,6 +69,7 @@ export const EditLawyer = () => {
         setLoading(true);
         setError(null);
 
+        
         if (!formData.firstname?.trim() || !formData.lastname?.trim() || !formData.email?.trim() || !formData.phone?.trim()) {
             setError("Firstname, Lastname, Email and Phone are required.");
             setLoading(false);

@@ -60,6 +60,7 @@ export const Clients = () => {
             <thead className="table-dark">
               <tr>
                 <th>ID</th>
+                <th>Pic</th>
                 <th>Firstname</th>
                 <th>Lastname</th>
                 <th>Email</th>
@@ -72,6 +73,20 @@ export const Clients = () => {
               {store.clients.map((client) => (
                 <tr key={client.id}>
                   <td><strong>{client.id}</strong></td>
+                  <td>
+                    <div>
+                      {client.url_img ? (
+                        <img
+                          src={client.url_img}
+                          alt={client.firstname + " " + client.lastname}
+                          className="rounded-circle border"
+                          style={{ width: "30px", height: "30px", objectFit: "cover" }}
+                        />
+                      ) : (
+                        <i className="bi bi-person-circle text-muted" style={{ fontSize: "30px" }}></i>
+                      )}
+                    </div>
+                  </td>
                   <td>{client.firstname}</td>
                   <td>{client.lastname}</td>
                   <td>{client.email}</td>

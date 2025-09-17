@@ -112,7 +112,6 @@ export const ViewLawyer = () => {
 
             <div className="card-body">
               <div className="d-flex justify-content-center mb-4">
-                {/* Usa la URL de la imagen si existe, de lo contrario, muestra un icono por defecto */}
                 {lawyer.url_img ? (
                   <img
                     src={lawyer.url_img}
@@ -124,8 +123,8 @@ export const ViewLawyer = () => {
                   <i className="bi bi-person-circle text-muted" style={{ fontSize: '150px' }}></i>
                 )}
               </div>
-              <div className="row">
 
+              <div className="row">
                 <div className="col-md-6">
                   <div className="mb-3">
                     <label className="fw-bold text-muted">First Name</label>

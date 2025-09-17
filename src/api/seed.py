@@ -33,13 +33,13 @@ def seed_lawyers(session):
     rows = [
         dict(firstname="María",  lastname="González", email="maria.g@example.com",
              phone="+54 11 5555-1001", password="1234", is_active=True,
-             url_img="/uploads/avatars/maria.png"),
+             url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
         dict(firstname="Juan",   lastname="Pérez",     email="juan.p@example.com",
              phone="+54 11 5555-1002", password="1234", is_active=True,
-             url_img="/uploads/avatars/juan.png"),
+             url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
         dict(firstname="Lucía",  lastname="Martínez",  email="lucia.m@example.com",
              phone="+54 11 5555-1003", password="1234", is_active=True,
-             url_img="/uploads/avatars/lucia.png"),
+             url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
     ]
     created = 0
     for r in rows:
@@ -53,17 +53,17 @@ def seed_lawyers(session):
 def seed_clients(session):
     rows = [
         dict(firstname="Ana",    lastname="Suarez",    email="ana.s@example.com",
-             phone="+54 11 5555-2001", password="1234", is_active=True),
+             phone="+54 11 5555-2001", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
         dict(firstname="Pedro",  lastname="Lopez",     email="pedro.l@example.com",
-             phone="+54 11 5555-2002", password="1234", is_active=True),
+             phone="+54 11 5555-2002", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
         dict(firstname="Sofía",  lastname="Diaz",      email="sofia.d@example.com",
-             phone="+54 11 5555-2003", password="1234", is_active=True),
+             phone="+54 11 5555-2003", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
         dict(firstname="Diego",  lastname="Ruiz",      email="diego.r@example.com",
-             phone="+54 11 5555-2004", password="1234", is_active=True),
+             phone="+54 11 5555-2004", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
         dict(firstname="Camila", lastname="Fernández", email="camila.f@example.com",
-             phone="+54 11 5555-2005", password="1234", is_active=True),
+             phone="+54 11 5555-2005", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
         dict(firstname="Martin", lastname="Rossi",     email="martin.r@example.com",
-             phone="+54 11 5555-2006", password="1234", is_active=True),
+             phone="+54 11 5555-2006", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
     ]
     created = 0
     for r in rows:

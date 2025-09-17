@@ -56,6 +56,7 @@ class Client(db.Model):
         String(120), unique=True, nullable=False)
     phone: Mapped[str] = mapped_column(String(30), nullable=True)
     password: Mapped[str] = mapped_column(String(500), nullable=False)
+    url_img: Mapped[str] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(
         Boolean(), default=True, nullable=False)
 
@@ -80,6 +81,7 @@ class Client(db.Model):
             "lastname": self.lastname,
             "email": self.email,
             "phone": self.phone,
+            "url_img": self.url_img,
             "is_active": self.is_active,
         }
 
