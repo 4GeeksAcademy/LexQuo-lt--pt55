@@ -13,10 +13,10 @@ pip install cloudinary
 
 ## 🔑 Variables de entorno
 ```sh
-VITE_GOOGLE_MAPS_API_KEY=AIzaSyA1uIf5euVlWEJ0_NE1vqftvx5NVKmzccM
-CLOUDINARY_CLOUD_NAME="doxdmmj1o"
-CLOUDINARY_API_KEY="138819378854918"
-CLOUDINARY_API_SECRET="Yizh0wx5Pledd7PtyUUzy5mRXrg"
+VITE_GOOGLE_MAPS_API_KEY=*********************
+CLOUDINARY_CLOUD_NAME=*********************
+CLOUDINARY_API_KEY=*********************
+CLOUDINARY_API_SECRET=*********************
 ```
 
 ## 🌱 Seed de datos básicos
