@@ -111,6 +111,19 @@ export const ViewLawyer = () => {
             </div>
 
             <div className="card-body">
+              <div className="d-flex justify-content-center mb-4">
+                {/* Usa la URL de la imagen si existe, de lo contrario, muestra un icono por defecto */}
+                {lawyer.url_img ? (
+                  <img
+                    src={lawyer.url_img}
+                    alt="Lawyer Profile"
+                    className="rounded-circle border border-2 shadow-sm"
+                    style={{ width: '150px', height: '150px', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <i className="bi bi-person-circle text-muted" style={{ fontSize: '150px' }}></i>
+                )}
+              </div>
               <div className="row">
 
                 <div className="col-md-6">
@@ -124,7 +137,6 @@ export const ViewLawyer = () => {
                     <p className="fs-6">{lawyer.lastname || "-"}</p>
                   </div>
                 </div>
-
 
                 <div className="col-md-6">
                   <div className="mb-3">
@@ -156,8 +168,6 @@ export const ViewLawyer = () => {
               </div>
             </div>
           </div>
-
-
         </div>
       </div>
     </div>

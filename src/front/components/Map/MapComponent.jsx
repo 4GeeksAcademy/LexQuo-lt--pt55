@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import L from 'leaflet';
 
 const MapComponent = ({ position, onPositionChange, readonly = false }) => {
   const mapRef = useRef(null);
@@ -6,6 +7,7 @@ const MapComponent = ({ position, onPositionChange, readonly = false }) => {
   const mapInstance = useRef(null);
   const clickHandlerRef = useRef(null);
 
+  // Función auxiliar para normalizar la posición
   const normPos = (pos) => {
     if (!pos) return null;
     if (Array.isArray(pos) && pos.length === 2) return { lat: pos[0], lng: pos[1] };
@@ -13,12 +15,15 @@ const MapComponent = ({ position, onPositionChange, readonly = false }) => {
     return null;
   };
 
+  // Efecto para inicializar el mapa
   useEffect(() => {
+    // Verificar que Leaflet está disponible globalmente
     if (typeof L === 'undefined') {
       console.error('Leaflet no está cargado. Asegúrate de incluir el CDN en index.html');
       return;
     }
 
+    // Configurar los íconos del marcador de Leaflet
     delete L.Icon.Default.prototype._getIconUrl;
     L.Icon.Default.mergeOptions({
       iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -28,7 +33,7 @@ const MapComponent = ({ position, onPositionChange, readonly = false }) => {
 
     // Inicializar el mapa
     mapInstance.current = L.map(mapRef.current).setView(
-      position || [-34.6037, -58.3816], 
+      normPos(position) || [-34.6037, -58.3816],
       13
     );
 
@@ -36,12 +41,13 @@ const MapComponent = ({ position, onPositionChange, readonly = false }) => {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(mapInstance.current);
 
+    // Ajustar el tamaño del mapa después de la inicialización
     setTimeout(() => {
       if (mapInstance.current) mapInstance.current.invalidateSize();
     }, 0);
 
+    // Función de limpieza
     return () => {
-      // Limpieza
       if (mapInstance.current) {
         mapInstance.current.remove();
         mapInstance.current = null;
@@ -49,19 +55,19 @@ const MapComponent = ({ position, onPositionChange, readonly = false }) => {
       markerRef.current = null;
       clickHandlerRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // solo una vez
+  }, []); // El array de dependencias vacío asegura que se ejecute una sola vez
 
-  // CAMBIO: (Des)activar click para elegir punto según `readonly`
+  // Efecto para gestionar el evento de click en el mapa
   useEffect(() => {
     if (!mapInstance.current) return;
 
-    // quitar handler anterior si existe
+    // Remover el handler de click anterior si existe
     if (clickHandlerRef.current) {
       mapInstance.current.off('click', clickHandlerRef.current);
       clickHandlerRef.current = null;
     }
 
+    // Si no es de solo lectura, agregar el nuevo handler
     if (!readonly) {
       const handler = (e) => {
         onPositionChange && onPositionChange(e.latlng.lat, e.latlng.lng);
@@ -71,14 +77,14 @@ const MapComponent = ({ position, onPositionChange, readonly = false }) => {
     }
   }, [readonly, onPositionChange]);
 
-  // CAMBIO: Gestionar marker y recentrado cuando cambia `position` (clave para View/Edit)
+  // Efecto para manejar el marcador y el centrado del mapa cuando cambia 'position'
   useEffect(() => {
     if (!mapInstance.current || typeof L === 'undefined') return;
 
     const p = normPos(position);
 
     if (p) {
-      // Crear o actualizar marker
+      // Crear o actualizar el marcador
       if (!markerRef.current) {
         markerRef.current = L.marker([p.lat, p.lng], { draggable: !readonly }).addTo(mapInstance.current);
 
@@ -90,7 +96,7 @@ const MapComponent = ({ position, onPositionChange, readonly = false }) => {
         }
       } else {
         markerRef.current.setLatLng([p.lat, p.lng]);
-        // CAMBIO: si cambió readonly, actualizar draggability
+        // Actualizar la capacidad de arrastre según 'readonly'
         if (markerRef.current.dragging) {
           if (readonly) {
             markerRef.current.dragging.disable();
@@ -100,7 +106,7 @@ const MapComponent = ({ position, onPositionChange, readonly = false }) => {
         }
       }
 
-      // CAMBIO: popup actualizado en cada cambio de posición
+      // Actualizar el popup del marcador
       const latTxt = p.lat.toFixed(6);
       const lngTxt = p.lng.toFixed(6);
       markerRef.current.bindPopup(
@@ -111,14 +117,15 @@ const MapComponent = ({ position, onPositionChange, readonly = false }) => {
         </div>`
       );
 
-      // CAMBIO: recenter suave sin “salto” brusco
+      // Recenter el mapa de forma suave si la posición ha cambiado significativamente
       const current = mapInstance.current.getCenter();
       const dist = mapInstance.current.distance(current, L.latLng(p.lat, p.lng));
-      if (dist > 5) {
+      if (dist > 5) { // Un umbral para evitar saltos bruscos
         mapInstance.current.setView([p.lat, p.lng], mapInstance.current.getZoom(), { animate: true });
       }
+
     } else {
-      // Si se borra la posición, quitar marker
+      // Remover el marcador si la posición es nula
       if (markerRef.current) {
         mapInstance.current.removeLayer(markerRef.current);
         markerRef.current = null;

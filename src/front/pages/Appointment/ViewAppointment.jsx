@@ -136,15 +136,15 @@ export const ViewAppointment = () => {
               <div className="mb-3">
                 <label className="fw-bold text-muted">Ubicación en Mapa</label>
                 <MapComponent
-                  key={appointment ? `view-${appointment.latitud}-${appointment.longitud}` : 'view-null'}
-                  position={appointment ? [appointment.latitud, appointment.longitud] : null}
-                  readonly
+                  position={[appointment.latitud, appointment.longitud]}
+                  readonly={true}
                 />
                 <div className="form-text">
                   Coordenadas: {appointment.latitud}, {appointment.longitud}
                 </div>
               </div>
             )}
+
             <div className="card-footer bg-light">
               <div className="d-flex gap-2 justify-content-end">
                 <Link to="/appointments" className="btn btn-outline-secondary">
