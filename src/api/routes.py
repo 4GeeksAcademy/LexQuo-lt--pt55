@@ -382,6 +382,7 @@ def create_client():
             lastname=data['lastname'],
             email=data['email'],
             phone=data['phone'],
+            url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png",
             password=generate_password_hash(data['password']),
         )
 
@@ -400,7 +401,7 @@ def update_client(client_id):
     try:
 
         client = Client.query.get_or_404(client_id)
-        
+
         data = request.form
         file = request.files.get('file')
 
