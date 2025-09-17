@@ -578,7 +578,7 @@ export const DashboardLawyer = () => {
                         )}
                     </div>
 
-                    {/* appointments */}       
+                    {/* appointments */}
                     <div className="mt-5 text-start">
                         <div className="d-flex justify-content-between align-items-center">
                             <h3>APPOINTMENTS</h3>
@@ -720,7 +720,7 @@ export const DashboardLawyer = () => {
                     <div className="mt-5 text-start">
                         <div className="d-flex justify-content-between align-items-center">
                             <h3>PAYMENTS</h3>
-                            
+
                         </div>
 
                         {loadingPayments && <p className="mt-3">Loading payments...</p>}
@@ -757,8 +757,8 @@ export const DashboardLawyer = () => {
                                                     <td>{p.currency}</td>
                                                     <td>
                                                         <span className={`badge ${p.status === "approved" ? "bg-success"
-                                                                : p.status === "pending" ? "bg-warning"
-                                                                    : "bg-danger"
+                                                            : p.status === "pending" ? "bg-warning"
+                                                                : "bg-danger"
                                                             }`}>
                                                             {p.status || "—"}
                                                         </span>
@@ -768,24 +768,47 @@ export const DashboardLawyer = () => {
                                                     <td>{cf?.case_number || "—"}</td>
                                                     <td className="text-truncate" style={{ maxWidth: 260 }} title={cf?.title}>{cf?.title || "—"}</td>
                                                     <td className="text-end">
-                                                        <Link to={`/payments/view/${p.id}`} className="btn btn-sm btn-info me-1">
+
+                                                        <Link
+                                                            to={`/payments/view/${p.id}`}
+                                                            className="btn btn-sm btn-info me-1"
+                                                            title="View"
+                                                        >
                                                             <i className="bi bi-eye"></i>
                                                         </Link>
-                                                        <Link to={`/payments/${p.id}`} className="btn btn-sm btn-warning me-1">
+
+                                                        <Link
+                                                            to={p.status === "approved" ? "#" : `/payments/${p.id}`}
+                                                            className={`btn btn-sm btn-warning me-1 ${p.status === "approved" ? "disabled" : ""}`}
+                                                            aria-disabled={p.status === "approved"}
+                                                            title={p.status === "approved" ? "Approved payments are read-only" : "Edit"}
+                                                            onClick={(e) => { if (p.status === "approved") e.preventDefault(); }}
+                                                        >
                                                             <i className="bi bi-pencil"></i>
                                                         </Link>
+
                                                         {p.status === "pending" && (
                                                             <button
                                                                 onClick={() => handleMarkPaid(p.id)}
                                                                 className="btn btn-sm btn-success me-1"
+                                                                title="Mark as paid"
                                                             >
                                                                 <i className="bi bi-cash"></i>
                                                             </button>
                                                         )}
+
                                                         <button
                                                             className="btn btn-sm btn-danger"
-                                                            title={p.relation_id ? "Unlink" : "No link available"}
-                                                            disabled={!p.relation_id || deletingPaymentRelId === p.relation_id}
+                                                            title={
+                                                                p.status === "approved"
+                                                                    ? "Cannot unlink an approved payment"
+                                                                    : (p.relation_id ? "Unlink" : "No link available")
+                                                            }
+                                                            disabled={
+                                                                p.status === "approved" ||
+                                                                !p.relation_id ||
+                                                                deletingPaymentRelId === p.relation_id
+                                                            }
                                                             onClick={() => handleDeletePaymentRelation(p.relation_id)}
                                                         >
                                                             {deletingPaymentRelId === p.relation_id ? (
