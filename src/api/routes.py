@@ -1626,6 +1626,13 @@ def create_payment_courtfile():
         for field in required_fields:
             if field not in data:
                 return jsonify({'error': 'Required field: {field}'}), 400
+        
+        exists = PaymentCourtfile.query.filter_by(
+            payment_id=data['payment_id'],
+            courtfile_id=data['courtfile_id']
+        ).first()
+        if exists:
+            return jsonify(exists.serialize()), 200
 
 
         payment_courtfile =PaymentCourtfile(
