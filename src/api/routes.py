@@ -1548,7 +1548,7 @@ def get_courtfile_document():
         if requested_courtfile_id is not None:
             query = query.filter_by(courtfile_id=requested_courtfile_id)
 
-        courtfile_document = CourtfileDocument.query.all()
+        courtfile_document = query.all()
         return jsonify([{
             'id': cd.id,
             'courtfile_id': cd.courtfile_id,
@@ -1741,15 +1741,29 @@ def delete_payment(payment_id):
 
 
 @api.route('/payments-courtfile', methods=['POST'])
+@jwt_required(optional=True)
 def create_payment_courtfile():
     try:
-        data = request.get_json()
+        data = request.get_json() or {}
 
         required_fields = ['payment_id', 'courtfile_id']
         for field in required_fields:
             if field not in data:
-                return jsonify({'error': 'Required field: {field}'}), 400
-        
+                return jsonify({'error': f'Required field: {field}'}), 400
+
+        payment = Payment.query.get(data['payment_id'])
+        courtfile = Courtfile.query.get(data['courtfile_id'])
+        if not payment or not courtfile:
+            return jsonify({'error': 'Payment or Courtfile not found'}), 404
+
+        role, current_id = _get_role_and_identity()
+        if role == "lawyer":
+            linked = LawyerCourtfile.query.filter_by(
+                lawyer_id=int(current_id), courtfile_id=int(data['courtfile_id'])
+            ).first()
+            if not linked:
+                return jsonify({'error': 'Forbidden for this courtfile'}), 403
+
         exists = PaymentCourtfile.query.filter_by(
             payment_id=data['payment_id'],
             courtfile_id=data['courtfile_id']
@@ -1773,37 +1787,89 @@ def create_payment_courtfile():
 
 
 @api.route('/payments-courtfile', methods=['GET'])
+@jwt_required(optional=True)
 def get_payments_courtfile():
     try:
-        payments_courtfile = PaymentCourtfile.query.all()
-        return jsonify([pc.serialize() for pc in payments_courtfile]), 200
+        courtfile_id = request.args.get('courtfile_id', type=int)
+        expand = request.args.get('expand', default='')
+
+        query = PaymentCourtfile.query
+        if courtfile_id:
+            query = query.filter_by(courtfile_id=courtfile_id)
+
+        role, current_id = _get_role_and_identity()
+        if role == "lawyer":
+            subq = select(LawyerCourtfile.courtfile_id).where(
+                LawyerCourtfile.lawyer_id == int(current_id)
+            )
+            query = query.filter(PaymentCourtfile.courtfile_id.in_(subq))
+
+        pcs = query.all()
+        result = []
+        for pc in pcs:
+            item = pc.serialize()
+            if 'payment' in expand:
+                item['payment'] = pc.payment.serialize()
+            result.append(item)
+
+        return jsonify(result), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
 @api.route('/payments-courtfile/<int:id>', methods=['GET'])
+@jwt_required(optional=True)
 def get_payment_courtfile(id):
     try:
         pc = PaymentCourtfile.query.get_or_404(id)
+
+        role, current_id = _get_role_and_identity()
+        if role == "lawyer":
+            linked = LawyerCourtfile.query.filter_by(
+                lawyer_id=int(current_id), courtfile_id=int(pc.courtfile_id)
+            ).first()
+            if not linked:
+                return jsonify({'error': 'Forbidden'}), 403
+
         return jsonify(pc.serialize()), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 404
 
 
 @api.route('/payments-courtfile/<int:id>', methods=['PUT'])
+@jwt_required(optional=True)
 def update_payment_courtfile(id):
     try:
         payment_courtfile = PaymentCourtfile.query.get_or_404(id)
-        data = request.get_json()
+        data = request.get_json() or {}
+
+        role, current_id = _get_role_and_identity()
+        if role == "lawyer":
+            linked_old = LawyerCourtfile.query.filter_by(
+                lawyer_id=int(current_id), courtfile_id=int(payment_courtfile.courtfile_id)
+            ).first()
+            if not linked_old:
+                return jsonify({'error': 'Forbidden'}), 403
 
         if 'payment_id' in data:
+            payment = Payment.query.get(data['payment_id'])
+            if not payment:
+                return jsonify({'error': 'Payment not found'}), 404
             payment_courtfile.payment_id = data['payment_id']
 
         if 'courtfile_id' in data:
+            cf = Courtfile.query.get(data['courtfile_id'])
+            if not cf:
+                return jsonify({'error': 'Courtfile not found'}), 404
+            if role == "lawyer":
+                linked_new = LawyerCourtfile.query.filter_by(
+                    lawyer_id=int(current_id), courtfile_id=int(data['courtfile_id'])
+                ).first()
+                if not linked_new:
+                    return jsonify({'error': 'Forbidden for target courtfile'}), 403
             payment_courtfile.courtfile_id = data['courtfile_id']
 
         db.session.commit()
-
         return jsonify(payment_courtfile.serialize()), 200
 
     except Exception as e:
@@ -1812,9 +1878,18 @@ def update_payment_courtfile(id):
 
 
 @api.route('/payments-courtfile/<int:id>', methods=['DELETE'])
+@jwt_required(optional=True)
 def delete_payment_courtfile(id):
     try:
         payment_courtfile = PaymentCourtfile.query.get_or_404(id)
+
+        role, current_id = _get_role_and_identity()
+        if role == "lawyer":
+            linked = LawyerCourtfile.query.filter_by(
+                lawyer_id=int(current_id), courtfile_id=int(payment_courtfile.courtfile_id)
+            ).first()
+            if not linked:
+                return jsonify({'error': 'Forbidden'}), 403
 
         db.session.delete(payment_courtfile)
         db.session.commit()
