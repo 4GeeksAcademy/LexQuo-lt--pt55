@@ -23,6 +23,11 @@ export const ViewCourtfileClient = () => {
   const [loadingAppointments, setLoadingAppointments] = useState(false);
   const [appointmentsErr, setAppointmentsErr] = useState("");
 
+  // ------------------- PAYMENTS (YA FILTRADOS) -------------------
+  const [casePayments, setCasePayments] = useState([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+  const [paymentsErr, setPaymentsErr] = useState("");
+
   // ------------------- FETCHERS -------------------
   const fetchCourtfile = async () => {
     try {
@@ -68,6 +73,28 @@ export const ViewCourtfileClient = () => {
     }
   };
 
+  const fetchPayments = async () => {
+    try {
+      setLoadingPayments(true);
+      setPaymentsErr("");
+      const idNum = Number(courtfileId);
+      const resp = await fetch(
+        `${API}/api/payments-courtfile?courtfile_id=${idNum}&expand=payment`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error(e.error || `HTTP ${resp.status}`);
+      }
+      const rows = await resp.json(); // [{ id (relation), courtfile_id, payment: {...} }]
+      setCasePayments(rows.map(r => ({ relation_id: r.id, ...(r.payment || {}) })));
+    } catch (e) {
+      setPaymentsErr(e.message || "Error fetching payments");
+    } finally {
+      setLoadingPayments(false);
+    }
+  };
+
   // ------------------- EFFECTS -------------------
   useEffect(() => {
     if (!courtfileId) return;
@@ -77,7 +104,32 @@ export const ViewCourtfileClient = () => {
   useEffect(() => {
     if (!authed || !courtfileId) return;
     fetchAppointments();
+    fetchPayments();
   }, [API, authed, token, courtfileId]);
+
+  // ------------------- HELPERS -------------------
+  const handlePay = async (paymentId) => {
+    if (!authed) return;
+    try {
+      const resp = await fetch(`${API}/api/payments/${paymentId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: "approved" })
+      });
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error(e.error || `HTTP ${resp.status}`);
+      }
+      await fetchPayments(); // refrescar lista
+      alert("Payment approved successfully!");
+    } catch (err) {
+      console.error("Error approving payment:", err);
+      alert(err.message || "Error approving payment");
+    }
+  };
 
   // ------------------- RENDER -------------------
   if (loading) {
@@ -178,6 +230,7 @@ export const ViewCourtfileClient = () => {
             </div>
           </div>
 
+          {/* APPOINTMENTS */}
           <div className="mt-5">
             <div className="d-flex justify-content-between align-items-center">
               <h3 className="m-0">APPOINTMENTS</h3>
@@ -214,6 +267,67 @@ export const ViewCourtfileClient = () => {
               </div>
             )}
           </div>
+
+          {/* PAYMENTS */}
+          <div className="mt-5">
+            <div className="d-flex justify-content-between align-items-center">
+              <h3 className="m-0">PAYMENTS</h3>
+            </div>
+
+            {loadingPayments && <p className="mt-3">Loading payments...</p>}
+            {paymentsErr && <div className="alert alert-danger mt-3">{paymentsErr}</div>}
+            {!loadingPayments && !paymentsErr && casePayments.length === 0 && (
+              <div className="alert alert-info mt-3">No payments for this case.</div>
+            )}
+
+            {!loadingPayments && casePayments.length > 0 && (
+              <div className="table-responsive mt-3">
+                <table className="table table-striped table-hover">
+                  <thead className="table-dark">
+                    <tr>
+                      <th style={{ width: "90px" }}>Payment</th>
+                      <th>Amount</th>
+                      <th>Currency</th>
+                      <th>Status</th>
+                      <th>Means</th>
+                      <th>Paid At</th>
+                      <th className="text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {casePayments.map(p => (
+                      <tr key={p.relation_id}>
+                        <td>#{p.id}</td>
+                        <td>{p.amount}</td>
+                        <td>{p.currency}</td>
+                        <td>
+                          <span className={`badge ${p.status === "approved" ? "bg-success"
+                            : p.status === "pending" ? "bg-warning"
+                              : "bg-danger"
+                            }`}>
+                            {p.status || "—"}
+                          </span>
+                        </td>
+                        <td>{p.means || "—"}</td>
+                        <td>{p.paid_at ? new Date(p.paid_at).toLocaleString() : "—"}</td>
+                        <td className="text-end d-flex gap-1 justify-content-end">
+                          {p.status === "pending" && (
+                            <button
+                              onClick={() => handlePay(p.id)}
+                              className="btn btn-sm btn-success"
+                            >
+                              <i className="bi bi-cash"></i> Pay
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
     </div>

@@ -50,6 +50,11 @@ export const ViewCourtfileLawyer = () => {
   const [lawyersErr, setLawyersErr] = useState("");
   const [deletingLawyerRelId, setDeletingLawyerRelId] = useState(null);
 
+  // ------------------- PAYMENTS (YA FILTRADOS) -------------------
+  const [casePayments, setCasePayments] = useState([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+  const [paymentsErr, setPaymentsErr] = useState("");
+  const [deletingPaymentRelId, setDeletingPaymentRelId] = useState(null);
 
   // ------------------- FETCHERS -------------------
   const fetchCourtfile = async () => {
@@ -214,6 +219,33 @@ export const ViewCourtfileLawyer = () => {
     }
   };
 
+  const fetchPayments = async () => {
+    try {
+      setLoadingPayments(true);
+      setPaymentsErr("");
+      const idNum = Number(courtfileId);
+
+      const resp = await fetch(
+        `${API}/api/payments-courtfile?courtfile_id=${idNum}&expand=payment`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error(e.error || `HTTP ${resp.status}`);
+      }
+
+      const rows = await resp.json(); // [{ id, payment: { ... } }]
+      setCasePayments(rows.map(r => ({ relation_id: r.id, ...(r.payment || {}) })));
+    } catch (e) {
+      setPaymentsErr(e.message || "Error fetching payments");
+    } finally {
+      setLoadingPayments(false);
+    }
+  };
+
+
+
 
   // ------------------- EFFECTS -------------------
   useEffect(() => {
@@ -228,6 +260,7 @@ export const ViewCourtfileLawyer = () => {
     fetchDocuments();
     fetchClients();
     fetchCaseLawyers();
+    fetchPayments();
   }, [API, authed, token, courtfileId]);
 
   // ------------------- HELPERS -------------------
@@ -351,51 +384,6 @@ export const ViewCourtfileLawyer = () => {
     }
   };
 
-  const handleAddPeerLawyer = async () => {
-    if (!authed) return;
-    const email = window.prompt("Email del/a abogado/a a invitar o linkear:");
-    if (!email) return;
-
-    try {
-      // 1) lookup 
-      const lookup = await fetch(`${API}/api/lawyers/lookup?email=${encodeURIComponent(email)}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
-      });
-      const ldata = await lookup.json();
-      if (!lookup.ok) throw new Error(ldata.error || `HTTP ${lookup.status}`);
-
-      if (ldata.found && ldata.lawyer?.id) {
-        // 2) link peer usando TU POST /lawyers-courtfiles (con ajuste de backend para permitir peer) 
-        const resp = await fetch(`${API}/api/lawyers-courtfiles`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify({
-            lawyer_id: ldata.lawyer.id,
-            courtfile_id: courtfile.id
-          })
-        });
-        const data = await resp.json();
-        if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
-        alert("Abogado/a vinculado/a al expediente ✅");
-        await fetchCaseLawyers();
-        return;
-      }
-
-      // 3) no existe → ir a signup con datos pre-cargados (igual que con client) 
-      const params = new URLSearchParams({
-        role: "lawyer",
-        email: email,
-        courtfile_id: String(courtfile.id),
-        returnTo: `/courtfiles/view/${courtfile.id}`
-      });
-      navigate(`/SignUpLawyer?${params.toString()}`);
-    } catch (e) {
-      alert(e.message || "Error al linkear/invitar abogado/a");
-    }
-  };
 
   const handleDeleteLawyerRelation = async (relationId) => {
     if (!authed) return;
@@ -413,6 +401,27 @@ export const ViewCourtfileLawyer = () => {
       alert(err.message || "Error deleting relation");
     } finally {
       setDeletingLawyerRelId(null);
+    }
+  };
+
+  const handleDeletePaymentRelation = async (relationId) => {
+    if (!authed) return;
+    if (!window.confirm("Unlink this payment from the case?")) return;
+    try {
+      setDeletingPaymentRelId(relationId);
+      const resp = await fetch(`${API}/api/payments-courtfile/${relationId}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error(e.error || `HTTP ${resp.status}`);
+      }
+      await fetchPayments();
+    } catch (e) {
+      alert(e.message || "Error unlinking payment");
+    } finally {
+      setDeletingPaymentRelId(null);
     }
   };
 
@@ -820,6 +829,7 @@ export const ViewCourtfileLawyer = () => {
             )}
           </div>
 
+          {/* ============ CLIENTS ============ */}
           <div className="mt-5">
             <div className="d-flex justify-content-between align-items-center">
               <h3 className="m-0">CLIENTS</h3>
@@ -833,7 +843,7 @@ export const ViewCourtfileLawyer = () => {
                 }}
                 className="btn btn-sm btn-success"
               >
-                + Add Client
+                + New Client
               </Link>
             </div>
 
@@ -869,6 +879,100 @@ export const ViewCourtfileLawyer = () => {
                             onClick={() => handleDeleteClientRelation(cl.relation_id)}
                           >
                             {deletingClientRelId === cl.relation_id ? (
+                              <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            ) : (
+                              <i className="bi bi-trash"></i>
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* ============ PAYMENTS ============ */}
+          <div className="mt-5">
+            <div className="d-flex justify-content-between align-items-center">
+              <h3 className="m-0">PAYMENTS</h3>
+              <Link
+                to="/payments/addPayment"
+                state={{
+                  courtfileId: courtfile.id,
+                  courtfileNumber: courtfile.case_number,
+                  courtfileTitle: courtfile.title,
+                  returnTo: `/courtfiles/view/${courtfile.id}`
+                }}
+                className="btn btn-sm btn-success"
+              >
+                + New Payment
+              </Link>
+            </div>
+
+            {loadingPayments && <p className="mt-3">Loading payments...</p>}
+            {paymentsErr && <div className="alert alert-danger mt-3">{paymentsErr}</div>}
+            {!loadingPayments && !paymentsErr && casePayments.length === 0 && (
+              <div className="alert alert-info mt-3">No payments linked yet. Please add one!</div>
+            )}
+
+            {!loadingPayments && casePayments.length > 0 && (
+              <div className="table-responsive mt-3">
+                <table className="table table-striped table-hover">
+                  <thead className="table-dark">
+                    <tr>
+                      <th style={{ width: "90px" }}>ID</th>
+                      <th>Amount</th>
+                      <th>Currency</th>
+                      <th>Status</th>
+                      <th>Means</th>
+                      <th>Paid At</th>
+                      <th className="text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {casePayments.map(p => (
+                      <tr key={`${p.id}-${p.relation_id}`}>
+                        <td>#{p.id}</td>
+                        <td>{p.amount}</td>
+                        <td>{p.currency}</td>
+                        <td>
+                          <span className={`badge ${p.status === "approved" ? "bg-success"
+                            : p.status === "pending" ? "bg-warning"
+                              : "bg-danger"
+                            }`}>
+                            {p.status || "—"}
+                          </span>
+                        </td>
+                        <td>{p.means || "—"}</td>
+                        <td>{p.paid_at ? new Date(p.paid_at).toLocaleString() : "—"}</td>
+                        <td className="text-end">
+                          <Link
+                            to={`/payments/view/${p.id}`}
+                            className="btn btn-sm btn-info me-1"
+                            title="View"
+                          >
+                            <i className="bi bi-eye"></i>
+                          </Link>
+
+                          <Link
+                            to={p.status === "approved" ? "#" : `/payments/${p.id}`}
+                            className={`btn btn-sm btn-warning me-1 ${p.status === "approved" ? "disabled" : ""}`}
+                            aria-disabled={p.status === "approved"}
+                            title={p.status === "approved" ? "Approved payments are read-only" : "Edit"}
+                            onClick={(e) => { if (p.status === "approved") e.preventDefault(); }}
+                          >
+                            <i className="bi bi-pencil"></i>
+                          </Link>
+
+                          <button
+                            className="btn btn-sm btn-danger"
+                            title={p.status === "approved" ? "Cannot unlink an approved payment" : (p.relation_id ? "Unlink" : "No link available")}
+                            disabled={p.status === "approved" || !p.relation_id || deletingPaymentRelId === p.relation_id}
+                            onClick={() => handleDeletePaymentRelation(p.relation_id)}
+                          >
+                            {deletingPaymentRelId === p.relation_id ? (
                               <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                             ) : (
                               <i className="bi bi-trash"></i>
