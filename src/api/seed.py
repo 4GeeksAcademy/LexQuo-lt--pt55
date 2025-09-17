@@ -234,7 +234,7 @@ def run():
         print(f"Deadlines:   {session.query(Deadlines).count()}")
         print(f"Documents:   {session.query(Document).count()}")
         print(f"Payments:    {session.query(Payment).count()}")
-=======
+
 import sys
 from datetime import datetime, date, time, timedelta
 
