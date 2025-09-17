@@ -1,3 +1,37 @@
+# Comandos importantes para LexQuo
+
+## 🔄 Reseteo de base de datos
+```sh
+pipenv run reset_db
+```
+
+## 📦 Instalación de librerías
+```sh
+npm install react-leaflet leaflet
+pip install cloudinary
+```
+
+## 🔑 Variables de entorno
+```sh
+VITE_GOOGLE_MAPS_API_KEY=AIzaSyA1uIf5euVlWEJ0_NE1vqftvx5NVKmzccM
+CLOUDINARY_CLOUD_NAME="doxdmmj1o"
+CLOUDINARY_API_KEY="138819378854918"
+CLOUDINARY_API_SECRET="Yizh0wx5Pledd7PtyUUzy5mRXrg"
+```
+
+## 🌱 Seed de datos básicos
+```sh
+PYTHONPATH=./src pipenv run python -m api.seed
+```  
+⚠️ Importante: un cambio en los modelos puede generar error en el seed.
+Por ejemplo, si Lawyer empieza a requerir url_img, hay que agregarlo al seed.
+(Salvo que el campo sea opcional).
+
+
+# ..............................................................................
+
+
+
 # Plantilla de WebApp con React JS y Flask API
 
 Construye aplicaciones web usando React.js para el front end y python/flask para tu API backend.
