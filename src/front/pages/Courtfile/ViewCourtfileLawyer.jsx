@@ -244,6 +244,39 @@ export const ViewCourtfileLawyer = () => {
     }
   };
 
+  // ===== AI SUGGESTIONS =====
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiSuggestions, setAiSuggestions] = useState([]);
+
+  const fetchAISuggestions = async (desc, jur, crt) => {
+    try {
+      setAiLoading(true);
+      setAiError("");
+      const resp = await fetch(`${API}/api/ai/suggest-actions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          description: desc || "",
+          jurisdiction: jur || "",
+          court: crt || ""
+        })
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(data?.error || `HTTP ${resp.status}`);
+      }
+      setAiSuggestions(Array.isArray(data?.suggestions) ? data.suggestions : []);
+    } catch (e) {
+      setAiError(e.message || "Error getting AI suggestions");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+  // ===== END AI SUGGESTIONS =====
 
 
 
@@ -550,6 +583,134 @@ export const ViewCourtfileLawyer = () => {
               </div>
             </div>
           </div>
+
+          {/* === AI SUGGESTIONS === */}
+          <div className="mt-4">
+            <div className="card border-primary">
+              <div className="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+                <h5 className="mb-0">
+                  <i className="bi bi-stars me-2"></i>
+                  AI Suggestions (beta)
+                </h5>
+                <button
+                  className="btn btn-sm btn-light"
+                  onClick={() =>
+                    fetchAISuggestions(
+                      courtfile?.description,
+                      courtfile?.jurisdiction,
+                      courtfile?.court
+                    )
+                  }
+                  disabled={aiLoading}
+                >
+                  {aiLoading ? (
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                  ) : (
+                    "Generar sugerencias"
+                  )}
+                </button>
+                <button
+                  className="btn btn-sm btn-light"
+                  onClick={() => fetchAISuggestions(courtfile.description, courtfile.jurisdiction, courtfile.court)}
+                  disabled={aiLoading}
+                  title="Refrescar sugerencias"
+                >
+                  {aiLoading ? (
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  ) : (
+                    <i className="bi bi-arrow-clockwise"></i>
+                  )}
+                </button>
+              </div>
+
+              <div className="card-body">
+                {aiError && <div className="alert alert-danger">{aiError}</div>}
+
+                {!aiError && aiLoading && (
+                  <div className="text-muted">
+                    <span className="spinner-border spinner-border-sm me-2"></span>
+                    Analizando descripción y jurisdicción…
+                  </div>
+                )}
+
+                {!aiLoading && !aiError && (!aiSuggestions || aiSuggestions.length === 0) && (
+                  <div className="alert alert-info">Sin sugerencias por ahora.</div>
+                )}
+
+                {!aiLoading && !aiError && aiSuggestions.length > 0 && (
+                  <div className="list-group">
+                    {aiSuggestions.map((sug, idx) => (
+                      <div key={idx} className="list-group-item">
+                        <div className="d-flex justify-content-between">
+                          <h6 className="mb-1">{sug.title || "Sugerencia"}</h6>
+                          <span className={`badge ${(sug.urgency || "").toLowerCase() === "urgent" ? "bg-danger" :
+                            (sug.urgency || "").toLowerCase() === "high" ? "bg-warning" :
+                              (sug.urgency || "").toLowerCase() === "medium" ? "bg-info" : "bg-secondary"
+                            }`}>
+                            {String(sug.urgency || "medium").toUpperCase()}
+                          </span>
+                        </div>
+
+                        {sug.reasoning && <p className="mt-1 mb-2 text-muted">{sug.reasoning}</p>}
+
+                        {Array.isArray(sug.next_steps) && sug.next_steps.length > 0 && (
+                          <ul className="mb-2">
+                            {sug.next_steps.map((step, i) => <li key={i}>{step}</li>)}
+                          </ul>
+                        )}
+
+                        <div className="d-flex justify-content-between align-items-center">
+                          <small className="text-muted">
+                            {sug.legal_basis ? `Fundamento: ${sug.legal_basis}` : ""}
+                            {typeof sug.confidence === "number" ? ` • Conf.: ${(sug.confidence * 100).toFixed(0)}%` : ""}
+                          </small>
+
+                          {/* Acciones rápidas a futuro (ejemplos): 
+                    Podés linkear a crear deadline o appointment con el título sugerido */}
+                          <div className="btn-group">
+                            <Link
+                              to="/deadlines/addDeadline"
+                              state={{
+                                courtfileId: courtfile.id,
+                                courtfileNumber: courtfile.case_number,
+                                courtfileTitle: courtfile.title,
+                                prefill: { type: "Other", description: sug.title || "" },
+                                returnTo: `/courtfiles/view/${courtfile.id}`
+                              }}
+                              className="btn btn-sm btn-outline-primary"
+                              title="Crear Deadline desde esta sugerencia"
+                            >
+                              <i className="bi bi-calendar2-plus"></i> Deadline
+                            </Link>
+
+                            <Link
+                              to="/appointments/addAppointment"
+                              state={{
+                                courtfileId: courtfile.id,
+                                courtfileNumber: courtfile.case_number,
+                                courtfileTitle: courtfile.title,
+                                prefill: { title: sug.title || "" },
+                                returnTo: `/courtfiles/view/${courtfile.id}`
+                              }}
+                              className="btn btn-sm btn-outline-secondary"
+                              title="Crear Appointment desde esta sugerencia"
+                            >
+                              <i className="bi bi-clock"></i> Appt
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
 
           <div className="mt-4">
             <div className="d-flex justify-content-between align-items-center">
