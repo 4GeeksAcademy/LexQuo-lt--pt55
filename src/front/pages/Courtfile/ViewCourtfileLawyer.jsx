@@ -176,7 +176,8 @@ export const ViewCourtfileLawyer = () => {
         relation_id: r.id,
         courtfile_id: r.courtfile_id,
         client_id: r.client_id,
-        client_name: r.client_name
+        client_email: r.client_email,
+        client_phone: r.client_phone
       }));
       setCaseClients(normalized);
     } catch (e) {
@@ -209,7 +210,8 @@ export const ViewCourtfileLawyer = () => {
           relation_id: r.id,
           lawyer_id: r.lawyer_id,
           lawyer_name: r.lawyer_name,
-          lawyer_email: r.lawyer_email
+          lawyer_email: r.lawyer_email,
+          lawyer_phone: r.lawyer_phone
         }))
       );
     } catch (e) {
@@ -816,6 +818,7 @@ export const ViewCourtfileLawyer = () => {
                       <th>Lawyer ID</th>
                       <th>Name</th>
                       <th>Email</th>
+                      <th>Phone</th>
                       <th className="text-end">Actions</th>
                     </tr>
                   </thead>
@@ -825,6 +828,7 @@ export const ViewCourtfileLawyer = () => {
                         <td>{lw.lawyer_id}</td>
                         <td>{lw.lawyer_name || "—"}</td>
                         <td>{lw.lawyer_email || "—"}</td>
+                        <td>{lw.lawyer_phone || "—"}</td>
                         <td className="text-end">
                           <button
                             className="btn btn-sm btn-danger"
@@ -1027,7 +1031,7 @@ export const ViewCourtfileLawyer = () => {
             <div className="d-flex justify-content-between align-items-center">
               <h3 className="m-0">CLIENTS</h3>
               <Link
-                to="/clients/link-or-create"
+                to="/clients/link-or-create" // o a tu ruta de alta si no tenés este flow
                 state={{
                   courtfileId: courtfile.id,
                   courtfileNumber: courtfile.case_number,
@@ -1053,6 +1057,8 @@ export const ViewCourtfileLawyer = () => {
                     <tr>
                       <th>Client ID</th>
                       <th>Name</th>
+                      <th>Email</th>
+                      <th>Phone</th>
                       <th className="text-end">Actions</th>
                     </tr>
                   </thead>
@@ -1061,10 +1067,16 @@ export const ViewCourtfileLawyer = () => {
                       <tr key={cl.relation_id}>
                         <td>{cl.client_id}</td>
                         <td>{cl.client_name || "—"}</td>
+                        <td>{cl.client_email || "—"}</td>
+                        <td>{cl.client_phone || "—"}</td>
                         <td className="text-end">
                           <Link
                             to={`/clients/view/${cl.client_id}`}
-                            state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                            state={{
+                              courtfileId: courtfile.id,
+                              relationId: cl.relation_id,
+                              returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
+                            }}
                             className="btn btn-sm btn-info me-1"
                             title="View"
                           >
@@ -1189,6 +1201,6 @@ export const ViewCourtfileLawyer = () => {
 
         </div>
       </div>
-    </div>
+    </div >
   );
 };

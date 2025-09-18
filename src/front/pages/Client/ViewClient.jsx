@@ -1,4 +1,4 @@
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -6,12 +6,22 @@ export const ViewClient = () => {
   const { dispatch } = useGlobalReducer();
   const { clientId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || "/clients";
 
   const API = import.meta.env.VITE_BACKEND_URL;
+
+  const auth = JSON.parse(sessionStorage.getItem("auth") || "null"); // o store?.auth si preferís
+  const role = auth?.role;
+  const token = auth?.token;
 
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [unlinking, setUnlinking] = useState(false);
+
+  const courtfileId = location.state?.courtfileId || null;
+  const [relationId, setRelationId] = useState(location.state?.relationId || null);
 
   useEffect(() => {
     const fetchClient = async () => {
@@ -34,13 +44,37 @@ export const ViewClient = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
+  useEffect(() => {
+    const fetchRelation = async () => {
+      if (role !== "lawyer" || !courtfileId || relationId) return;
+
+      try {
+        const resp = await fetch(
+          `${API}/api/clients-courtfiles?courtfile_id=${Number(courtfileId)}`,
+          { headers: token ? { Authorization: `Bearer ${token}` } : {} } // ← AUTH!
+        );
+        if (!resp.ok) return;
+
+        const rows = await resp.json();
+        const targetId = Number(clientId);
+        const rel = (rows || []).find(r => Number(r.client_id) === targetId);
+
+        if (rel?.id) setRelationId(rel.id);
+      } catch (_) {
+        // noop
+      }
+    };
+    fetchRelation();
+  }, [role, courtfileId, relationId, clientId, API, token]);
+
   const handleDelete = async () => {
+    if (role === "lawyer") return;
     if (!window.confirm("Are you sure you want to delete this client?")) return;
     try {
       const response = await fetch(`${API}/api/clients/${clientId}`, { method: "DELETE" });
       if (response.ok) {
         dispatch({ type: "DELETE_CLIENT", payload: Number(clientId) || clientId });
-        navigate("/clients");
+        navigate(returnTo, { replace: true });
         alert("Client deleted successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -49,6 +83,32 @@ export const ViewClient = () => {
     } catch (err) {
       console.error("Error deleting client:", err);
       alert(`Error deleting client: ${err.message}`);
+    }
+  };
+
+  const handleUnlink = async () => {
+    if (role !== "lawyer") return;
+    if (!relationId) {
+      alert("No relation to unlink. Open this client from a case context.");
+      return;
+    }
+    if (!window.confirm("Unlink this client from the case?")) return;
+    try {
+      setUnlinking(true);
+      const resp = await fetch(`${API}/api/clients-courtfiles/${relationId}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error(e.error || `HTTP ${resp.status}`);
+      }
+      alert("Client unlinked from case.");
+      navigate(returnTo, { replace: true });
+    } catch (e) {
+      alert(e.message || "Error unlinking client");
+    } finally {
+      setUnlinking(false);
     }
   };
 
@@ -69,7 +129,7 @@ export const ViewClient = () => {
         <div className="alert alert-danger">
           <i className="bi bi-exclamation-triangle"></i> {error || "Client not found"}
         </div>
-        <Link to="/clients" className="btn btn-primary">
+        <Link to={returnTo} className="btn btn-outline-secondary">
           <i className="bi bi-arrow-left"></i> Back to Clients
         </Link>
       </div>
@@ -86,8 +146,8 @@ export const ViewClient = () => {
               <h1>Client Details</h1>
               <p className="text-muted">ID #{client.id}</p>
             </div>
-            <Link to="/clients" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
+            <Link to={returnTo} className="btn btn-outline-secondary">
+              <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
 
@@ -148,15 +208,31 @@ export const ViewClient = () => {
 
             <div className="card-footer bg-light">
               <div className="d-flex gap-2 justify-content-end">
-                <Link to="/clients" className="btn btn-outline-secondary">
-                  <i className="bi bi-arrow-left"></i> Back
-                </Link>
-                <Link to={`/clients/${client.id}`} className="btn btn-warning">
-                  <i className="bi bi-pencil"></i> Edit
-                </Link>
-                <button className="btn btn-danger" onClick={handleDelete}>
-                  <i className="bi bi-trash"></i> Delete
-                </button>
+
+                {role === "lawyer" ? (
+                  <button
+                    className="btn btn-danger"
+                    disabled={unlinking}
+                    onClick={handleUnlink}
+                    title={relationId ? "Unlink from case" : "Open from a case to unlink"}
+                  >
+                    {unlinking ? (
+                      <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    ) : (
+                      <i className="bi bi-link-45deg"></i>
+                    )}{" "}
+                    Unlink from case
+                  </button>
+                ) : (
+                  <>
+                    <Link to={`/clients/${client.id}`} state={{ returnTo }} className="btn btn-warning">
+                      <i className="bi bi-pencil"></i> Edit
+                    </Link>
+                    <button className="btn btn-danger" onClick={handleDelete}>
+                      <i className="bi bi-trash"></i> Delete
+                    </button>
+                  </>
+                )}
               </div>
             </div>
 
