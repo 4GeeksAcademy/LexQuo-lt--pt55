@@ -153,10 +153,7 @@ export const ViewLawyer = () => {
 
             <div className="card-footer bg-light">
               <div className="d-flex gap-2 justify-content-end">
-                <Link to="/lawyers" className="btn btn-outline-secondary">
-                  <i className="bi bi-arrow-left"></i> Back
-                </Link>
-
+                
                 <Link to={`/lawyers/${lawyer.id}`} className="btn btn-warning">
                   <i className="bi bi-pencil"></i> Edit
                 </Link>

@@ -179,13 +179,6 @@ export const ViewCourtfile = () => {
                         <div className="card-footer bg-light">
                             <div className="d-flex gap-2 justify-content-end">
                                 <Link
-                                    to="/courtfiles"
-                                    className="btn btn-outline-secondary"
-                                >
-                                    <i className="bi bi-arrow-left"></i> Back
-                                </Link>
-
-                                <Link
                                     to={`/courtfiles/${courtfile.id}`}
                                     className="btn btn-warning"
                                 >

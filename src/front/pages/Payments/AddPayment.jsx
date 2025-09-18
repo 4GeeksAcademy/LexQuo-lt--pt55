@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export const AddPayment = () => {
   const { dispatch, store } = useGlobalReducer();
@@ -8,20 +8,87 @@ export const AddPayment = () => {
   const location = useLocation();
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  const token = (store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null"))?.token;
+  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
+  const token = auth?.token;
 
-  // vienen de ViewCourtfileLawyer
-  const courtfileId = location.state?.courtfileId || null;
+  // Vienen desde ViewCourtfileLawyer (si abrís desde el caso)
+  const preselectedCourtfileId = location.state?.courtfileId || null;
+  const preselectedCourtfileNumber = location.state?.courtfileNumber || null;
+  const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
   const returnTo = location.state?.returnTo || "/payments";
 
   const [formData, setFormData] = useState({
     amount: "",
     currency: "",
     means: "",
+    courtfile_id: preselectedCourtfileId ? String(preselectedCourtfileId) : "",
   });
 
   const [loading, setLoading] = useState(false);
+  const [linking, setLinking] = useState(false);
   const [error, setError] = useState(null);
+
+  // Para dropdown cuando NO viene preseleccionado
+  const [myCases, setMyCases] = useState([]);
+  const [loadingCases, setLoadingCases] = useState(false);
+  const [preselectedCf, setPreselectedCf] = useState(
+    preselectedCourtfileNumber ? { case_number: preselectedCourtfileNumber, title: preselectedCourtfileTitle } : null
+  );
+
+  useEffect(() => {
+    const fetchCases = async () => {
+      try {
+        setLoadingCases(true);
+
+        // Si vino preseleccionado, sólo completamos el texto (por si faltaba number/title) y no cargamos dropdown
+        if (preselectedCourtfileId) {
+          if (!preselectedCf) {
+            const r = await fetch(`${API}/api/courtfiles/${preselectedCourtfileId}`, {
+              headers: token ? { Authorization: `Bearer ${token}` } : {},
+            });
+            if (r.ok) {
+              const d = await r.json();
+              setPreselectedCf({ case_number: d.case_number, title: d.title });
+            }
+          }
+          setMyCases([]);
+          return;
+        }
+
+        // Si NO viene preseleccionado, traemos los expedientes:
+        // - si está logueado lawyer, usamos /api/lawyers-courtfiles (filtrados a sus casos)
+        // - si no, /api/courtfiles
+        const endpoint = token ? `${API}/api/lawyers-courtfiles` : `${API}/api/courtfiles`;
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const resp = await fetch(endpoint, { headers });
+        if (!resp.ok) {
+          const e = await resp.json().catch(() => ({}));
+          throw new Error(e.error || `HTTP ${resp.status}`);
+        }
+        const data = await resp.json();
+
+        const mapped = token
+          ? data.map(r => ({
+              id: r.courtfile.id,
+              number: r.courtfile.case_number,
+              title: r.courtfile.title,
+            }))
+          : data.map(cf => ({
+              id: cf.id,
+              number: cf.case_number,
+              title: cf.title,
+            }));
+
+        setMyCases(mapped);
+      } catch (err) {
+        setError(err.message || "Error fetching courtfiles");
+      } finally {
+        setLoadingCases(false);
+      }
+    };
+
+    fetchCases();
+  }, [API, token, preselectedCourtfileId, preselectedCf]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -34,14 +101,22 @@ export const AddPayment = () => {
     setError(null);
 
     try {
+      if (!formData.courtfile_id) {
+        throw new Error("Please select a courtfile to link this payment.");
+      }
+
       // 1) Crear Payment
       const response = await fetch(`${API}/api/payments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          amount: formData.amount,
+          currency: formData.currency,
+          means: formData.means,
+        }),
       });
 
       if (!response.ok) {
@@ -52,23 +127,24 @@ export const AddPayment = () => {
       const newPayment = await response.json();
       dispatch({ type: "ADD_PAYMENT", payload: newPayment });
 
-      // 2) Linkear al Courtfile (si venía el id)
-      if (courtfileId) {
-        const linkResp = await fetch(`${API}/api/payments-courtfile`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify({
-            payment_id: newPayment.id,
-            courtfile_id: Number(courtfileId)
-          })
-        });
-        if (!linkResp.ok) {
-          const e = await linkResp.json().catch(() => ({}));
-          throw new Error(e.error || `HTTP ${linkResp.status}`);
-        }
+      // 2) Vincular con courtfile (OBLIGATORIO)
+      setLinking(true);
+      const linkResp = await fetch(`${API}/api/payments-courtfile`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          payment_id: newPayment.id,
+          courtfile_id: Number(formData.courtfile_id),
+        }),
+      });
+
+      if (!linkResp.ok) {
+        const e = await linkResp.json().catch(() => ({}));
+        // tu backend devuelve 200 si ya existe: por si acaso, mostramos ese mensaje
+        throw new Error(e.error || `Failed to link payment (HTTP ${linkResp.status})`);
       }
 
       alert("Payment created and linked successfully!");
@@ -77,6 +153,7 @@ export const AddPayment = () => {
       console.error("Error creating & linking Payment:", err);
       setError(err.message);
     } finally {
+      setLinking(false);
       setLoading(false);
     }
   };
@@ -95,12 +172,6 @@ export const AddPayment = () => {
 
           <div className="card">
             <div className="card-body">
-              {courtfileId && (
-                <div className="alert alert-info">
-                  Este pago se linkeará al expediente <b>#{courtfileId}</b>.
-                </div>
-              )}
-
               {error && (
                 <div className="alert alert-danger" role="alert">
                   <i className="bi bi-exclamation-triangle"></i> {error}
@@ -108,6 +179,40 @@ export const AddPayment = () => {
               )}
 
               <form onSubmit={handleSubmit}>
+                {/* Courtfile (preseleccionado o seleccionable) */}
+                {preselectedCourtfileId ? (
+                  <div className="mb-3">
+                    <label className="form-label">Linked Courtfile</label>
+                    <div className="form-control-plaintext">
+                      #{preselectedCourtfileId} — {preselectedCf?.case_number || "—"}
+                      {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mb-3">
+                    <label htmlFor="courtfile_id" className="form-label">
+                      Link to Courtfile *
+                    </label>
+                    <select
+                      className="form-select"
+                      id="courtfile_id"
+                      name="courtfile_id"
+                      value={formData.courtfile_id}
+                      onChange={handleInputChange}
+                      required
+                      disabled={loading || loadingCases}
+                    >
+                      <option value="">Select a courtfile</option>
+                      {myCases.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.number} — {c.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Amount */}
                 <div className="mb-3">
                   <label htmlFor="amount" className="form-label">Amount *</label>
                   <input
@@ -124,6 +229,7 @@ export const AddPayment = () => {
                   />
                 </div>
 
+                {/* Currency */}
                 <div className="mb-3">
                   <label htmlFor="currency" className="form-label">Currency *</label>
                   <input
@@ -139,6 +245,7 @@ export const AddPayment = () => {
                   />
                 </div>
 
+                {/* Means */}
                 <div className="mb-3">
                   <label htmlFor="means" className="form-label">Means *</label>
                   <input
@@ -156,11 +263,11 @@ export const AddPayment = () => {
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
                   <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>
-                  <button type="submit" className="btn btn-primary" disabled={loading}>
-                    {loading ? (
+                  <button type="submit" className="btn btn-primary" disabled={loading || linking}>
+                    {loading || linking ? (
                       <>
                         <span className="spinner-border spinner-border-sm" role="status"></span>
-                        Creating...
+                        {linking ? " Linking..." : " Creating..."}
                       </>
                     ) : (
                       <>

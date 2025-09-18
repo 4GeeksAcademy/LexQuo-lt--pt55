@@ -170,7 +170,7 @@ export const EditPayment = () => {
 
                 <div className="mb-3">
                   <label htmlFor="status" className="form-label">Status *</label>
-                  <select class="form-select" aria-label="Default select example"
+                  <select className="form-select" aria-label="Default select example"
                     id="status"
                     name="status"
                     value={formData.status}

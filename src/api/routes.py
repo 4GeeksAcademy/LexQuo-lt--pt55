@@ -1200,6 +1200,7 @@ def get_lawyers_courtfiles():
             'courtfile_id': r.courtfile_id,
             'lawyer_name': f"{r.lawyer.firstname} {r.lawyer.lastname}".strip(),
             'lawyer_email': r.lawyer.email,
+            'lawyer_phone': r.lawyer.phone,
             'courtfile': r.courtfile.serialize(),
         } for r in rows]), 200
 
