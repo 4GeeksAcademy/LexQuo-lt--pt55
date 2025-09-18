@@ -457,15 +457,16 @@ export const DashboardLawyer = () => {
                                             <td className="text-end">
                                                 <Link
                                                     to={`/courtfiles/ViewCourtfileLawyer/${cf.id}`}
+                                                    state={{ returnTo: "/DashboardLawyer" }}
                                                     className="btn btn-sm btn-info me-1"
                                                     title="View"
                                                 >
                                                     <i className="bi bi-eye"></i>
                                                 </Link>
 
-                                                {/* Opcional: solo si tenés ruta de edición */}
                                                 <Link
                                                     to={`/courtfiles/${cf.id}`}
+                                                    state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${cf.id}` }}
                                                     className="btn btn-sm btn-warning me-1"
                                                     title="Edit"
                                                 >
@@ -549,6 +550,7 @@ export const DashboardLawyer = () => {
                                                 <td className="text-end">
                                                     <Link
                                                         to={`/deadlines/view/${dl.deadline_id}`}
+                                                        state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${dl.courtfile_id}` }}
                                                         className="btn btn-sm btn-info me-1"
                                                         title="View"
                                                     >
@@ -556,6 +558,7 @@ export const DashboardLawyer = () => {
                                                     </Link>
                                                     <Link
                                                         to={`/deadlines/${dl.deadline_id}`}
+                                                        state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${dl.courtfile_id}` }}
                                                         className="btn btn-sm btn-warning me-1"
                                                         title="Edit"
                                                     >
@@ -633,6 +636,7 @@ export const DashboardLawyer = () => {
                                                 <td className="text-end">
                                                     <Link
                                                         to={`/appointments/view/${ap.appointment_id}`}
+                                                        state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${ap.courtfile_id}` }}
                                                         className="btn btn-sm btn-info me-1"
                                                         title="View"
                                                     >
@@ -640,6 +644,7 @@ export const DashboardLawyer = () => {
                                                     </Link>
                                                     <Link
                                                         to={`/appointments/${ap.appointment_id}`}
+                                                        state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${ap.courtfile_id}` }}
                                                         className="btn btn-sm btn-warning me-1"
                                                         title="Edit"
                                                     >
@@ -771,6 +776,7 @@ export const DashboardLawyer = () => {
 
                                                         <Link
                                                             to={`/payments/view/${p.id}`}
+                                                            state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${p.courtfile_id}` }}
                                                             className="btn btn-sm btn-info me-1"
                                                             title="View"
                                                         >
@@ -779,6 +785,7 @@ export const DashboardLawyer = () => {
 
                                                         <Link
                                                             to={p.status === "approved" ? "#" : `/payments/${p.id}`}
+                                                            state={p.status === "approved" ? undefined : { returnTo: `/courtfiles/ViewCourtfileLawyer/${p.courtfile_id}` }}
                                                             className={`btn btn-sm btn-warning me-1 ${p.status === "approved" ? "disabled" : ""}`}
                                                             aria-disabled={p.status === "approved"}
                                                             title={p.status === "approved" ? "Approved payments are read-only" : "Edit"}

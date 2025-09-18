@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 import MapComponent from "../../components/Map/MapComponent";
@@ -8,6 +8,8 @@ export const EditAppointment = () => {
   const { dispatch } = useGlobalReducer();
   const { appointmentId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || `/appointments/view/${appointmentId}`;
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
@@ -146,7 +148,7 @@ export const EditAppointment = () => {
       if (response.ok) {
         const updatedAppointment = await response.json();
         dispatch({ type: "UPDATE_APPOINTMENT", payload: updatedAppointment });
-        navigate(`/appointments/view/${appointmentId}`);
+        navigate(returnTo, { replace: true });
         alert("Appointment updated successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -177,7 +179,7 @@ export const EditAppointment = () => {
         <div className="alert alert-danger">
           <i className="bi bi-exclamation-triangle"></i> {error}
         </div>
-        <Link to="/appointments" className="btn btn-primary">Back to Appointment</Link>
+        <Link to={returnTo} className="btn btn-primary">Back</Link>
       </div>
     );
   }
@@ -189,8 +191,8 @@ export const EditAppointment = () => {
           {/* Header */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h1>Edit Appointment</h1>
-            <Link to="/appointments" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
+            <Link to={returnTo} className="btn btn-outline-secondary">
+              <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
 
@@ -305,7 +307,7 @@ export const EditAppointment = () => {
                 </div>
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to={`/appointments`} className="btn btn-secondary me-md-2">Cancel</Link>
+                  <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>
                   <button type="submit" className="btn btn-primary" disabled={loading}>
                     {loading ? (
                       <>

@@ -113,9 +113,7 @@ export const AddCourtfile = () => {
                 <div className="col-md-8">
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <h1>Add New Courtfile</h1>
-                        <Link to="/courtfiles" className="btn btn-outline-secondary">
-                            <i className="bi bi-arrow-left"></i> Back to List
-                        </Link>
+                        <Link to={returnTo} className="btn btn-outline-secondary"> <i className="bi bi-arrow-left"></i>Back</Link>
                     </div>
 
                     <div className="card">

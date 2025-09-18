@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams, Navigate } from "react-router-dom";
+import { Link, useNavigate, useParams, Navigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -6,6 +6,8 @@ export const EditPayment = () => {
   const { store, dispatch } = useGlobalReducer();
   const params = useParams();
   const paymentId = params.paymentId ?? params.id;
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || `/payments/view/${paymentId}`;
 
   if (!paymentId) {
     return <Navigate to="/payments" replace />;
@@ -75,7 +77,7 @@ export const EditPayment = () => {
       if (response.ok) {
         const updatedPayment = await response.json();
         dispatch({ type: "UPDATE_PAYMENT", payload: updatedPayment });
-        navigate(`/payments/view/${paymentId}`);
+        navigate(returnTo, { replace: true });
         alert("Payment updated successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -106,7 +108,7 @@ export const EditPayment = () => {
         <div className="alert alert-danger">
           <i className="bi bi-exclamation-triangle"></i> {error}
         </div>
-        <Link to="/payments" className="btn btn-primary">Back to Payments</Link>
+        <Link to={returnTo} className="btn btn-primary">Back</Link>
       </div>
     );
   }
@@ -118,8 +120,8 @@ export const EditPayment = () => {
           {/* Header */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h1>Edit Payment</h1>
-            <Link to="/payments" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
+            <Link to={returnTo} className="btn btn-outline-secondary">
+              <i className="bi bi-arrow-left"></i> Back 
             </Link>
           </div>
 
@@ -200,7 +202,7 @@ export const EditPayment = () => {
                 </div>
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to={`/payments/view/${paymentId}`} className="btn btn-secondary me-md-2">Cancel</Link>
+                  <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>
                   <button type="submit" className="btn btn-primary" disabled={loading || isLawyerReadOnly}>
                     {loading ? (
                       <>

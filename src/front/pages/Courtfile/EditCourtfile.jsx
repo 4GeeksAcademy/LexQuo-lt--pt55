@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation  } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -6,8 +6,14 @@ export const EditCourtfile = () => {
     const { store, dispatch } = useGlobalReducer();
     const { courtfileId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const API = import.meta.env.VITE_BACKEND_URL;
+
+    const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
+    const token = auth?.token;
+
+    const returnTo = location.state?.returnTo || `/courtfiles/view/${courtfileId}`;
 
     const JURISDICCIONES_PJN = [
         'CSJ - Corte Suprema de Justicia de la Nación', 'CIV - Cámara Nacional de Apelaciones en lo Civil', 'CAF - Cámara Nacional de Apelaciones en lo Contencioso Administrativo Federal',
@@ -39,14 +45,19 @@ export const EditCourtfile = () => {
             try {
                 setFetching(true);
 
-                const response = await fetch(`${API}/api/courtfiles/${courtfileId}`);
+                const response = await fetch(`${API}/api/courtfiles/${courtfileId}`, {
+                    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+                });
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const data = await response.json();
-                setFormData(data);
+                setFormData({
+                    ...data,
+                    status: data.status === true || data.status === "true"
+                });
                 setError(null);
             } catch (error) {
                 console.error('Error fetching courtfile:', error);
@@ -59,7 +70,7 @@ export const EditCourtfile = () => {
         if (courtfileId) {
             fetchCourtfile();
         }
-    }, [courtfileId]);
+    }, [courtfileId, API, token]);
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -87,6 +98,7 @@ export const EditCourtfile = () => {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
+                    ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 },
                 body: JSON.stringify(formData)
             });
@@ -99,7 +111,7 @@ export const EditCourtfile = () => {
                     payload: updatedCourtfile
                 });
 
-                navigate(`/courtfiles/view/${courtfileId}`);
+                navigate(returnTo, { replace: true });
 
                 alert('Courtfile updated successfully!');
             } else {
@@ -147,8 +159,8 @@ export const EditCourtfile = () => {
                     {/* Header */}
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <h1>Edit Courtfile</h1>
-                        <Link to="/courtfiles" className="btn btn-outline-secondary">
-                            <i className="bi bi-arrow-left"></i> Back to List
+                        <Link to={returnTo} className="btn btn-outline-secondary">
+                            <i className="bi bi-arrow-left"></i> Back
                         </Link>
                     </div>
 
@@ -271,7 +283,7 @@ export const EditCourtfile = () => {
 
                                 {/* Buttons */}
                                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                                    <Link to={`/courtfiles/view/${courtfileId}`} className="btn btn-secondary me-md-2">
+                                    <Link to={returnTo} className="btn btn-secondary me-md-2">
                                         Cancel
                                     </Link>
                                     <button

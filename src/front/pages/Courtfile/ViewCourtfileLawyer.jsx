@@ -321,7 +321,7 @@ export const ViewCourtfileLawyer = () => {
       });
       if (response.ok) {
         dispatch({ type: "DELETE_COURTFILE", payload: courtfileId });
-        navigate("/courtfiles");
+        navigate("/DashboardLawyer");
         alert("Courtfile deleted successfully!");
       } else {
         const errorData = await response.json();
@@ -505,13 +505,17 @@ export const ViewCourtfileLawyer = () => {
                   courtfileId: courtfile.id,
                   courtfileNumber: courtfile.case_number,
                   courtfileTitle: courtfile.title,
-                  returnTo: `/courtfiles/view/${courtfile.id}`
+                  returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
                 }}
                 className="btn btn-outline-primary"
               >
                 <i className="bi bi-person-plus"></i> Add Lawyer
               </Link>
-              <Link to={`/courtfiles/${courtfile.id}`} className="btn btn-warning">
+              <Link
+                to={`/courtfiles/${courtfile.id}`}
+                state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                className="btn btn-warning"
+              >
                 <i className="bi bi-pencil"></i> Edit
               </Link>
               <button className="btn btn-danger" onClick={handleDelete}>
@@ -563,7 +567,7 @@ export const ViewCourtfileLawyer = () => {
                   </div>
                   <div className="mb-3">
                     <label className="fw-bold text-muted">Created Date</label>
-                    <p>{new Date().toLocaleDateString()}</p>
+                    <p>{courtfile.created_at ? new Date(courtfile.created_at).toLocaleDateString() : "—"}</p>
                   </div>
                 </div>
               </div>
@@ -679,13 +683,14 @@ export const ViewCourtfileLawyer = () => {
                                 courtfileNumber: courtfile.case_number,
                                 courtfileTitle: courtfile.title,
                                 prefill: { type: "Other", description: sug.title || "" },
-                                returnTo: `/courtfiles/view/${courtfile.id}`
+                                returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
                               }}
                               className="btn btn-sm btn-outline-primary"
                               title="Crear Deadline desde esta sugerencia"
                             >
                               <i className="bi bi-calendar2-plus"></i> Deadline
                             </Link>
+
 
                             <Link
                               to="/appointments/addAppointment"
@@ -694,7 +699,7 @@ export const ViewCourtfileLawyer = () => {
                                 courtfileNumber: courtfile.case_number,
                                 courtfileTitle: courtfile.title,
                                 prefill: { title: sug.title || "" },
-                                returnTo: `/courtfiles/view/${courtfile.id}`
+                                returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
                               }}
                               className="btn btn-sm btn-outline-secondary"
                               title="Crear Appointment desde esta sugerencia"
@@ -721,10 +726,12 @@ export const ViewCourtfileLawyer = () => {
                   courtfileId: courtfile.id,
                   courtfileNumber: courtfile.case_number,
                   courtfileTitle: courtfile.title,
-                  returnTo: `/courtfiles/view/${courtfile.id}`
+                  returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
                 }}
                 className="btn btn-sm btn-success"
-              >+ Add Document</Link>
+              >
+                + Add Document
+              </Link>
             </div>
 
             {loadingDocuments && <p className="mt-3">Loading documents...</p>}
@@ -762,8 +769,12 @@ export const ViewCourtfileLawyer = () => {
                           <td className="text-end">
                             <Link
                               to={`/documents/view/${doc.document_id || doc.document?.id || doc.id}`}
-                              className="btn btn-sm btn-info me-1" title="View"
-                            ><i className="bi bi-eye"></i></Link>
+                              state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                              className="btn btn-sm btn-info me-1"
+                              title="View"
+                            >
+                              <i className="bi bi-eye"></i>
+                            </Link>
                             <button
                               className="btn btn-sm btn-danger"
                               title={doc.relation_id ? "Unlink" : "No link available"}
@@ -851,7 +862,7 @@ export const ViewCourtfileLawyer = () => {
                   courtfileId: courtfile.id,
                   courtfileNumber: courtfile.case_number,
                   courtfileTitle: courtfile.title,
-                  returnTo: `/courtfiles/view/${courtfile.id}`
+                  returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
                 }}
                 className="btn btn-sm btn-success"
               >
@@ -891,10 +902,21 @@ export const ViewCourtfileLawyer = () => {
                           </span>
                         </td>
                         <td className="text-end">
-                          <Link to={`/deadlines/view/${dl.deadline_id}`} className="btn btn-sm btn-info me-1" title="View">
+                          <Link
+                            to={`/deadlines/view/${dl.deadline_id}`}
+                            state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                            className="btn btn-sm btn-info me-1"
+                            title="View"
+                          >
                             <i className="bi bi-eye"></i>
                           </Link>
-                          <Link to={`/deadlines/${dl.deadline_id}`} className="btn btn-sm btn-warning me-1" title="Edit">
+
+                          <Link
+                            to={`/deadlines/${dl.deadline_id}`}
+                            state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                            className="btn btn-sm btn-warning me-1"
+                            title="Edit"
+                          >
                             <i className="bi bi-pencil"></i>
                           </Link>
                           <button
@@ -925,7 +947,7 @@ export const ViewCourtfileLawyer = () => {
                   courtfileId: courtfile.id,
                   courtfileNumber: courtfile.case_number,
                   courtfileTitle: courtfile.title,
-                  returnTo: `/courtfiles/view/${courtfile.id}`
+                  returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
                 }}
                 className="btn btn-sm btn-success"
               >
@@ -963,10 +985,20 @@ export const ViewCourtfileLawyer = () => {
                         <td>{ap.ends_at}</td>
                         <td>{ap.appointment_location}</td>
                         <td className="text-end">
-                          <Link to={`/appointments/view/${ap.appointment_id}`} className="btn btn-sm btn-info me-1" title="View">
+                          <Link
+                            to={`/appointments/view/${ap.appointment_id}`}
+                            state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                            className="btn btn-sm btn-info me-1"
+                            title="View"
+                          >
                             <i className="bi bi-eye"></i>
                           </Link>
-                          <Link to={`/appointments/${ap.appointment_id}`} className="btn btn-sm btn-warning me-1" title="Edit">
+                          <Link
+                            to={`/appointments/${ap.appointment_id}`}
+                            state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                            className="btn btn-sm btn-warning me-1"
+                            title="Edit"
+                          >
                             <i className="bi bi-pencil"></i>
                           </Link>
                           <button
@@ -1000,7 +1032,7 @@ export const ViewCourtfileLawyer = () => {
                   courtfileId: courtfile.id,
                   courtfileNumber: courtfile.case_number,
                   courtfileTitle: courtfile.title,
-                  returnTo: `/courtfiles/view/${courtfile.id}`
+                  returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
                 }}
                 className="btn btn-sm btn-success"
               >
@@ -1030,7 +1062,12 @@ export const ViewCourtfileLawyer = () => {
                         <td>{cl.client_id}</td>
                         <td>{cl.client_name || "—"}</td>
                         <td className="text-end">
-                          <Link to={`/clients/view/${cl.client_id}`} className="btn btn-sm btn-info me-1" title="View">
+                          <Link
+                            to={`/clients/view/${cl.client_id}`}
+                            state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                            className="btn btn-sm btn-info me-1"
+                            title="View"
+                          >
                             <i className="bi bi-eye"></i>
                           </Link>
                           <button
@@ -1064,7 +1101,7 @@ export const ViewCourtfileLawyer = () => {
                   courtfileId: courtfile.id,
                   courtfileNumber: courtfile.case_number,
                   courtfileTitle: courtfile.title,
-                  returnTo: `/courtfiles/view/${courtfile.id}`
+                  returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
                 }}
                 className="btn btn-sm btn-success"
               >
@@ -1111,6 +1148,7 @@ export const ViewCourtfileLawyer = () => {
                         <td className="text-end">
                           <Link
                             to={`/payments/view/${p.id}`}
+                            state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
                             className="btn btn-sm btn-info me-1"
                             title="View"
                           >
@@ -1119,6 +1157,7 @@ export const ViewCourtfileLawyer = () => {
 
                           <Link
                             to={p.status === "approved" ? "#" : `/payments/${p.id}`}
+                            state={p.status === "approved" ? undefined : { returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
                             className={`btn btn-sm btn-warning me-1 ${p.status === "approved" ? "disabled" : ""}`}
                             aria-disabled={p.status === "approved"}
                             title={p.status === "approved" ? "Approved payments are read-only" : "Edit"}

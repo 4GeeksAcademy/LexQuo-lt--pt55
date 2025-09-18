@@ -1,4 +1,4 @@
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 import MapComponent from "../../components/Map/MapComponent";
@@ -8,6 +8,8 @@ export const ViewAppointment = () => {
   const { dispatch } = useGlobalReducer();
   const { appointmentId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || "/appointments";
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
@@ -42,7 +44,7 @@ export const ViewAppointment = () => {
       const response = await fetch(`${API}/api/appointments/${appointmentId}`, { method: "DELETE" });
       if (response.ok) {
         dispatch({ type: "DELETE_APPOINTMENT", payload: Number(appointmentId) || appointmentId });
-        navigate("/appointments");
+        navigate(returnTo, { replace: true });
         alert("Appointment deleted successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -71,8 +73,8 @@ export const ViewAppointment = () => {
         <div className="alert alert-danger">
           <i className="bi bi-exclamation-triangle"></i> {error || "Appointment not found"}
         </div>
-        <Link to="/appointments" className="btn btn-primary">
-          <i className="bi bi-arrow-left"></i> Back to Appointments
+        <Link to={returnTo} className="btn btn-outline-secondary">
+          <i className="bi bi-arrow-left"></i> Back
         </Link>
       </div>
     );
@@ -88,8 +90,8 @@ export const ViewAppointment = () => {
               <h1>Appointment Details</h1>
               <p className="text-muted">ID #{appointment.id}</p>
             </div>
-            <Link to="/appointments" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
+            <Link to={returnTo} className="btn btn-primary">
+              <i className="bi bi-arrow-left"></i> Back 
             </Link>
           </div>
 
@@ -147,10 +149,11 @@ export const ViewAppointment = () => {
             )}
             <div className="card-footer bg-light">
               <div className="d-flex gap-2 justify-content-end">
-                <Link to="/appointments" className="btn btn-outline-secondary">
-                  <i className="bi bi-arrow-left"></i> Back
-                </Link>
-                <Link to={`/appointments/${appointment.id}`} className="btn btn-warning">
+                <Link
+                  to={`/appointments/${appointment.id}`}
+                  state={{ returnTo }}
+                  className="btn btn-warning"
+                >
                   <i className="bi bi-pencil"></i> Edit
                 </Link>
                 <button className="btn btn-danger" onClick={handleDelete}>
@@ -163,6 +166,6 @@ export const ViewAppointment = () => {
 
         </div>
       </div>
-    </div>
+    </div >
   );
 };
