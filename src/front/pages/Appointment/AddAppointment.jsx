@@ -166,7 +166,7 @@ export const AddAppointment = () => {
       }
 
       alert("Appointment created and linked successfully!");
-      navigate(returnTo);
+      navigate(returnTo, { replace: true });
     } catch (err) {
       console.error("Error creating/linking appointment:", err);
       setError(err.message);
@@ -221,8 +221,8 @@ export const AddAppointment = () => {
           {/* Header */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h1>Add New Appointment</h1>
-            <Link to="/appointments" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
+            <Link to={returnTo} className="btn btn-outline-secondary">
+              <i className="bi bi-arrow-left"></i> Back 
             </Link>
           </div>
 
@@ -238,9 +238,8 @@ export const AddAppointment = () => {
               <form onSubmit={handleSubmit}>
                 {preselectedCourtfileId ? (
                   <div className="mb-3">
-                    <label className="form-label">Linked Courtfile</label>
                     <div className="form-control-plaintext">
-                      Expediente {preselectedCf?.case_number || "—"}
+                      Related to Courtfile {preselectedCf?.case_number || "—"}
                       {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
                     </div>
                   </div>
@@ -368,7 +367,7 @@ export const AddAppointment = () => {
                 </div>
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to="/appointments" className="btn btn-secondary me-md-2">Cancel</Link>
+                  <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>
                   <button type="submit" className="btn btn-primary" disabled={loading}>
                     {loading ? (
                       <>

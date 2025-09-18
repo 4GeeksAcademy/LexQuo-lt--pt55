@@ -54,6 +54,7 @@
 		]
 	},
 	"dependencies": {
+		"@googlemaps/js-api-loader": "^1.16.10",
 		"@vis.gl/react-google-maps": "^1.5.5",
 		"bootstrap-icons": "^1.13.1",
 		"cloudinary": "^1.41.3",

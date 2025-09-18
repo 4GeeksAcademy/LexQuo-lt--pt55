@@ -1,4 +1,4 @@
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -6,6 +6,8 @@ export const ViewPayment = () => {
   const { dispatch } = useGlobalReducer();
   const { paymentId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || "/payments";
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
@@ -40,7 +42,7 @@ export const ViewPayment = () => {
       const response = await fetch(`${API}/api/payments/${paymentId}`, { method: "DELETE" });
       if (response.ok) {
         dispatch({ type: "DELETE_PAYMENT", payload: Number(paymentId) || paymentId });
-        navigate("/payments");
+        navigate(returnTo, { replace: true });
         alert("Payment deleted successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -69,7 +71,7 @@ export const ViewPayment = () => {
         <div className="alert alert-danger">
           <i className="bi bi-exclamation-triangle"></i> {error || "Payment not found"}
         </div>
-        <Link to="/payments" className="btn btn-primary">
+        <Link to={returnTo} className="btn btn-primary">
           <i className="bi bi-arrow-left"></i> Back to Payments
         </Link>
       </div>
@@ -86,8 +88,8 @@ export const ViewPayment = () => {
               <h1>Payment Details</h1>
               <p className="text-muted">ID #{payment.id}</p>
             </div>
-            <Link to="/payments" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
+            <Link to={returnTo} className="btn btn-outline-secondary">
+              <i className="bi bi-arrow-left"></i> Back 
             </Link>
           </div>
 
@@ -130,10 +132,7 @@ export const ViewPayment = () => {
 
             <div className="card-footer bg-light">
               <div className="d-flex gap-2 justify-content-end">
-                <Link to="/payments" className="btn btn-outline-secondary">
-                  <i className="bi bi-arrow-left"></i> Back
-                </Link>
-                <Link to={`/payments/${payment.id}`} className="btn btn-warning">
+                <Link to={`/payments/${payment.id}`} state={{ returnTo }} className="btn btn-warning">
                   <i className="bi bi-pencil"></i> Edit
                 </Link>
                 <button className="btn btn-danger" onClick={handleDelete}>

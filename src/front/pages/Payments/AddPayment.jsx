@@ -72,7 +72,7 @@ export const AddPayment = () => {
       }
 
       alert("Payment created and linked successfully!");
-      navigate(returnTo);
+      navigate(returnTo, { replace: true });
     } catch (err) {
       console.error("Error creating & linking Payment:", err);
       setError(err.message);
