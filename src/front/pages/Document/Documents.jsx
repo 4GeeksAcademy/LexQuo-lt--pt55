@@ -24,6 +24,21 @@ export const Documents = () => {
     fetchDocuments();
   }, []);
 
+  function dateWithoutHours(fechaStr) {
+    const regex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!regex.test(fechaStr)) {
+      return "Formato de fecha de entrada inválido. Se esperaba 'YYYY-MM-DD'.";
+    }
+
+    const partes = fechaStr.split('-');
+
+    const anio = partes[0];
+    const mes = partes[1];
+    const dia = partes[2];
+
+    return `${dia}/${mes}/${anio}`;
+  }
+
   const handleDeleteDocument = async (id) => {
     if (!window.confirm("Are you sure you want to delete this document?")) return;
 
@@ -46,6 +61,29 @@ export const Documents = () => {
     }
   };
 
+  const handleDownload = async (doc) => {
+    try {
+      const officeExtensions = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'];
+
+      if (officeExtensions.includes(doc.type.toLowerCase())) {
+        const link = document.createElement('a');
+        link.href = doc.url_route;
+        const downloadName = doc.original_filename || `${doc.name}.${doc.type}`;
+        link.setAttribute('download', downloadName);
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        window.open(doc.url_route, '_blank', 'noopener,noreferrer');
+      }
+    } catch (error) {
+      console.error('Error handling file:', error);
+      alert('Error al manejar el archivo');
+    }
+  };
+
+
   return (
     <div className="container mt-4">
       <h1 className="mb-4">DOCUMENTS</h1>
@@ -62,10 +100,9 @@ export const Documents = () => {
                 <th>ID</th>
                 <th>Name</th>
                 <th>Description</th>
-                <th>Type</th>
                 <th>Category</th>
-                <th>Url</th>
-                <th>Created At</th>
+                <th>File</th>
+                <th>Date</th>
               </tr>
             </thead>
             <tbody>
@@ -74,10 +111,17 @@ export const Documents = () => {
                   <td><strong>{document.id}</strong></td>
                   <td>{document.name}</td>
                   <td>{document.description}</td>
-                  <td>{document.type}</td>
                   <td>{document.category}</td>
-                  <td>{document.url_route}</td>
-                  <td>{document.create_at}</td>
+                  <td>
+                    <button
+                      onClick={() => handleDownload(document)}
+                      className="btn btn-success btn-sm"
+                      title="Descargar archivo"
+                    >
+                      <i className="bi bi-arrow-down"></i>
+                    </button>
+                  </td>
+                  <td>{dateWithoutHours(document.document_date)}</td>
                   <td>
                     <Link to={`/documents/view/${document.id}`} className="btn btn-sm btn-info me-1" title="View">
                       <i className="bi bi-eye"></i>
@@ -102,7 +146,8 @@ export const Documents = () => {
         <div className="alert alert-info">
           <i className="bi bi-info-circle"></i> No documents found. Create your first one!
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 };
