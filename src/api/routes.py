@@ -1185,7 +1185,8 @@ def get_client_courtfiles():
             'client_name': f"{cc.client.firstname} {cc.client.lastname}" if cc.client else None,
             'client_email': cc.client.email if cc.client else None,
             'client_phone': cc.client.phone if cc.client else None,
-            'courtfile_number': cc.courtfile.case_number if cc.courtfile else None
+            'courtfile_number': cc.courtfile.case_number if cc.courtfile else None,
+            'courtfile_title': cc.courtfile.title if cc.courtfile else None
         } for cc in client_courtfiles]), 200
 
     except Exception as e:

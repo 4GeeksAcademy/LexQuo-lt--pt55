@@ -15,6 +15,16 @@ export const ViewDeadline = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const prelinked = location.state?.courtfileId
+    ? {
+      id: location.state.courtfileId,
+      number: location.state.courtfileNumber,
+      title: location.state.courtfileTitle
+    }
+    : null;
+
+  const [linkedCourtfile, setLinkedCourtfile] = useState(prelinked);
+
   useEffect(() => {
     const fetchDeadline = async () => {
       try {
@@ -35,6 +45,32 @@ export const ViewDeadline = () => {
     if (deadlineId) fetchDeadline();
 
   }, [deadlineId]);
+
+  useEffect(() => {
+    const fetchLinked = async () => {
+      try {
+        if (linkedCourtfile || !deadlineId) return;
+        const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
+        const token = auth?.token;
+        const resp = await fetch(`${API}/api/deadlines-courtfiles`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!resp.ok) return;
+        const rows = await resp.json();
+        const rel = (rows || []).find(r => Number(r.deadline_id) === Number(deadlineId));
+        if (rel) {
+          setLinkedCourtfile({
+            id: rel.courtfile_id,
+            number: rel.courtfile_number,
+            title: rel.courtfile_title
+          });
+        }
+      } catch (e) {
+        // silencioso
+      }
+    };
+    fetchLinked();
+  }, [API, deadlineId, linkedCourtfile]);
 
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this deadline?")) return;
@@ -96,12 +132,18 @@ export const ViewDeadline = () => {
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div>
               <h1>Deadline Details</h1>
-              <p className="text-muted">ID #{deadline.id}</p>
             </div>
             <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back 
+              <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
+
+          {linkedCourtfile && (
+            <span className="badge bg-dark mt-1 mb-3">
+              Related to Courtfile {linkedCourtfile.number || "—"}
+              {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
+            </span>
+          )}
 
           <div className="card">
             <div className="card-header bg-dark text-white">

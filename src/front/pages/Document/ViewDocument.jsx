@@ -15,32 +15,14 @@ export const ViewDocument = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const preselectedCourtfileId = location.state?.preselectedCourtfileId || null;
-  const preselectedCourtfileNumber = location.state?.preselectedCourtfileNumber || null;
-  const preselectedCourtfileTitle = location.state?.preselectedCourtfileTitle || null;
+  const state = location.state || {};
+  const initialLinked = state.courtfileId
+    ? { id: state.courtfileId, number: state.courtfileNumber, title: state.courtfileTitle }
+    : (state.preselectedCourtfileId
+      ? { id: state.preselectedCourtfileId, number: state.preselectedCourtfileNumber, title: state.preselectedCourtfileTitle }
+      : null);
 
-  const [preselectedCf, setPreselectedCf] = useState(
-    preselectedCourtfileNumber && preselectedCourtfileTitle
-      ? { case_number: preselectedCourtfileNumber, title: preselectedCourtfileTitle }
-      : null
-  );
-
-  useEffect(() => {
-    const loadCf = async () => {
-      try {
-        if (preselectedCourtfileId && !preselectedCf) {
-          const resp = await fetch(`${API}/api/courtfiles/${preselectedCourtfileId}`);
-          if (resp.ok) {
-            const d = await resp.json();
-            setPreselectedCf({ case_number: d.case_number, title: d.title });
-          }
-        }
-      } catch (e) {
-        // opcional: log/ignorar
-      }
-    };
-    loadCf();
-  }, [API, preselectedCourtfileId, preselectedCf]);
+  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
 
   useEffect(() => {
     const fetchDocument = async () => {
@@ -61,6 +43,47 @@ export const ViewDocument = () => {
 
     if (documentId) fetchDocument();
   }, [documentId, API]);
+
+  useEffect(() => {
+    const loadCf = async () => {
+      try {
+        if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
+          const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`);
+          if (resp.ok) {
+            const d = await resp.json();
+            setLinkedCourtfile(cf => ({ ...(cf || {}), number: d.case_number, title: d.title }));
+          }
+        }
+      } catch (e) {
+        setError("No se pudo cargar el expediente vinculado");
+      }
+    };
+    loadCf();
+  }, [API, linkedCourtfile?.id]);
+
+  useEffect(() => {
+    const fetchLinked = async () => {
+      try {
+        if (linkedCourtfile || !documentId) return;
+        const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
+        const token = auth?.token;
+        const resp = await fetch(`${API}/api/courtfile-document`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!resp.ok) return;
+        const rows = await resp.json();
+        const rel = (rows || []).find(r => Number(r.document_id) === Number(documentId));
+        if (rel) {
+          setLinkedCourtfile({
+            id: rel.courtfile_id,
+            number: rel.courtfile_number,
+            title: rel.courtfile_title
+          });
+        }
+      } catch { /* noop */ }
+    };
+    fetchLinked();
+  }, [API, documentId, linkedCourtfile]);
 
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this document?")) return;
@@ -160,18 +183,18 @@ export const ViewDocument = () => {
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div>
               <h1>Document Details</h1>
-              <p className="text-muted">ID #{documentData.id}</p>
-              {preselectedCourtfileId && (
-                <span className="badge bg-dark">
-                  Linked to Case {preselectedCf?.case_number || preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
-                  {(preselectedCf?.title || preselectedCourtfileTitle) ? ` — ${preselectedCf?.title || preselectedCourtfileTitle}` : ""}
-                </span>
-              )}
             </div>
             <Link to={returnTo} className="btn btn-outline-secondary">
               <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
+
+          {linkedCourtfile && (
+            <span className="badge bg-dark mt-1 mb-2">
+              Linked to Case {linkedCourtfile.number || `#${linkedCourtfile.id}`}
+              {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
+            </span>
+          )}
 
           {/* Card */}
           <div className="card">

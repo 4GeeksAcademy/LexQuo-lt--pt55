@@ -17,6 +17,13 @@ export const ViewAppointment = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const state = location.state || {};
+  const initialLinked = state.courtfileId
+    ? { id: state.courtfileId, number: state.courtfileNumber, title: state.courtfileTitle }
+    : null;
+
+  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
+
   useEffect(() => {
     const fetchAppointment = async () => {
       try {
@@ -37,6 +44,49 @@ export const ViewAppointment = () => {
     if (appointmentId) fetchAppointment();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointmentId]);
+
+  useEffect(() => {
+    const loadCf = async () => {
+      try {
+        if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
+          const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`);
+          if (resp.ok) {
+            const d = await resp.json();
+            setLinkedCourtfile(cf => ({ ...(cf || {}), number: d.case_number, title: d.title }));
+          }
+        }
+      } catch (e) {
+        // noop
+      }
+    };
+    loadCf();
+  }, [API, linkedCourtfile?.id]);
+
+  useEffect(() => {
+    const fetchLinked = async () => {
+      try {
+        if (linkedCourtfile || !appointmentId) return;
+        const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
+        const token = auth?.token;
+        const resp = await fetch(`${API}/api/appointments-courtfiles`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!resp.ok) return;
+        const rows = await resp.json();
+        const rel = (rows || []).find(r => Number(r.appointment_id) === Number(appointmentId));
+        if (rel) {
+          setLinkedCourtfile({
+            id: rel.courtfile_id,
+            number: rel.courtfile_number,
+            title: rel.courtfile_title
+          });
+        }
+      } catch (e) {
+        // noop
+      }
+    };
+    fetchLinked();
+  }, [API, appointmentId, linkedCourtfile]);
 
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this appointment?")) return;
@@ -88,12 +138,18 @@ export const ViewAppointment = () => {
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div>
               <h1>Appointment Details</h1>
-              <p className="text-muted">ID #{appointment.id}</p>
             </div>
             <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back 
+              <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
+
+          {linkedCourtfile && (
+            <span className="badge bg-dark mt-1 mb-2">
+              Linked to Case {linkedCourtfile.number || `#${linkedCourtfile.id}`}
+              {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
+            </span>
+          )}
 
           <div className="card">
             <div className="card-header bg-dark text-white">

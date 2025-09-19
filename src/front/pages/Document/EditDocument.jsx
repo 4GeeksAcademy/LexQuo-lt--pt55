@@ -6,7 +6,7 @@ export const EditDocument = () => {
   const { store, dispatch } = useGlobalReducer();
   const { documentId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation(); 
+  const location = useLocation();
   const returnTo = location.state?.returnTo || `/documents/view/${documentId}`;
 
   const API = import.meta.env.VITE_BACKEND_URL;
@@ -22,6 +22,13 @@ export const EditDocument = () => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState(null);
+
+  const initialLinked =
+    location.state?.courtfileId
+      ? { id: location.state.courtfileId, number: location.state.courtfileNumber, title: location.state.courtfileTitle }
+      : null;
+
+  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
 
   const documentCategories = [
     "Resolution / Ruling",
@@ -63,6 +70,30 @@ export const EditDocument = () => {
     if (documentId) fetchDocument();
   }, [documentId]);
 
+  useEffect(() => {
+    const fetchLinked = async () => {
+      try {
+        if (linkedCourtfile || !documentId) return;
+        const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
+        const token = auth?.token;
+        const resp = await fetch(`${API}/api/courtfile-document`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!resp.ok) return;
+        const rows = await resp.json();
+        const rel = (rows || []).find(r => Number(r.document_id) === Number(documentId));
+        if (rel) {
+          setLinkedCourtfile({
+            id: rel.courtfile_id,
+            number: rel.courtfile_number,
+            title: rel.courtfile_title
+          });
+        }
+      } catch { /* noop */ }
+    };
+    fetchLinked();
+  }, [API, documentId, linkedCourtfile]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -91,7 +122,7 @@ export const EditDocument = () => {
       data.append("description", formData.description);
       data.append("category", formData.category);
       data.append("document_date", formData.document_date);
-      
+
       // Solo agregar el archivo si se seleccionó uno nuevo
       if (file) {
         data.append("file", file);
@@ -159,9 +190,18 @@ export const EditDocument = () => {
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h1>Edit Document</h1>
             <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back 
+              <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
+
+          {linkedCourtfile && (
+            <div className="mb-3">
+              <span className="badge bg-dark mt-1 mb-2">
+                Linked to Case {linkedCourtfile.number || `#${linkedCourtfile.id}`}
+                {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
+              </span>
+            </div>
+          )}
 
           {/* Form */}
           <div className="card">
