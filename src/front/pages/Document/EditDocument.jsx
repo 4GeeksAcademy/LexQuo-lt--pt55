@@ -158,12 +158,6 @@ export const EditDocument = () => {
           {/* Header */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h1>Edit Document</h1>
-            {preselectedCourtfileId && (
-                <span className="badge bg-dark mt-2">
-                  Linked to Case {preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
-                  {preselectedCourtfileTitle ? ` — ${preselectedCourtfileTitle}` : ""}
-                </span>
-              )}
             <Link to={returnTo} className="btn btn-outline-secondary">
               <i className="bi bi-arrow-left"></i> Back 
             </Link>
