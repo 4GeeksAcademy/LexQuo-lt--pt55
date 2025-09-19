@@ -56,11 +56,42 @@ export const CourtfilesDocuments = () => {
         }
     };
 
-    const handleViewDocument = (documentUrl) => {
-        if (documentUrl) {
-        window.open(documentUrl, '_blank', 'noopener,noreferrer');
-        } else {
-        alert("Document URL not available");
+    const handleViewDocument = async (relationship) => {
+        try {
+            if (!relationship.document_url) {
+                alert("Document URL not available");
+                return;
+            }
+
+            const officeExtensions = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'];
+            const documentType = relationship.document_type ? relationship.document_type.toLowerCase() : '';
+
+            if (officeExtensions.includes(documentType)) {
+                const link = document.createElement('a');
+                link.href = relationship.document_url;
+
+                const downloadName = relationship.document_original_filename ||
+                    `${relationship.document_name}.${relationship.document_type}`;
+
+                link.setAttribute('download', downloadName);
+                link.style.display = 'none';
+
+                document.body.appendChild(link);
+                link.click();
+
+                setTimeout(() => {
+                    if (document.body.contains(link)) {
+                        document.body.removeChild(link);
+                    }
+                }, 100);
+
+            } else {
+                window.open(relationship.document_url, '_blank', 'noopener,noreferrer');
+            }
+
+        } catch (error) {
+            console.error('Error handling document:', error);
+            window.open(relationship.document_url, '_blank', 'noopener,noreferrer');
         }
     };
 
@@ -118,13 +149,9 @@ export const CourtfilesDocuments = () => {
                                     {store.courtfileDocument.map((relationship) => (
                                         <tr key={relationship.id}>
                                             <td>{relationship.id}</td>
-                                            <td>
-                                                {relationship.courtfile_title}
-                                            </td>
+                                            <td>{relationship.courtfile_title}</td>
                                             <td>{relationship.courtfile_number || "-"}</td>
-                                            <td>
-                                                {relationship.document_name}
-                                            </td>
+                                            <td>{relationship.document_name}</td>
                                             <td>
                                                 <span className="badge bg-info text-dark">
                                                     {relationship.document_type || "-"}
@@ -135,7 +162,7 @@ export const CourtfilesDocuments = () => {
                                                     {relationship.document_url && (
                                                         <button
                                                             className="btn btn-sm btn-success me-1"
-                                                            onClick={() => handleViewDocument(relationship.document_url)}
+                                                            onClick={() => handleViewDocument(relationship)}
                                                             title="View Document"
                                                         >
                                                             <i className="bi bi-eye"></i> View
@@ -162,7 +189,7 @@ export const CourtfilesDocuments = () => {
                             <p className="text-muted">
                                 There are no courtfile-document relationships yet.
                             </p>
-                            <Link to="/AddCourtfileDocuments" className="btn btn-primary">
+                            <Link to="/AddCourtfilesDocuments" className="btn btn-primary">
                                 <i className="bi bi-plus-circle"></i> Create First Relationship
                             </Link>
                         </div>
