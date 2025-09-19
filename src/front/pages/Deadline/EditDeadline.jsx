@@ -18,7 +18,12 @@ export const EditDeadline = () => {
     priority: "medium",
   });
 
-  const [linkedCourtfile, setLinkedCourtfile] = useState(null);
+  const initialLinked =
+    location.state?.courtfileId
+      ? { id: location.state.courtfileId, number: location.state.courtfileNumber, title: location.state.courtfileTitle }
+      : null;
+
+  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState(null);
@@ -54,32 +59,19 @@ export const EditDeadline = () => {
 
   const fetchLinkedCourtfile = async () => {
     try {
-      // intento con query param (si tu API lo soporta)
-      let resp = await fetch(`${API}/api/deadlines-courtfiles?deadline_id=${deadlineId}`);
-      if (!resp.ok) {
-        // fallback: traer todos y filtrar
-        resp = await fetch(`${API}/api/deadlines-courtfiles`);
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const all = await resp.json();
-        const rel = (all || []).find(r => Number(r.deadline_id) === Number(deadlineId));
-        if (rel) {
-          setLinkedCourtfile({
-            id: rel.courtfile_id,
-            number: rel.courtfile_number || rel.courtfile?.case_number,
-            title: rel.courtfile_title || rel.courtfile?.title
-          });
-        } else {
-          setLinkedCourtfile(null);
-        }
-        return;
-      }
-      const rows = await resp.json(); // si trae filtrado
-      const r = Array.isArray(rows) ? rows[0] : rows;
-      if (r) {
+      const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
+      const token = auth?.token;
+      const resp = await fetch(`${API}/api/deadlines-courtfiles`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const rows = await resp.json();
+      const rel = (rows || []).find(r => Number(r.deadline_id) === Number(deadlineId));
+      if (rel) {
         setLinkedCourtfile({
-          id: r.courtfile_id,
-          number: r.courtfile_number || r.courtfile?.case_number,
-          title: r.courtfile_title || r.courtfile?.title
+          id: rel.courtfile_id,
+          number: rel.courtfile_number,
+          title: rel.courtfile_title
         });
       } else {
         setLinkedCourtfile(null);
@@ -91,11 +83,28 @@ export const EditDeadline = () => {
   };
 
   useEffect(() => {
-    if (deadlineId) {
-      fetchDeadline();
-      fetchLinkedCourtfile();
-    }
-  }, [deadlineId]);
+  if (deadlineId) {
+    fetchDeadline();
+    if (!linkedCourtfile) fetchLinkedCourtfile();
+  }
+}, [deadlineId, linkedCourtfile, API]);
+
+  useEffect(() => {
+    const loadCf = async () => {
+      try {
+        if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
+          const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`);
+          if (resp.ok) {
+            const d = await resp.json();
+            setLinkedCourtfile(cf => ({ ...(cf || {}), number: d.case_number, title: d.title }));
+          }
+        }
+      } catch (e) {
+        // noop
+      }
+    };
+    loadCf();
+  }, [API, linkedCourtfile?.id]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -178,16 +187,15 @@ export const EditDeadline = () => {
             </Link>
           </div>
 
+          {linkedCourtfile && (
+            <span className="badge bg-dark mt-1 mb-2">
+              Related to Courtfile {linkedCourtfile.number || "—"}
+              {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
+            </span>
+          )}
+
           {/* Form */}
           <div className="card">
-            {linkedCourtfile && (
-              <div className="mb-3">
-                <div className="form-control-plaintext">
-                  Related to Courtfile {linkedCourtfile.number || "—"}
-                  {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
-                </div>
-              </div>
-            )}
             <div className="card-body">
               {error && (
                 <div className="alert alert-danger" role="alert">

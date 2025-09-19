@@ -176,6 +176,7 @@ export const ViewCourtfileLawyer = () => {
         relation_id: r.id,
         courtfile_id: r.courtfile_id,
         client_id: r.client_id,
+        client_name: r.client_name,  
         client_email: r.client_email,
         client_phone: r.client_phone
       }));
@@ -675,8 +676,7 @@ export const ViewCourtfileLawyer = () => {
                             {typeof sug.confidence === "number" ? ` • Conf.: ${(sug.confidence * 100).toFixed(0)}%` : ""}
                           </small>
 
-                          {/* Acciones rápidas a futuro (ejemplos): 
-                    Podés linkear a crear deadline o appointment con el título sugerido */}
+
                           <div className="btn-group">
                             <Link
                               to="/deadlines/addDeadline"
@@ -771,11 +771,28 @@ export const ViewCourtfileLawyer = () => {
                           <td className="text-end">
                             <Link
                               to={`/documents/view/${doc.document_id || doc.document?.id || doc.id}`}
-                              state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                              state={{
+                                returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+                                courtfileId: courtfile.id,
+                                courtfileNumber: courtfile.case_number,
+                                courtfileTitle: courtfile.title
+                              }}
                               className="btn btn-sm btn-info me-1"
                               title="View"
                             >
                               <i className="bi bi-eye"></i>
+                            </Link>
+                            <Link
+                              to={`/documents/${doc.document_id || doc.document?.id || doc.id}`}
+                              state={{
+                                returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+                                courtfileId: courtfile.id,
+                                courtfileNumber: courtfile.case_number,
+                                courtfileTitle: courtfile.title
+                              }}
+                              className="btn btn-sm btn-warning me-1"
+                            >
+                              <i className="bi bi-pencil"></i>
                             </Link>
                             <button
                               className="btn btn-sm btn-danger"
@@ -908,7 +925,12 @@ export const ViewCourtfileLawyer = () => {
                         <td className="text-end">
                           <Link
                             to={`/deadlines/view/${dl.deadline_id}`}
-                            state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                            state={{
+                              returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+                              courtfileId: courtfile.id,
+                              courtfileNumber: courtfile.case_number,
+                              courtfileTitle: courtfile.title
+                            }}
                             className="btn btn-sm btn-info me-1"
                             title="View"
                           >
@@ -917,7 +939,12 @@ export const ViewCourtfileLawyer = () => {
 
                           <Link
                             to={`/deadlines/${dl.deadline_id}`}
-                            state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                            state={{
+                              returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+                              courtfileId: courtfile.id,
+                              courtfileNumber: courtfile.case_number,
+                              courtfileTitle: courtfile.title
+                            }}
                             className="btn btn-sm btn-warning me-1"
                             title="Edit"
                           >
@@ -991,7 +1018,12 @@ export const ViewCourtfileLawyer = () => {
                         <td className="text-end">
                           <Link
                             to={`/appointments/view/${ap.appointment_id}`}
-                            state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                            state={{
+                              returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+                              courtfileId: courtfile.id,
+                              courtfileNumber: courtfile.case_number,
+                              courtfileTitle: courtfile.title
+                            }}
                             className="btn btn-sm btn-info me-1"
                             title="View"
                           >
@@ -999,7 +1031,12 @@ export const ViewCourtfileLawyer = () => {
                           </Link>
                           <Link
                             to={`/appointments/${ap.appointment_id}`}
-                            state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                            state={{
+                              returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+                              courtfileId: courtfile.id,
+                              courtfileNumber: courtfile.case_number,
+                              courtfileTitle: courtfile.title
+                            }}
                             className="btn btn-sm btn-warning me-1"
                             title="Edit"
                           >
@@ -1073,9 +1110,10 @@ export const ViewCourtfileLawyer = () => {
                           <Link
                             to={`/clients/view/${cl.client_id}`}
                             state={{
+                              returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
                               courtfileId: courtfile.id,
-                              relationId: cl.relation_id,
-                              returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
+                              courtfileNumber: courtfile.case_number,
+                              courtfileTitle: courtfile.title
                             }}
                             className="btn btn-sm btn-info me-1"
                             title="View"

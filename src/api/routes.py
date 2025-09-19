@@ -966,13 +966,11 @@ def get_document(document_id):
 @api.route('/documents', methods=['POST'])
 def create_document():
     try:
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file provided'}), 400
-
-        file = request.files['file']
-
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
+        original_filename = None
+        
+        file = request.files.get('file')  
+        if file and file.filename.strip() == '': 
+            file = None
 
         allowed_extensions = {
             'pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'xls', 'xlsx',
@@ -981,12 +979,9 @@ def create_document():
             'm4a', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'
         }
 
-        original_filename = secure_filename(file.filename)
-        file_extension = original_filename.rsplit(
-            '.', 1)[1].lower() if '.' in original_filename else ''
-
-        if not file_extension or file_extension not in allowed_extensions:
-            return jsonify({'error': 'File type not allowed'}), 400
+        original_filename = None  
+        file_extension = None     
+        file_url = None 
 
         name = request.form.get('name')
         description = request.form.get('description', None)
@@ -996,28 +991,37 @@ def create_document():
         if not name:
             return jsonify({'error': 'Document name is required'}), 400
 
-        resource_type = "auto"
-        if file_extension in ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv']:
-            resource_type = "raw"
+        if file:
+            original_filename = secure_filename(file.filename)
+            file_extension = original_filename.rsplit('.', 1)[1].lower() if '.' in original_filename else ''
 
-        upload_result = cloudinary.uploader.upload(
-            file,
-            folder="documents/",
-            resource_type=resource_type,
-            use_filename=True,
-            unique_filename=True,
-            filename_override=original_filename
-        )
+            if not file_extension or file_extension not in allowed_extensions:
+                return jsonify({'error': 'File type not allowed'}), 400
 
-        file_url = upload_result['secure_url']
+            resource_type = "raw" if file_extension in [
+                'pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'
+            ] else "auto"
 
-        if resource_type == "raw":
-            filename_only = original_filename
-            file_url += f"?fl_attachment={filename_only}"
+            upload_result = cloudinary.uploader.upload(   # <— antes fallaba porque file=None
+                file,
+                folder="documents/",
+                resource_type=resource_type,
+                use_filename=True,
+                unique_filename=True,
+                filename_override=original_filename
+            )
+
+            file_url = upload_result['secure_url']
+
+            if resource_type == "raw":
+                file_url += f"?fl_attachment={original_filename}"
+        else:
+            file_extension = 'note'                             
+            file_url = ""
 
         new_document = Document(
             name=name,
-            type=file_extension,
+            type=file_extension,  
             url_route=file_url,
             description=description,
             category=category,
@@ -1049,6 +1053,8 @@ def create_document():
 def update_document(document_id):
     try:
         document = Document.query.get_or_404(document_id)
+
+        uploaded_original_filename = None
 
         if 'file' in request.files:
             file = request.files['file']
@@ -1094,6 +1100,8 @@ def update_document(document_id):
                 document.url_route = file_url
                 document.type = file_extension
 
+                uploaded_original_filename = original_filename
+
                 if hasattr(document, 'original_filename'):
                     document.original_filename = original_filename
 
@@ -1115,7 +1123,9 @@ def update_document(document_id):
 
         return jsonify({
             **document.serialize(),
-            'original_filename': document.original_filename if hasattr(document, 'original_filename') else original_filename
+            'original_filename': uploaded_original_filename or (
+                document.original_filename if hasattr(document, 'original_filename') else None
+            )  
         }), 200
 
     except Exception as e:
@@ -1175,7 +1185,8 @@ def get_client_courtfiles():
             'client_name': f"{cc.client.firstname} {cc.client.lastname}" if cc.client else None,
             'client_email': cc.client.email if cc.client else None,
             'client_phone': cc.client.phone if cc.client else None,
-            'courtfile_number': cc.courtfile.case_number if cc.courtfile else None
+            'courtfile_number': cc.courtfile.case_number if cc.courtfile else None,
+            'courtfile_title': cc.courtfile.title if cc.courtfile else None
         } for cc in client_courtfiles]), 200
 
     except Exception as e:
@@ -1623,80 +1634,6 @@ def delete_appointment_courtfile(id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-# -----------------ROUTES PARA LAWYER-CLIENT--------------------------------------------
-
-
-@api.route('/lawyer-client', methods=['GET'])
-def get_lawyer_client():
-    try:
-        lawyer_client = LawyerClient.query.all()
-        return jsonify([{
-            'id': lc.id,
-            'lawyer_id': lc.lawyer_id,
-            'client_id': lc.client_id,
-            'lawyer_name': f"{lc.lawyer.firstname} {lc.lawyer.lastname}",
-            'lawyer_email': lc.lawyer.email,
-            'lawyer_phone': lc.lawyer.phone,
-            'client_name': f"{lc.client.firstname} {lc.client.lastname}",
-            'client_email': lc.client.email,
-            'client_phone': lc.client.phone
-        } for lc in lawyer_client]), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@api.route('/lawyer-client', methods=['POST'])
-def create_lawyer_client():
-    try:
-        data = request.get_json()
-
-        lawyer = Lawyer.query.get(data['lawyer_id'])
-        client = Client.query.get(data['client_id'])
-
-        if not lawyer or not client:
-            return jsonify({'error': 'Lawyer or Client not found'}), 404
-
-        existing = LawyerClient.query.filter_by(
-            lawyer_id=data['lawyer_id'],
-            client_id=data['client_id']
-        ).first()
-
-        if existing:
-            return jsonify({'error': 'Relationship already exists'}), 400
-
-        new_relation = LawyerClient(
-            lawyer_id=data['lawyer_id'],
-            client_id=data['client_id']
-        )
-
-        db.session.add(new_relation)
-        db.session.commit()
-
-        return jsonify({
-            'message': 'Relationship created successfully',
-            'id': new_relation.id
-        }), 201
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-
-@api.route('/lawyer-client/<int:id>', methods=['DELETE'])
-def delete_lawyer_client(id):
-    try:
-        relation = LawyerClient.query.get(id)
-        if not relation:
-            return jsonify({'error': 'Relationship not found'}), 404
-
-        db.session.delete(relation)
-        db.session.commit()
-
-        return jsonify({'message': 'Relationship deleted successfully'}), 200
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
 
 # -----------------ROUTES PARA COURTFILE-DOCUMENT--------------------------------------------
 
