@@ -1622,8 +1622,83 @@ def delete_appointment_courtfile(id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+# -----------------ROUTES PARA LAWYER-CLIENT--------------------------------------------
+
+
+@api.route('/lawyer-client', methods=['GET'])
+def get_lawyer_client():
+    try:
+        lawyer_client = LawyerClient.query.all()
+        return jsonify([{
+            'id': lc.id,
+            'lawyer_id': lc.lawyer_id,
+            'client_id': lc.client_id,
+            'lawyer_name': f"{lc.lawyer.firstname} {lc.lawyer.lastname}",
+            'lawyer_email': lc.lawyer.email,
+            'lawyer_phone': lc.lawyer.phone,
+            'client_name': f"{lc.client.firstname} {lc.client.lastname}",
+            'client_email': lc.client.email,
+            'client_phone': lc.client.phone
+        } for lc in lawyer_client]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/lawyer-client', methods=['POST'])
+def create_lawyer_client():
+    try:
+        data = request.get_json()
+
+        lawyer = Lawyer.query.get(data['lawyer_id'])
+        client = Client.query.get(data['client_id'])
+
+        if not lawyer or not client:
+            return jsonify({'error': 'Lawyer or Client not found'}), 404
+
+        existing = LawyerClient.query.filter_by(
+            lawyer_id=data['lawyer_id'],
+            client_id=data['client_id']
+        ).first()
+
+        if existing:
+            return jsonify({'error': 'Relationship already exists'}), 400
+
+        new_relation = LawyerClient(
+            lawyer_id=data['lawyer_id'],
+            client_id=data['client_id']
+        )
+
+        db.session.add(new_relation)
+        db.session.commit()
+
+        return jsonify({
+            'message': 'Relationship created successfully',
+            'id': new_relation.id
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@api.route('/lawyer-client/<int:id>', methods=['DELETE'])
+def delete_lawyer_client(id):
+    try:
+        relation = LawyerClient.query.get(id)
+        if not relation:
+            return jsonify({'error': 'Relationship not found'}), 404
+
+        db.session.delete(relation)
+        db.session.commit()
+
+        return jsonify({'message': 'Relationship deleted successfully'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 # -----------------ROUTES PARA COURTFILE-DOCUMENT--------------------------------------------
+
 
 @api.route('/courtfile-document', methods=['GET'])
 @jwt_required(optional=True)
