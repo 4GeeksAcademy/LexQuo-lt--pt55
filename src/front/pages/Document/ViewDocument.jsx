@@ -1,4 +1,4 @@
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -6,12 +6,41 @@ export const ViewDocument = () => {
   const { dispatch } = useGlobalReducer();
   const { documentId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || "/documents";
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
   const [documentData, setDocumentData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const preselectedCourtfileId = location.state?.preselectedCourtfileId || null;
+  const preselectedCourtfileNumber = location.state?.preselectedCourtfileNumber || null;
+  const preselectedCourtfileTitle = location.state?.preselectedCourtfileTitle || null;
+
+  const [preselectedCf, setPreselectedCf] = useState(
+    preselectedCourtfileNumber && preselectedCourtfileTitle
+      ? { case_number: preselectedCourtfileNumber, title: preselectedCourtfileTitle }
+      : null
+  );
+
+  useEffect(() => {
+    const loadCf = async () => {
+      try {
+        if (preselectedCourtfileId && !preselectedCf) {
+          const resp = await fetch(`${API}/api/courtfiles/${preselectedCourtfileId}`);
+          if (resp.ok) {
+            const d = await resp.json();
+            setPreselectedCf({ case_number: d.case_number, title: d.title });
+          }
+        }
+      } catch (e) {
+        // opcional: log/ignorar
+      }
+    };
+    loadCf();
+  }, [API, preselectedCourtfileId, preselectedCf]);
 
   useEffect(() => {
     const fetchDocument = async () => {
@@ -31,7 +60,7 @@ export const ViewDocument = () => {
     };
 
     if (documentId) fetchDocument();
-  }, [documentId]);
+  }, [documentId, API]);
 
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this document?")) return;
@@ -43,7 +72,7 @@ export const ViewDocument = () => {
 
       if (response.ok) {
         dispatch({ type: "DELETE_DOCUMENT", payload: Number(documentId) || documentId });
-        navigate("/documents");
+        navigate(returnTo, { replace: true });
         alert("Document deleted successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -58,8 +87,7 @@ export const ViewDocument = () => {
   const handleDownload = (docItem) => {
     try {
       const officeExtensions = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'];
-
-      const isOfficeFile = officeExtensions.includes(docItem.type.toLowerCase());
+      const isOfficeFile = officeExtensions.includes((docItem.type || "").toLowerCase());
 
       if (isOfficeFile) {
         const downloadLink = document.createElement('a');
@@ -117,8 +145,8 @@ export const ViewDocument = () => {
         <div className="alert alert-danger">
           <i className="bi bi-exclamation-triangle"></i> {error || "Document not found"}
         </div>
-        <Link to="/documents" className="btn btn-primary">
-          <i className="bi bi-arrow-left"></i> Back to Documents
+        <Link to={returnTo} className="btn btn-primary">
+          <i className="bi bi-arrow-left"></i> Back
         </Link>
       </div>
     );
@@ -133,9 +161,15 @@ export const ViewDocument = () => {
             <div>
               <h1>Document Details</h1>
               <p className="text-muted">ID #{documentData.id}</p>
+              {preselectedCourtfileId && (
+                <span className="badge bg-dark">
+                  Linked to Case {preselectedCf?.case_number || preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
+                  {(preselectedCf?.title || preselectedCourtfileTitle) ? ` — ${preselectedCf?.title || preselectedCourtfileTitle}` : ""}
+                </span>
+              )}
             </div>
-            <Link to="/documents" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
+            <Link to={returnTo} className="btn btn-outline-secondary">
+              <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
 
@@ -215,11 +249,12 @@ export const ViewDocument = () => {
 
             <div className="card-footer bg-light">
               <div className="d-flex gap-2 justify-content-end">
-                <Link to="/documents" className="btn btn-outline-secondary">
-                  <i className="bi bi-arrow-left"></i> Back
-                </Link>
 
-                <Link to={`/documents/${documentData.id}`} className="btn btn-warning">
+                <Link
+                  to={`/documents/${documentData.id}`}
+                  state={{ returnTo }}
+                  className="btn btn-warning"
+                >
                   <i className="bi bi-pencil"></i> Edit
                 </Link>
 

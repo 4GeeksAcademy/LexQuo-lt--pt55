@@ -98,7 +98,7 @@ export const ViewDeadline = () => {
               <h1>Deadline Details</h1>
               <p className="text-muted">ID #{deadline.id}</p>
             </div>
-            <Link to={returnTo} className="btn btn-primary">
+            <Link to={returnTo} className="btn btn-outline-secondary">
               <i className="bi bi-arrow-left"></i> Back 
             </Link>
           </div>

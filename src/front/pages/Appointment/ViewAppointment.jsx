@@ -90,7 +90,7 @@ export const ViewAppointment = () => {
               <h1>Appointment Details</h1>
               <p className="text-muted">ID #{appointment.id}</p>
             </div>
-            <Link to={returnTo} className="btn btn-primary">
+            <Link to={returnTo} className="btn btn-outline-secondary">
               <i className="bi bi-arrow-left"></i> Back 
             </Link>
           </div>

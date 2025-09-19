@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -6,6 +6,8 @@ export const EditDocument = () => {
   const { store, dispatch } = useGlobalReducer();
   const { documentId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation(); 
+  const returnTo = location.state?.returnTo || `/documents/view/${documentId}`;
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
@@ -109,7 +111,7 @@ export const EditDocument = () => {
       if (response.ok) {
         const updatedDocument = await response.json();
         dispatch({ type: "UPDATE_DOCUMENT", payload: updatedDocument });
-        navigate(`/documents/view/${documentId}`);
+        navigate(returnTo, { replace: true });
         alert("Document updated successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -142,8 +144,8 @@ export const EditDocument = () => {
         <div className="alert alert-danger">
           <i className="bi bi-exclamation-triangle"></i> {error}
         </div>
-        <Link to="/documents" className="btn btn-primary">
-          Back to Documents
+        <Link to={returnTo} className="btn btn-primary">
+          Back
         </Link>
       </div>
     );
@@ -156,8 +158,14 @@ export const EditDocument = () => {
           {/* Header */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h1>Edit Document</h1>
-            <Link to="/documents" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
+            {preselectedCourtfileId && (
+                <span className="badge bg-dark mt-2">
+                  Linked to Case {preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
+                  {preselectedCourtfileTitle ? ` — ${preselectedCourtfileTitle}` : ""}
+                </span>
+              )}
+            <Link to={returnTo} className="btn btn-outline-secondary">
+              <i className="bi bi-arrow-left"></i> Back 
             </Link>
           </div>
 
@@ -261,7 +269,7 @@ export const EditDocument = () => {
 
                 {/* Buttons */}
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to={`/documents/view/${documentId}`} className="btn btn-secondary me-md-2">
+                  <Link to={returnTo} className="btn btn-secondary me-md-2">
                     Cancel
                   </Link>
                   <button type="submit" className="btn btn-primary" disabled={loading}>
