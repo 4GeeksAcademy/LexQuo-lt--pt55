@@ -18,23 +18,28 @@ export const AddDocument = () => {
 
   const [formData, setFormData] = useState({
     name: "",
-    type: "",
-    url_route: "",
     description: "",
     category: "",
-    document_date: ""
+    document_date: "",
   });
 
+  const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [linking, setLinking] = useState(false);
   const [error, setError] = useState(null);
 
-  const documentTypes = [
-    "PDF", "Word", "Excel", "Image", "Audio", "Video", "Other"
-  ];
 
   const documentCategories = [
-    "Legal", "Contract", "Evidence", "Report", "Correspondence", "Financial", "Other"
+    "Resolution / Ruling",
+    "Party Filing",
+    "Evidence",
+    "Precautionary Measure / Urgent Request",
+    "Public Prosecutor's Office Action",
+    "Relevant Judicial Proceeding",
+    "Official Letter / Communication",
+    "Judgment",
+    "Costs and Fees",
+    "Internal Note / Reminder"
   ];
 
   const handleInputChange = (e) => {
@@ -45,19 +50,39 @@ export const AddDocument = () => {
     }));
   };
 
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    setFile(selectedFile);
+    if (selectedFile) {
+      setError(null);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
+    if (!file) {
+      setError("Please select a file to upload.");
+      setLoading(false);
+      return;
+    }
+
     try {
+      const data = new FormData();
+      data.append("name", formData.name);
+      data.append("description", formData.description);
+      data.append("category", formData.category);
+      data.append("document_date", formData.document_date);
+      data.append("file", file); // Añadir el archivo al objeto FormData
+
       const response = await fetch(`${API}/api/documents`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
-        body: JSON.stringify(formData),
+        body: data,
       });
 
       if (response.ok) {
@@ -147,28 +172,6 @@ export const AddDocument = () => {
                   />
                 </div>
 
-                <div className="mb-3">
-                  <label htmlFor="type" className="form-label">
-                    Document Type *
-                  </label>
-                  <select
-                    className="form-select"
-                    id="type"
-                    name="type"
-                    value={formData.type}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                  >
-                    <option value="">Select document type</option>
-                    {documentTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
                 {/* input fecha del documento */}
                 <div className="mb-3">
                   <label htmlFor="document_date" className="form-label">Document Date</label>
@@ -185,23 +188,17 @@ export const AddDocument = () => {
                 </div>
 
                 <div className="mb-3">
-                  <label htmlFor="url_route" className="form-label">
-                    URL Route *
+                  <label htmlFor="file" className="form-label">
+                    File
                   </label>
                   <input
-                    type="url"
+                    type="file"
                     className="form-control"
-                    id="url_route"
-                    name="url_route"
-                    value={formData.url_route}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="https://example.com/document.pdf"
+                    id="file"
+                    name="file"
+                    onChange={handleFileChange}
                     disabled={loading}
                   />
-                  <div className="form-text">
-                    Enter the full URL path to the document
-                  </div>
                 </div>
 
                 <div className="mb-3">
@@ -242,7 +239,7 @@ export const AddDocument = () => {
                 </div>
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>   {/* [CHANGED] */}
+                  <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>
                   <button type="submit" className="btn btn-primary" disabled={loading || linking}>
                     {loading || linking ? (
                       <>

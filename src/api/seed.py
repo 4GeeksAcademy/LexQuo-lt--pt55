@@ -13,6 +13,8 @@ from api.models import (
 )
 
 # ------------------------- utilidades ------------------------- #
+
+
 def get_or_create(session, model, unique_fields: dict, defaults: dict | None = None):
     """
     Busca por unique_fields. Si existe, devuelve (obj, False).
@@ -28,6 +30,8 @@ def get_or_create(session, model, unique_fields: dict, defaults: dict | None = N
     return inst, True
 
 # --------------------------- seeders --------------------------- #
+
+
 def seed_lawyers(session):
     # password: se hashea automáticamente por @validates en tu modelo
     rows = [
@@ -49,6 +53,7 @@ def seed_lawyers(session):
         if was_created:
             created += 1
     print(f"Lawyers: agregados {created}")
+
 
 def seed_clients(session):
     rows = [
@@ -74,6 +79,7 @@ def seed_clients(session):
             created += 1
     print(f"Clients: agregados {created}")
 
+
 def seed_courtfiles(session):
     # status es Boolean requerido en tu modelo
     rows = [
@@ -98,6 +104,7 @@ def seed_courtfiles(session):
         if was_created:
             created += 1
     print(f"Courtfiles: agregados {created}")
+
 
 def seed_appointments(session):
     # Campos NOT NULL: title, date, details, starts_at, ends_at
@@ -135,12 +142,14 @@ def seed_appointments(session):
     created = 0
     for r in rows:
         # No hay campo único → intentamos deduplicar por (title, date, starts_at)
-        unique = {"title": r["title"], "date": r["date"], "starts_at": r["starts_at"]}
+        unique = {"title": r["title"], "date": r["date"],
+                  "starts_at": r["starts_at"]}
         defaults = {k: v for k, v in r.items() if k not in unique}
         _, was_created = get_or_create(session, Appointment, unique, defaults)
         if was_created:
             created += 1
     print(f"Appointments: agregados {created}")
+
 
 def seed_deadlines(session):
     # Modelo: Deadlines (plural)
@@ -168,17 +177,18 @@ def seed_deadlines(session):
             created += 1
     print(f"Deadlines: agregados {created}")
 
+
 def seed_documents(session):
     # Campos NOT NULL: name, type, url_route
     today = date.today()
     rows = [
-        dict(name="Demanda inicial",   type="pdf", url_route="/uploads/docs/demanda_inicial.pdf",
+        dict(name="Demanda inicial (PDF)",   type="pdf", url_route="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758256377/documents/file_yndlpo.pdf",
              description="Demanda base", category="presentaciones",
              document_date=today - timedelta(days=10)),
-        dict(name="Convenio de mediación", type="pdf", url_route="/uploads/docs/convenio_mediacion.pdf",
+        dict(name="Convenio de mediación (Word)", type="docx", url_route="https://res.cloudinary.com/doxdmmj1o/raw/upload/v1758256496/documents/LEXQUO_hvi7g2.docx?fl_attachment=LEXQUO.docx",
              description="Acta de mediación", category="mediación",
              document_date=today - timedelta(days=3)),
-        dict(name="Oficio a banco",    type="docx", url_route="/uploads/docs/oficio_banco.docx",
+        dict(name="Oficio a banco (Img)",    type="docx", url_route="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758256779/documents/profile_jprfp2.png",
              description="Oficio solicitando informes", category="oficios",
              document_date=today),
     ]
@@ -192,13 +202,17 @@ def seed_documents(session):
             created += 1
     print(f"Documents: agregados {created}")
 
+
 def seed_payments(session):
     # Campos NOT NULL: amount, currency, status (tiene default PaymentStatus.pending)
     now = datetime.utcnow()
     rows = [
-        dict(amount=50000.0, currency="ARS", status=PaymentStatus.approved, paid_at=now - timedelta(days=2), means="transferencia"),
-        dict(amount=75000.0, currency="ARS", status=PaymentStatus.pending,  paid_at=None,                     means="mercadopago"),
-        dict(amount=120000.0, currency="ARS", status=PaymentStatus.rejected, paid_at=None,                    means="efectivo"),
+        dict(amount=50000.0, currency="ARS", status=PaymentStatus.approved,
+             paid_at=now - timedelta(days=2), means="transferencia"),
+        dict(amount=75000.0, currency="ARS", status=PaymentStatus.pending,
+             paid_at=None,                     means="mercadopago"),
+        dict(amount=120000.0, currency="ARS", status=PaymentStatus.rejected,
+             paid_at=None,                    means="efectivo"),
     ]
     created = 0
     for r in rows:
@@ -216,6 +230,8 @@ def seed_payments(session):
     print(f"Payments: agregados {created}")
 
 # ----------------------------- runner ----------------------------- #
+
+
 def run():
     with app.app_context():
         session = db.session
@@ -237,6 +253,7 @@ def run():
         print(f"Deadlines:   {session.query(Deadlines).count()}")
         print(f"Documents:   {session.query(Document).count()}")
         print(f"Payments:    {session.query(Payment).count()}")
+
 
 if __name__ == "__main__":
     run()
