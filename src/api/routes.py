@@ -1837,7 +1837,6 @@ def delete_payment(payment_id):
 
         db.session.delete(payment)
         db.session.commit()
-
         return jsonify({'message': 'Payment successfully deleted'}), 200
 
     except Exception as e:
