@@ -1,4 +1,4 @@
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -6,12 +6,24 @@ export const ViewDeadline = () => {
   const { dispatch } = useGlobalReducer();
   const { deadlineId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || "/deadlines";
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
   const [deadline, setDeadline] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const prelinked = location.state?.courtfileId
+    ? {
+      id: location.state.courtfileId,
+      number: location.state.courtfileNumber,
+      title: location.state.courtfileTitle
+    }
+    : null;
+
+  const [linkedCourtfile, setLinkedCourtfile] = useState(prelinked);
 
   useEffect(() => {
     const fetchDeadline = async () => {
@@ -34,13 +46,39 @@ export const ViewDeadline = () => {
 
   }, [deadlineId]);
 
+  useEffect(() => {
+    const fetchLinked = async () => {
+      try {
+        if (linkedCourtfile || !deadlineId) return;
+        const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
+        const token = auth?.token;
+        const resp = await fetch(`${API}/api/deadlines-courtfiles`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!resp.ok) return;
+        const rows = await resp.json();
+        const rel = (rows || []).find(r => Number(r.deadline_id) === Number(deadlineId));
+        if (rel) {
+          setLinkedCourtfile({
+            id: rel.courtfile_id,
+            number: rel.courtfile_number,
+            title: rel.courtfile_title
+          });
+        }
+      } catch (e) {
+        // silencioso
+      }
+    };
+    fetchLinked();
+  }, [API, deadlineId, linkedCourtfile]);
+
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this deadline?")) return;
     try {
       const response = await fetch(`${API}/api/deadlines/${deadlineId}`, { method: "DELETE" });
       if (response.ok) {
         dispatch({ type: "DELETE_DEADLINE", payload: Number(deadlineId) || deadlineId });
-        navigate("/deadlines");
+        navigate(returnTo, { replace: true });
         alert("Deadline deleted successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -79,8 +117,8 @@ export const ViewDeadline = () => {
         <div className="alert alert-danger">
           <i className="bi bi-exclamation-triangle"></i> {error || "Deadline not found"}
         </div>
-        <Link to="/deadlines" className="btn btn-primary">
-          <i className="bi bi-arrow-left"></i> Back to Deadlines
+        <Link to={returnTo} className="btn btn-outline-secondary">
+          <i className="bi bi-arrow-left"></i> Back
         </Link>
       </div>
     );
@@ -94,12 +132,18 @@ export const ViewDeadline = () => {
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div>
               <h1>Deadline Details</h1>
-              <p className="text-muted">ID #{deadline.id}</p>
             </div>
-            <Link to="/deadlines" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
+            <Link to={returnTo} className="btn btn-outline-secondary">
+              <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
+
+          {linkedCourtfile && (
+            <span className="badge bg-dark mt-1 mb-3">
+              Related to Courtfile {linkedCourtfile.number || "—"}
+              {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
+            </span>
+          )}
 
           <div className="card">
             <div className="card-header bg-dark text-white">
@@ -140,10 +184,11 @@ export const ViewDeadline = () => {
 
             <div className="card-footer bg-light">
               <div className="d-flex gap-2 justify-content-end">
-                <Link to="/deadlines" className="btn btn-outline-secondary">
-                  <i className="bi bi-arrow-left"></i> Back
-                </Link>
-                <Link to={`/deadlines/${deadline.id}`} className="btn btn-warning">
+                <Link
+                  to={`/deadlines/${deadline.id}`}
+                  state={{ returnTo }}
+                  className="btn btn-warning"
+                >
                   <i className="bi bi-pencil"></i> Edit
                 </Link>
                 <button className="btn btn-danger" onClick={handleDelete}>
@@ -156,6 +201,6 @@ export const ViewDeadline = () => {
 
         </div>
       </div>
-    </div>
+    </div >
   );
 };

@@ -15,6 +15,7 @@ export const EditLawyer = () => {
         email: '',
         phone: '',
         password: '',
+        file: null,
         is_active: true
     });
 
@@ -68,12 +69,8 @@ export const EditLawyer = () => {
         setLoading(true);
         setError(null);
 
-        if (
-            !formData.firstname?.trim() ||
-            !formData.lastname?.trim() ||
-            !formData.email?.trim() ||
-            !formData.phone?.trim()
-        ) {
+        
+        if (!formData.firstname?.trim() || !formData.lastname?.trim() || !formData.email?.trim() || !formData.phone?.trim()) {
             setError("Firstname, Lastname, Email and Phone are required.");
             setLoading(false);
             return;
@@ -89,36 +86,35 @@ export const EditLawyer = () => {
             return;
         }
 
-
         try {
+            const data = new FormData();
+            data.append('firstname', formData.firstname.trim());
+            data.append('lastname', formData.lastname.trim());
+            data.append('email', formData.email.trim().toLowerCase());
+            data.append('phone', formData.phone.trim());
+            data.append('is_active', !!formData.is_active);
 
-            const payload = {
-                firstname: formData.firstname.trim(),
-                lastname: formData.lastname.trim(),
-                email: formData.email.trim().toLowerCase(), // normalizar email
-                phone: formData.phone.trim(),
-                is_active: !!formData.is_active,
-            };
-            if (formData.password) payload.password = formData.password;
+            if (formData.password) {
+                data.append('password', formData.password);
+            }
+
+            if (formData.file) {
+                data.append('file', formData.file);
+            }
 
             const response = await fetch(`${API}/api/lawyers/${lawyerId}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
+                body: data,
             });
-
 
             if (response.ok) {
                 const updatedLawyer = await response.json();
                 dispatch({ type: "UPDATE_LAWYER", payload: updatedLawyer });
-
                 alert("Lawyer updated successfully!");
                 navigate(`/lawyers/view/${lawyerId}`);
-
             } else if (response.status === 409) {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.error || "Email already exists");
-
             } else {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.error || "Failed to update Lawyer");
@@ -127,9 +123,27 @@ export const EditLawyer = () => {
         } catch (error) {
             console.error("Error updating Lawyer:", error);
             setError(error.message);
-            
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleFileChange = (e) => {
+        const selectedFile = e.target.files[0];
+        if (selectedFile) {
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+            if (allowedTypes.includes(selectedFile.type)) {
+                setFormData(prev => ({
+                    ...prev,
+                    file: selectedFile
+                }));
+                setError(null);
+            } else {
+                setFormData(prev => ({ ...prev, file: null }));
+                setError("Only image formats (JPEG, PNG, GIF, WEBP) are allowed.");
+                e.target.value = null; 
+            }
         }
     };
 
@@ -261,6 +275,20 @@ export const EditLawyer = () => {
                                     />
                                 </div>
 
+                                <div className="mb-3">
+                                    <label htmlFor="file" className="form-label">
+                                        Profile image
+                                    </label>
+                                    <input
+                                        type="file"
+                                        className="form-control"
+                                        id="file"
+                                        name="file"
+                                        onChange={handleFileChange}
+                                        disabled={loading}
+                                    />
+                                </div>
+
                                 <div className="mb-3 form-check">
                                     <input
                                         type="checkbox"
@@ -275,7 +303,6 @@ export const EditLawyer = () => {
                                         Active Lawyer
                                     </label>
                                 </div>
-
 
                                 {/* Buttons */}
                                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">

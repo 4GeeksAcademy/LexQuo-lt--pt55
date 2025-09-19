@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export const AddDocument = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -18,23 +18,87 @@ export const AddDocument = () => {
 
   const [formData, setFormData] = useState({
     name: "",
-    type: "",
-    url_route: "",
     description: "",
     category: "",
-    document_date: ""
+    document_date: "",
+    courtfile_id: preselectedCourtfileId ? String(preselectedCourtfileId) : ""
   });
 
+  const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [linking, setLinking] = useState(false);
   const [error, setError] = useState(null);
 
-  const documentTypes = [
-    "PDF", "Word", "Excel", "Image", "Audio", "Video", "Other"
-  ];
+  const [myCases, setMyCases] = useState([]);
+  const [loadingCases, setLoadingCases] = useState(false);
+  const [preselectedCf, setPreselectedCf] = useState(
+    preselectedCourtfileNumber ? { case_number: preselectedCourtfileNumber, title: preselectedCourtfileTitle } : null
+  );
+
+  useEffect(() => {
+    const fetchCases = async () => {
+      try {
+        setLoadingCases(true);
+
+        // si ya viene el courtfileId, no hace falta llenar el combo
+        if (preselectedCourtfileId) {
+          // si no llegaron number/title, podemos intentar completarlos
+          if (!preselectedCf) {
+            const r = await fetch(`${API}/api/courtfiles/${preselectedCourtfileId}`);
+            if (r.ok) {
+              const d = await r.json();
+              setPreselectedCf({ case_number: d.case_number, title: d.title });
+            }
+          }
+          setMyCases([]);
+          return;
+        }
+
+        const endpoint = token ? `${API}/api/lawyers-courtfiles` : `${API}/api/courtfiles`;
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const resp = await fetch(endpoint, { headers });
+
+        if (!resp.ok) {
+          const e = await resp.json().catch(() => ({}));
+          throw new Error(e.error || `HTTP ${resp.status}`);
+        }
+
+        const data = await resp.json();
+        const mapped = token
+          ? data.map(r => ({
+            id: r.courtfile.id,
+            number: r.courtfile.case_number,
+            title: r.courtfile.title
+          }))
+          : data.map(cf => ({
+            id: cf.id,
+            number: cf.case_number,
+            title: cf.title
+          }));
+
+        setMyCases(mapped);
+      } catch (err) {
+        setError(err.message || "Error fetching courtfiles");
+      } finally {
+        setLoadingCases(false);
+      }
+    };
+    fetchCases();
+  }, [API, token, preselectedCourtfileId, preselectedCf]);
+
 
   const documentCategories = [
-    "Legal", "Contract", "Evidence", "Report", "Correspondence", "Financial", "Other"
+    "Resolution / Ruling",
+    "Party Filing",
+    "Evidence",
+    "Precautionary Measure / Urgent Request",
+    "Public Prosecutor's Office Action",
+    "Relevant Judicial Proceeding",
+    "Official Letter / Communication",
+    "Judgment",
+    "Costs and Fees",
+    "Internal Note / Reminder",
+    "Others"
   ];
 
   const handleInputChange = (e) => {
@@ -45,51 +109,76 @@ export const AddDocument = () => {
     }));
   };
 
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    setFile(selectedFile);
+    if (selectedFile) {
+      setError(null);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
+
+    if (!preselectedCourtfileId && !formData.courtfile_id) {
+      setLoading(false);
+      setError("Please select a courtfile to link this document.");
+      return;
+    }
+
     try {
+      // 1) Crear el Document (multipart/form-data)
+      const data = new FormData();
+      data.append("name", formData.name);
+      data.append("description", formData.description);
+      data.append("category", formData.category);
+      data.append("document_date", formData.document_date);
+      if (file) data.append("file", file);
+
       const response = await fetch(`${API}/api/documents`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
-        body: JSON.stringify(formData),
+        body: data
       });
 
-      if (response.ok) {
-        const newDocument = await response.json();
-        dispatch({ type: "ADD_DOCUMENT", payload: newDocument });
-
-        if (preselectedCourtfileId) {
-          setLinking(true);
-          const linkResp = await fetch(`${API}/api/courtfile-document`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(token ? { Authorization: `Bearer ${token}` } : {})
-            },
-            body: JSON.stringify({
-              document_id: newDocument.id,
-              courtfile_id: Number(preselectedCourtfileId)
-            })
-          });
-
-          if (!linkResp.ok) {
-            const e = await linkResp.json().catch(() => ({}));
-            throw new Error(e.error || `Document created, but failed to link (HTTP ${linkResp.status})`);
-          }
-        }
-
-        alert(preselectedCourtfileId ? "Document created and linked!" : "Document created successfully!");
-        navigate(returnTo);
-      } else {
+      if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to create document");
       }
+
+      const newDocument = await response.json();
+      dispatch({ type: "ADD_DOCUMENT", payload: newDocument });
+
+      // 2) Link al Courtfile (preseleccionado o elegido)
+      const targetCfId = preselectedCourtfileId ? Number(preselectedCourtfileId) : Number(formData.courtfile_id);
+
+      if (targetCfId) {
+        setLinking(true);
+        const linkResp = await fetch(`${API}/api/courtfile-document`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({
+            document_id: newDocument.id,
+            courtfile_id: targetCfId
+          })
+        });
+
+        if (!linkResp.ok) {
+          const e = await linkResp.json().catch(() => ({}));
+          throw new Error(e.error || `Document created, but failed to link (HTTP ${linkResp.status})`);
+        }
+      }
+
+      alert("Document created and linked successfully!");
+      navigate(returnTo, { replace: true });
     } catch (err) {
       console.error("Error creating Document:", err);
       setError(err.message);
@@ -108,7 +197,7 @@ export const AddDocument = () => {
             <div>
               <h1>Add New Document</h1>
               {preselectedCourtfileId && (
-                <span className="badge bg-info mt-2">
+                <span className="badge bg-dark mt-2">
                   Linked to Case {preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
                   {preselectedCourtfileTitle ? ` — ${preselectedCourtfileTitle}` : ""}
                 </span>
@@ -116,7 +205,7 @@ export const AddDocument = () => {
             </div>
 
             <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
+              <i className="bi bi-arrow-left"></i> Back 
             </Link>
           </div>
 
@@ -130,6 +219,28 @@ export const AddDocument = () => {
               )}
 
               <form onSubmit={handleSubmit}>
+                {!preselectedCourtfileId && (
+                  <div className="mb-3">
+                    <label htmlFor="courtfile_id" className="form-label">Link to Courtfile *</label>
+                    <select
+                      className="form-select"
+                      id="courtfile_id"
+                      name="courtfile_id"
+                      value={formData.courtfile_id}
+                      onChange={handleInputChange}
+                      required
+                      disabled={loading || loadingCases}
+                    >
+                      <option value="">Select a courtfile</option>
+                      {myCases.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.number} — {c.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div className="mb-3">
                   <label htmlFor="name" className="form-label">
                     Document Name *
@@ -145,28 +256,6 @@ export const AddDocument = () => {
                     placeholder="Enter document name"
                     disabled={loading}
                   />
-                </div>
-
-                <div className="mb-3">
-                  <label htmlFor="type" className="form-label">
-                    Document Type *
-                  </label>
-                  <select
-                    className="form-select"
-                    id="type"
-                    name="type"
-                    value={formData.type}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                  >
-                    <option value="">Select document type</option>
-                    {documentTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
                 </div>
 
                 {/* input fecha del documento */}
@@ -185,23 +274,17 @@ export const AddDocument = () => {
                 </div>
 
                 <div className="mb-3">
-                  <label htmlFor="url_route" className="form-label">
-                    URL Route *
+                  <label htmlFor="file" className="form-label">
+                    File (optional)
                   </label>
                   <input
-                    type="url"
+                    type="file"
                     className="form-control"
-                    id="url_route"
-                    name="url_route"
-                    value={formData.url_route}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="https://example.com/document.pdf"
+                    id="file"
+                    name="file"
+                    onChange={handleFileChange}
                     disabled={loading}
                   />
-                  <div className="form-text">
-                    Enter the full URL path to the document
-                  </div>
                 </div>
 
                 <div className="mb-3">
@@ -242,7 +325,7 @@ export const AddDocument = () => {
                 </div>
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>   {/* [CHANGED] */}
+                  <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>
                   <button type="submit" className="btn btn-primary" disabled={loading || linking}>
                     {loading || linking ? (
                       <>

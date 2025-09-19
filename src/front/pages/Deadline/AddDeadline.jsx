@@ -152,7 +152,7 @@ export const AddDeadline = () => {
       }
 
       alert("Deadline created and linked successfully!");
-      navigate(returnTo);
+      navigate(returnTo, { replace: true })
     } catch (err) {
       console.error("Error creating/linking Deadline:", err);
       setError(err.message);
@@ -162,6 +162,19 @@ export const AddDeadline = () => {
     }
   };
 
+  // helpers
+  const timeToMinutes = (hhmm) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  const times15 = Array.from({ length: (24 * 60) / 15 }, (_, i) => {
+    const total = i * 15;
+    const hh = String(Math.floor(total / 60)).padStart(2, "0");
+    const mm = String(total % 60).padStart(2, "0");
+    return `${hh}:${mm}`;
+  });
+
   return (
     <div className="container mt-4">
       <div className="row justify-content-center">
@@ -169,10 +182,38 @@ export const AddDeadline = () => {
           {/* Header */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h1>Add New Deadline</h1>
-            <Link to="/deadlines" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
+            <Link to={returnTo} className="btn btn-outline-secondary">
+              <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
+
+          {preselectedCourtfileId ? (
+                <span className="badge bg-dark mt-1 mb-2">
+                  Related to Courtfile {preselectedCf?.case_number || "—"}
+                  {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
+                </span>
+              
+            ) : (
+              <div className="mb-3">
+                <label htmlFor="courtfile_id" className="form-label">Link to Courtfile *</label>
+                <select
+                  className="form-select"
+                  id="courtfile_id"
+                  name="courtfile_id"
+                  value={formData.courtfile_id}
+                  onChange={handleInputChange}
+                  required
+                  disabled={loading || loadingCases}
+                >
+                  <option value="">Select a courtfile</option>
+                  {myCases.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.number} — {c.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
           {/* Card */}
           <div className="card">
@@ -184,36 +225,6 @@ export const AddDeadline = () => {
               )}
 
               <form onSubmit={handleSubmit}>
-                {preselectedCourtfileId ? (
-                  <div className="mb-3">
-                    <label className="form-label">Linked Courtfile</label>
-                    <div className="form-control-plaintext">
-                      Expediente {preselectedCf?.case_number || "—"}                
-                      {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mb-3">
-                    <label htmlFor="courtfile_id" className="form-label">Link to Courtfile *</label>
-                    <select
-                      className="form-select"
-                      id="courtfile_id"
-                      name="courtfile_id"
-                      value={formData.courtfile_id}
-                      onChange={handleInputChange}
-                      required
-                      disabled={loading || loadingCases}
-                    >
-                      <option value="">Select a courtfile</option>
-                      {myCases.map(c => (
-                        <option key={c.id} value={c.id}>
-                          {c.number} — {c.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
                 <div className="mb-3">
                   <label htmlFor="deadline_type" className="form-label">Deadline Type *</label>
                   <select
@@ -250,16 +261,22 @@ export const AddDeadline = () => {
 
                 <div className="mb-3">
                   <label htmlFor="deadline_hour" className="form-label">Deadline Time *</label>
-                  <input
-                    type="time"
-                    className="form-control"
+                  <select
+                    className="form-select"
                     id="deadline_hour"
                     name="deadline_hour"
                     value={formData.deadline_hour}
                     onChange={handleInputChange}
                     required
                     disabled={loading}
-                  />
+                  >
+                    <option value="" disabled>Select time…</option>
+                    {times15.map(t => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="mb-3">
@@ -281,7 +298,7 @@ export const AddDeadline = () => {
                 </div>
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to="/deadlines" className="btn btn-secondary me-md-2">Cancel</Link>
+                  <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>
                   <button type="submit" className="btn btn-primary" disabled={loading}>
                     {loading ? (
                       <>

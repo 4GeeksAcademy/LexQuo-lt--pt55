@@ -1,17 +1,28 @@
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import MapComponent from "../../components/Map/MapComponent";
+import LocationAutocomplete from "../../components/Map/LocationAutocomplete";
 
 export const ViewAppointment = () => {
   const { dispatch } = useGlobalReducer();
   const { appointmentId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || "/appointments";
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
   const [appointment, setAppointment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const state = location.state || {};
+  const initialLinked = state.courtfileId
+    ? { id: state.courtfileId, number: state.courtfileNumber, title: state.courtfileTitle }
+    : null;
+
+  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
 
   useEffect(() => {
     const fetchAppointment = async () => {
@@ -34,13 +45,56 @@ export const ViewAppointment = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointmentId]);
 
+  useEffect(() => {
+    const loadCf = async () => {
+      try {
+        if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
+          const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`);
+          if (resp.ok) {
+            const d = await resp.json();
+            setLinkedCourtfile(cf => ({ ...(cf || {}), number: d.case_number, title: d.title }));
+          }
+        }
+      } catch (e) {
+        // noop
+      }
+    };
+    loadCf();
+  }, [API, linkedCourtfile?.id]);
+
+  useEffect(() => {
+    const fetchLinked = async () => {
+      try {
+        if (linkedCourtfile || !appointmentId) return;
+        const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
+        const token = auth?.token;
+        const resp = await fetch(`${API}/api/appointments-courtfiles`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!resp.ok) return;
+        const rows = await resp.json();
+        const rel = (rows || []).find(r => Number(r.appointment_id) === Number(appointmentId));
+        if (rel) {
+          setLinkedCourtfile({
+            id: rel.courtfile_id,
+            number: rel.courtfile_number,
+            title: rel.courtfile_title
+          });
+        }
+      } catch (e) {
+        // noop
+      }
+    };
+    fetchLinked();
+  }, [API, appointmentId, linkedCourtfile]);
+
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this appointment?")) return;
     try {
       const response = await fetch(`${API}/api/appointments/${appointmentId}`, { method: "DELETE" });
       if (response.ok) {
         dispatch({ type: "DELETE_APPOINTMENT", payload: Number(appointmentId) || appointmentId });
-        navigate("/appointments");
+        navigate(returnTo, { replace: true });
         alert("Appointment deleted successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -69,8 +123,8 @@ export const ViewAppointment = () => {
         <div className="alert alert-danger">
           <i className="bi bi-exclamation-triangle"></i> {error || "Appointment not found"}
         </div>
-        <Link to="/appointments" className="btn btn-primary">
-          <i className="bi bi-arrow-left"></i> Back to Appointments
+        <Link to={returnTo} className="btn btn-outline-secondary">
+          <i className="bi bi-arrow-left"></i> Back
         </Link>
       </div>
     );
@@ -84,12 +138,18 @@ export const ViewAppointment = () => {
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div>
               <h1>Appointment Details</h1>
-              <p className="text-muted">ID #{appointment.id}</p>
             </div>
-            <Link to="/appointments" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
+            <Link to={returnTo} className="btn btn-outline-secondary">
+              <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
+
+          {linkedCourtfile && (
+            <span className="badge bg-dark mt-1 mb-2">
+              Linked to Case {linkedCourtfile.number || `#${linkedCourtfile.id}`}
+              {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
+            </span>
+          )}
 
           <div className="card">
             <div className="card-header bg-dark text-white">
@@ -109,6 +169,10 @@ export const ViewAppointment = () => {
                     <label className="fw-bold text-muted">Location</label>
                     <p className="fs-6">{appointment.location || "-"}</p>
                   </div>
+                  <div className="mb-3">
+                    <label className="fw-bold text-muted">Aditional details</label>
+                    <p className="fs-6">{appointment.details || "-"}</p>
+                  </div>
                 </div>
                 <div className="col-md-6">
                   <div className="mb-3">
@@ -123,20 +187,29 @@ export const ViewAppointment = () => {
                     <label className="fw-bold text-muted">Ends At</label>
                     <p className="fs-6">{appointment.ends_at || "-"}</p>
                   </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Created At</label>
-                    <p className="fs-6">{appointment.created_at || "-"}</p>
-                  </div>
                 </div>
               </div>
             </div>
-
+            {appointment.latitud && appointment.longitud && (
+              <div className="mb-3">
+                <label className="fw-bold text-muted">Ubicación en Mapa</label>
+                <MapComponent
+                  key={appointment ? `view-${appointment.latitud}-${appointment.longitud}` : 'view-null'}
+                  position={appointment ? [appointment.latitud, appointment.longitud] : null}
+                  readonly
+                />
+                <div className="form-text">
+                  Coordenadas: {appointment.latitud}, {appointment.longitud}
+                </div>
+              </div>
+            )}
             <div className="card-footer bg-light">
               <div className="d-flex gap-2 justify-content-end">
-                <Link to="/appointments" className="btn btn-outline-secondary">
-                  <i className="bi bi-arrow-left"></i> Back
-                </Link>
-                <Link to={`/appointments/${appointment.id}`} className="btn btn-warning">
+                <Link
+                  to={`/appointments/${appointment.id}`}
+                  state={{ returnTo }}
+                  className="btn btn-warning"
+                >
                   <i className="bi bi-pencil"></i> Edit
                 </Link>
                 <button className="btn btn-danger" onClick={handleDelete}>
@@ -149,6 +222,6 @@ export const ViewAppointment = () => {
 
         </div>
       </div>
-    </div>
+    </div >
   );
 };

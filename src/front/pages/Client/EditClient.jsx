@@ -10,11 +10,12 @@ export const EditClient = () => {
   const API = import.meta.env.VITE_BACKEND_URL;
 
   const [formData, setFormData] = useState({
-    firstname: "",
-    lastname: "",
-    email: "",
-    phone: "",
-    password: "",
+    firstname: '',
+    lastname: '',
+    email: '',
+    phone: '',
+    password: '',
+    file: null,
     is_active: true
   });
 
@@ -25,16 +26,21 @@ export const EditClient = () => {
   const fetchClient = async () => {
     try {
       setFetching(true);
-      const response = await fetch(`${API}/api/clients/${clientId}`); // singular
+      const response = await fetch(`${API}/api/clients/${clientId}`);
+
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
       const data = await response.json();
-      setFormData(prev => ({
-        ...prev,
-        ...data,
+
+      setFormData({
+        firstname: data.firstname ?? "",
+        lastname: data.lastname ?? "",
+        email: data.email ?? "",
+        phone: data.phone ?? "",
         password: "",
-        phone: data.phone || ""
-      }));
-      setError(null);
+        is_active: !!data.is_active,
+      });
+
     } catch (err) {
       console.error("Error fetching client:", err);
       setError("Failed to load client data");
@@ -56,21 +62,52 @@ export const EditClient = () => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    if (!formData.firstname?.trim() || !formData.lastname?.trim() || !formData.email?.trim() || !formData.phone?.trim()) {
+      setError("Firstname, Lastname, Email and Phone are required.");
+      setLoading(false);
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      setError("Invalid email.");
+      setLoading(false);
+      return;
+    }
+    if (formData.password && formData.password.length < 8) {
+      setError("Password must have at least 8 characters.");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const payload = { ...formData };
-      if (!payload.password) delete payload.password;
+      const data = new FormData();
+      data.append('firstname', formData.firstname.trim());
+      data.append('lastname', formData.lastname.trim());
+      data.append('email', formData.email.trim().toLowerCase());
+      data.append('phone', formData.phone.trim());
+      data.append('is_active', !!formData.is_active);
+
+      if (formData.password) {
+        data.append('password', formData.password);
+      }
+
+      if (formData.file) {
+        data.append('file', formData.file);
+      }
 
       const response = await fetch(`${API}/api/clients/${clientId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: data,
       });
 
       if (response.ok) {
         const updatedClient = await response.json();
         dispatch({ type: "UPDATE_CLIENT", payload: updatedClient });
-        navigate(`/clients/view/${clientId}`);
         alert("Client updated successfully!");
+        navigate(`/clients/view/${clientId}`);
+      } else if (response.status === 409) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Email already exists");
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to update Client");
@@ -80,6 +117,25 @@ export const EditClient = () => {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+      if (allowedTypes.includes(selectedFile.type)) {
+        setFormData(prev => ({
+          ...prev,
+          file: selectedFile
+        }));
+        setError(null);
+      } else {
+        setFormData(prev => ({ ...prev, file: null }));
+        setError("Only image formats (JPEG, PNG, GIF, WEBP) are allowed.");
+        e.target.value = null;
+      }
     }
   };
 
@@ -194,6 +250,20 @@ export const EditClient = () => {
                     value={formData.password}
                     onChange={handleInputChange}
                     placeholder="Enter new password"
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <label htmlFor="file" className="form-label">
+                    Profile image
+                  </label>
+                  <input
+                    type="file"
+                    className="form-control"
+                    id="file"
+                    name="file"
+                    onChange={handleFileChange}
                     disabled={loading}
                   />
                 </div>

@@ -1,33 +1,46 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
 export const EditDocument = () => {
-  const { dispatch } = useGlobalReducer();
+  const { store, dispatch } = useGlobalReducer();
   const { documentId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || `/documents/view/${documentId}`;
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
   const [formData, setFormData] = useState({
     name: "",
-    type: "",
-    url_route: "",
     description: "",
     category: "",
+    document_date: ""
   });
 
+  const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState(null);
 
-  // Opciones predefinidas para type y category
-  const documentTypes = [
-    "PDF", "Word", "Excel", "Image", "Audio", "Video", "Other"
-  ];
+  const initialLinked =
+    location.state?.courtfileId
+      ? { id: location.state.courtfileId, number: location.state.courtfileNumber, title: location.state.courtfileTitle }
+      : null;
+
+  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
 
   const documentCategories = [
-    "Legal", "Contract", "Evidence", "Report", "Correspondence", "Financial", "Other"
+    "Resolution / Ruling",
+    "Party Filing",
+    "Evidence",
+    "Precautionary Measure / Urgent Request",
+    "Public Prosecutor's Office Action",
+    "Relevant Judicial Proceeding",
+    "Official Letter / Communication",
+    "Judgment",
+    "Costs and Fees",
+    "Internal Note / Reminder"
   ];
 
   const fetchDocument = async () => {
@@ -38,7 +51,12 @@ export const EditDocument = () => {
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
-      setFormData(data);
+      setFormData({
+        name: data.name || "",
+        description: data.description || "",
+        category: data.category || "",
+        document_date: data.document_date || ""
+      });
       setError(null);
     } catch (err) {
       console.error("Error fetching document:", err);
@@ -52,6 +70,30 @@ export const EditDocument = () => {
     if (documentId) fetchDocument();
   }, [documentId]);
 
+  useEffect(() => {
+    const fetchLinked = async () => {
+      try {
+        if (linkedCourtfile || !documentId) return;
+        const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
+        const token = auth?.token;
+        const resp = await fetch(`${API}/api/courtfile-document`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!resp.ok) return;
+        const rows = await resp.json();
+        const rel = (rows || []).find(r => Number(r.document_id) === Number(documentId));
+        if (rel) {
+          setLinkedCourtfile({
+            id: rel.courtfile_id,
+            number: rel.courtfile_number,
+            title: rel.courtfile_title
+          });
+        }
+      } catch { /* noop */ }
+    };
+    fetchLinked();
+  }, [API, documentId, linkedCourtfile]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -60,22 +102,47 @@ export const EditDocument = () => {
     }));
   };
 
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    setFile(selectedFile);
+    if (selectedFile) {
+      setError(null);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
+      // Crear FormData para enviar archivo y datos
+      const data = new FormData();
+      data.append("name", formData.name);
+      data.append("description", formData.description);
+      data.append("category", formData.category);
+      data.append("document_date", formData.document_date);
+
+      // Solo agregar el archivo si se seleccionó uno nuevo
+      if (file) {
+        data.append("file", file);
+      }
+
+      const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
+      const token = auth?.token;
+
       const response = await fetch(`${API}/api/documents/${documentId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: data,
       });
 
       if (response.ok) {
         const updatedDocument = await response.json();
         dispatch({ type: "UPDATE_DOCUMENT", payload: updatedDocument });
-        navigate(`/documents/view/${documentId}`);
+        navigate(returnTo, { replace: true });
         alert("Document updated successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -108,8 +175,8 @@ export const EditDocument = () => {
         <div className="alert alert-danger">
           <i className="bi bi-exclamation-triangle"></i> {error}
         </div>
-        <Link to="/documents" className="btn btn-primary">
-          Back to Documents
+        <Link to={returnTo} className="btn btn-primary">
+          Back
         </Link>
       </div>
     );
@@ -122,10 +189,19 @@ export const EditDocument = () => {
           {/* Header */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h1>Edit Document</h1>
-            <Link to="/documents" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
+            <Link to={returnTo} className="btn btn-outline-secondary">
+              <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
+
+          {linkedCourtfile && (
+            <div className="mb-3">
+              <span className="badge bg-dark mt-1 mb-2">
+                Linked to Case {linkedCourtfile.number || `#${linkedCourtfile.id}`}
+                {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
+              </span>
+            </div>
+          )}
 
           {/* Form */}
           <div className="card">
@@ -153,45 +229,39 @@ export const EditDocument = () => {
                   />
                 </div>
 
+                {/* Input para subir archivo */}
                 <div className="mb-3">
-                  <label htmlFor="type" className="form-label">
-                    Document Type *
-                  </label>
-                  <select
-                    className="form-select"
-                    id="type"
-                    name="type"
-                    value={formData.type}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                  >
-                    <option value="">Select document type</option>
-                    {documentTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="mb-3">
-                  <label htmlFor="url_route" className="form-label">
-                    URL Route *
+                  <label htmlFor="file" className="form-label">
+                    Replace File (Optional)
                   </label>
                   <input
-                    type="url"
+                    type="file"
                     className="form-control"
-                    id="url_route"
-                    name="url_route"
-                    value={formData.url_route}
-                    onChange={handleInputChange}
-                    required
+                    id="file"
+                    name="file"
+                    onChange={handleFileChange}
                     disabled={loading}
                   />
                   <div className="form-text">
-                    The full URL path to the document
+                    Leave empty to keep the current file. Allowed: documents, images, audio, video
                   </div>
+                </div>
+
+                {/* Input fecha del documento */}
+                <div className="mb-3">
+                  <label htmlFor="document_date" className="form-label">
+                    Document Date
+                  </label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    id="document_date"
+                    name="document_date"
+                    value={formData.document_date}
+                    onChange={handleInputChange}
+                    disabled={loading}
+                  />
+                  <div className="form-text">Used for the case timeline</div>
                 </div>
 
                 <div className="mb-3">
@@ -227,12 +297,13 @@ export const EditDocument = () => {
                     onChange={handleInputChange}
                     rows="3"
                     disabled={loading}
+                    placeholder="Enter document description (optional)"
                   />
                 </div>
 
                 {/* Buttons */}
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to={`/documents/view/${documentId}`} className="btn btn-secondary me-md-2">
+                  <Link to={returnTo} className="btn btn-secondary me-md-2">
                     Cancel
                   </Link>
                   <button type="submit" className="btn btn-primary" disabled={loading}>

@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -6,6 +6,8 @@ export const EditDeadline = () => {
   const { dispatch } = useGlobalReducer();
   const { deadlineId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || `/deadlines/view/${deadlineId}`;
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
@@ -16,6 +18,12 @@ export const EditDeadline = () => {
     priority: "medium",
   });
 
+  const initialLinked =
+    location.state?.courtfileId
+      ? { id: location.state.courtfileId, number: location.state.courtfileNumber, title: location.state.courtfileTitle }
+      : null;
+
+  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState(null);
@@ -49,9 +57,54 @@ export const EditDeadline = () => {
     }
   };
 
+  const fetchLinkedCourtfile = async () => {
+    try {
+      const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
+      const token = auth?.token;
+      const resp = await fetch(`${API}/api/deadlines-courtfiles`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const rows = await resp.json();
+      const rel = (rows || []).find(r => Number(r.deadline_id) === Number(deadlineId));
+      if (rel) {
+        setLinkedCourtfile({
+          id: rel.courtfile_id,
+          number: rel.courtfile_number,
+          title: rel.courtfile_title
+        });
+      } else {
+        setLinkedCourtfile(null);
+      }
+    } catch (e) {
+      console.warn("Could not fetch linked courtfile:", e);
+      setLinkedCourtfile(null);
+    }
+  };
+
   useEffect(() => {
-    if (deadlineId) fetchDeadline();
-  }, [deadlineId]);
+  if (deadlineId) {
+    fetchDeadline();
+    if (!linkedCourtfile) fetchLinkedCourtfile();
+  }
+}, [deadlineId, linkedCourtfile, API]);
+
+  useEffect(() => {
+    const loadCf = async () => {
+      try {
+        if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
+          const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`);
+          if (resp.ok) {
+            const d = await resp.json();
+            setLinkedCourtfile(cf => ({ ...(cf || {}), number: d.case_number, title: d.title }));
+          }
+        }
+      } catch (e) {
+        // noop
+      }
+    };
+    loadCf();
+  }, [API, linkedCourtfile?.id]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -73,7 +126,7 @@ export const EditDeadline = () => {
       if (response.ok) {
         const updatedDeadline = await response.json();
         dispatch({ type: "UPDATE_DEADLINE", payload: updatedDeadline });
-        navigate(`/deadlines/view/${deadlineId}`);
+        navigate(returnTo, { replace: true });
         alert("Deadline updated successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -109,6 +162,19 @@ export const EditDeadline = () => {
     );
   }
 
+  // helpers
+  const timeToMinutes = (hhmm) => {
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  };
+
+  const times15 = Array.from({ length: (24 * 60) / 15 }, (_, i) => {
+    const total = i * 15;
+    const hh = String(Math.floor(total / 60)).padStart(2, "0");
+    const mm = String(total % 60).padStart(2, "0");
+    return `${hh}:${mm}`;
+  });
+
   return (
     <div className="container mt-4">
       <div className="row justify-content-center">
@@ -116,10 +182,17 @@ export const EditDeadline = () => {
           {/* Header */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h1>Edit Deadline</h1>
-            <Link to="/deadlines" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
+            <Link to={returnTo} className="btn btn-outline-secondary">
+              <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
+
+          {linkedCourtfile && (
+            <span className="badge bg-dark mt-1 mb-2">
+              Related to Courtfile {linkedCourtfile.number || "—"}
+              {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
+            </span>
+          )}
 
           {/* Form */}
           <div className="card">
@@ -132,23 +205,10 @@ export const EditDeadline = () => {
 
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
-                  <label htmlFor="deadline_type" className="form-label">Deadline Type *</label>
-                  <select
-                    className="form-select"
-                    id="deadline_type"
-                    name="deadline_type"
-                    value={formData.deadline_type}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                  >
-                    <option value="">Select a Type</option>
-                    {Deadline_Categories.map(type => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
+                  <label className="form-label">Deadline Type</label>
+                  <div className="form-control-plaintext">
+                    {formData.deadline_type}
+                  </div>
                 </div>
 
                 <div className="mb-3">
@@ -167,16 +227,22 @@ export const EditDeadline = () => {
 
                 <div className="mb-3">
                   <label htmlFor="deadline_hour" className="form-label">Deadline Time *</label>
-                  <input
-                    type="time"
-                    className="form-control"
+                  <select
+                    className="form-select"
                     id="deadline_hour"
                     name="deadline_hour"
                     value={formData.deadline_hour}
                     onChange={handleInputChange}
                     required
                     disabled={loading}
-                  />
+                  >
+                    <option value="" disabled>Select time…</option>
+                    {times15.map(t => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="mb-3">
@@ -198,7 +264,7 @@ export const EditDeadline = () => {
                 </div>
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to={`/deadlines/view/${deadlineId}`} className="btn btn-secondary me-md-2">Cancel</Link>
+                  <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>
                   <button type="submit" className="btn btn-primary" disabled={loading}>
                     {loading ? (
                       <>

@@ -1,11 +1,20 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, Navigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
 export const EditPayment = () => {
-  const { dispatch } = useGlobalReducer();
-  const { paymentId } = useParams();
-  const navigate = useNavigate();
+  const { store, dispatch } = useGlobalReducer();
+  const params = useParams();
+  const paymentId = params.paymentId ?? params.id;
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || `/payments/view/${paymentId}`;
+
+  if (!paymentId) {
+    return <Navigate to="/payments" replace />;
+  }
+
+  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
+  const role = auth?.role;
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
@@ -15,6 +24,8 @@ export const EditPayment = () => {
     status: "",
     means: "",
   });
+
+  const isLawyerReadOnly = role === "lawyer" && formData.status === "approved";
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -50,12 +61,13 @@ export const EditPayment = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isLawyerReadOnly) return;
     setLoading(true);
     setError(null);
     try {
       const payload = { ...formData };
       if (!payload.password) delete payload.password;
-      
+
       const response = await fetch(`${API}/api/payments/${paymentId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -65,7 +77,7 @@ export const EditPayment = () => {
       if (response.ok) {
         const updatedPayment = await response.json();
         dispatch({ type: "UPDATE_PAYMENT", payload: updatedPayment });
-        navigate(`/payments/view/${paymentId}`);
+        navigate(returnTo, { replace: true });
         alert("Payment updated successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -96,7 +108,7 @@ export const EditPayment = () => {
         <div className="alert alert-danger">
           <i className="bi bi-exclamation-triangle"></i> {error}
         </div>
-        <Link to="/payments" className="btn btn-primary">Back to Payments</Link>
+        <Link to={returnTo} className="btn btn-primary">Back</Link>
       </div>
     );
   }
@@ -108,12 +120,17 @@ export const EditPayment = () => {
           {/* Header */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h1>Edit Payment</h1>
-            <Link to="/payments" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
+            <Link to={returnTo} className="btn btn-outline-secondary">
+              <i className="bi bi-arrow-left"></i> Back 
             </Link>
           </div>
 
           {/* Form */}
+          {isLawyerReadOnly && (
+            <div className="alert alert-info mb-3">
+              This payment is approved and cannot be edited by a lawyer.
+            </div>
+          )}
           <div className="card">
             <div className="card-body">
               {error && (
@@ -133,7 +150,7 @@ export const EditPayment = () => {
                     value={formData.amount}
                     onChange={handleInputChange}
                     required
-                    disabled={loading}
+                    disabled={loading || isLawyerReadOnly}
                   />
                 </div>
 
@@ -147,19 +164,19 @@ export const EditPayment = () => {
                     value={formData.currency}
                     onChange={handleInputChange}
                     required
-                    disabled={loading}
+                    disabled={loading || isLawyerReadOnly}
                   />
                 </div>
 
                 <div className="mb-3">
                   <label htmlFor="status" className="form-label">Status *</label>
-                  <select class="form-select" aria-label="Default select example"
+                  <select className="form-select" aria-label="Default select example"
                     id="status"
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
                     required
-                    disabled={loading}
+                    disabled={loading || isLawyerReadOnly}
                     defaultValue={""}
                   >
                     <option value="">Select status</option>
@@ -180,13 +197,13 @@ export const EditPayment = () => {
                     onChange={handleInputChange}
                     required
                     placeholder="Payment method"
-                    disabled={loading}
+                    disabled={loading || isLawyerReadOnly}
                   />
                 </div>
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to={`/payments/view/${paymentId}`} className="btn btn-secondary me-md-2">Cancel</Link>
-                  <button type="submit" className="btn btn-primary" disabled={loading}>
+                  <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>
+                  <button type="submit" className="btn btn-primary" disabled={loading || isLawyerReadOnly}>
                     {loading ? (
                       <>
                         <span className="spinner-border spinner-border-sm" role="status"></span>

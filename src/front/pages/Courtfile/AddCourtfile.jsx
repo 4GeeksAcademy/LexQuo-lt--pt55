@@ -14,6 +14,12 @@ export const AddCourtfile = () => {
     const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
     const token = auth?.token;
 
+    const afterCreatePath = (role, id, fallback) =>
+        role === "lawyer"
+            ? `/courtfiles/ViewCourtfileLawyer/${id}`
+            : (fallback || "/courtfiles");
+
+
     const [formData, setFormData] = useState({
         case_number: '',
         title: '',
@@ -84,7 +90,8 @@ export const AddCourtfile = () => {
                     }
                 }
 
-                navigate(returnTo); // [CAMBIO]
+                const target = afterCreatePath(auth?.role, newCourtfile.id, returnTo);
+                navigate(target, { replace: true });
 
                 alert('Courtfile created successfully!');
             } else {
@@ -95,7 +102,7 @@ export const AddCourtfile = () => {
             console.error('Error creating courtfile:', error);
             setError(error.message);
         } finally {
-            setLinking(false); 
+            setLinking(false);
             setLoading(false);
         }
     };
@@ -106,9 +113,7 @@ export const AddCourtfile = () => {
                 <div className="col-md-8">
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <h1>Add New Courtfile</h1>
-                        <Link to="/courtfiles" className="btn btn-outline-secondary">
-                            <i className="bi bi-arrow-left"></i> Back to List
-                        </Link>
+                        <Link to={returnTo} className="btn btn-outline-secondary"> <i className="bi bi-arrow-left"></i>Back</Link>
                     </div>
 
                     <div className="card">

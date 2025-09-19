@@ -11,6 +11,8 @@ from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
 from flask_jwt_extended import JWTManager
+from api.ai import bp_ai
+from flask_cors import CORS
 
 # from models import Person
 
@@ -19,6 +21,10 @@ static_file_dir = os.path.join(os.path.dirname(
     os.path.realpath(__file__)), '../dist/')
 app = Flask(__name__)
 app.url_map.strict_slashes = False
+
+# === Habilitar CORS ===
+# modo abierto (dev):
+CORS(app)
 
 # JWT Configuration - ADD THIS SECTION
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "fallback-secret-key-change-in-production")
@@ -45,7 +51,7 @@ setup_commands(app)
 
 # Add all endpoints form the API with a "api" prefix
 app.register_blueprint(api, url_prefix='/api')
-
+app.register_blueprint(bp_ai)
 # Handle/serialize errors like a JSON object
 
 

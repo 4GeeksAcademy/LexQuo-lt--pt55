@@ -311,12 +311,89 @@ export const DashboardLawyer = () => {
         }
     };
 
+    // ....................... FLUJO COMPLETO PARA PAYMENTS ..........................................
+    const [payments, setPayments] = useState([]);
+    const [loadingPayments, setLoadingPayments] = useState(false);
+    const [paymentsErr, setPaymentsErr] = useState("");
+    const [deletingPaymentRelId, setDeletingPaymentRelId] = useState(null);
+
+    const fetchPayments = async () => {
+        try {
+            setLoadingPayments(true);
+            setPaymentsErr("");
+            const resp = await fetch(`${API}/api/payments-courtfile?expand=payment`, {
+                headers: { Authorization: `Bearer ${auth.token}` },
+            });
+            if (!resp.ok) {
+                const e = await resp.json().catch(() => ({}));
+                throw new Error(e.error || `HTTP ${resp.status}`);
+            }
+            const rows = await resp.json(); // [{ id (relation), courtfile_id, payment: {...} }]
+            setPayments(rows.map(r => ({ relation_id: r.id, courtfile_id: r.courtfile_id, ...(r.payment || {}) })));
+        } catch (e) {
+            setPaymentsErr(e.message || "Error fetching payments");
+        } finally {
+            setLoadingPayments(false);
+        }
+    };
+
+    const handleDeletePaymentRelation = async (relationId) => {
+        if (!authed) return;
+        if (!window.confirm("Unlink this payment from the case?")) return;
+        try {
+            setDeletingPaymentRelId(relationId);
+            const resp = await fetch(`${API}/api/payments-courtfile/${relationId}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${auth.token}` },
+            });
+            if (!resp.ok) {
+                const e = await resp.json().catch(() => ({}));
+                throw new Error(e.error || `HTTP ${resp.status}`);
+            }
+            await fetchPayments();
+        } catch (err) {
+            alert(err.message || "Error unlinking payment");
+        } finally {
+            setDeletingPaymentRelId(null);
+        }
+    };
+
+    const handleMarkPaid = async (paymentId) => {
+        if (!authed) return;
+        try {
+            const resp = await fetch(`${API}/api/payments/${paymentId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${auth.token}`
+                },
+                body: JSON.stringify({ status: "approved" })
+            });
+            if (!resp.ok) {
+                const e = await resp.json().catch(() => ({}));
+                throw new Error(e.error || `HTTP ${resp.status}`);
+            }
+            await fetchPayments();
+        } catch (err) {
+            alert(err.message || "Error marking payment as paid");
+        }
+    };
+
+    // Mapa para mostrar case_number/title
+    const caseById = useMemo(() => {
+        const m = new Map();
+        for (const cf of cases) m.set(cf.id, cf);
+        return m;
+    }, [cases]);
+
+
     useEffect(() => {
         if (!authed) return;
         fetchCases();
         fetchDeadlines();
         fetchAppointments();
         fetchClients();
+        fetchPayments();
     }, [API, authed, auth?.token, dispatch]);
 
 
@@ -380,15 +457,16 @@ export const DashboardLawyer = () => {
                                             <td className="text-end">
                                                 <Link
                                                     to={`/courtfiles/ViewCourtfileLawyer/${cf.id}`}
+                                                    state={{ returnTo: "/DashboardLawyer" }}
                                                     className="btn btn-sm btn-info me-1"
                                                     title="View"
                                                 >
                                                     <i className="bi bi-eye"></i>
                                                 </Link>
 
-                                                {/* Opcional: solo si tenés ruta de edición */}
                                                 <Link
                                                     to={`/courtfiles/${cf.id}`}
+                                                    state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${cf.id}` }}
                                                     className="btn btn-sm btn-warning me-1"
                                                     title="Edit"
                                                 >
@@ -415,6 +493,7 @@ export const DashboardLawyer = () => {
                         </div>
                     )}
 
+                    {/* DEADLINES */}
                     <div className="mt-5 text-start">
                         <div className="d-flex justify-content-between align-items-center">
                             <h3>DEADLINES</h3>
@@ -471,6 +550,7 @@ export const DashboardLawyer = () => {
                                                 <td className="text-end">
                                                     <Link
                                                         to={`/deadlines/view/${dl.deadline_id}`}
+                                                        state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${dl.courtfile_id}` }}
                                                         className="btn btn-sm btn-info me-1"
                                                         title="View"
                                                     >
@@ -478,6 +558,7 @@ export const DashboardLawyer = () => {
                                                     </Link>
                                                     <Link
                                                         to={`/deadlines/${dl.deadline_id}`}
+                                                        state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${dl.courtfile_id}` }}
                                                         className="btn btn-sm btn-warning me-1"
                                                         title="Edit"
                                                     >
@@ -500,7 +581,7 @@ export const DashboardLawyer = () => {
                         )}
                     </div>
 
-
+                    {/* appointments */}
                     <div className="mt-5 text-start">
                         <div className="d-flex justify-content-between align-items-center">
                             <h3>APPOINTMENTS</h3>
@@ -555,6 +636,7 @@ export const DashboardLawyer = () => {
                                                 <td className="text-end">
                                                     <Link
                                                         to={`/appointments/view/${ap.appointment_id}`}
+                                                        state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${ap.courtfile_id}` }}
                                                         className="btn btn-sm btn-info me-1"
                                                         title="View"
                                                     >
@@ -562,6 +644,7 @@ export const DashboardLawyer = () => {
                                                     </Link>
                                                     <Link
                                                         to={`/appointments/${ap.appointment_id}`}
+                                                        state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${ap.courtfile_id}` }}
                                                         className="btn btn-sm btn-warning me-1"
                                                         title="Edit"
                                                     >
@@ -588,6 +671,7 @@ export const DashboardLawyer = () => {
                         )}
                     </div>
 
+                    {/* CLIENTS */}
                     <div className="mt-5 text-start">  {/* [NEW] */}
                         <div className="d-flex justify-content-between align-items-center">
                             <h3>CLIENTS</h3>
@@ -631,6 +715,119 @@ export const DashboardLawyer = () => {
                                                 </td>
                                             </tr>
                                         ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* ================= PAYMENTS ================= */}
+                    <div className="mt-5 text-start">
+                        <div className="d-flex justify-content-between align-items-center">
+                            <h3>PAYMENTS</h3>
+
+                        </div>
+
+                        {loadingPayments && <p className="mt-3">Loading payments...</p>}
+                        {paymentsErr && <div className="alert alert-danger mt-3">{paymentsErr}</div>}
+                        {!loadingPayments && !paymentsErr && payments.length === 0 && (
+                            <div className="alert alert-info mt-3">
+                                No payments linked yet. Please add one!
+                            </div>
+                        )}
+
+                        {!loadingPayments && payments.length > 0 && (
+                            <div className="table-responsive mt-3">
+                                <table className="table table-striped table-hover">
+                                    <thead className="table-dark">
+                                        <tr>
+                                            <th style={{ width: "90px" }}>Payment</th>
+                                            <th>Amount</th>
+                                            <th>Currency</th>
+                                            <th>Status</th>
+                                            <th>Means</th>
+                                            <th>Paid At</th>
+                                            <th>Case Number</th>
+                                            <th>Case Title</th>
+                                            <th className="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {payments.map(p => {
+                                            const cf = caseById.get(p.courtfile_id);
+                                            return (
+                                                <tr key={`${p.id}-${p.relation_id}`}>
+                                                    <td>#{p.id}</td>
+                                                    <td>{p.amount}</td>
+                                                    <td>{p.currency}</td>
+                                                    <td>
+                                                        <span className={`badge ${p.status === "approved" ? "bg-success"
+                                                            : p.status === "pending" ? "bg-warning"
+                                                                : "bg-danger"
+                                                            }`}>
+                                                            {p.status || "—"}
+                                                        </span>
+                                                    </td>
+                                                    <td>{p.means || "—"}</td>
+                                                    <td>{p.paid_at ? new Date(p.paid_at).toLocaleString() : "—"}</td>
+                                                    <td>{cf?.case_number || "—"}</td>
+                                                    <td className="text-truncate" style={{ maxWidth: 260 }} title={cf?.title}>{cf?.title || "—"}</td>
+                                                    <td className="text-end">
+
+                                                        <Link
+                                                            to={`/payments/view/${p.id}`}
+                                                            state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${p.courtfile_id}` }}
+                                                            className="btn btn-sm btn-info me-1"
+                                                            title="View"
+                                                        >
+                                                            <i className="bi bi-eye"></i>
+                                                        </Link>
+
+                                                        <Link
+                                                            to={p.status === "approved" ? "#" : `/payments/${p.id}`}
+                                                            state={p.status === "approved" ? undefined : { returnTo: `/courtfiles/ViewCourtfileLawyer/${p.courtfile_id}` }}
+                                                            className={`btn btn-sm btn-warning me-1 ${p.status === "approved" ? "disabled" : ""}`}
+                                                            aria-disabled={p.status === "approved"}
+                                                            title={p.status === "approved" ? "Approved payments are read-only" : "Edit"}
+                                                            onClick={(e) => { if (p.status === "approved") e.preventDefault(); }}
+                                                        >
+                                                            <i className="bi bi-pencil"></i>
+                                                        </Link>
+
+                                                        {p.status === "pending" && (
+                                                            <button
+                                                                onClick={() => handleMarkPaid(p.id)}
+                                                                className="btn btn-sm btn-success me-1"
+                                                                title="Mark as paid"
+                                                            >
+                                                                <i className="bi bi-cash"></i>
+                                                            </button>
+                                                        )}
+
+                                                        <button
+                                                            className="btn btn-sm btn-danger"
+                                                            title={
+                                                                p.status === "approved"
+                                                                    ? "Cannot unlink an approved payment"
+                                                                    : (p.relation_id ? "Unlink" : "No link available")
+                                                            }
+                                                            disabled={
+                                                                p.status === "approved" ||
+                                                                !p.relation_id ||
+                                                                deletingPaymentRelId === p.relation_id
+                                                            }
+                                                            onClick={() => handleDeletePaymentRelation(p.relation_id)}
+                                                        >
+                                                            {deletingPaymentRelId === p.relation_id ? (
+                                                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                            ) : (
+                                                                <i className="bi bi-trash"></i>
+                                                            )}
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>

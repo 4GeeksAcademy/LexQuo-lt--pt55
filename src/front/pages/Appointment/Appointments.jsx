@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import React, { useEffect } from "react"
 import useGlobalReducer from "../../hooks/useGlobalReducer";
+import MapComponent from "../../components/Map/MapComponent";
+import LocationAutocomplete from "../../components/Map/LocationAutocomplete";
 
 
 export const Appointments = () => {
@@ -68,6 +70,7 @@ export const Appointments = () => {
                                 <th>ID</th>
                                 <th>Title</th>
                                 <th>Location</th>
+                                <th>Details</th>
                                 <th>Date</th>
                                 <th>Starts at</th>
                                 <th>Ends at</th>
@@ -82,6 +85,13 @@ export const Appointments = () => {
                                     </td>
                                     <td>{appointment.title}</td>
                                     <td>{appointment.location}</td>
+                                    <td title={appointment.details || 'Sin detalles'}>
+                                        {appointment.details ? (
+                                            <i className="bi bi-info-circle" title={appointment.details}></i>
+                                        ) : (
+                                            '-'
+                                        )}
+                                    </td>
                                     <td>{appointment.date}</td>
                                     <td>{appointment.starts_at}</td>
                                     <td>{appointment.ends_at}</td>

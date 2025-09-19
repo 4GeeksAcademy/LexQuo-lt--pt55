@@ -1,22 +1,37 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import MapComponent from "../../components/Map/MapComponent";
+import LocationAutocomplete from "../../components/Map/LocationAutocomplete";
 
 export const EditAppointment = () => {
   const { dispatch } = useGlobalReducer();
   const { appointmentId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || `/appointments/view/${appointmentId}`;
 
   const API = import.meta.env.VITE_BACKEND_URL;
+
+  const initialLinked =
+    location.state?.courtfileId
+      ? { id: location.state.courtfileId, number: location.state.courtfileNumber, title: location.state.courtfileTitle }
+      : null;
+
+  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
 
   const [formData, setFormData] = useState({
     title: "",
     location: "",
+    details: "",
     date: "",
     starts_at: "",
     ends_at: "",
+    latitud: null,
+    longitud: null
   });
 
+  const [mapPosition, setMapPosition] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState(null);
@@ -28,8 +43,24 @@ export const EditAppointment = () => {
       if (!response.ok) {
         throw new Error(`Failed to load appointment data. Status: ${response.status}`);
       }
+      const toHHMM = (v) => {
+        if (!v) return "";
+        // acepta "19:30" o "19:30:00"
+        const m = String(v).match(/^(\d{2}):(\d{2})/);
+        return m ? `${m[1]}:${m[2]}` : "";
+      };
+
       const data = await response.json();
-      setFormData(data);
+      setFormData({
+        ...data,
+        starts_at: toHHMM(data.starts_at),
+        ends_at: toHHMM(data.ends_at),
+      });
+
+      if (data.latitud && data.longitud) {
+        setMapPosition([data.latitud, data.longitud]);
+      }
+
       setError(null);
     } catch (err) {
       console.error("Error fetching appointment:", err);
@@ -39,13 +70,98 @@ export const EditAppointment = () => {
     }
   };
 
+  // helpers
+  const timeToMinutes = (hhmm) => {
+    if (!hhmm) return 0;
+    const [h, m] = hhmm.split(":").map(Number);
+    return h * 60 + m;
+  };
+  const addMinutes = (hhmm, delta) => {
+    if (!hhmm) return "";
+    const [h, m] = hhmm.split(":").map(Number);
+    const base = new Date(2000, 0, 1, h, m, 0);
+    const plus = new Date(base.getTime() + delta * 60000);
+    const hh = String(plus.getHours()).padStart(2, "0");
+    const mm = String(plus.getMinutes()).padStart(2, "0");
+    return `${hh}:${mm}`;
+  };
+
+  // opciones 00:00, 00:15, ... 23:45
+  const times15 = Array.from({ length: (24 * 60) / 15 }, (_, i) => {
+    const total = i * 15;
+    const hh = String(Math.floor(total / 60)).padStart(2, "0");
+    const mm = String(total % 60).padStart(2, "0");
+    return `${hh}:${mm}`;
+  });
+
+  // handlers
+  const handleStartSelect = (e) => {
+    const starts = e.target.value;
+    const ends = addMinutes(starts, 30); // +30’
+    setFormData(prev => ({ ...prev, starts_at: starts, ends_at: ends }));
+  };
+  const handleEndSelect = (e) => {
+    const ends = e.target.value;
+    setFormData(prev => ({ ...prev, ends_at: ends }));
+  };
+
+  // mostrar en Ends sólo >= Starts (opcional)
+  const endOptions = formData.starts_at
+    ? times15.filter(t => timeToMinutes(t) >= timeToMinutes(formData.starts_at))
+    : times15;
+
   useEffect(() => {
     if (appointmentId) fetchAppointment();
   }, [appointmentId]);
 
+  useEffect(() => {
+    const fetchLinked = async () => {
+      try {
+        if (linkedCourtfile || !appointmentId) return;
+        const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
+        const token = auth?.token;
+        const resp = await fetch(`${API}/api/appointments-courtfiles`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!resp.ok) return;
+        const rows = await resp.json();
+        const rel = (rows || []).find(r => Number(r.appointment_id) === Number(appointmentId));
+        if (rel) {
+          setLinkedCourtfile({
+            id: rel.courtfile_id,
+            number: rel.courtfile_number,
+            title: rel.courtfile_title
+          });
+        }
+      } catch (e) {
+        // noop
+      }
+    };
+    fetchLinked();
+  }, [API, appointmentId, linkedCourtfile]);
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+  };
+
+  const handleLocationSelect = (locationData) => {
+    setFormData(prev => ({
+      ...prev,
+      location: locationData.address,
+      latitud: locationData.lat,
+      longitud: locationData.lng
+    }));
+    setMapPosition([locationData.lat, locationData.lng]);
+  };
+
+  const handleMapPositionChange = (lat, lng) => {
+    setFormData(prev => ({
+      ...prev,
+      latitud: lat,
+      longitud: lng
+    }));
+    setMapPosition([lat, lng]);
   };
 
   const handleSubmit = async (e) => {
@@ -65,7 +181,7 @@ export const EditAppointment = () => {
       if (response.ok) {
         const updatedAppointment = await response.json();
         dispatch({ type: "UPDATE_APPOINTMENT", payload: updatedAppointment });
-        navigate(`/appointments/view/${appointmentId}`);
+        navigate(returnTo, { replace: true });
         alert("Appointment updated successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -96,7 +212,7 @@ export const EditAppointment = () => {
         <div className="alert alert-danger">
           <i className="bi bi-exclamation-triangle"></i> {error}
         </div>
-        <Link to="/appointments" className="btn btn-primary">Back to Appointment</Link>
+        <Link to={returnTo} className="btn btn-primary">Back</Link>
       </div>
     );
   }
@@ -108,10 +224,19 @@ export const EditAppointment = () => {
           {/* Header */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h1>Edit Appointment</h1>
-            <Link to="/appointments" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
+            <Link to={returnTo} className="btn btn-outline-secondary">
+              <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
+
+          {linkedCourtfile && (
+            <div className="mb-3">
+              <span className="badge bg-dark mt-1 mb-2">
+                Linked to Case {linkedCourtfile.number || `#${linkedCourtfile.id}`}
+                {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
+              </span>
+            </div>
+          )}
 
           {/* Form */}
           <div className="card">
@@ -139,16 +264,45 @@ export const EditAppointment = () => {
 
                 <div className="mb-3">
                   <label htmlFor="location" className="form-label">Location *</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="location"
-                    name="location"
+                  <LocationAutocomplete
+                    onLocationSelect={handleLocationSelect}
                     value={formData.location}
+                    onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
+                  />
+                  <div className="form-text">
+                    Search for a location or drag the marker on the map
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label htmlFor="details" className="form-label">Add details</label>
+                  <textarea
+                    className="form-control"
+                    id="details"
+                    name="details"
+                    value={formData.details}
                     onChange={handleInputChange}
-                    required
+                    placeholder="floor, appartment, reference, etc."
                     disabled={loading}
                   />
+                  <div className="form-text">
+                    Additional information such as floor, apartment, or references
+                  </div>
+                </div>
+
+                {/* Mapa */}
+                <div className="mb-3">
+                  <label className="form-label">Mapa</label>
+                  <MapComponent
+                    position={mapPosition}
+                    onPositionChange={handleMapPositionChange}
+                    readonly={false}
+                  />
+                  {formData.latitud && formData.longitud && (
+                    <div className="form-text">
+                      Coordenadas: {formData.latitud?.toFixed(6)}, {formData.longitud?.toFixed(6)}
+                    </div>
+                  )}
                 </div>
 
                 <div className="mb-3">
@@ -167,35 +321,35 @@ export const EditAppointment = () => {
                 </div>
 
                 <div className="mb-3">
-                  <label htmlFor="starts_at" className="form-label">Starts At *</label>
-                  <input
-                    type="time"
-                    className="form-control"
-                    id="starts_at"
-                    name="starts_at"
-                    value={formData.starts_at}
-                    onChange={handleInputChange}
+                  <label className="form-label">Starts At *</label>
+                  <select
+                    className="form-select"
+                    value={formData.starts_at || ""}
+                    onChange={handleStartSelect}
                     required
                     disabled={loading}
-                  />
+                  >
+                    <option value="" disabled>Select…</option>
+                    {times15.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
                 </div>
 
                 <div className="mb-3">
-                  <label htmlFor="ends_at" className="form-label">Ends At *</label>
-                  <input
-                    type="time"
-                    className="form-control"
-                    id="ends_at"
-                    name="ends_at"
-                    value={formData.ends_at}
-                    onChange={handleInputChange}
+                  <label className="form-label">Ends At *</label>
+                  <select
+                    className="form-select"
+                    value={formData.ends_at || ""}
+                    onChange={handleEndSelect}
                     required
                     disabled={loading}
-                  />
+                  >
+                    <option value="" disabled>Select…</option>
+                    {endOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
                 </div>
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to={`/appointments`} className="btn btn-secondary me-md-2">Cancel</Link>
+                  <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>
                   <button type="submit" className="btn btn-primary" disabled={loading}>
                     {loading ? (
                       <>
