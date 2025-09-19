@@ -91,32 +91,38 @@ export const AddPayment = () => {
 
                 <div className="mb-3">
                   <label htmlFor="currency" className="form-label">Currency *</label>
-                  <input
-                    type="text"
+                  <select
                     className="form-control"
                     id="currency"
                     name="currency"
                     value={formData.currency}
                     onChange={handleInputChange}
                     required
-                    placeholder="currency"
                     disabled={loading}
-                  />
+                  >
+                    <option value="">-- Select currency --</option>
+                    <option value="pesos">CLP</option>
+                    <option value="dolares">USD</option>
+                    <option value="pesos">ARG</option>
+                  </select>
                 </div>
 
                 <div className="mb-3">
                   <label htmlFor="means" className="form-label">Means *</label>
-                  <input
-                    type="means"
+                  <select
                     className="form-control"
                     id="means"
                     name="means"
                     value={formData.means}
                     onChange={handleInputChange}
                     required
-                    placeholder="Payment method"
                     disabled={loading}
-                  />
+                  >
+                    <option value="">-- Select Means --</option>
+                    <option value="mercadopago">MercadoPago</option>
+                    <option value="paypal">PayPal</option>
+                    <option value="cash">Cash</option>
+                  </select>
                 </div>
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
