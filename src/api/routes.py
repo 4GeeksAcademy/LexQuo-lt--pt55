@@ -4,7 +4,7 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 import os
 import cloudinary
 import cloudinary.uploader
-
+import urllib.request
 from datetime import datetime
 from sqlalchemy import select, func
 from flask import Flask, request, jsonify, url_for, Blueprint
@@ -13,6 +13,7 @@ from api.utils import generate_sitemap, APIException
 from datetime import datetime, UTC
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from sqlalchemy.orm import joinedload
 
@@ -965,69 +966,162 @@ def get_document(document_id):
 @api.route('/documents', methods=['POST'])
 def create_document():
     try:
-        data = request.get_json()
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
 
-        required_fields = ['name', 'type', 'url_route', 'document_date']
-        for field in required_fields:
-            if field not in data:
-                return jsonify({'error': f'Required field: {field}'}), 400
+        file = request.files['file']
 
-        from datetime import datetime
-        try:
-            if len(data['document_date']) == 10:
-                doc_date = datetime.strptime(data['document_date'], "%Y-%m-%d")
-            else:
-                doc_date = datetime.fromisoformat(data['document_date'])
-        except Exception:
-            return jsonify({'error': 'Invalid document_date format'}), 400
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
 
-        document = Document(
-            name=data['name'],
-            type=data['type'],
-            url_route=data['url_route'],
-            description=data.get('description'),
-            category=data.get('category'),
-            document_date=doc_date
+        allowed_extensions = {
+            'pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'xls', 'xlsx',
+            'ppt', 'pptx', 'csv', 'jpg', 'jpeg', 'png', 'gif', 'bmp',
+            'tiff', 'webp', 'svg', 'mp3', 'wav', 'ogg', 'flac', 'aac',
+            'm4a', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'
+        }
+
+        original_filename = secure_filename(file.filename)
+        file_extension = original_filename.rsplit(
+            '.', 1)[1].lower() if '.' in original_filename else ''
+
+        if not file_extension or file_extension not in allowed_extensions:
+            return jsonify({'error': 'File type not allowed'}), 400
+
+        name = request.form.get('name')
+        description = request.form.get('description', None)
+        category = request.form.get('category', None)
+        document_date = request.form.get('document_date', None)
+
+        if not name:
+            return jsonify({'error': 'Document name is required'}), 400
+
+        resource_type = "auto"
+        if file_extension in ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv']:
+            resource_type = "raw"
+
+        upload_result = cloudinary.uploader.upload(
+            file,
+            folder="documents/",
+            resource_type=resource_type,
+            use_filename=True,
+            unique_filename=True,
+            filename_override=original_filename
         )
 
-        db.session.add(document)
+        file_url = upload_result['secure_url']
+
+        if resource_type == "raw":
+            filename_only = original_filename
+            file_url += f"?fl_attachment={filename_only}"
+
+        new_document = Document(
+            name=name,
+            type=file_extension,
+            url_route=file_url,
+            description=description,
+            category=category,
+            document_date=document_date
+        )
+
+        if document_date:
+            try:
+                new_document.document_date = datetime.strptime(
+                    document_date, '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+
+        db.session.add(new_document)
         db.session.commit()
 
-        return jsonify(document.serialize()), 201
+        return jsonify({
+            **new_document.serialize(),
+            'original_filename': original_filename
+        }), 201
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        print(f"Error creating document: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @api.route('/documents/<int:document_id>', methods=['PUT'])
 def update_document(document_id):
     try:
         document = Document.query.get_or_404(document_id)
-        data = request.get_json()
 
-        if 'name' in data:
-            document.name = data['name']
+        if 'file' in request.files:
+            file = request.files['file']
 
-        if 'type' in data:
-            document.type = data['type']
+            if file and file.filename != '':
+                allowed_extensions = {
+                    'pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'xls', 'xlsx',
+                    'ppt', 'pptx', 'csv', 'jpg', 'jpeg', 'png', 'gif', 'bmp',
+                    'tiff', 'webp', 'svg', 'mp3', 'wav', 'ogg', 'flac', 'aac',
+                    'm4a', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'
+                }
 
-        if 'url_route' in data:
-            document.url_route = data['url_route']
+                original_filename = secure_filename(file.filename)
+                file_extension = original_filename.rsplit(
+                    '.', 1)[1].lower() if '.' in original_filename else ''
 
-        if 'description' in data:
-            document.description = data['description']
+                if not file_extension or file_extension not in allowed_extensions:
+                    return jsonify({'error': 'File type not allowed.'}), 400
 
-        if 'category' in data:
-            document.category = data['category']
+                resource_type = "raw" if file_extension in [
+                    'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'] else "auto"
+
+                upload_params = {
+                    'folder': "documents/",
+                    'resource_type': resource_type,
+                    'use_filename': True,
+                    'unique_filename': True,
+                    'filename_override': original_filename
+                }
+
+                upload_result = cloudinary.uploader.upload(
+                    file, **upload_params)
+
+                file_url = upload_result['secure_url']
+
+                office_extensions = ['doc', 'docx',
+                                     'xls', 'xlsx', 'ppt', 'pptx', 'csv']
+                if file_extension in office_extensions:
+                    file_url += f"?fl_attachment={original_filename}"
+                elif file_extension == 'pdf':
+                    file_url = upload_result['secure_url']
+
+                document.url_route = file_url
+                document.type = file_extension
+
+                if hasattr(document, 'original_filename'):
+                    document.original_filename = original_filename
+
+        if request.form:
+            if 'name' in request.form:
+                document.name = request.form['name']
+            if 'description' in request.form:
+                document.description = request.form['description']
+            if 'category' in request.form:
+                document.category = request.form['category']
+            if 'document_date' in request.form and request.form['document_date']:
+                try:
+                    document.document_date = datetime.strptime(
+                        request.form['document_date'], '%Y-%m-%d').date()
+                except ValueError:
+                    return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
 
         db.session.commit()
 
-        return jsonify(document.serialize()), 200
+        return jsonify({
+            **document.serialize(),
+            'original_filename': document.original_filename if hasattr(document, 'original_filename') else original_filename
+        }), 200
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        print(f"Error updating document: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @api.route('/documents/<int:document_id>', methods=['DELETE'])
