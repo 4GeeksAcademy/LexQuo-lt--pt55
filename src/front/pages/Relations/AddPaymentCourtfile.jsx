@@ -14,7 +14,7 @@ export const AddPaymentCourtfile = () => {
 
   const [payments, setPayments] = useState([])
   const [courtfiles, setCourtfiles] = useState([])
-  
+  console.log(courtfiles)
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -110,45 +110,45 @@ export const AddPaymentCourtfile = () => {
               )}
 
               <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label htmlFor="payment" className="form-label">Payment *</label>
-                  <select className="form-select" aria-label="Default select example"
-                    id="payment"
-                    name="payment"
-                    value={formData.payment}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                    defaultValue={""}
-                  >
-                    <option value="" disabled>Select payment</option>
-                    {payments && payments.length > 0 && payments.map(p =>{
-                      return(
-                    <option key={p.id} value={p.id}>Payment: {p.id}</option>
-                      )
-                    })}
-                  </select>
-                </div>
+            <div className="mb-3">
+              <label htmlFor="payment" className="form-label">Payment *</label>
+              <select
+                className="form-select"
+                id="payment"
+                name="payment"
+                value={formData.payment}
+                onChange={handleInputChange}
+                required
+                disabled={loading}
+              >
+                <option value="" disabled>Select payment</option>
+                {payments && payments.length > 0 && payments.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {`$${p.amount} - ${p.method || "Payment"}`}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-                                <div className="mb-3">
-                  <label htmlFor="courtfile" className="form-label">Status *</label>
-                  <select className="form-select" aria-label="Default select example"
-                    id="courtfile"
-                    name="courtfile"
-                    value={formData.courtfile}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                    defaultValue={""}
-                  >
-                    <option value="" disabled>Select courtfile</option>
-                    {courtfiles && courtfiles.length > 0 && courtfiles.map(c =>{
-                      return(
-                    <option key={c.id} value={c.id}>Courtfile: {c.id}</option>
-                      )
-                    })}
-                  </select>
-                </div>
+            <div className="mb-3">
+              <label htmlFor="courtfile" className="form-label">Courtfile *</label>
+              <select
+                className="form-select"
+                id="courtfile"
+                name="courtfile"
+                value={formData.courtfile}
+                onChange={handleInputChange}
+                required
+                disabled={loading}
+              >
+                <option value="" disabled>Select courtfile</option>
+                {courtfiles && courtfiles.length > 0 && courtfiles.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {`Expediente: ${c.case_number}`}
+                  </option>
+                ))}
+              </select>
+            </div>
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
                   <Link to="/PaymentCourtfiles" className="btn btn-secondary me-md-2">Cancel</Link>
