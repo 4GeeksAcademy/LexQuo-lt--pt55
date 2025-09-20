@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 0578984eb8b4
+Revision ID: 10d902f3004e
 Revises: 
-Create Date: 2025-09-19 15:05:41.339930
+Create Date: 2025-09-19 23:43:53.039303
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '0578984eb8b4'
+revision = '10d902f3004e'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -176,6 +176,22 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_lawyer_courtfile_courtfile_id'), ['courtfile_id'], unique=False)
         batch_op.create_index(batch_op.f('ix_lawyer_courtfile_lawyer_id'), ['lawyer_id'], unique=False)
 
+    op.create_table('message',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id_courtfile', sa.Integer(), nullable=False),
+    sa.Column('sender', sa.String(length=20), nullable=False),
+    sa.Column('client_id', sa.Integer(), nullable=True),
+    sa.Column('lawyer_id', sa.Integer(), nullable=True),
+    sa.Column('texto', sa.Text(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['client_id'], ['client.id'], ),
+    sa.ForeignKeyConstraint(['id_courtfile'], ['courtfile.id'], ),
+    sa.ForeignKeyConstraint(['lawyer_id'], ['lawyer.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('message', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_message_id_courtfile'), ['id_courtfile'], unique=False)
+
     op.create_table('payment_courtfile',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('payment_id', sa.Integer(), nullable=False),
@@ -198,6 +214,10 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_payment_courtfile_courtfile_id'))
 
     op.drop_table('payment_courtfile')
+    with op.batch_alter_table('message', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_message_id_courtfile'))
+
+    op.drop_table('message')
     with op.batch_alter_table('lawyer_courtfile', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_lawyer_courtfile_lawyer_id'))
         batch_op.drop_index(batch_op.f('ix_lawyer_courtfile_courtfile_id'))

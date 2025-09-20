@@ -174,6 +174,18 @@ export const ViewCourtfileClient = () => {
             </div>
           </div>
 
+          <Link
+            to="/ChatOnDemand"
+            state={{
+              courtfileId: courtfile.id,
+              senderRole: "lawyer",
+              returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
+            }}
+            className="btn btn-outline-success"
+          >
+            <i className="bi bi-chat-dots"></i> Chat
+          </Link>
+
           <div className="card">
             <div className="card-header bg-dark text-white">
               <h5 className="card-title mb-0">
