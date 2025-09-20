@@ -8,7 +8,7 @@ import urllib.request
 from datetime import datetime
 from sqlalchemy import select, func
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import Courtfile, PaymentCourtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment
+from api.models import Courtfile, PaymentCourtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, Message
 from api.utils import generate_sitemap, APIException
 from datetime import datetime, UTC
 from flask_cors import CORS
@@ -2006,4 +2006,60 @@ def delete_payment_courtfile(id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-# -----------------------------END PAYMENTS COURTFILE ROUTES-----------------------------------------------------
+
+
+
+# -----------------------------RUTAS MENSAJES-----------------------------------------------------
+def _parse_iso(ts: str):
+    # acepta "2025-09-19T16:30:00" o "2025-09-19T16:30:00Z"
+    try:
+        ts = ts.rstrip("Z")
+        return datetime.fromisoformat(ts)
+    except Exception:
+        return None
+
+# GET /api/messages?courtfile_id=21&since=2025-09-19T16:30:00
+@api.route("/messages", methods=["GET"])
+def list_messages():
+    courtfile_id = request.args.get("courtfile_id", type=int)
+    if not courtfile_id:
+        return jsonify({"error": "courtfile_id requerido"}), 400
+
+    since_str = request.args.get("since")
+    q = Message.query.filter(Message.id_courtfile == courtfile_id)
+    if since_str:
+        since_dt = _parse_iso(since_str)
+        if since_dt:
+            q = q.filter(Message.created_at > since_dt)
+
+    rows = q.order_by(Message.created_at.asc()).limit(100).all()
+    return jsonify([m.to_front_dict() for m in rows])
+
+@api.route("/messages", methods=["POST"])
+def create_message():
+    data = request.get_json() or {}
+    cfid = data.get("courtfile_id")
+    text = (data.get("text") or "").strip()
+    role = (data.get("sender_role") or "").strip().lower()
+
+    if not cfid or not text or role not in {"lawyer", "client", "admin"}:
+        return jsonify({"error": "courtfile_id, text y sender_role válidos son requeridos"}), 400
+    
+    lawyer_id = None
+    client_id = None
+    
+    if role == "lawyer":
+        lawyer_id = data.get("sender_id")  
+    elif role == "client":
+        client_id = data.get("sender_id")  
+
+    msg = Message(
+        id_courtfile=cfid,   
+        texto=text,         
+        sender=role,        
+        lawyer_id=lawyer_id,
+        client_id=client_id,
+    )
+    db.session.add(msg)
+    db.session.commit()
+    return jsonify(msg.to_front_dict()), 201

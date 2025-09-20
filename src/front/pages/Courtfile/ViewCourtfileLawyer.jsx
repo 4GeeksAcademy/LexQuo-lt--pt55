@@ -176,7 +176,7 @@ export const ViewCourtfileLawyer = () => {
         relation_id: r.id,
         courtfile_id: r.courtfile_id,
         client_id: r.client_id,
-        client_name: r.client_name,  
+        client_name: r.client_name,
         client_email: r.client_email,
         client_phone: r.client_phone
       }));
@@ -526,6 +526,18 @@ export const ViewCourtfileLawyer = () => {
               </button>
             </div>
           </div>
+
+          <Link
+            to="/ChatOnDemand"
+            state={{
+              courtfileId: courtfile.id,
+              senderRole: "lawyer",
+              returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
+            }}
+            className="btn btn-outline-success"
+          >
+            <i className="bi bi-chat-dots"></i> Chat
+          </Link>
 
           {/* Card con detalles */}
           <div className="card">

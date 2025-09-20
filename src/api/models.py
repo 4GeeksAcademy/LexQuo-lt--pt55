@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean, Text, Date, Time, DateTime, ForeignKey, Time, Float, Enum
+from sqlalchemy import String, Boolean, Text, Date, Time, DateTime, ForeignKey, Float, Enum
+from sqlalchemy import func
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from typing import List
 from werkzeug.security import generate_password_hash
@@ -9,7 +10,49 @@ import enum
 
 db = SQLAlchemy()
 
+class Message(db.Model):
+    __tablename__ = "message"
 
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    # <- TU NOMBRE DE COLUMNA
+    id_courtfile: Mapped[int] = mapped_column(
+        ForeignKey("courtfile.id"), index=True, nullable=False
+    )
+
+    # 'lawyer' | 'client' | 'admin'
+    sender: Mapped[str] = mapped_column(String(20), nullable=False)
+
+    # <- TUS CAMPOS
+    client_id: Mapped[int] = mapped_column(ForeignKey("client.id"), nullable=True)
+    lawyer_id: Mapped[int] = mapped_column(ForeignKey("lawyer.id"), nullable=True)
+
+    # <- TU NOMBRE DE COLUMNA
+    texto: Mapped[str] = mapped_column(Text, nullable=False)
+
+    created_at: Mapped["datetime"] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    # Relaciones (las FK client/lawyer son opcionales)
+    courtfile: Mapped["Courtfile"] = relationship("Courtfile", back_populates="messages", lazy="joined")
+    client = relationship("Client", lazy="joined", foreign_keys=[client_id])
+    lawyer = relationship("Lawyer", lazy="joined", foreign_keys=[lawyer_id])
+
+    # ------ Helpers para serializar como lo espera el FRONT ------
+    def to_front_dict(self):
+        """Devuelve el shape que ya usa tu ChatOnDemand.jsx"""
+        return {
+            "id": self.id,
+            "courtfile_id": self.id_courtfile,          # <- mapeo
+            "sender_role": self.sender,                 # <- mapeo
+            "sender_id": self.lawyer_id if self.sender == "lawyer" else (
+                self.client_id if self.sender == "client" else None
+            ),
+            "text": self.texto,                         # <- mapeo
+            "created_at": (self.created_at.isoformat() if self.created_at else None)
+        }
+    
 class Lawyer(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     firstname: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -134,6 +177,12 @@ class Courtfile(db.Model):
                      ] = relationship(back_populates="courtfile")
     payment_courtfiles: Mapped[List["PaymentCourtfile"]
                                ] = relationship(back_populates="courtfile")
+    messages = relationship(
+        "Message",
+        back_populates="courtfile",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
 
     def __str__(self):
         return self.case_number
