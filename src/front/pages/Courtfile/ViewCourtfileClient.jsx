@@ -178,8 +178,10 @@ export const ViewCourtfileClient = () => {
             to="/ChatOnDemand"
             state={{
               courtfileId: courtfile.id,
-              senderRole: "lawyer",
-              returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
+              courtfileNumber: courtfile.case_number,
+              courtfileTitle: courtfile.title,
+              senderRole: "client",
+              returnTo: `/courtfiles/ViewCourtfileClient/${courtfile.id}`
             }}
             className="btn btn-outline-success"
           >

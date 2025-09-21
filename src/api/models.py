@@ -10,6 +10,7 @@ import enum
 
 db = SQLAlchemy()
 
+
 class Message(db.Model):
     __tablename__ = "message"
 
@@ -24,8 +25,10 @@ class Message(db.Model):
     sender: Mapped[str] = mapped_column(String(20), nullable=False)
 
     # <- TUS CAMPOS
-    client_id: Mapped[int] = mapped_column(ForeignKey("client.id"), nullable=True)
-    lawyer_id: Mapped[int] = mapped_column(ForeignKey("lawyer.id"), nullable=True)
+    client_id: Mapped[int] = mapped_column(
+        ForeignKey("client.id"), nullable=True)
+    lawyer_id: Mapped[int] = mapped_column(
+        ForeignKey("lawyer.id"), nullable=True)
 
     # <- TU NOMBRE DE COLUMNA
     texto: Mapped[str] = mapped_column(Text, nullable=False)
@@ -35,13 +38,21 @@ class Message(db.Model):
     )
 
     # Relaciones (las FK client/lawyer son opcionales)
-    courtfile: Mapped["Courtfile"] = relationship("Courtfile", back_populates="messages", lazy="joined")
+    courtfile: Mapped["Courtfile"] = relationship(
+        "Courtfile", back_populates="messages", lazy="joined")
     client = relationship("Client", lazy="joined", foreign_keys=[client_id])
     lawyer = relationship("Lawyer", lazy="joined", foreign_keys=[lawyer_id])
 
     # ------ Helpers para serializar como lo espera el FRONT ------
     def to_front_dict(self):
         """Devuelve el shape que ya usa tu ChatOnDemand.jsx"""
+        if self.sender == "lawyer" and self.lawyer:
+            name = f"{self.lawyer.firstname} {self.lawyer.lastname}".strip()
+        elif self.sender == "client" and self.client:
+            name = f"{self.client.firstname} {self.client.lastname}".strip()
+        else:
+            name = self.sender
+
         return {
             "id": self.id,
             "courtfile_id": self.id_courtfile,          # <- mapeo
@@ -49,10 +60,12 @@ class Message(db.Model):
             "sender_id": self.lawyer_id if self.sender == "lawyer" else (
                 self.client_id if self.sender == "client" else None
             ),
+            "sender_name": name, 
             "text": self.texto,                         # <- mapeo
             "created_at": (self.created_at.isoformat() if self.created_at else None)
         }
-    
+
+
 class Lawyer(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
     firstname: Mapped[str] = mapped_column(String(50), nullable=False)
