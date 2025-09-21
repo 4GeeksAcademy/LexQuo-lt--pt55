@@ -531,6 +531,8 @@ export const ViewCourtfileLawyer = () => {
             to="/ChatOnDemand"
             state={{
               courtfileId: courtfile.id,
+              courtfileNumber: courtfile.case_number,
+              courtfileTitle: courtfile.title,
               senderRole: "lawyer",
               returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
             }}
