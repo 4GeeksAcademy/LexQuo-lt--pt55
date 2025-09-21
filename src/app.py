@@ -98,7 +98,7 @@ def handle_message(data):
     role = (data.get("sender_role") or "").strip().lower()
     sender_id = data.get("sender_id")
 
-    if not cfid or not text or role not in {"lawyer", "client", "admin"}:
+    if not cfid or not text or role not in {"lawyer", "client", "admin_user"}:
         return
 
     lawyer_id = sender_id if role == "lawyer" else None
