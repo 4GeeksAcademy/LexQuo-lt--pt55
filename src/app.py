@@ -1,10 +1,10 @@
-"""
-This module takes care of starting the API Server, Loading the DB and Adding the endpoints
-"""
+# src/main.py
 import os
-from flask import Flask, request, jsonify, url_for, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory
 from flask_migrate import Migrate
-from flask_swagger import swagger
+from flask_cors import CORS
+from flask_socketio import SocketIO, emit, join_room
+
 from api.utils import APIException, generate_sitemap
 from api.models import db, Message
 from api.routes import api
@@ -12,60 +12,60 @@ from api.admin import setup_admin
 from api.commands import setup_commands
 from flask_jwt_extended import JWTManager
 from api.ai import bp_ai
-from flask_cors import CORS
-from flask_socketio import SocketIO, emit, join_room
 
-
-# from models import Person
-
-socketio = SocketIO(cors_allowed_origins="*", async_mode="threading")
+# === 1) Definí el origen del FRONT (EXACTO, el de tu 3000) ===
+FRONTEND_ORIGIN = os.getenv(
+    "FRONTEND_ORIGIN",
+    "https://ideal-system-pjg4rvjjppq7fr9rq-3000.app.github.dev"  # reemplazalo si cambió
+)
 
 ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
-static_file_dir = os.path.join(os.path.dirname(
-    os.path.realpath(__file__)), '../dist/')
+static_file_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../dist/')
+
+# === 2) app, CORS y SocketIO (en ese orden) ===
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 
-# === Habilitar CORS ===
-# modo abierto (dev):
 CORS(
     app,
-    resources={r"/api/*": {"origins": "*"}, r"/socket.io/*": {"origins": "*"}},
+    resources={
+        r"/api/*": {"origins": [FRONTEND_ORIGIN]},
+        r"/socket.io/*": {"origins": [FRONTEND_ORIGIN]},
+    },
     supports_credentials=True,
+    allow_headers=["Content-Type", "Authorization"],
+    methods=["GET", "POST", "OPTIONS"],
 )
 
-# JWT Configuration - ADD THIS SECTION
-app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "fallback-secret-key-change-in-production")
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 86400 
-jwt = JWTManager(app)  
+socketio = SocketIO(
+    app,
+    cors_allowed_origins=[FRONTEND_ORIGIN],
+    async_mode="threading",
+)
 
-# database condiguration
+# === 3) Resto de configuración ===
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "fallback-secret-key-change-in-production")
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 86400
+jwt = JWTManager(app)
+
 db_url = os.getenv("DATABASE_URL")
-if db_url is not None:
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace(
-        "postgres://", "postgresql://")
+if db_url:
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace("postgres://", "postgresql://")
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////tmp/test.db"
-
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 MIGRATE = Migrate(app, db, compare_type=True)
 db.init_app(app)
 
-# add the admin
 setup_admin(app)
-
-# add the admin
 setup_commands(app)
-
-# Add all endpoints form the API with a "api" prefix
 app.register_blueprint(api, url_prefix='/api')
 app.register_blueprint(bp_ai)
-# Handle/serialize errors like a JSON object
 
-socketio.init_app(app, cors_allowed_origins="*")
+# === 4) NO usar socketio.init_app nuevamente ===
+# socketio.init_app(...)  <-- ELIMINADO
 
-# -------------------- Socket.IO handlers (básicos) --------------------
-
+# -------------------- Socket.IO handlers --------------------
 @socketio.on("join")
 def handle_join(data):
     cfid = data.get("courtfile_id")
@@ -73,7 +73,6 @@ def handle_join(data):
         return
     join_room(f"courtfile_{cfid}")
 
-    # === HISTORIAL: últimos 100 mensajes de ese expediente, en orden ASC (viejo->nuevo) ===
     rows = (
         db.session.query(Message)
         .filter(Message.id_courtfile == cfid)
@@ -81,18 +80,11 @@ def handle_join(data):
         .limit(100)
         .all()
     )
-
     payload = [m.to_front_dict() for m in rows]
-
-    # Enviar SOLO al socket que se acaba de unir (no a toda la sala)
     emit("history", payload, to=request.sid)
 
 @socketio.on("message")
 def handle_message(data):
-    """
-    Recibe { courtfile_id, text, sender_role, sender_id? } desde el cliente,
-    guarda en la DB y emite 'new_message' a la sala del expediente.
-    """
     cfid = data.get("courtfile_id")
     text = (data.get("text") or "").strip()
     role = (data.get("sender_role") or "").strip().lower()
@@ -114,15 +106,11 @@ def handle_message(data):
     db.session.add(msg)
     db.session.commit()
 
-    # Empujamos al resto de clientes del expediente
     socketio.emit("new_message", msg.to_front_dict(), to=f"courtfile_{cfid}")
 
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
     return jsonify(error.to_dict()), error.status_code
-
-# generate sitemap with all your endpoints
-
 
 @app.route('/')
 def sitemap():
@@ -130,17 +118,14 @@ def sitemap():
         return generate_sitemap(app)
     return send_from_directory(static_file_dir, 'index.html')
 
-# any other endpoint will try to serve it like a static file
 @app.route('/<path:path>', methods=['GET'])
 def serve_any_other_file(path):
     if not os.path.isfile(os.path.join(static_file_dir, path)):
         path = 'index.html'
     response = send_from_directory(static_file_dir, path)
-    response.cache_control.max_age = 0  # avoid cache memory
+    response.cache_control.max_age = 0
     return response
 
-
-# this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3001))
     socketio.run(app, host='0.0.0.0', port=PORT, debug=True)
