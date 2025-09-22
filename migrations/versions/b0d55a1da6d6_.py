@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 4af4331d1152
+Revision ID: b0d55a1da6d6
 Revises: 
-Create Date: 2025-09-17 17:41:51.280900
+Create Date: 2025-09-21 23:02:21.513420
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '4af4331d1152'
+revision = 'b0d55a1da6d6'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -99,9 +99,12 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('amount', sa.Float(), nullable=False),
     sa.Column('currency', sa.String(length=10), nullable=False),
-    sa.Column('status', sa.Enum('pending', 'approved', 'rejected', name='paymentstatus'), nullable=False),
+    sa.Column('status', sa.Enum('pending', 'processing', 'approved', 'rejected', name='paymentstatus'), nullable=False),
     sa.Column('paid_at', sa.DateTime(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.Column('means', sa.String(length=50), nullable=True),
+    sa.Column('stripe_payment_intent_id', sa.String(length=100), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('appointment_courtfile',
