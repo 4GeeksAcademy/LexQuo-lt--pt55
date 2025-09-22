@@ -18,6 +18,7 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 from sqlalchemy.orm import joinedload
 
 
+
 from api.validators import parse_iso_date, parse_24h_time, is_valid_24h_time, validate_required_fields, validate_time_order, create_error_response
 
 api = Blueprint('api', __name__)
@@ -2064,3 +2065,56 @@ def create_message():
     db.session.add(msg)
     db.session.commit()
     return jsonify(msg.to_front_dict()), 201
+
+# @api.route("/chat/mark-read", methods=["POST"], endpoint="chat_mark_read")
+# @jwt_required()
+# def chat_mark_read():
+#     body = request.get_json() or {}
+#     cfid = body.get("courtfile_id")
+#     role = (body.get("role") or "").lower()
+#     if role == "admin":
+#         role = "admin_user"
+#     if not cfid or role not in {"lawyer", "client", "admin_user"}:
+#         return jsonify({"error": "invalid payload"}), 400
+
+#     uid = get_jwt_identity()
+#     rec = mark_chat_read(int(uid), role, int(cfid))
+#     return jsonify({"ok": True, "last_read_at": rec.last_read_at.isoformat()})
+
+
+# @api.route("/chat/unread", methods=["GET"], endpoint="chat_unread_single")
+# @jwt_required()
+# def chat_unread_single():
+#     cfid = request.args.get("courtfile_id", type=int)
+#     role = (request.args.get("role") or "").lower()
+#     if role == "admin":
+#         role = "admin_user"
+#     if not cfid or role not in {"lawyer", "client", "admin_user"}:
+#         return jsonify({"error": "invalid params"}), 400
+
+#     uid = get_jwt_identity()
+#     count = unread_count_for(int(uid), role, int(cfid))
+#     return jsonify({"courtfile_id": cfid, "unread": int(count)})
+
+
+# @api.route("/chat/unread-bulk", methods=["POST"], endpoint="chat_unread_bulk")
+# @jwt_required()
+# def chat_unread_bulk():
+#     body = request.get_json() or {}
+#     role = (body.get("role") or "").lower()
+#     cf_ids = body.get("courtfile_ids") or []
+#     if role == "admin":
+#         role = "admin_user"
+#     if role not in {"lawyer", "client", "admin_user"} or not isinstance(cf_ids, list):
+#         return jsonify({"error": "invalid payload"}), 400
+
+#     uid = get_jwt_identity()
+#     out = []
+#     for raw in cf_ids:
+#         try:
+#             cfid = int(raw)
+#         except (TypeError, ValueError):
+#             continue
+#         cnt = unread_count_for(int(uid), role, cfid)
+#         out.append({"courtfile_id": cfid, "unread": int(cnt)})
+#     return jsonify(out)

@@ -1,11 +1,12 @@
 // src/components/ChatOnDemand.jsx
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useParams,  } from "react-router-dom";
 import { io } from "socket.io-client";
 
 export default function ChatOnDemand(props) {
   const location = useLocation();
   const API = import.meta.env.VITE_BACKEND_URL;
+  const { courtfileId: paramCourtfileId } = useParams()
 
   // === Auth (para rol y sender_id) ===
   const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
@@ -14,10 +15,13 @@ export default function ChatOnDemand(props) {
 
   // === Derivar datos desde props, state o query ===
   const query = new URLSearchParams(location.search);
-  const courtfileId =
+  const courtfileIdRaw =
     props.courtfileId ??
     location.state?.courtfileId ??
-    Number(query.get("courtfileId"));
+    query.get("courtfileId") ??
+    paramCourtfileId; // 👈 ahora también soporta /chat/:courtfileId
+
+  const courtfileId = courtfileIdRaw ? Number(courtfileIdRaw) : null;
 
   const courtfileNumber = location.state?.courtfileNumber;
   const courtfileTitle = location.state?.courtfileTitle;
@@ -155,6 +159,8 @@ export default function ChatOnDemand(props) {
     const s = io(API, {
       path: "/socket.io",
       transports: ["polling"],
+      upgrade: false,
+      rememberUpgrade: false,
       withCredentials: false,
       reconnection: true,
       reconnectionAttempts: Infinity,

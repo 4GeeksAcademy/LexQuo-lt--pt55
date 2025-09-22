@@ -416,6 +416,14 @@ export const DashboardLawyer = () => {
                             >
                                 + Create New Courtfile
                             </Link>
+                            <Link
+                                to="/chats"
+                                state={{ returnTo: "/DashboardLawyer" }}
+                                className="btn btn-sm btn-outline-primary ms-2"
+                                title="Ver todos los chats"
+                            >
+                                <i className="bi bi-chat-dots" /> All Chats
+                            </Link>
                         </div>
                     </div>
                     {loadingCases && <p>Loading courtfiles...</p>}
@@ -455,6 +463,20 @@ export const DashboardLawyer = () => {
                                                 </span>
                                             </td>
                                             <td className="text-end">
+                                                <Link
+                                                    to={`/chats/${cf.id}`}
+                                                    state={{
+                                                        courtfileId: cf.id,
+                                                        courtfileNumber: cf.case_number,
+                                                        courtfileTitle: cf.title,
+                                                        senderRole: "lawyer",
+                                                        returnTo: "/DashboardLawyer",
+                                                    }}
+                                                    className="btn btn-sm btn-outline-primary me-1"
+                                                    title="Open chat"
+                                                >
+                                                    <i className="bi bi-chat-dots"></i>
+                                                </Link>
                                                 <Link
                                                     to={`/courtfiles/ViewCourtfileLawyer/${cf.id}`}
                                                     state={{ returnTo: "/DashboardLawyer" }}
