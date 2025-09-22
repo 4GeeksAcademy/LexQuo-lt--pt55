@@ -23,6 +23,7 @@ sqlalchemy = "*"
 boto3 = "*"
 openai = "*"
 stripe = "*"
+flask-socketio = "*"
 
 [requires]
 python_version = "3.13"
