@@ -1,6 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean, Text, Date, Time, DateTime, ForeignKey, Float, Enum
-from sqlalchemy import func
+from sqlalchemy import String, Boolean, Text, Date, Time, DateTime, ForeignKey, Time, Float, Enum, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from typing import List
 from werkzeug.security import generate_password_hash
@@ -402,6 +401,7 @@ class CourtfileDocument(db.Model):
 
 class PaymentStatus(enum.Enum):
     pending = "pending"
+    processing = "processing"
     approved = "approved"
     rejected = "rejected"
 
@@ -415,7 +415,13 @@ class Payment(db.Model):
     status: Mapped[enum.Enum] = mapped_column(
         Enum(PaymentStatus), nullable=False, default=PaymentStatus.pending)
     paid_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=func.now(), onupdate=func.now(), nullable=False)
     means: Mapped[str] = mapped_column(String(50), nullable=True)
+    stripe_payment_intent_id = db.Column(db.String(100))
+
     payment_courtfiles: Mapped[List["PaymentCourtfile"]
                                ] = relationship(back_populates="payment")
 
@@ -425,7 +431,10 @@ class Payment(db.Model):
             "amount": self.amount,
             "currency": self.currency,
             "status": self.status.value,
+            "stripe_payment_intent_id": self.stripe_payment_intent_id,
             "paid_at": self.paid_at.isoformat() if self.paid_at else None,
+            "created_at": self.created_at.isoformat(),
+            "updated_at": self.updated_at.isoformat(),
             "means": self.means
         }
 

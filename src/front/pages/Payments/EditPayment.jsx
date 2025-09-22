@@ -7,6 +7,7 @@ export const EditPayment = () => {
   const params = useParams();
   const paymentId = params.paymentId ?? params.id;
   const location = useLocation();
+  const navigate = useNavigate();
   const returnTo = location.state?.returnTo || `/payments/view/${paymentId}`;
 
   if (!paymentId) {
@@ -17,6 +18,26 @@ export const EditPayment = () => {
   const role = auth?.role;
 
   const API = import.meta.env.VITE_BACKEND_URL;
+
+  // Opciones para los desplegables
+  const currencyOptions = [
+    { value: "USD", label: "USD - US Dollar" },
+    { value: "EUR", label: "EUR - Euro" },
+    { value: "ARS", label: "ARS - Argentine Peso" },
+    { value: "COP", label: "COP - Colombian Peso" },
+    { value: "MXN", label: "MXN - Mexican Peso" }
+  ];
+
+  const meansOptions = [
+    { value: "TDC", label: "TDC - Credit Card" }
+  ];
+
+  const statusOptions = [
+    { value: "pending", label: "Pending" },
+    { value: "processing", label: "Processing" },
+    { value: "approved", label: "Approved" },
+    { value: "rejected", label: "Rejected" }
+  ];
 
   const [formData, setFormData] = useState({
     amount: "",
@@ -31,10 +52,16 @@ export const EditPayment = () => {
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState(null);
 
+  // Función para capitalizar la primera letra
+  const capitalizeFirstLetter = (str) => {
+    if (!str) return "";
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
+
   const fetchPayment = async () => {
     try {
       setFetching(true);
-      const response = await fetch(`${API}/api/payments/${paymentId}`); // singular
+      const response = await fetch(`${API}/api/payments/${paymentId}`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
       setFormData(prev => ({
@@ -66,7 +93,6 @@ export const EditPayment = () => {
     setError(null);
     try {
       const payload = { ...formData };
-      if (!payload.password) delete payload.password;
 
       const response = await fetch(`${API}/api/payments/${paymentId}`, {
         method: "PUT",
@@ -143,65 +169,83 @@ export const EditPayment = () => {
                 <div className="mb-3">
                   <label htmlFor="amount" className="form-label">Amount *</label>
                   <input
-                    type="text"
+                    type="number"
+                    step="0.01"
+                    min="0"
                     className="form-control"
                     id="amount"
                     name="amount"
                     value={formData.amount}
                     onChange={handleInputChange}
                     required
+                    placeholder="0.00"
                     disabled={loading || isLawyerReadOnly}
                   />
                 </div>
 
+                {/* Currency - Desplegable */}
                 <div className="mb-3">
                   <label htmlFor="currency" className="form-label">Currency *</label>
-                  <input
-                    type="text"
-                    className="form-control"
+                  <select
+                    className="form-select"
                     id="currency"
                     name="currency"
                     value={formData.currency}
                     onChange={handleInputChange}
                     required
                     disabled={loading || isLawyerReadOnly}
-                  />
+                  >
+                    <option value="">Select currency</option>
+                    {currencyOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
+                {/* Status - Desplegable */}
                 <div className="mb-3">
                   <label htmlFor="status" className="form-label">Status *</label>
-                  <select className="form-select" aria-label="Default select example"
+                  <select
+                    className="form-select"
                     id="status"
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
                     required
                     disabled={loading || isLawyerReadOnly}
-                    defaultValue={""}
                   >
                     <option value="">Select status</option>
-                    <option value="pending">Pending</option>
-                    <option value="approved">Approved</option>
-                    <option value="rejected">Rejected</option>
+                    {statusOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
+                {/* Means - Desplegable */}
                 <div className="mb-3">
-                  <label htmlFor="means" className="form-label">Means *</label>
-                  <input
-                    type="means"
-                    className="form-control"
+                  <label htmlFor="means" className="form-label">Payment Method</label>
+                  <select
+                    className="form-select"
                     id="means"
                     name="means"
                     value={formData.means}
                     onChange={handleInputChange}
-                    required
-                    placeholder="Payment method"
                     disabled={loading || isLawyerReadOnly}
-                  />
+                  >
+                    <option value="">Select payment method</option>
+                    {meansOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                <div className="d-grid gap-2 d-md-flex justify-content-md-end">
+                <div className="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                   <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>
                   <button type="submit" className="btn btn-primary" disabled={loading || isLawyerReadOnly}>
                     {loading ? (
