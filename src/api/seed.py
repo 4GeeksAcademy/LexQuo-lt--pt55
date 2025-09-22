@@ -37,13 +37,13 @@ def seed_lawyers(session):
     rows = [
         dict(firstname="María",  lastname="González", email="maria.g@example.com",
              phone="+54 11 5555-1001", password="1234", is_active=True,
-             url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
+             url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758559963/nmqqsbodsdldg45po6mj.png"),
         dict(firstname="Juan",   lastname="Pérez",     email="juan.p@example.com",
              phone="+54 11 5555-1002", password="1234", is_active=True,
-             url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
+             url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758559963/nmqqsbodsdldg45po6mj.png"),
         dict(firstname="Lucía",  lastname="Martínez",  email="lucia.m@example.com",
              phone="+54 11 5555-1003", password="1234", is_active=True,
-             url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
+             url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758559963/nmqqsbodsdldg45po6mj.png"),
     ]
     created = 0
     for r in rows:
