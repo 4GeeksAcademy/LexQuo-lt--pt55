@@ -8,7 +8,7 @@ import stripe
 from urllib.parse import urlencode
 from sqlalchemy import select, func
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import Courtfile, PaymentCourtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, Message
+from api.models import Courtfile, PaymentCourtfile, PaymentStatus, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, Message
 from api.utils import generate_sitemap, APIException
 from datetime import datetime, UTC, timedelta
 from flask_cors import CORS
@@ -16,6 +16,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from sqlalchemy.orm import joinedload
+
 
 
 from api.validators import parse_iso_date, parse_24h_time, is_valid_24h_time, validate_required_fields, validate_time_order, create_error_response
@@ -1162,13 +1163,15 @@ def get_client_courtfiles():
         requested_courtfile_id = request.args.get('courtfile_id', type=int)
 
         role, current_id = _get_role_and_identity()
-        if role == "lawyer":
-            requested_lawyer_id = int(current_id)
 
         q = ClientCourtfile.query.options(
             joinedload(ClientCourtfile.client),
             joinedload(ClientCourtfile.courtfile)
         )
+
+        # 🔒 Si es CLIENTE logueado, sólo sus vínculos
+        if role == "client":
+            q = q.filter(ClientCourtfile.client_id == int(current_id))
 
         if requested_lawyer_id is not None:
             subq = select(LawyerCourtfile.courtfile_id).where(
@@ -1177,8 +1180,7 @@ def get_client_courtfiles():
             q = q.filter(ClientCourtfile.courtfile_id.in_(subq))
 
         if requested_courtfile_id is not None:
-            q = q.filter(ClientCourtfile.courtfile_id ==
-                         requested_courtfile_id)
+            q = q.filter(ClientCourtfile.courtfile_id == requested_courtfile_id)
 
         client_courtfiles = q.all()
         return jsonify([{
@@ -1188,12 +1190,13 @@ def get_client_courtfiles():
             'client_name': f"{cc.client.firstname} {cc.client.lastname}" if cc.client else None,
             'client_email': cc.client.email if cc.client else None,
             'client_phone': cc.client.phone if cc.client else None,
-            'courtfile_number': cc.courtfile.case_number if cc.courtfile else None,
-            'courtfile_title': cc.courtfile.title if cc.courtfile else None
+            # 🔁 Unificamos shape con /lawyers-courtfiles
+            'courtfile': cc.courtfile.serialize() if cc.courtfile else None,
         } for cc in client_courtfiles]), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 
 @api.route('/clients-courtfiles', methods=['POST'])

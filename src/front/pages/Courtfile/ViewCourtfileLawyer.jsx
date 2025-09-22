@@ -528,17 +528,16 @@ export const ViewCourtfileLawyer = () => {
           </div>
 
           <Link
-            to="/ChatOnDemand"
+            to={`/chats/${courtfile.id}`}
             state={{
-              courtfileId: courtfile.id,
               courtfileNumber: courtfile.case_number,
               courtfileTitle: courtfile.title,
               senderRole: "lawyer",
-              returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
+              returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
             }}
-            className="btn btn-outline-success"
+            className="btn btn-sm btn-outline-primary me-1"
           >
-            <i className="bi bi-chat-dots"></i> Chat
+            <i className="bi bi-chat-dots"></i>
           </Link>
 
           {/* Card con detalles */}

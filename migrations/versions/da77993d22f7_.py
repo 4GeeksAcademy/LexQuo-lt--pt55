@@ -1,14 +1,8 @@
 """empty message
 
-<<<<<<<< HEAD:migrations/versions/b0d55a1da6d6_.py
-Revision ID: b0d55a1da6d6
+Revision ID: da77993d22f7
 Revises: 
-Create Date: 2025-09-21 23:02:21.513420
-========
-Revision ID: 10d902f3004e
-Revises: 
-Create Date: 2025-09-19 23:43:53.039303
->>>>>>>> develop:migrations/versions/10d902f3004e_.py
+Create Date: 2025-09-22 18:58:02.225826
 
 """
 from alembic import op
@@ -16,11 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-<<<<<<<< HEAD:migrations/versions/b0d55a1da6d6_.py
-revision = 'b0d55a1da6d6'
-========
-revision = '10d902f3004e'
->>>>>>>> develop:migrations/versions/10d902f3004e_.py
+revision = 'da77993d22f7'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -203,6 +193,7 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('message', schema=None) as batch_op:
+        batch_op.create_index('ix_message_cf_created', ['id_courtfile', 'created_at'], unique=False)
         batch_op.create_index(batch_op.f('ix_message_id_courtfile'), ['id_courtfile'], unique=False)
 
     op.create_table('payment_courtfile',
@@ -229,6 +220,7 @@ def downgrade():
     op.drop_table('payment_courtfile')
     with op.batch_alter_table('message', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_message_id_courtfile'))
+        batch_op.drop_index('ix_message_cf_created')
 
     op.drop_table('message')
     with op.batch_alter_table('lawyer_courtfile', schema=None) as batch_op:

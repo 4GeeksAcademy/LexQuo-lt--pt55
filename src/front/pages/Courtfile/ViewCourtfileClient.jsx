@@ -1,6 +1,9 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+
+import useUnreadBadges from "../../hooks/useUnreadBadges";
+import { markNow } from "../../hooks/chatUnread";
 
 export const ViewCourtfileClient = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -12,6 +15,7 @@ export const ViewCourtfileClient = () => {
   const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
   const token = auth?.token;
   const authed = !!token;
+  const role = (auth?.role || "").toLowerCase();
 
   // ------------------- COURTFILE -------------------
   const [courtfile, setCourtfile] = useState(null);
@@ -107,6 +111,23 @@ export const ViewCourtfileClient = () => {
     fetchPayments();
   }, [API, authed, token, courtfileId]);
 
+  // ------------------- 🔔 UNREAD -------------------
+  // Usamos el id de la URL para suscribir el hook directamente
+  const caseIds = useMemo(() => [Number(courtfileId)], [courtfileId]);
+  const { unreadByCase, totalUnread, refresh: refreshUnread } = useUnreadBadges({
+    API,
+    auth,
+    role,
+    courtfileIds: caseIds,
+  });
+
+  const onOpenChatClick = () => {
+    if (auth?.user?.id && courtfileId) {
+      markNow(auth.user.id, Number(courtfileId));
+      refreshUnread();
+    }
+  };
+
   // ------------------- HELPERS -------------------
   const handlePay = async (paymentId) => {
     if (!authed) return;
@@ -175,7 +196,7 @@ export const ViewCourtfileClient = () => {
           </div>
 
           <Link
-            to="/ChatOnDemand"
+            to={`/chats/${courtfile.id}`}
             state={{
               courtfileId: courtfile.id,
               courtfileNumber: courtfile.case_number,
@@ -183,9 +204,16 @@ export const ViewCourtfileClient = () => {
               senderRole: "client",
               returnTo: `/courtfiles/ViewCourtfileClient/${courtfile.id}`
             }}
-            className="btn btn-outline-success"
+            className="btn btn-outline-success position-relative"
+            onClick={onOpenChatClick}
+            title="Open chat"
           >
             <i className="bi bi-chat-dots"></i> Chat
+            {unreadByCase.get(Number(courtfileId))?.hasUnread && (
+              <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                <span className="visually-hidden">New</span>
+              </span>
+            )}
           </Link>
 
           <div className="card">

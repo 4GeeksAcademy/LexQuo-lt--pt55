@@ -220,7 +220,7 @@ def seed_payments(session):
             currency="USD",
             status=PaymentStatus.pending,
             paid_at=None,
-            means=TDC,
+            means="TDC",
             stripe_payment_intent_id=None
         ),
         dict(

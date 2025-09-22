@@ -21,7 +21,8 @@ FRONTEND_ORIGIN = os.getenv(
 )
 
 ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
-static_file_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../dist/')
+static_file_dir = os.path.join(os.path.dirname(
+    os.path.realpath(__file__)), '../dist/')
 
 # === 2) app, CORS y SocketIO (en ese orden) ===
 app = Flask(__name__)
@@ -42,16 +43,22 @@ socketio = SocketIO(
     app,
     cors_allowed_origins=[FRONTEND_ORIGIN],
     async_mode="threading",
+    allow_upgrades=False,
+    transports=["polling"],
+    ping_timeout=25,
+    ping_interval=20,
 )
 
 # === 3) Resto de configuración ===
-app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "fallback-secret-key-change-in-production")
+app.config["JWT_SECRET_KEY"] = os.getenv(
+    "JWT_SECRET_KEY", "fallback-secret-key-change-in-production")
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 86400
 jwt = JWTManager(app)
 
 db_url = os.getenv("DATABASE_URL")
 if db_url:
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace("postgres://", "postgresql://")
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace(
+        "postgres://", "postgresql://")
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////tmp/test.db"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -63,10 +70,9 @@ setup_commands(app)
 app.register_blueprint(api, url_prefix='/api')
 app.register_blueprint(bp_ai)
 
-# === 4) NO usar socketio.init_app nuevamente ===
-# socketio.init_app(...)  <-- ELIMINADO
-
 # -------------------- Socket.IO handlers --------------------
+
+
 @socketio.on("join")
 def handle_join(data):
     cfid = data.get("courtfile_id")
@@ -84,6 +90,7 @@ def handle_join(data):
     payload = [m.to_front_dict() for m in rows]
     emit("history", payload, to=request.sid)
 
+
 @socketio.on("message")
 def handle_message(data):
     cfid = data.get("courtfile_id")
@@ -92,7 +99,7 @@ def handle_message(data):
     sender_id = data.get("sender_id")
 
     if not cfid or not text or role not in {"lawyer", "client", "admin_user"}:
-        return
+        return {"error": "payload inválido"}
 
     lawyer_id = sender_id if role == "lawyer" else None
     client_id = sender_id if role == "client" else None
@@ -108,16 +115,20 @@ def handle_message(data):
     db.session.commit()
 
     socketio.emit("new_message", msg.to_front_dict(), to=f"courtfile_{cfid}")
+    return {"ok": True, "id": msg.id}
+
 
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
     return jsonify(error.to_dict()), error.status_code
+
 
 @app.route('/')
 def sitemap():
     if ENV == "development":
         return generate_sitemap(app)
     return send_from_directory(static_file_dir, 'index.html')
+
 
 @app.route('/<path:path>', methods=['GET'])
 def serve_any_other_file(path):
@@ -126,6 +137,7 @@ def serve_any_other_file(path):
     response = send_from_directory(static_file_dir, path)
     response.cache_control.max_age = 0
     return response
+
 
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3001))
