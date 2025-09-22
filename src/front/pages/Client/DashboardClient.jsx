@@ -2,7 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { LogoutButton } from "../../components/LogoutButton";
 import { Link } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+
+import useUnreadBadges from "../../hooks/useUnreadBadges";
+import { markNow } from "../../hooks/chatUnread";
 
 export const DashboardClient = () => {
     const API = import.meta.env.VITE_BACKEND_URL;
@@ -27,6 +30,8 @@ export const DashboardClient = () => {
     }, [store?.auth]);
 
     const authed = !!auth?.token;
+    const role = (auth?.role || "").toLowerCase();
+
 
     const name = auth?.user ? `${auth.user?.firstname ?? ""} ${auth.user?.lastname ?? ""}`.trim() : "";
 
@@ -68,6 +73,33 @@ export const DashboardClient = () => {
         fetchClientData();
     }, [API, authed, auth?.token, dispatch]);
 
+    // 🔔 UNREAD (total y por expediente)
+    const caseIds = useMemo(() => (Array.isArray(cases) ? cases.map((c) => c.id) : []), [cases]);
+
+    const { unreadByCase, totalUnread, refresh: refreshUnread } = useUnreadBadges({
+        API,
+        auth,
+        role,            // "client"
+        courtfileIds: caseIds,
+    });
+
+    // Marcar leído al abrir chat general
+    const onOpenAllChats = () => {
+        if (auth?.user?.id) {
+            // Para chats generales marcamos un “now” sin courtfileId
+            markNow(auth.user.id, null);
+            refreshUnread();
+        }
+    };
+
+    // Marcar leído al abrir chat de un expediente
+    const onOpenCaseChat = (cfid) => {
+        if (auth?.user?.id && cfid) {
+            markNow(auth.user.id, cfid);
+            refreshUnread();
+        }
+    };
+
 
     return (
         <div className="container text-center mt-5">
@@ -79,6 +111,20 @@ export const DashboardClient = () => {
                     {/* COURTFILES SECTION */}
                     <div className="d-flex justify-content-between align-items-center">
                         <h3>COURTFILES</h3>
+                        <Link
+                            to="/chats"
+                            state={{ returnTo: "/DashboardClient" }}
+                            className="btn btn-sm btn-outline-primary position-relative"
+                            title="View all chats"
+                            onClick={onOpenAllChats}
+                        >
+                            <i className="bi bi-chat-dots" /> All Chats
+                            {totalUnread > 0 && (
+                                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    {totalUnread}
+                                </span>
+                            )}
+                        </Link>
                     </div>
                     {!loadingCases && cases.length > 0 && (
                         <div className="table-responsive">
@@ -117,6 +163,26 @@ export const DashboardClient = () => {
                                                 )) || 'No lawyers assigned'}
                                             </td>
                                             <td className="text-end">
+                                                <Link
+                                                    to={`/chats/${cf.id}`}
+                                                    state={{
+                                                        courtfileId: cf.id,
+                                                        courtfileNumber: cf.case_number,
+                                                        courtfileTitle: cf.title,
+                                                        senderRole: "client",
+                                                        returnTo: "/DashboardClient",
+                                                    }}
+                                                    className="btn btn-sm btn-outline-primary me-1 position-relative"
+                                                    title="Open chat"
+                                                    onClick={() => onOpenCaseChat(cf.id)}
+                                                >
+                                                    <i className="bi bi-chat-dots"></i>
+                                                    {unreadByCase.get(cf.id)?.hasUnread && (
+                                                        <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                                                            <span className="visually-hidden">New</span>
+                                                        </span>
+                                                    )}
+                                                </Link>
                                                 <Link
                                                     to={`/courtfiles/viewclient/${cf.id}`}
                                                     className="btn btn-sm btn-info me-1"

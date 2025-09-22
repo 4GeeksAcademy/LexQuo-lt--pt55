@@ -1,9 +1,10 @@
-import { Navigate } from "react-router-dom";
 import { LogoutButton } from "../../components/LogoutButton";
-import { Link, useParams } from "react-router-dom";
+import { Navigate, Link, useParams } from "react-router-dom";
 import PropTypes from "prop-types";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import React, { useEffect, useState, useMemo } from "react";
+import useUnreadBadges from "../../hooks/useUnreadBadges";
+import { markNow } from "../../hooks/chatUnread";
 
 export const DashboardLawyer = () => {
 
@@ -29,12 +30,15 @@ export const DashboardLawyer = () => {
 
     const authed = !!auth?.token;
 
+    const role = (auth?.role || "").toLowerCase();
+
     if (auth?.role !== 'lawyer') return <Navigate to="/403" replace />;
 
     const name =
         auth?.user
             ? `Dr/a. ${auth.user?.firstname ?? ""} ${auth.user?.lastname ?? ""}`.trim()
             : sessionStorage.getItem("user_name") || "";
+
 
     //....................... FLUJO COMPLETO PARA COURTFILES..........................................
     const [cases, setCases] = useState([]);
@@ -156,6 +160,22 @@ export const DashboardLawyer = () => {
             setCasesErr(e.message || "Error fetching courtfiles");
         } finally {
             setLoadingCases(false);
+        }
+    };
+
+    // 🔔 UNREAD: depende de cases (¡después de declararlo!)
+    const caseIds = Array.isArray(cases) ? cases.map((c) => c.id) : [];
+    const { unreadByCase, totalUnread, refresh: refreshUnread } = useUnreadBadges({
+        API,
+        auth,
+        role,
+        courtfileIds: caseIds,
+    });
+
+    const onOpenChatClick = (cfid) => {
+        if (auth?.user?.id) {
+            markNow(auth.user.id, cfid);
+            refreshUnread();
         }
     };
 
@@ -419,10 +439,15 @@ export const DashboardLawyer = () => {
                             <Link
                                 to="/chats"
                                 state={{ returnTo: "/DashboardLawyer" }}
-                                className="btn btn-sm btn-outline-primary ms-2"
+                                className="btn btn-sm btn-outline-primary ms-2 position-relative"
                                 title="Ver todos los chats"
                             >
                                 <i className="bi bi-chat-dots" /> All Chats
+                                {totalUnread > 0 && (
+                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                        {totalUnread}
+                                    </span>
+                                )}
                             </Link>
                         </div>
                     </div>
@@ -472,10 +497,16 @@ export const DashboardLawyer = () => {
                                                         senderRole: "lawyer",
                                                         returnTo: "/DashboardLawyer",
                                                     }}
-                                                    className="btn btn-sm btn-outline-primary me-1"
+                                                    className="btn btn-sm btn-outline-primary me-1 position-relative"
                                                     title="Open chat"
+                                                    onClick={() => onOpenChatClick(cf.id)}
                                                 >
                                                     <i className="bi bi-chat-dots"></i>
+                                                    {unreadByCase.get(cf.id)?.hasUnread && (
+                                                        <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                                                            <span className="visually-hidden">New</span>
+                                                        </span>
+                                                    )}
                                                 </Link>
                                                 <Link
                                                     to={`/courtfiles/ViewCourtfileLawyer/${cf.id}`}

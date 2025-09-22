@@ -1,7 +1,8 @@
 // src/components/ChatOnDemand.jsx
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { useLocation, Link, useParams,  } from "react-router-dom";
+import { useLocation, Link, useParams, } from "react-router-dom";
 import { io } from "socket.io-client";
+import { setLastRead, getLastRead } from "../hooks/chatUnread.jsx";
 
 export default function ChatOnDemand(props) {
   const location = useLocation();
@@ -40,7 +41,7 @@ export default function ChatOnDemand(props) {
       if (role === "lawyer") {
         returnTo = `/courtfiles/ViewCourtfileLawyer/${courtfileId}`;
       } else if (role === "client") {
-        returnTo = `/courtfiles/ViewCourtfileClient/${courtfileId}`;
+        returnTo = `/courtfiles/Viewclient/${courtfileId}`;
       } else {
         returnTo = `/`;
       }
@@ -48,6 +49,7 @@ export default function ChatOnDemand(props) {
       returnTo = `/`;
     }
   }
+
 
   // Validación de rol
   const allowedRoles = new Set(["lawyer", "client", "admin_user"]);
@@ -231,6 +233,9 @@ export default function ChatOnDemand(props) {
         });
 
         saveCache(arr, lastTsRef.current);
+        if (currentUserId && courtfileId && lastTsRef.current) {
+          setLastRead(currentUserId, courtfileId, lastTsRef.current);
+        }
         setTimeout(scrollToBottom, 0);
       } else {
         // Mantener mensajes optimistas si no hay historial
@@ -255,6 +260,9 @@ export default function ChatOnDemand(props) {
         return newMessages;
       });
       setTimeout(scrollToBottom, 0);
+      if (currentUserId && courtfileId && msg?.created_at) {
+        setLastRead(currentUserId, courtfileId, msg.created_at);
+      }
     };
 
     const handleError = (error) => {
@@ -293,6 +301,14 @@ export default function ChatOnDemand(props) {
   useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
+
+  useEffect(() => {
+    return () => {
+      if (currentUserId && courtfileId && lastTsRef.current) {
+        setLastRead(currentUserId, courtfileId, lastTsRef.current);
+      }
+    };
+  }, [courtfileId, currentUserId]);
 
   if (!courtfileId) {
     return (
