@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: a8a2ba47d32e
+Revision ID: da77993d22f7
 Revises: 
-Create Date: 2025-09-21 22:55:22.871615
+Create Date: 2025-09-22 18:58:02.225826
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'a8a2ba47d32e'
+revision = 'da77993d22f7'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -99,9 +99,12 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('amount', sa.Float(), nullable=False),
     sa.Column('currency', sa.String(length=10), nullable=False),
-    sa.Column('status', sa.Enum('pending', 'approved', 'rejected', name='paymentstatus'), nullable=False),
+    sa.Column('status', sa.Enum('pending', 'processing', 'approved', 'rejected', name='paymentstatus'), nullable=False),
     sa.Column('paid_at', sa.DateTime(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.Column('means', sa.String(length=50), nullable=True),
+    sa.Column('stripe_payment_intent_id', sa.String(length=100), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('appointment_courtfile',
@@ -190,6 +193,7 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('message', schema=None) as batch_op:
+        batch_op.create_index('ix_message_cf_created', ['id_courtfile', 'created_at'], unique=False)
         batch_op.create_index(batch_op.f('ix_message_id_courtfile'), ['id_courtfile'], unique=False)
 
     op.create_table('payment_courtfile',
@@ -216,6 +220,7 @@ def downgrade():
     op.drop_table('payment_courtfile')
     with op.batch_alter_table('message', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_message_id_courtfile'))
+        batch_op.drop_index('ix_message_cf_created')
 
     op.drop_table('message')
     with op.batch_alter_table('lawyer_courtfile', schema=None) as batch_op:
