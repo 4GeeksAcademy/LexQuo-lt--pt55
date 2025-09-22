@@ -4,13 +4,13 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 import os
 import cloudinary
 import cloudinary.uploader
-import urllib.request
-from datetime import datetime
+import stripe
+from urllib.parse import urlencode
 from sqlalchemy import select, func
 from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import Courtfile, PaymentCourtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, Message
 from api.utils import generate_sitemap, APIException
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -21,6 +21,7 @@ from sqlalchemy.orm import joinedload
 from api.validators import parse_iso_date, parse_24h_time, is_valid_24h_time, validate_required_fields, validate_time_order, create_error_response
 
 api = Blueprint('api', __name__)
+stripe_bp = Blueprint("stripe_bp", __name__)
 
 # Allow CORS requests to this API
 CORS(api)
@@ -30,6 +31,7 @@ cloudinary.config(
     api_key=os.getenv('CLOUDINARY_API_KEY'),
     api_secret=os.getenv('CLOUDINARY_API_SECRET'),
 )
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
 os.getenv("FLASK_DEBUG")
 
@@ -2009,7 +2011,6 @@ def delete_payment_courtfile(id):
         return jsonify({'error': str(e)}), 500
 
 
-
 # -----------------------------RUTAS MENSAJES-----------------------------------------------------
 def _parse_iso(ts: str):
     # acepta "2025-09-19T16:30:00" o "2025-09-19T16:30:00Z"
@@ -2064,3 +2065,193 @@ def create_message():
     db.session.add(msg)
     db.session.commit()
     return jsonify(msg.to_front_dict()), 201
+
+
+    # -----------------------------STRIPE PAYMENT-----------------------------------------------------
+@api.route("payments/<int:paymentId>/create-checkout-session", methods=["POST"])
+def create_checkout_session(paymentId):
+    try:
+        payment = Payment.query.get(paymentId)
+        
+        if not payment:
+            return jsonify({'error': 'Payment not found'}), 404
+        
+        if payment.status == PaymentStatus.processing:
+            if payment.updated_at:
+                time_in_processing = datetime.utcnow() - payment.updated_at
+                if time_in_processing > timedelta(minutes=30):
+                    payment.status = PaymentStatus.pending
+                    payment.stripe_payment_intent_id = None
+                    db.session.commit()
+                    print(f"Payment {paymentId} reset from processing to pending (timeout 30min)")
+                else:
+                    remaining_time = timedelta(minutes=30) - time_in_processing
+                    remaining_minutes = int(remaining_time.total_seconds() / 60)
+                    return jsonify({
+                        'error': f'Payment is already being processed. Please wait {remaining_minutes} minutes or try again later.'
+                    }), 400
+            else:
+                if payment.created_at:
+                    time_in_processing = datetime.utcnow() - payment.created_at
+                    if time_in_processing > timedelta(minutes=30):
+                        payment.status = PaymentStatus.pending
+                        payment.stripe_payment_intent_id = None
+                        db.session.commit()
+                        print(f"Payment {paymentId} reset from processing to pending (timeout 30min - fallback)")
+                    else:
+                        return jsonify({
+                            'error': 'Payment is already being processed. Please try again in 30 minutes.'
+                        }), 400
+                else:
+                    payment.status = PaymentStatus.pending
+                    payment.stripe_payment_intent_id = None
+                    db.session.commit()
+                    print(f"Payment {paymentId} reset from processing to pending (no timestamp)")
+        
+        if payment.status == PaymentStatus.approved:
+            return jsonify({
+                'error': 'Payment is already approved. Cannot proceed with checkout.'
+            }), 400
+        
+        courtfile_name = f"LexQuo Payment {paymentId}"
+        payment_courtfile = PaymentCourtfile.query.filter_by(
+            payment_id=paymentId
+        ).first()
+
+        if payment_courtfile:
+            courtfile = Courtfile.query.get(payment_courtfile.courtfile_id)
+            if courtfile:
+                courtfile_name = courtfile.case_number or courtfile.title or f"Case {courtfile.id}"
+
+        product_name = f"LexQuo - Case {courtfile_name}"
+
+        session = stripe.checkout.Session.create(
+            line_items=[{
+                'price_data': {
+                    'currency': payment.currency.lower() if payment.currency else 'usd',
+                    'product_data': {
+                        'name': product_name,
+                    },
+                    'unit_amount': int(float(payment.amount) * 100) 
+                },
+                'quantity': 1,
+            }],
+            mode='payment',
+            success_url='https://congenial-acorn-57j7rv6jjx2vq49-3000.app.github.dev/payments',
+            cancel_url='https://congenial-acorn-57j7rv6jjx2vq49-3000.app.github.dev/',
+            metadata={
+                'payment_id': str(payment.id),
+                'courtfile_id': str(payment_courtfile.courtfile_id) if payment_courtfile else 'none'
+            }
+        )
+
+        payment.status = PaymentStatus.processing
+        payment.stripe_payment_intent_id = session.payment_intent
+        payment.updated_at = datetime.utcnow()  
+        
+        db.session.commit()
+        
+        print(f"Payment {paymentId} set to processing, Stripe ID: {session.payment_intent}")
+
+        return jsonify({
+            "url": session.url,
+            "session_id": session.id,
+            "payment_intent": session.payment_intent,
+            "product_name": product_name
+        })
+
+    except stripe.error.StripeError as e:
+        print(f"Stripe error in create-checkout-session: {e}")
+        db.session.rollback()
+        return jsonify({"error": f"Stripe error: {str(e)}"}), 400
+    except Exception as e:
+        print(f"Unexpected error in create-checkout-session: {e}")
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
+        return jsonify({"error": "Internal server error"}), 500
+
+
+@api.route('/webhook', methods=['POST'])
+def webhook():
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get('Stripe-Signature')
+    webhook_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, webhook_secret
+        )
+    except ValueError as e:
+        return jsonify(success=False), 400
+    except stripe.error.SignatureVerificationError as e:
+        return jsonify(success=False), 400
+
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        try:
+            payment_intent_id = session.get('payment_intent')
+            payment_id = session.get('metadata', {}).get('payment_id')
+            courtfile_id = session.get('metadata', {}).get('courtfile_id')
+
+            print(
+                f'Checkout completed - Payment ID: {payment_id}, Intent ID: {payment_intent_id}, Courtfile ID: {courtfile_id}')
+
+            if payment_id:
+                payment = Payment.query.get(int(payment_id))
+                if payment:
+                    payment.status = PaymentStatus.approved
+                    payment.paid_at = datetime.utcnow()
+                    payment.means = 'stripe'
+                    payment.stripe_payment_intent_id = payment_intent_id
+
+                    db.session.commit()
+
+        except Exception as e:
+            db.session.rollback()
+
+    elif event['type'] == 'payment_intent.succeeded':
+        payment_intent = event['data']['object']
+        try:
+            payment_intent_id = payment_intent['id']
+            metadata = payment_intent.get('metadata', {})
+            payment_id = metadata.get('payment_id')
+
+            print(
+                f'Payment intent succeeded - Payment ID: {payment_id}, Intent ID: {payment_intent_id}')
+
+            if payment_id:
+                payment = Payment.query.filter_by(
+                    stripe_payment_intent_id=payment_intent_id).first()
+                if payment and payment.status != PaymentStatus.approved:
+                    payment.status = PaymentStatus.approved
+                    payment.paid_at = datetime.utcnow()
+                    payment.means = 'stripe'
+
+                    db.session.commit()
+                    print(
+                        f'Pago {payment_id} marcado como aprobado via payment_intent')
+
+        except Exception as e:
+            db.session.rollback()
+
+    elif event['type'] == 'payment_intent.payment_failed':
+        payment_intent = event['data']['object']
+        try:
+            payment_intent_id = payment_intent['id']
+            payment = Payment.query.filter_by(
+                stripe_payment_intent_id=payment_intent_id).first()
+
+            if payment:
+                payment.status = PaymentStatus.rejected
+                db.session.commit()
+                print(f'❌ Pago {payment.id} marcado como rechazado')
+
+        except Exception as e:
+            print(f'❌ Error manejando payment intent failed: {e}')
+            db.session.rollback()
+
+    else:
+        print(f'Unhandled event type: {event["type"]}')
+
+    return jsonify(success=True)

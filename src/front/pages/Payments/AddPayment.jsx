@@ -17,6 +17,19 @@ export const AddPayment = () => {
   const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
   const returnTo = location.state?.returnTo || "/payments";
 
+  const currencyOptions = [
+    { value: "USD", label: "USD - US Dollar" },
+    { value: "EUR", label: "EUR - Euro" },
+    { value: "ARS", label: "ARS - Argentine Peso" },
+    { value: "COP", label: "COP - Colombian Peso" },
+    { value: "MXN", label: "MXN - Mexican Peso" }
+  ];
+
+  const meansOptions = [
+    { value: "TDC", label: "TDC - Credit Card" }
+
+  ];
+
   const [formData, setFormData] = useState({
     amount: "",
     currency: "",
@@ -69,15 +82,15 @@ export const AddPayment = () => {
 
         const mapped = token
           ? data.map(r => ({
-              id: r.courtfile.id,
-              number: r.courtfile.case_number,
-              title: r.courtfile.title,
-            }))
+            id: r.courtfile.id,
+            number: r.courtfile.case_number,
+            title: r.courtfile.title,
+          }))
           : data.map(cf => ({
-              id: cf.id,
-              number: cf.case_number,
-              title: cf.title,
-            }));
+            id: cf.id,
+            number: cf.case_number,
+            title: cf.title,
+          }));
 
         setMyCases(mapped);
       } catch (err) {
@@ -103,6 +116,14 @@ export const AddPayment = () => {
     try {
       if (!formData.courtfile_id) {
         throw new Error("Please select a courtfile to link this payment.");
+      }
+
+      if (!formData.currency) {
+        throw new Error("Please select a currency.");
+      }
+
+      if (!formData.means) {
+        throw new Error("Please select a payment method.");
       }
 
       // 1) Crear Payment
@@ -143,7 +164,6 @@ export const AddPayment = () => {
 
       if (!linkResp.ok) {
         const e = await linkResp.json().catch(() => ({}));
-        // tu backend devuelve 200 si ya existe: por si acaso, mostramos ese mensaje
         throw new Error(e.error || `Failed to link payment (HTTP ${linkResp.status})`);
       }
 
@@ -171,33 +191,33 @@ export const AddPayment = () => {
           </div>
 
           {preselectedCourtfileId ? (
-                   <span className="badge bg-dark mt-2 mb-2">
-                      Related to Courtfile {preselectedCf?.case_number || "—"}
-                      {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
-                    </span>
-                ) : (
-                  <div className="mb-3">
-                    <label htmlFor="courtfile_id" className="form-label">
-                      Link to Courtfile *
-                    </label>
-                    <select
-                      className="form-select"
-                      id="courtfile_id"
-                      name="courtfile_id"
-                      value={formData.courtfile_id}
-                      onChange={handleInputChange}
-                      required
-                      disabled={loading || loadingCases}
-                    >
-                      <option value="">Select a courtfile</option>
-                      {myCases.map(c => (
-                        <option key={c.id} value={c.id}>
-                          {c.number} — {c.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+            <span className="badge bg-dark mt-2 mb-2">
+              Related to Courtfile {preselectedCf?.case_number || "—"}
+              {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
+            </span>
+          ) : (
+            <div className="mb-3">
+              <label htmlFor="courtfile_id" className="form-label">
+                Link to Courtfile *
+              </label>
+              <select
+                className="form-select"
+                id="courtfile_id"
+                name="courtfile_id"
+                value={formData.courtfile_id}
+                onChange={handleInputChange}
+                required
+                disabled={loading || loadingCases}
+              >
+                <option value="">Select a courtfile</option>
+                {myCases.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.number} — {c.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="card">
             <div className="card-body">
@@ -208,49 +228,51 @@ export const AddPayment = () => {
               )}
 
               <form onSubmit={handleSubmit}>
-                
+
                 {/* Amount */}
                 <div className="mb-3">
                   <label htmlFor="amount" className="form-label">Amount *</label>
                   <input
                     type="number"
                     step="0.01"
+                    min="0"
                     className="form-control"
                     id="amount"
                     name="amount"
                     value={formData.amount}
                     onChange={handleInputChange}
                     required
-                    placeholder="Amount"
+                    placeholder="0.00"
                     disabled={loading}
                   />
                 </div>
 
-                {/* Currency */}
+                {/* Currency - Desplegable */}
                 <div className="mb-3">
                   <label htmlFor="currency" className="form-label">Currency *</label>
                   <select
-                    className="form-control"
+                    className="form-select"
                     id="currency"
                     name="currency"
                     value={formData.currency}
                     onChange={handleInputChange}
                     required
-                    placeholder="e.g., ARS / USD"
                     disabled={loading}
                   >
-                    <option value="">-- Select currency --</option>
-                    <option value="pesos">CLP</option>
-                    <option value="dolares">USD</option>
-                    <option value="pesos">ARG</option>
+                    <option value="">Select currency</option>
+                    {currencyOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
-                {/* Means */}
+                {/* Means - Desplegable */}
                 <div className="mb-3">
-                  <label htmlFor="means" className="form-label">Means *</label>
+                  <label htmlFor="means" className="form-label">Payment Method *</label>
                   <select
-                    className="form-control"
+                    className="form-select"
                     id="means"
                     name="means"
                     value={formData.means}
@@ -258,10 +280,12 @@ export const AddPayment = () => {
                     required
                     disabled={loading}
                   >
-                    <option value="">-- Select Means --</option>
-                    <option value="mercadopago">MercadoPago</option>
-                    <option value="paypal">PayPal</option>
-                    <option value="cash">Cash</option>
+                    <option value="">Select payment method</option>
+                    {meansOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -275,16 +299,14 @@ export const AddPayment = () => {
                       </>
                     ) : (
                       <>
-                        <i className="bi bi-plus-circle"></i> Create & Link
+                        <i className="bi bi-plus-circle"></i> Create
                       </>
                     )}
                   </button>
                 </div>
-
               </form>
             </div>
           </div>
-
         </div>
       </div>
     </div>
