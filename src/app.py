@@ -8,6 +8,7 @@ from flask_swagger import swagger
 from api.utils import APIException, generate_sitemap
 from api.models import db
 from api.routes import api
+from api.routes import stripe_bp
 from api.admin import setup_admin
 from api.commands import setup_commands
 from flask_jwt_extended import JWTManager
@@ -25,6 +26,7 @@ app.url_map.strict_slashes = False
 # === Habilitar CORS ===
 # modo abierto (dev):
 CORS(app)
+
 
 # JWT Configuration - ADD THIS SECTION
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "fallback-secret-key-change-in-production")
@@ -52,6 +54,7 @@ setup_commands(app)
 # Add all endpoints form the API with a "api" prefix
 app.register_blueprint(api, url_prefix='/api')
 app.register_blueprint(bp_ai)
+app.register_blueprint(stripe_bp)
 # Handle/serialize errors like a JSON object
 
 
