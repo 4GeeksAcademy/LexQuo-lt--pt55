@@ -207,26 +207,64 @@ def seed_payments(session):
     # Campos NOT NULL: amount, currency, status (tiene default PaymentStatus.pending)
     now = datetime.utcnow()
     rows = [
-        dict(amount=50000.0, currency="ARS", status=PaymentStatus.approved,
-             paid_at=now - timedelta(days=2), means="transferencia"),
-        dict(amount=75000.0, currency="ARS", status=PaymentStatus.pending,
-             paid_at=None,                     means="mercadopago"),
-        dict(amount=120000.0, currency="ARS", status=PaymentStatus.rejected,
-             paid_at=None,                    means="efectivo"),
+        dict(
+            amount=5000.0,
+            currency="ARS",
+            status=PaymentStatus.approved,
+            paid_at=now - timedelta(days=2),
+            means="TDC",
+            stripe_payment_intent_id="pi_approved_123456"
+        ),
+        dict(
+            amount=7500.0,
+            currency="USD",
+            status=PaymentStatus.pending,
+            paid_at=None,
+            means=TDC,
+            stripe_payment_intent_id=None
+        ),
+        dict(
+            amount=12000.0,
+            currency="ARS",
+            status=PaymentStatus.rejected,
+            paid_at=None,
+            means="TDC",
+            stripe_payment_intent_id="pi_rejected_789012"
+        ),
+        dict(
+            amount=8500.0,
+            currency="EUR",
+            status=PaymentStatus.processing,
+            paid_at=None,
+            means="TDC",
+            stripe_payment_intent_id="pi_processing_345678"
+        ),
+        dict(
+            amount=6000.0,
+            currency="COP",
+            status=PaymentStatus.processing,
+            paid_at=None,
+            means="TDC",
+            stripe_payment_intent_id="pi_processing_901234"
+        )
     ]
+
     created = 0
     for r in rows:
-        # No hay campo único → heurística: (amount, currency, status, paid_at)
         unique = {
             "amount": r["amount"],
             "currency": r["currency"],
             "status": r["status"],
             "paid_at": r["paid_at"],
+            "stripe_payment_intent_id": r["stripe_payment_intent_id"]
         }
-        defaults = {"means": r.get("means")}
+        defaults = {
+            "means": r.get("means")
+        }
         _, was_created = get_or_create(session, Payment, unique, defaults)
         if was_created:
             created += 1
+
     print(f"Payments: agregados {created}")
 
 # ----------------------------- runner ----------------------------- #
