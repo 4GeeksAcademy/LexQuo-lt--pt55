@@ -85,6 +85,8 @@ import { LawyerLinkOrInviteLawyer } from "./pages/Lawyer/LawyerLinkOrInviteLawye
 import { PaymentCourtfiles } from "./pages/Relations/PaymentCourtfiles";
 import { AddPaymentCourtfile } from "./pages/Relations/AddPaymentCourtfile";
 
+import  ChatOnDemand  from "./pages/ChatOnDemand.jsx";
+
 
 
 export const router = createBrowserRouter(
@@ -178,6 +180,8 @@ export const router = createBrowserRouter(
 
       <Route path="/clients/link-or-create" element={<LawyerLinkOrCreateClient />} />
       <Route path="/lawyers/link-or-invite" element={<LawyerLinkOrInviteLawyer />} />
+
+      <Route path="/ChatOnDemand" element={<ChatOnDemand />} />
 
     </Route>
   )

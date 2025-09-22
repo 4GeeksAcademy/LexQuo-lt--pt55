@@ -8,7 +8,7 @@ import stripe
 from urllib.parse import urlencode
 from sqlalchemy import select, func
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import Courtfile, PaymentCourtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, PaymentStatus
+from api.models import Courtfile, PaymentCourtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, Message
 from api.utils import generate_sitemap, APIException
 from datetime import datetime, UTC, timedelta
 from flask_cors import CORS
@@ -16,6 +16,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from sqlalchemy.orm import joinedload
+
 
 from api.validators import parse_iso_date, parse_24h_time, is_valid_24h_time, validate_required_fields, validate_time_order, create_error_response
 
@@ -968,13 +969,11 @@ def get_document(document_id):
 @api.route('/documents', methods=['POST'])
 def create_document():
     try:
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file provided'}), 400
-
-        file = request.files['file']
-
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
+        original_filename = None
+        
+        file = request.files.get('file')  
+        if file and file.filename.strip() == '': 
+            file = None
 
         allowed_extensions = {
             'pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'xls', 'xlsx',
@@ -983,12 +982,9 @@ def create_document():
             'm4a', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'
         }
 
-        original_filename = secure_filename(file.filename)
-        file_extension = original_filename.rsplit(
-            '.', 1)[1].lower() if '.' in original_filename else ''
-
-        if not file_extension or file_extension not in allowed_extensions:
-            return jsonify({'error': 'File type not allowed'}), 400
+        original_filename = None  
+        file_extension = None     
+        file_url = None 
 
         name = request.form.get('name')
         description = request.form.get('description', None)
@@ -998,28 +994,37 @@ def create_document():
         if not name:
             return jsonify({'error': 'Document name is required'}), 400
 
-        resource_type = "auto"
-        if file_extension in ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv']:
-            resource_type = "raw"
+        if file:
+            original_filename = secure_filename(file.filename)
+            file_extension = original_filename.rsplit('.', 1)[1].lower() if '.' in original_filename else ''
 
-        upload_result = cloudinary.uploader.upload(
-            file,
-            folder="documents/",
-            resource_type=resource_type,
-            use_filename=True,
-            unique_filename=True,
-            filename_override=original_filename
-        )
+            if not file_extension or file_extension not in allowed_extensions:
+                return jsonify({'error': 'File type not allowed'}), 400
 
-        file_url = upload_result['secure_url']
+            resource_type = "raw" if file_extension in [
+                'pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'
+            ] else "auto"
 
-        if resource_type == "raw":
-            filename_only = original_filename
-            file_url += f"?fl_attachment={filename_only}"
+            upload_result = cloudinary.uploader.upload(   # <— antes fallaba porque file=None
+                file,
+                folder="documents/",
+                resource_type=resource_type,
+                use_filename=True,
+                unique_filename=True,
+                filename_override=original_filename
+            )
+
+            file_url = upload_result['secure_url']
+
+            if resource_type == "raw":
+                file_url += f"?fl_attachment={original_filename}"
+        else:
+            file_extension = 'note'                             
+            file_url = ""
 
         new_document = Document(
             name=name,
-            type=file_extension,
+            type=file_extension,  
             url_route=file_url,
             description=description,
             category=category,
@@ -1051,6 +1056,8 @@ def create_document():
 def update_document(document_id):
     try:
         document = Document.query.get_or_404(document_id)
+
+        uploaded_original_filename = None
 
         if 'file' in request.files:
             file = request.files['file']
@@ -1096,6 +1103,8 @@ def update_document(document_id):
                 document.url_route = file_url
                 document.type = file_extension
 
+                uploaded_original_filename = original_filename
+
                 if hasattr(document, 'original_filename'):
                     document.original_filename = original_filename
 
@@ -1117,7 +1126,9 @@ def update_document(document_id):
 
         return jsonify({
             **document.serialize(),
-            'original_filename': document.original_filename if hasattr(document, 'original_filename') else original_filename
+            'original_filename': uploaded_original_filename or (
+                document.original_filename if hasattr(document, 'original_filename') else None
+            )  
         }), 200
 
     except Exception as e:
@@ -1177,7 +1188,8 @@ def get_client_courtfiles():
             'client_name': f"{cc.client.firstname} {cc.client.lastname}" if cc.client else None,
             'client_email': cc.client.email if cc.client else None,
             'client_phone': cc.client.phone if cc.client else None,
-            'courtfile_number': cc.courtfile.case_number if cc.courtfile else None
+            'courtfile_number': cc.courtfile.case_number if cc.courtfile else None,
+            'courtfile_title': cc.courtfile.title if cc.courtfile else None
         } for cc in client_courtfiles]), 200
 
     except Exception as e:
@@ -1625,80 +1637,6 @@ def delete_appointment_courtfile(id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-# -----------------ROUTES PARA LAWYER-CLIENT--------------------------------------------
-
-
-@api.route('/lawyer-client', methods=['GET'])
-def get_lawyer_client():
-    try:
-        lawyer_client = LawyerClient.query.all()
-        return jsonify([{
-            'id': lc.id,
-            'lawyer_id': lc.lawyer_id,
-            'client_id': lc.client_id,
-            'lawyer_name': f"{lc.lawyer.firstname} {lc.lawyer.lastname}",
-            'lawyer_email': lc.lawyer.email,
-            'lawyer_phone': lc.lawyer.phone,
-            'client_name': f"{lc.client.firstname} {lc.client.lastname}",
-            'client_email': lc.client.email,
-            'client_phone': lc.client.phone
-        } for lc in lawyer_client]), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@api.route('/lawyer-client', methods=['POST'])
-def create_lawyer_client():
-    try:
-        data = request.get_json()
-
-        lawyer = Lawyer.query.get(data['lawyer_id'])
-        client = Client.query.get(data['client_id'])
-
-        if not lawyer or not client:
-            return jsonify({'error': 'Lawyer or Client not found'}), 404
-
-        existing = LawyerClient.query.filter_by(
-            lawyer_id=data['lawyer_id'],
-            client_id=data['client_id']
-        ).first()
-
-        if existing:
-            return jsonify({'error': 'Relationship already exists'}), 400
-
-        new_relation = LawyerClient(
-            lawyer_id=data['lawyer_id'],
-            client_id=data['client_id']
-        )
-
-        db.session.add(new_relation)
-        db.session.commit()
-
-        return jsonify({
-            'message': 'Relationship created successfully',
-            'id': new_relation.id
-        }), 201
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-
-@api.route('/lawyer-client/<int:id>', methods=['DELETE'])
-def delete_lawyer_client(id):
-    try:
-        relation = LawyerClient.query.get(id)
-        if not relation:
-            return jsonify({'error': 'Relationship not found'}), 404
-
-        db.session.delete(relation)
-        db.session.commit()
-
-        return jsonify({'message': 'Relationship deleted successfully'}), 200
-
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
 
 # -----------------ROUTES PARA COURTFILE-DOCUMENT--------------------------------------------
 
@@ -1902,7 +1840,6 @@ def delete_payment(payment_id):
 
         db.session.delete(payment)
         db.session.commit()
-
         return jsonify({'message': 'Payment successfully deleted'}), 200
 
     except Exception as e:
@@ -2074,9 +2011,63 @@ def delete_payment_courtfile(id):
         return jsonify({'error': str(e)}), 500
 
 
-# -----------------------------END PAYMENTS COURTFILE ROUTES-----------------------------------------------------
+# -----------------------------RUTAS MENSAJES-----------------------------------------------------
+def _parse_iso(ts: str):
+    # acepta "2025-09-19T16:30:00" o "2025-09-19T16:30:00Z"
+    try:
+        ts = ts.rstrip("Z")
+        return datetime.fromisoformat(ts)
+    except Exception:
+        return None
 
-# -----------------------------STRIPE PAYMENT-----------------------------------------------------
+# GET /api/messages?courtfile_id=21&since=2025-09-19T16:30:00
+@api.route("/messages", methods=["GET"])
+def list_messages():
+    courtfile_id = request.args.get("courtfile_id", type=int)
+    if not courtfile_id:
+        return jsonify({"error": "courtfile_id requerido"}), 400
+
+    since_str = request.args.get("since")
+    q = Message.query.filter(Message.id_courtfile == courtfile_id)
+    if since_str:
+        since_dt = _parse_iso(since_str)
+        if since_dt:
+            q = q.filter(Message.created_at > since_dt)
+
+    rows = q.order_by(Message.created_at.asc()).limit(100).all()
+    return jsonify([m.to_front_dict() for m in rows])
+
+@api.route("/messages", methods=["POST"])
+def create_message():
+    data = request.get_json() or {}
+    cfid = data.get("courtfile_id")
+    text = (data.get("text") or "").strip()
+    role = (data.get("sender_role") or "").strip().lower()
+
+    if not cfid or not text or role not in {"lawyer", "client", "admin"}:
+        return jsonify({"error": "courtfile_id, text y sender_role válidos son requeridos"}), 400
+    
+    lawyer_id = None
+    client_id = None
+    
+    if role == "lawyer":
+        lawyer_id = data.get("sender_id")  
+    elif role == "client":
+        client_id = data.get("sender_id")  
+
+    msg = Message(
+        id_courtfile=cfid,   
+        texto=text,         
+        sender=role,        
+        lawyer_id=lawyer_id,
+        client_id=client_id,
+    )
+    db.session.add(msg)
+    db.session.commit()
+    return jsonify(msg.to_front_dict()), 201
+
+
+    # -----------------------------STRIPE PAYMENT-----------------------------------------------------
 @api.route("payments/<int:paymentId>/create-checkout-session", methods=["POST"])
 def create_checkout_session(paymentId):
     try:

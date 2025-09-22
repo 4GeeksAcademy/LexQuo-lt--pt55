@@ -161,17 +161,18 @@ export const LawyerLinkOrCreateClient = () => {
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
           <h1>Link or Create Client</h1>
-          {preselectedCourtfileId && (
-            <span className="badge bg-info mt-2">
-              Case {preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
-              {preselectedCourtfileTitle ? ` — ${preselectedCourtfileTitle}` : ""}
-            </span>
-          )}
         </div>
         <Link to={returnTo} className="btn btn-outline-secondary">
           <i className="bi bi-arrow-left"></i> Back
         </Link>
       </div>
+
+      {preselectedCourtfileId && (
+        <span className="badge bg-dark mt-2 mb-2">
+          Related to Courtfile {preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
+          {preselectedCourtfileTitle ? ` — ${preselectedCourtfileTitle}` : ""}
+        </span>
+      )}
 
       {/* Buscar por email */}
       <div className="card mb-4">

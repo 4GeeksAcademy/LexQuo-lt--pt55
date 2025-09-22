@@ -13,6 +13,13 @@ export const EditAppointment = () => {
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
+  const initialLinked =
+    location.state?.courtfileId
+      ? { id: location.state.courtfileId, number: location.state.courtfileNumber, title: location.state.courtfileTitle }
+      : null;
+
+  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
+
   const [formData, setFormData] = useState({
     title: "",
     location: "",
@@ -107,6 +114,32 @@ export const EditAppointment = () => {
     if (appointmentId) fetchAppointment();
   }, [appointmentId]);
 
+  useEffect(() => {
+    const fetchLinked = async () => {
+      try {
+        if (linkedCourtfile || !appointmentId) return;
+        const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
+        const token = auth?.token;
+        const resp = await fetch(`${API}/api/appointments-courtfiles`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (!resp.ok) return;
+        const rows = await resp.json();
+        const rel = (rows || []).find(r => Number(r.appointment_id) === Number(appointmentId));
+        if (rel) {
+          setLinkedCourtfile({
+            id: rel.courtfile_id,
+            number: rel.courtfile_number,
+            title: rel.courtfile_title
+          });
+        }
+      } catch (e) {
+        // noop
+      }
+    };
+    fetchLinked();
+  }, [API, appointmentId, linkedCourtfile]);
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
@@ -195,6 +228,15 @@ export const EditAppointment = () => {
               <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
+
+          {linkedCourtfile && (
+            <div className="mb-3">
+              <span className="badge bg-dark mt-1 mb-2">
+                Linked to Case {linkedCourtfile.number || `#${linkedCourtfile.id}`}
+                {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
+              </span>
+            </div>
+          )}
 
           {/* Form */}
           <div className="card">

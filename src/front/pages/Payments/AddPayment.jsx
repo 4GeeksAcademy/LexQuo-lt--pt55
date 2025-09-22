@@ -190,6 +190,35 @@ export const AddPayment = () => {
             </Link>
           </div>
 
+          {preselectedCourtfileId ? (
+            <span className="badge bg-dark mt-2 mb-2">
+              Related to Courtfile {preselectedCf?.case_number || "—"}
+              {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
+            </span>
+          ) : (
+            <div className="mb-3">
+              <label htmlFor="courtfile_id" className="form-label">
+                Link to Courtfile *
+              </label>
+              <select
+                className="form-select"
+                id="courtfile_id"
+                name="courtfile_id"
+                value={formData.courtfile_id}
+                onChange={handleInputChange}
+                required
+                disabled={loading || loadingCases}
+              >
+                <option value="">Select a courtfile</option>
+                {myCases.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.number} — {c.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="card">
             <div className="card-body">
               {error && (
@@ -199,38 +228,6 @@ export const AddPayment = () => {
               )}
 
               <form onSubmit={handleSubmit}>
-                {/* Courtfile (preseleccionado o seleccionable) */}
-                {preselectedCourtfileId ? (
-                  <div className="mb-3">
-                    <label className="form-label">Linked Courtfile</label>
-                    <div className="form-control-plaintext">
-                      #{preselectedCourtfileId} — {preselectedCf?.case_number || "—"}
-                      {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mb-3">
-                    <label htmlFor="courtfile_id" className="form-label">
-                      Link to Courtfile *
-                    </label>
-                    <select
-                      className="form-select"
-                      id="courtfile_id"
-                      name="courtfile_id"
-                      value={formData.courtfile_id}
-                      onChange={handleInputChange}
-                      required
-                      disabled={loading || loadingCases}
-                    >
-                      <option value="">Select a courtfile</option>
-                      {myCases.map(c => (
-                        <option key={c.id} value={c.id}>
-                          {c.number} — {c.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
 
                 {/* Amount */}
                 <div className="mb-3">

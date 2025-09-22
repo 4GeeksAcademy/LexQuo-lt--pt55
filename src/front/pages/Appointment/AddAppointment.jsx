@@ -226,23 +226,12 @@ export const AddAppointment = () => {
             </Link>
           </div>
 
-          {/* Card */}
-          <div className="card">
-            <div className="card-body">
-              {error && (
-                <div className="alert alert-danger" role="alert">
-                  <i className="bi bi-exclamation-triangle"></i> {error}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit}>
-                {preselectedCourtfileId ? (
-                  <div className="mb-3">
-                    <div className="form-control-plaintext">
+          {preselectedCourtfileId ? (
+                  <span className="badge bg-dark mt-1 mb-2">
                       Related to Courtfile {preselectedCf?.case_number || "—"}
                       {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
-                    </div>
-                  </div>
+                    </span>
+                  
                 ) : (
                   <div className="mb-3">
                     <label htmlFor="courtfile_id" className="form-label">Link to Courtfile *</label>
@@ -265,6 +254,16 @@ export const AddAppointment = () => {
                   </div>
                 )}
 
+          {/* Card */}
+          <div className="card">
+            <div className="card-body">
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  <i className="bi bi-exclamation-triangle"></i> {error}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit}>                
                 <div className="mb-3">
                   <label htmlFor="title" className="form-label">Title *</label>
                   <input
