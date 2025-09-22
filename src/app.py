@@ -70,8 +70,6 @@ setup_commands(app)
 app.register_blueprint(api, url_prefix='/api')
 app.register_blueprint(bp_ai)
 
-# === 4) NO usar socketio.init_app nuevamente ===
-# socketio.init_app(...)  <-- ELIMINADO
 
 # -------------------- Socket.IO handlers --------------------
 
