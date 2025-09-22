@@ -70,7 +70,6 @@ setup_commands(app)
 app.register_blueprint(api, url_prefix='/api')
 app.register_blueprint(bp_ai)
 
-
 # -------------------- Socket.IO handlers --------------------
 
 
