@@ -6,11 +6,11 @@ import cloudinary
 import cloudinary.uploader
 import stripe
 from urllib.parse import urlencode
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_, or_, literal, case
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import Courtfile, PaymentCourtfile, PaymentStatus, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, Message
+from api.models import Courtfile, PaymentCourtfile, PaymentStatus, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, Message, ChatRead
 from api.utils import generate_sitemap, APIException
-from datetime import datetime, UTC, timedelta
+from datetime import datetime, UTC, timedelta, timezone
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -2016,10 +2016,24 @@ def delete_payment_courtfile(id):
 
 # -----------------------------RUTAS MENSAJES-----------------------------------------------------
 def _parse_iso(ts: str):
-    # acepta "2025-09-19T16:30:00" o "2025-09-19T16:30:00Z"
+    """
+    Acepta:
+      - 2025-09-19T16:30:00Z   (UTC)
+      - 2025-09-19T16:30:00+00:00
+      - 2025-09-19T16:30:00    (lo tratamos como UTC)
+    Devuelve datetime timezone-aware (UTC).
+    """
+    if not ts:
+        return None
+    ts = ts.strip()
     try:
-        ts = ts.rstrip("Z")
-        return datetime.fromisoformat(ts)
+        if ts.endswith("Z"):
+            ts = ts[:-1] + "+00:00"
+        dt = datetime.fromisoformat(ts)
+        if dt.tzinfo is None:
+            # Si vino naive, asumimos UTC
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
     except Exception:
         return None
 
@@ -2068,6 +2082,111 @@ def create_message():
     db.session.add(msg)
     db.session.commit()
     return jsonify(msg.to_front_dict()), 201
+
+@api.route("/messages/unread", methods=["GET"])
+def unread_counts():
+    """
+    Params:
+      role=lawyer|client|admin
+      user_id=<int>
+      courtfile_ids=1,2,3
+    Respuesta:
+      { "1": {"hasUnread": true, "count": 3}, "2": {"hasUnread": false, "count": 0}, ... }
+    """
+    role = (request.args.get("role") or "").strip().lower()
+    user_id = request.args.get("user_id", type=int)
+    ids_str = (request.args.get("courtfile_ids") or "").strip()
+    if not role or not user_id or not ids_str:
+        return jsonify({"error": "role, user_id y courtfile_ids son requeridos"}), 400
+
+    try:
+        cfids = [int(x) for x in ids_str.split(",") if x.strip().isdigit()]
+    except Exception:
+        return jsonify({"error": "courtfile_ids inválidos"}), 400
+
+    if not cfids:
+        return jsonify({})
+
+    # subquery con last_read por cfid
+    last_read_sq = (
+        select(ChatRead.id_courtfile, ChatRead.last_read_at)
+        .where(and_(ChatRead.role == role, ChatRead.user_id == user_id, ChatRead.id_courtfile.in_(cfids)))
+        .subquery()
+    )
+
+    # Mensajes “del otro lado”: sender != role
+    # Contamos por expediente desde last_read (o desde la fecha mínima si no hay marca)
+    msgs = (
+        select(
+            Message.id_courtfile.label("cfid"),
+            func.count(Message.id).label("cnt")
+        )
+        .outerjoin(last_read_sq, last_read_sq.c.id_courtfile == Message.id_courtfile)
+        .where(
+            and_(
+                Message.id_courtfile.in_(cfids),
+                Message.sender != role,
+                or_(
+                    last_read_sq.c.last_read_at.is_(None),
+                    Message.created_at > last_read_sq.c.last_read_at,
+                ),
+            )
+        )
+        .group_by(Message.id_courtfile)
+    )
+
+    rows = db.session.execute(msgs).all()
+    counts_by_cfid = {cfid: 0 for cfid in cfids}
+    for cfid, cnt in rows:
+        counts_by_cfid[int(cfid)] = int(cnt)
+
+    # respuesta shape ideal para tu hook
+    resp = {}
+    for cfid in cfids:
+        c = counts_by_cfid.get(cfid, 0)
+        resp[str(cfid)] = {"hasUnread": c > 0, "count": min(c, 99)}
+    return jsonify(resp)
+
+@api.route("/messages/read", methods=["POST"])
+def mark_read():
+    """
+    JSON:
+      {
+        "courtfile_id": 123,
+        "role": "lawyer",
+        "user_id": 7,
+        "until": "2025-09-23T12:34:56Z"  # opcional; si no, now()
+      }
+    """
+    data = request.get_json() or {}
+    cfid = data.get("courtfile_id")
+    role = (data.get("role") or "").strip().lower()
+    user_id = data.get("user_id")
+    until = data.get("until")  # ISO opcional
+
+    if not cfid or not role or not user_id:
+        return jsonify({"error": "courtfile_id, role y user_id requeridos"}), 400
+
+    if until:
+        try:
+            ts = datetime.fromisoformat(until.replace("Z", "+00:00"))
+        except Exception:
+            return jsonify({"error": "until debe ser ISO8601"}), 400
+    else:
+        ts = datetime.now(timezone.utc)
+
+    # UPSERT: si existe, update; si no, create
+    row = ChatRead.query.filter_by(id_courtfile=cfid, role=role, user_id=user_id).first()
+    if row:
+        if ts > row.last_read_at:
+            row.last_read_at = ts
+    else:
+        row = ChatRead(id_courtfile=cfid, role=role, user_id=user_id, last_read_at=ts)
+        db.session.add(row)
+
+    db.session.commit()
+    return jsonify({"ok": True, "courtfile_id": cfid, "last_read_at": row.last_read_at.isoformat()})
+
 
 
     # -----------------------------STRIPE PAYMENT-----------------------------------------------------

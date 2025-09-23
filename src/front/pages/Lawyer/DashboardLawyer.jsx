@@ -1,15 +1,17 @@
 import { LogoutButton } from "../../components/LogoutButton";
-import { Navigate, Link, useParams } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import React, { useEffect, useState, useMemo } from "react";
 import useUnreadBadges from "../../hooks/useUnreadBadges";
 import { markNow } from "../../hooks/chatUnread";
+import { useNavigate, useParams } from "react-router-dom";
 
 export const DashboardLawyer = () => {
 
     const API = import.meta.env.VITE_BACKEND_URL;
     const { store, dispatch } = useGlobalReducer();
+    const navigate = useNavigate();
 
     const [auth, setAuth] = useState(() => {
         try { return store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null"); }
@@ -33,6 +35,8 @@ export const DashboardLawyer = () => {
     const role = (auth?.role || "").toLowerCase();
 
     if (auth?.role !== 'lawyer') return <Navigate to="/403" replace />;
+
+    const identity = auth?.user ?? auth?.lawyer ?? auth?.client;
 
     const name =
         auth?.user
@@ -172,11 +176,65 @@ export const DashboardLawyer = () => {
         courtfileIds: caseIds,
     });
 
-    const onOpenChatClick = (cfid) => {
-        if (auth?.user?.id) {
-            markNow(auth.user.id, cfid);
-            refreshUnread();
+    // ---- NUEVO: marcar leído en backend ----
+    async function markReadBackend(API, auth, role, cfid) {
+        const userId =
+            auth?.user?.id ??
+            auth?.lawyer?.id ??
+            auth?.client?.id ??
+            auth?.id ?? null;
+        if (!API || !auth?.token || !userId || !cfid) return;
+
+        try {
+            await fetch(`${API}/api/messages/read`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${auth.token}`,
+                },
+                body: JSON.stringify({
+                    courtfile_id: cfid,
+                    role: String(role || "").toLowerCase(),
+                    user_id: userId,
+                }),
+            });
+        } catch (_) { }
+    }
+
+    // ---- REEMPLAZO: marcar local + backend y refrescar ----
+    const onOpenChatClick = async (cfid) => {
+        const uid =
+            auth?.user?.id ??
+            auth?.lawyer?.id ??
+            auth?.client?.id ??
+            auth?.id ?? null;
+
+        if (uid && cfid) {
+            markNow(uid, cfid);                   // feedback inmediato en UI
+            await markReadBackend(API, auth, role, cfid); // persistir en backend
+            refreshUnread();                      // refrescar badges
         }
+    };
+
+    // ---- NUEVO: navegar a All Chats manteniendo state (sin marcar global) ----
+    const onOpenAllChats = (e) => {
+        e.preventDefault();
+        navigate("/chats", { state: { returnTo: "/DashboardLawyer" } });
+    };
+
+    // ---- NUEVO: abrir chat de un expediente esperando el markRead ----
+    const openCaseChat = async (e, cf) => {
+        e.preventDefault();
+        await onOpenChatClick(cf.id);
+        navigate(`/chats/${cf.id}`, {
+            state: {
+                courtfileId: cf.id,
+                courtfileNumber: cf.case_number,
+                courtfileTitle: cf.title,
+                senderRole: "lawyer",
+                returnTo: "/DashboardLawyer",
+            },
+        });
     };
 
 
@@ -441,6 +499,7 @@ export const DashboardLawyer = () => {
                                 state={{ returnTo: "/DashboardLawyer" }}
                                 className="btn btn-sm btn-outline-primary ms-2 position-relative"
                                 title="Ver todos los chats"
+                                onClick={onOpenAllChats}
                             >
                                 <i className="bi bi-chat-dots" /> All Chats
                                 {totalUnread > 0 && (
@@ -499,7 +558,7 @@ export const DashboardLawyer = () => {
                                                     }}
                                                     className="btn btn-sm btn-outline-primary me-1 position-relative"
                                                     title="Open chat"
-                                                    onClick={() => onOpenChatClick(cf.id)}
+                                                    onClick={(e) => openCaseChat(e, cf)}
                                                 >
                                                     <i className="bi bi-chat-dots"></i>
                                                     {unreadByCase.get(cf.id)?.hasUnread && (

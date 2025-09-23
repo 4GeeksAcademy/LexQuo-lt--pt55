@@ -83,21 +83,58 @@ export const DashboardClient = () => {
         courtfileIds: caseIds,
     });
 
-    // Marcar leído al abrir chat general
-    const onOpenAllChats = () => {
-        if (auth?.user?.id) {
-            // Para chats generales marcamos un “now” sin courtfileId
-            markNow(auth.user.id, null);
+    // markReadBackend y onOpenCaseChat 
+    async function markReadBackend(API, auth, role, cfid) {
+        const userId =
+            auth?.user?.id ??
+            auth?.lawyer?.id ??
+            auth?.client?.id ??
+            auth?.id ?? null;
+        if (!API || !auth?.token || !userId || !cfid) return;
+
+        try {
+            await fetch(`${API}/api/messages/read`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${auth.token}`,
+                },
+                body: JSON.stringify({
+                    courtfile_id: cfid,
+                    role: String(role || "").toLowerCase(),
+                    user_id: userId,
+                }),
+            });
+        } catch (_) { }
+    }
+
+    const onOpenCaseChat = async (cfid) => {
+        if (auth?.user?.id && cfid) {
+            markNow(auth.user.id, cfid);
+            await markReadBackend(API, auth, role, cfid);
             refreshUnread();
         }
     };
 
-    // Marcar leído al abrir chat de un expediente
-    const onOpenCaseChat = (cfid) => {
-        if (auth?.user?.id && cfid) {
-            markNow(auth.user.id, cfid);
-            refreshUnread();
-        }
+    // ✅ NUEVO: handler real para "All Chats" (no marca global)
+    const onOpenAllChats = (e) => {
+        e.preventDefault();
+        navigate("/chats", { state: { returnTo: "/DashboardClient" } });
+    };
+
+    // ✅ NUEVO: abrir chat de un expediente SIN perder el state y esperando el markRead
+    const openCaseChat = async (e, cf) => {
+        e.preventDefault();
+        await onOpenCaseChat(cf.id);
+        navigate(`/chats/${cf.id}`, {
+            state: {
+                courtfileId: cf.id,
+                courtfileNumber: cf.case_number,
+                courtfileTitle: cf.title,
+                senderRole: "client",
+                returnTo: "/DashboardClient",
+            },
+        });
     };
 
 
@@ -116,7 +153,7 @@ export const DashboardClient = () => {
                             state={{ returnTo: "/DashboardClient" }}
                             className="btn btn-sm btn-outline-primary position-relative"
                             title="View all chats"
-                            onClick={onOpenAllChats}
+                            onClick={onOpenAllChats}   // ⬅️ ahora existe y navega con state
                         >
                             <i className="bi bi-chat-dots" /> All Chats
                             {totalUnread > 0 && (
@@ -174,7 +211,7 @@ export const DashboardClient = () => {
                                                     }}
                                                     className="btn btn-sm btn-outline-primary me-1 position-relative"
                                                     title="Open chat"
-                                                    onClick={() => onOpenCaseChat(cf.id)}
+                                                    onClick={(e) => openCaseChat(e, cf)}  // ⬅️ esperamos markRead y luego navigate con state
                                                 >
                                                     <i className="bi bi-chat-dots"></i>
                                                     {unreadByCase.get(cf.id)?.hasUnread && (

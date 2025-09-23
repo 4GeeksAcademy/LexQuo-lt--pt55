@@ -91,6 +91,7 @@ import ChatsOverview from "./pages/ChatsOverview.jsx";
 
 
 
+
 export const router = createBrowserRouter(
   createRoutesFromElements(
     // CreateRoutesFromElements function allows you to build route elements declaratively.
@@ -177,6 +178,8 @@ export const router = createBrowserRouter(
       <Route path="/SignUpClient" element={<SignUpClient />} />
       <Route path="/LoginClient" element={<LoginClient />} />
       <Route path="/DashboardClient" element={<DashboardClient />} />
+      
+
 
       <Route path="/403" element={<Forbidden />} />
 
