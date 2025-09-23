@@ -1,6 +1,5 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate, Link } from "react-router-dom";
 import { LogoutButton } from "../../components/LogoutButton";
-import { Link } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import React, { useEffect, useState, useMemo } from "react";
 
@@ -12,33 +11,19 @@ export const DashboardClient = () => {
     const { store, dispatch } = useGlobalReducer();
     const navigate = useNavigate();
 
-    const [auth, setAuth] = useState(() => {
-        try { return store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null"); }
-        catch { return null; }
-    });
+    // -------------------- AUTH + ME (nuevo esquema) --------------------
+    const token = store?.auth?.token || null;                    // CHANGED
+    const me = store?.me || null;                                // CHANGED
+    const authed = !!token;                                      // CHANGED
+    const role = (me?.role || "").toLowerCase();                 // CHANGED
 
-    useEffect(() => {
-        if (!store?.auth && auth?.token) {
-            dispatch({ type: "SET_AUTH", payload: auth });
-        }
-    }, [store?.auth, auth, dispatch]);
+    // Si querés bloquear estrictamente que solo "client" entre acá:
+    if (!authed || !me) return <Navigate to="/LoginClient" replace />; // CHANGED
+    if (role !== "client") return <Navigate to="/403" replace />; // CHANGED
 
-    useEffect(() => {
-        if (store?.auth && store.auth !== auth) {
-            setAuth(store.auth);
-        }
-    }, [store?.auth]);
+    const currentClientId = me?.id || null;                      // CHANGED
+    const name = `${me?.firstname ?? ""} ${me?.lastname ?? ""}`.trim(); // CHANGED
 
-    const authed = !!auth?.token;
-    const role = (auth?.role || "").toLowerCase();
-
-    const currentClientId =
-        auth?.user?.id ??
-        auth?.client?.id ??
-        null;
-
-
-    const name = auth?.user ? `${auth.user?.firstname ?? ""} ${auth.user?.lastname ?? ""}`.trim() : "";
 
     //....................... COURTFILES DEL CLIENTE ..........................................
     const [cases, setCases] = useState([]);
@@ -49,14 +34,13 @@ export const DashboardClient = () => {
         if (!authed) return;
 
         try {
-            const clientId = auth.user.id;
-            const token = auth.token;
+            const clientId = me.id;
 
             // Fetch client's courtfiles
             setLoadingCases(true);
-            const courtfilesResponse = await fetch(`${API}/api/clients/${clientId}/get-courtfiles`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
+            const courtfilesResponse = await fetch(`${API}/api/clients/${clientId}/get-courtfiles`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
 
             if (courtfilesResponse.ok) {
                 const courtfilesData = await courtfilesResponse.json();
@@ -74,35 +58,38 @@ export const DashboardClient = () => {
     };
 
     useEffect(() => {
-        if (!authed) return;
         fetchClientData();
-    }, [API, authed, auth?.token, dispatch]);
+    }, [API, token, me?.id]);
 
     // 🔔 UNREAD (total y por expediente)
     const caseIds = useMemo(() => (Array.isArray(cases) ? cases.map((c) => c.id) : []), [cases]);
 
+    // Si tu hook espera "auth" y "role", armamos un objeto mínimo compatible:
+    const authForHook = useMemo(
+        () => ({ token, user: { id: me.id } }),                     // CHANGED
+        [token, me?.id]
+    );
+
     const { unreadByCase, totalUnread, refresh: refreshUnread } = useUnreadBadges({
         API,
-        auth,
-        role,            // "client"
+        auth: authForHook,                                          // CHANGED
+        role,                                                       // "client"
         courtfileIds: caseIds,
     });
 
+
+
     // markReadBackend y onOpenCaseChat 
-    async function markReadBackend(API, auth, role, cfid) {
-        const userId =
-            auth?.user?.id ??
-            auth?.lawyer?.id ??
-            auth?.client?.id ??
-            auth?.id ?? null;
-        if (!API || !auth?.token || !userId || !cfid) return;
+    async function markReadBackend(API, token, role, cfid) {
+        const userId = me?.id; // usar store.me
+        if (!API || !token || !userId || !cfid) return;
 
         try {
             await fetch(`${API}/api/messages/read`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${auth.token}`,
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     courtfile_id: cfid,
@@ -114,9 +101,9 @@ export const DashboardClient = () => {
     }
 
     const onOpenCaseChat = async (cfid) => {
-        if (auth?.user?.id && cfid) {
-            markNow(auth.user.id, cfid);
-            await markReadBackend(API, auth, role, cfid);
+        if (me?.id && cfid) {
+            markNow(me.id, cfid);                                     // CHANGED
+            await markReadBackend(API, token, role, cfid);
             refreshUnread();
         }
     };

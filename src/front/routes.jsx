@@ -90,6 +90,9 @@ import ChatsOverview from "./pages/ChatsOverview.jsx";
 
 import ChangePassword from "./pages/ChangePassword";
 
+import PrivateRoute from "./components/PrivateRoute.jsx";
+
+
 
 
 
@@ -179,7 +182,12 @@ export const router = createBrowserRouter(
 
       <Route path="/SignUpClient" element={<SignUpClient />} />
       <Route path="/LoginClient" element={<LoginClient />} />
-      <Route path="/DashboardClient" element={<DashboardClient />} />
+
+
+      <Route element={<PrivateRoute roles={["client"]} />}>
+        <Route path="/DashboardClient" element={<DashboardClient />} />
+
+      </Route>
 
       <Route path="/403" element={<Forbidden />} />
 
@@ -191,6 +199,8 @@ export const router = createBrowserRouter(
 
       <Route path="/lawyers/:id/password" element={<ChangePassword kind="lawyer" />} />
       <Route path="/clients/:id/password" element={<ChangePassword kind="client" />} />
+
+
 
     </Route>
   )

@@ -127,6 +127,7 @@ class Lawyer(db.Model):
             "phone": self.phone,
             "url_img": self.url_img,
             "is_active": self.is_active,
+            "role": "lawyer",
         }
 
 
@@ -165,6 +166,7 @@ class Client(db.Model):
             "phone": self.phone,
             "url_img": self.url_img,
             "is_active": self.is_active,
+            "role": "client",
         }
 
 
