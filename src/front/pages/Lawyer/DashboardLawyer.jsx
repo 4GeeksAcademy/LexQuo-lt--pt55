@@ -18,6 +18,8 @@ export const DashboardLawyer = () => {
         catch { return null; }
     });
 
+
+
     useEffect(() => {
         if (!store?.auth && auth?.token) {
             dispatch({ type: "SET_AUTH", payload: auth });
@@ -36,7 +38,10 @@ export const DashboardLawyer = () => {
 
     if (auth?.role !== 'lawyer') return <Navigate to="/403" replace />;
 
-    const identity = auth?.user ?? auth?.lawyer ?? auth?.client;
+    const currentLawyerId =
+        auth?.user?.id ??
+        auth?.lawyer?.id ??
+        null;
 
     const name =
         auth?.user
@@ -480,20 +485,24 @@ export const DashboardLawyer = () => {
             <h1>DASHBOARD LAWYER</h1>
             <h1>¡HELLO {authed ? (name) : "Dr/a., you must log in"}!</h1>
 
-
+            {currentLawyerId && (
+                <Link
+                    to={`/lawyers/view/${currentLawyerId}`}
+                    className="btn btn-sm btn-info me-1"
+                    title="View details"
+                    state={{ returnTo: "/DashboardLawyer" }}
+                >
+                    <i className="bi bi-eye me-1"></i>
+                    View Profile
+                </Link>
+            )}
 
             {authed ? (
                 <div className="mt-5 text-start">
                     <div className="d-flex justify-content-between align-items-center">
                         <h3>COURTFILES</h3>
                         <div className="d-flex justify-content-end mb-3">
-                            <Link
-                                to="/courtfiles/addcourtfile"
-                                state={{ linkToLawyer: true, returnTo: "/DashboardLawyer" }}
-                                className="btn btn-sm btn-success"
-                            >
-                                + Create New Courtfile
-                            </Link>
+
                             <Link
                                 to="/chats"
                                 state={{ returnTo: "/DashboardLawyer" }}

@@ -9,6 +9,7 @@ export const ViewClient = () => {
   const location = useLocation();
   const returnTo = location.state?.returnTo || "/clients";
 
+
   const API = import.meta.env.VITE_BACKEND_URL;
 
   // Contexto (opcional, si venís desde un expediente)

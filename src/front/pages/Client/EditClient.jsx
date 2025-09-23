@@ -63,16 +63,12 @@ export const EditClient = () => {
     setLoading(true);
     setError(null);
 
-    if (!formData.firstname?.trim() || !formData.lastname?.trim() || !formData.email?.trim() || !formData.phone?.trim()) {
-      setError("Firstname, Lastname, Email and Phone are required.");
+    if (!formData.firstname?.trim() || !formData.lastname?.trim() || !formData.phone?.trim()) {
+      setError("Firstname, Lastname and Phone are required.");
       setLoading(false);
       return;
     }
-    if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      setError("Invalid email.");
-      setLoading(false);
-      return;
-    }
+    
     if (formData.password && formData.password.length < 8) {
       setError("Password must have at least 8 characters.");
       setLoading(false);
@@ -83,7 +79,6 @@ export const EditClient = () => {
       const data = new FormData();
       data.append('firstname', formData.firstname.trim());
       data.append('lastname', formData.lastname.trim());
-      data.append('email', formData.email.trim().toLowerCase());
       data.append('phone', formData.phone.trim());
       data.append('is_active', !!formData.is_active);
 
@@ -219,9 +214,8 @@ export const EditClient = () => {
                     id="email"
                     name="email"
                     value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
+                    readOnly
+                    disabled
                   />
                 </div>
 

@@ -250,13 +250,11 @@ def update_lawyer(lawyer_id):
                 file, resource_type='image')
             lawyer.url_img = upload_result['secure_url']
 
+        # Email is immutable
         if 'email' in data:
             new_email = (data.get('email') or '').strip().lower()
-            if new_email != lawyer.email:
-                existing = Lawyer.query.filter_by(email=new_email).first()
-                if existing:
-                    return jsonify({'error': 'Email already exists'}), 409
-            lawyer.email = new_email
+            if new_email and new_email != (lawyer.email or "").lower():
+                return jsonify({'error': 'Email cannot be changed'}), 400
 
         if 'firstname' in data:
             lawyer.firstname = data['firstname']
@@ -424,12 +422,11 @@ def update_client(client_id):
                 file, resource_type='image')
             client.url_img = upload_result['secure_url']
 
+        # Email is immutable
         if 'email' in data:
-            if data['email'] != client.email:
-                existing = Client.query.filter_by(email=data['email']).first()
-                if existing:
-                    return jsonify({'error': 'Email already exists'}), 409
-            client.email = data['email']
+            new_email = (data.get('email') or '').strip().lower()
+            if new_email and new_email != (client.email or "").lower():
+                return jsonify({'error': 'Email cannot be changed'}), 400
 
         if 'firstname' in data:
             client.firstname = data['firstname']
@@ -973,9 +970,9 @@ def get_document(document_id):
 def create_document():
     try:
         original_filename = None
-        
-        file = request.files.get('file')  
-        if file and file.filename.strip() == '': 
+
+        file = request.files.get('file')
+        if file and file.filename.strip() == '':
             file = None
 
         allowed_extensions = {
@@ -985,9 +982,9 @@ def create_document():
             'm4a', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'
         }
 
-        original_filename = None  
-        file_extension = None     
-        file_url = None 
+        original_filename = None
+        file_extension = None
+        file_url = None
 
         name = request.form.get('name')
         description = request.form.get('description', None)
@@ -999,7 +996,8 @@ def create_document():
 
         if file:
             original_filename = secure_filename(file.filename)
-            file_extension = original_filename.rsplit('.', 1)[1].lower() if '.' in original_filename else ''
+            file_extension = original_filename.rsplit(
+                '.', 1)[1].lower() if '.' in original_filename else ''
 
             if not file_extension or file_extension not in allowed_extensions:
                 return jsonify({'error': 'File type not allowed'}), 400
@@ -1022,12 +1020,12 @@ def create_document():
             if resource_type == "raw":
                 file_url += f"?fl_attachment={original_filename}"
         else:
-            file_extension = 'note'                             
+            file_extension = 'note'
             file_url = ""
 
         new_document = Document(
             name=name,
-            type=file_extension,  
+            type=file_extension,
             url_route=file_url,
             description=description,
             category=category,
@@ -1130,8 +1128,9 @@ def update_document(document_id):
         return jsonify({
             **document.serialize(),
             'original_filename': uploaded_original_filename or (
-                document.original_filename if hasattr(document, 'original_filename') else None
-            )  
+                document.original_filename if hasattr(
+                    document, 'original_filename') else None
+            )
         }), 200
 
     except Exception as e:
@@ -1182,7 +1181,8 @@ def get_client_courtfiles():
             q = q.filter(ClientCourtfile.courtfile_id.in_(subq))
 
         if requested_courtfile_id is not None:
-            q = q.filter(ClientCourtfile.courtfile_id == requested_courtfile_id)
+            q = q.filter(ClientCourtfile.courtfile_id ==
+                         requested_courtfile_id)
 
         client_courtfiles = q.all()
         return jsonify([{
@@ -1198,7 +1198,6 @@ def get_client_courtfiles():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 
 @api.route('/clients-courtfiles', methods=['POST'])
@@ -2040,6 +2039,8 @@ def _parse_iso(ts: str):
         return None
 
 # GET /api/messages?courtfile_id=21&since=2025-09-19T16:30:00
+
+
 @api.route("/messages", methods=["GET"])
 def list_messages():
     courtfile_id = request.args.get("courtfile_id", type=int)
@@ -2056,6 +2057,7 @@ def list_messages():
     rows = q.order_by(Message.created_at.asc()).limit(100).all()
     return jsonify([m.to_front_dict() for m in rows])
 
+
 @api.route("/messages", methods=["POST"])
 def create_message():
     data = request.get_json() or {}
@@ -2065,25 +2067,26 @@ def create_message():
 
     if not cfid or not text or role not in {"lawyer", "client", "admin"}:
         return jsonify({"error": "courtfile_id, text y sender_role válidos son requeridos"}), 400
-    
+
     lawyer_id = None
     client_id = None
-    
+
     if role == "lawyer":
-        lawyer_id = data.get("sender_id")  
+        lawyer_id = data.get("sender_id")
     elif role == "client":
-        client_id = data.get("sender_id")  
+        client_id = data.get("sender_id")
 
     msg = Message(
-        id_courtfile=cfid,   
-        texto=text,         
-        sender=role,        
+        id_courtfile=cfid,
+        texto=text,
+        sender=role,
         lawyer_id=lawyer_id,
         client_id=client_id,
     )
     db.session.add(msg)
     db.session.commit()
     return jsonify(msg.to_front_dict()), 201
+
 
 @api.route("/messages/unread", methods=["GET"])
 def unread_counts():
@@ -2149,6 +2152,7 @@ def unread_counts():
         resp[str(cfid)] = {"hasUnread": c > 0, "count": min(c, 99)}
     return jsonify(resp)
 
+
 @api.route("/messages/read", methods=["POST"])
 def mark_read():
     """
@@ -2178,28 +2182,30 @@ def mark_read():
         ts = datetime.now(timezone.utc)
 
     # UPSERT: si existe, update; si no, create
-    row = ChatRead.query.filter_by(id_courtfile=cfid, role=role, user_id=user_id).first()
+    row = ChatRead.query.filter_by(
+        id_courtfile=cfid, role=role, user_id=user_id).first()
     if row:
         if ts > row.last_read_at:
             row.last_read_at = ts
     else:
-        row = ChatRead(id_courtfile=cfid, role=role, user_id=user_id, last_read_at=ts)
+        row = ChatRead(id_courtfile=cfid, role=role,
+                       user_id=user_id, last_read_at=ts)
         db.session.add(row)
 
     db.session.commit()
     return jsonify({"ok": True, "courtfile_id": cfid, "last_read_at": row.last_read_at.isoformat()})
 
-
-
     # -----------------------------STRIPE PAYMENT-----------------------------------------------------
+
+
 @api.route("payments/<int:paymentId>/create-checkout-session", methods=["POST"])
 def create_checkout_session(paymentId):
     try:
         payment = Payment.query.get(paymentId)
-        
+
         if not payment:
             return jsonify({'error': 'Payment not found'}), 404
-        
+
         if payment.status == PaymentStatus.processing:
             if payment.updated_at:
                 time_in_processing = datetime.utcnow() - payment.updated_at
@@ -2207,10 +2213,12 @@ def create_checkout_session(paymentId):
                     payment.status = PaymentStatus.pending
                     payment.stripe_payment_intent_id = None
                     db.session.commit()
-                    print(f"Payment {paymentId} reset from processing to pending (timeout 30min)")
+                    print(
+                        f"Payment {paymentId} reset from processing to pending (timeout 30min)")
                 else:
                     remaining_time = timedelta(minutes=30) - time_in_processing
-                    remaining_minutes = int(remaining_time.total_seconds() / 60)
+                    remaining_minutes = int(
+                        remaining_time.total_seconds() / 60)
                     return jsonify({
                         'error': f'Payment is already being processed. Please wait {remaining_minutes} minutes or try again later.'
                     }), 400
@@ -2221,7 +2229,8 @@ def create_checkout_session(paymentId):
                         payment.status = PaymentStatus.pending
                         payment.stripe_payment_intent_id = None
                         db.session.commit()
-                        print(f"Payment {paymentId} reset from processing to pending (timeout 30min - fallback)")
+                        print(
+                            f"Payment {paymentId} reset from processing to pending (timeout 30min - fallback)")
                     else:
                         return jsonify({
                             'error': 'Payment is already being processed. Please try again in 30 minutes.'
@@ -2230,13 +2239,14 @@ def create_checkout_session(paymentId):
                     payment.status = PaymentStatus.pending
                     payment.stripe_payment_intent_id = None
                     db.session.commit()
-                    print(f"Payment {paymentId} reset from processing to pending (no timestamp)")
-        
+                    print(
+                        f"Payment {paymentId} reset from processing to pending (no timestamp)")
+
         if payment.status == PaymentStatus.approved:
             return jsonify({
                 'error': 'Payment is already approved. Cannot proceed with checkout.'
             }), 400
-        
+
         courtfile_name = f"LexQuo Payment {paymentId}"
         payment_courtfile = PaymentCourtfile.query.filter_by(
             payment_id=paymentId
@@ -2256,7 +2266,7 @@ def create_checkout_session(paymentId):
                     'product_data': {
                         'name': product_name,
                     },
-                    'unit_amount': int(float(payment.amount) * 100) 
+                    'unit_amount': int(float(payment.amount) * 100)
                 },
                 'quantity': 1,
             }],
@@ -2271,11 +2281,12 @@ def create_checkout_session(paymentId):
 
         payment.status = PaymentStatus.processing
         payment.stripe_payment_intent_id = session.payment_intent
-        payment.updated_at = datetime.utcnow()  
-        
+        payment.updated_at = datetime.utcnow()
+
         db.session.commit()
-        
-        print(f"Payment {paymentId} set to processing, Stripe ID: {session.payment_intent}")
+
+        print(
+            f"Payment {paymentId} set to processing, Stripe ID: {session.payment_intent}")
 
         return jsonify({
             "url": session.url,
@@ -2381,8 +2392,7 @@ def webhook():
     return jsonify(success=True)
 
 
-
-#=====================RUTAS PARA MAILS======================
+# =====================RUTAS PARA MAILS======================
 
 @api.route("/emails/invite", methods=["POST"])
 def send_invite_email():
@@ -2390,7 +2400,8 @@ def send_invite_email():
     email = (data.get("email") or "").strip().lower()
     firstname = (data.get("firstname") or "").strip()
     lastname = (data.get("lastname") or "").strip()
-    courtfile_number = data.get("courtfile_number")  # opcional, solo para el copy
+    # opcional, solo para el copy
+    courtfile_number = data.get("courtfile_number")
     courtfile_id = data.get("courtfile_id")          # opcional, p/ link
 
     if not email or not firstname or not lastname:

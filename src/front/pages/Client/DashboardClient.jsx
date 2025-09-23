@@ -32,6 +32,11 @@ export const DashboardClient = () => {
     const authed = !!auth?.token;
     const role = (auth?.role || "").toLowerCase();
 
+    const currentClientId =
+        auth?.user?.id ??
+        auth?.client?.id ??
+        null;
+
 
     const name = auth?.user ? `${auth.user?.firstname ?? ""} ${auth.user?.lastname ?? ""}`.trim() : "";
 
@@ -142,6 +147,17 @@ export const DashboardClient = () => {
         <div className="container text-center mt-5">
             <h1>DASHBOARD CLIENT</h1>
             <h1>¡HELLO {authed ? (name) : "you must log in"}!</h1>
+            {currentClientId && (
+                <Link
+                    to={`/clients/view/${currentClientId}`}
+                    className="btn btn-sm btn-info me-1"
+                    title="View details"
+                    state={{ returnTo: "/DashboardClient" }}
+                >
+                    <i className="bi bi-eye me-1"></i>
+                    View Profile
+                </Link>
+            )}
 
             {authed ? (
                 <div className="mt-5 text-start">
