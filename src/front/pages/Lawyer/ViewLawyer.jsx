@@ -1,4 +1,4 @@
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -6,6 +6,9 @@ export const ViewLawyer = () => {
   const { store, dispatch } = useGlobalReducer();
   const { lawyerId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.returnTo || "/lawyers";
+
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
@@ -99,7 +102,7 @@ export const ViewLawyer = () => {
               <p className="text-muted">ID #{lawyer.id}</p>
             </div>
             <Link to="/lawyers" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
+              <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
 
@@ -153,7 +156,15 @@ export const ViewLawyer = () => {
 
             <div className="card-footer bg-light">
               <div className="d-flex gap-2 justify-content-end">
-                
+
+                <Link
+                  to={`/lawyers/${lawyer.id}/password`}
+                  state={{ returnTo: `/lawyers/view/${lawyer.id}` }}
+                  className="btn btn-outline-secondary"
+                >
+                  <i className="bi bi-key"></i> Change Password
+                </Link>
+
                 <Link to={`/lawyers/${lawyer.id}`} className="btn btn-warning">
                   <i className="bi bi-pencil"></i> Edit
                 </Link>
@@ -166,6 +177,6 @@ export const ViewLawyer = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 };

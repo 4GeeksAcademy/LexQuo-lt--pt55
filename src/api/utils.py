@@ -45,39 +45,3 @@ def generate_sitemap(app):
         <p>Remember to specify a real endpoint path like: </p>
         <ul style="text-align: left;">"""+links_html+"</ul></div>"
 
-# def unread_count_for(user_id: int, role: str, courtfile_id: int) -> int:
-#     """
-#     Devuelve cuántos mensajes están no leídos para un user/role en un expediente.
-#     """
-#     last_read = (
-#         db.session.query(ChatRead.last_read_at)
-#         .filter_by(user_id=user_id, role=role, courtfile_id=courtfile_id)
-#         .scalar()
-#     )
-
-#     q = db.session.query(func.count(Message.id)).filter(
-#         Message.id_courtfile == courtfile_id
-#     )
-#     if last_read:
-#         q = q.filter(Message.created_at > last_read)
-
-#     return q.scalar() or 0
-
-# def mark_chat_read(user_id: int, role: str, courtfile_id: int):
-#     """
-#     Marca como leído un chat para un user/role/expediente.
-#     """
-#     now = datetime.now(timezone.utc)
-#     rec = (
-#         db.session.query(ChatRead)
-#         .filter_by(courtfile_id=courtfile_id, user_id=user_id, role=role)
-#         .one_or_none()
-#     )
-#     if rec:
-#         rec.last_read_at = now
-#     else:
-#         rec = ChatRead(courtfile_id=courtfile_id, user_id=user_id, role=role, last_read_at=now)
-#         db.session.add(rec)
-
-#     db.session.commit()
-#     return rec

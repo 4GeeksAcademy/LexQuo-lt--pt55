@@ -31,7 +31,6 @@ export const LawyerLinkOrInviteLawyer = () => {
   const [createForm, setCreateForm] = useState({
     firstname: "",
     lastname: "",
-    license: "",
     phone: ""
   });
 
@@ -57,6 +56,12 @@ export const LawyerLinkOrInviteLawyer = () => {
       const resp = await fetch(`${API}/api/lawyers/lookup?email=${encodeURIComponent(emailTrim)}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });
+
+      if (resp.status === 404) {
+        setFoundLawyer(null);
+        setNotFound(true);
+        return;
+      }
 
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
@@ -97,7 +102,22 @@ export const LawyerLinkOrInviteLawyer = () => {
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
 
-      alert("Lawyer linked to case! ✅");
+      if (lw?.email) {
+        try {
+          await notifyLawyerLinkedEmail({
+            email: lw.email,
+            firstname: lw.firstname,
+            lastname: lw.lastname,
+            courtfileId: preselectedCourtfileId,
+            courtfileNumber: preselectedCourtfileNumber
+          });
+          alert("Lawyer linked to case and notification email sent ✅");
+        } catch (e) {
+          alert(`Lawyer linked, but email failed: ${e.message}`);
+        }
+      } else {
+        alert("Lawyer linked to case! ✅");
+      }
       navigate(returnTo);
     } catch (err) {
       alert(err.message || "Error linking lawyer");
@@ -111,7 +131,6 @@ export const LawyerLinkOrInviteLawyer = () => {
 
     const firstname = createForm.firstname.trim();
     const lastname = createForm.lastname.trim();
-    const license = createForm.license.trim();
     const phone = createForm.phone.trim();
 
     if (!firstname || !lastname) {
@@ -123,7 +142,6 @@ export const LawyerLinkOrInviteLawyer = () => {
       return;
     }
 
-    // Password por defecto: LexQuoNombreApellido
     const password = `LexQuo${capitalize(firstname)}${capitalize(lastname)}`;
 
     try {
@@ -140,7 +158,6 @@ export const LawyerLinkOrInviteLawyer = () => {
           firstname,
           lastname,
           email: email.trim().toLowerCase(),
-          license,
           phone,
           password,
           role: "lawyer"
@@ -151,6 +168,32 @@ export const LawyerLinkOrInviteLawyer = () => {
 
       // 3.2) Linkear al expediente
       await linkLawyerToCase(newLawyer.id);
+
+      // 3.3) Enviar invitación por mail (inline)
+      const inviteResp = await fetch(`${API}/api/emails/invite`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          role: "lawyer",
+          email: email.trim().toLowerCase(),
+          firstname,
+          lastname,
+          courtfile_id: Number(preselectedCourtfileId),
+          courtfile_number: preselectedCourtfileNumber
+        })
+      });
+
+      let inviteJson = {};
+      try { inviteJson = await inviteResp.json(); } catch { }
+      if (!inviteResp.ok || inviteJson?.error) {
+        throw new Error(inviteJson?.error || `Invite failed (HTTP ${inviteResp.status})`);
+      }
+
+      alert("Lawyer created, linked and invitation email sent ✅");
+      navigate(returnTo);
     } catch (err) {
       setCreateErr(err.message || "Error creating lawyer");
     } finally {
@@ -158,25 +201,33 @@ export const LawyerLinkOrInviteLawyer = () => {
     }
   };
 
-  // --- 4) Opción alternativa: invitar por email (redirigir a signup) ---
-  const handleInvite = () => {
-    if (!preselectedCourtfileId) {
-      alert("No courtfile provided.");
-      return;
-    }
-    const emailTrim = (email || "").trim().toLowerCase();
-    if (!emailTrim) {
-      alert("Enter an email first");
-      return;
-    }
-    const params = new URLSearchParams({
-      role: "lawyer",
-      email: emailTrim,
-      courtfile_id: String(preselectedCourtfileId),
-      returnTo
+  // Envía el correo cuando un LAWYER existente fue linkeado a un expediente
+  const notifyLawyerLinkedEmail = async ({ email, firstname, lastname, courtfileId, courtfileNumber }) => {
+    const resp = await fetch(`${API}/api/emails/linked`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        role: "lawyer",
+        email: (email || "").trim().toLowerCase(),
+        firstname: firstname || "",
+        lastname: lastname || "",
+        courtfile_id: Number(courtfileId),
+        courtfile_number: courtfileNumber || null
+      })
     });
-    navigate(`/SignUpLawyer?${params.toString()}`);
+
+    let data = {};
+    try { data = await resp.json(); } catch { }
+    if (!resp.ok || data?.error) {
+      throw new Error(data?.error || `Linked email failed (HTTP ${resp.status})`);
+    }
+    return data; // { ok: true, sent_to: ... }
   };
+
+
 
   return (
     <div className="container mt-4">
@@ -190,11 +241,11 @@ export const LawyerLinkOrInviteLawyer = () => {
       </div>
 
       {preselectedCourtfileId && (
-            <span className="badge bg-dark mt-2 mb-2">
-              Related to Courtfile {preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
-              {preselectedCourtfileTitle ? ` — ${preselectedCourtfileTitle}` : ""}
-            </span>
-          )}
+        <span className="badge bg-dark mt-2 mb-2">
+          Related to Courtfile {preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
+          {preselectedCourtfileTitle ? ` — ${preselectedCourtfileTitle}` : ""}
+        </span>
+      )}
 
       {/* Buscar por email */}
       <div className="card mb-4">
@@ -231,12 +282,11 @@ export const LawyerLinkOrInviteLawyer = () => {
           <div className="card-body">
             <p className="mb-1"><strong>Name:</strong> {foundLawyer.firstname} {foundLawyer.lastname}</p>
             <p className="mb-1"><strong>Email:</strong> {foundLawyer.email}</p>
-            <p className="mb-1"><strong>License:</strong> {foundLawyer.license || "—"}</p>
             <p className="mb-3"><strong>Phone:</strong> {foundLawyer.phone || "—"}</p>
 
             <button
               className="btn btn-success"
-              onClick={() => linkLawyerToCase(foundLawyer.id)}
+              onClick={() => linkLawyerToCase(foundLawyer)}
               disabled={creating}
             >
               Link to this Case
@@ -248,18 +298,14 @@ export const LawyerLinkOrInviteLawyer = () => {
       {/* No encontrado: mostrar formulario corto para crear */}
       {notFound && (
         <div className="card">
-          <div className="card-header bg-warning">Lawyer not found — Create & Link</div>
+          <div className="card-header bg-warning">Lawyer not found — Create, Link and Invite</div>
           <div className="card-body">
             {createErr && <div className="alert alert-danger">{createErr}</div>}
-            
-            <div className="mb-3">
-              <p className="mb-2">
-                No lawyer with <strong>{email}</strong> was found. You can:
-              </p>
-            </div>
-            
+
+
+            {/* ---------- Create & Link ---------- */}
             <div className="mb-4">
-              <h5>Option 1: Create a new lawyer account</h5>
+
               <form onSubmit={handleCreateAndLink}>
                 <div className="row g-3">
                   <div className="col-md-3">
@@ -286,7 +332,7 @@ export const LawyerLinkOrInviteLawyer = () => {
                       disabled={creating}
                     />
                   </div>
-                  
+
                   <div className="col-md-3">
                     <label className="form-label">Phone</label>
                     <input
@@ -302,18 +348,19 @@ export const LawyerLinkOrInviteLawyer = () => {
                 </div>
 
                 <div className="form-text mt-2">
-                  Default password will be: <code>LexQuoNombreApellido</code>
+                  Default password will be:{" "}
+                  <code>{`LexQuo${capitalize(createForm.firstname)}${capitalize(createForm.lastname)}`}</code>
                 </div>
 
                 <div className="mt-3 d-flex justify-content-end">
-                  <button type="submit" className="btn btn-primary me-2" disabled={creating}>
+                  <button type="submit" className="btn btn-primary" disabled={creating}>
                     {creating ? "Creating & Linking..." : "Create & Link"}
                   </button>
                 </div>
               </form>
             </div>
-            
-            
+
+
           </div>
         </div>
       )}
