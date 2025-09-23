@@ -20,10 +20,10 @@ export const ViewClient = () => {
   const [linkedCourtfile, setLinkedCourtfile] = useState(
     location.state?.courtfileId
       ? {
-          id: location.state.courtfileId,
-          number: location.state.courtfileNumber,
-          title: location.state.courtfileTitle,
-        }
+        id: location.state.courtfileId,
+        number: location.state.courtfileNumber,
+        title: location.state.courtfileTitle,
+      }
       : null
   );
 
@@ -360,6 +360,13 @@ export const ViewClient = () => {
                   </button>
                 ) : (
                   <>
+                    <Link
+                      to={`/clients/${client.id}/password`}
+                      state={{ returnTo }}
+                      className="btn btn-outline-secondary"
+                    >
+                      <i className="bi bi-key"></i> Change Password
+                    </Link>
                     <Link
                       to={`/clients/${client.id}`}
                       state={{ returnTo }}

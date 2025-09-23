@@ -88,6 +88,8 @@ import { AddPaymentCourtfile } from "./pages/Relations/AddPaymentCourtfile";
 import ChatOnDemand from "./pages/ChatOnDemand.jsx";
 import ChatsOverview from "./pages/ChatsOverview.jsx";
 
+import ChangePassword from "./pages/ChangePassword";
+
 
 
 
@@ -178,8 +180,6 @@ export const router = createBrowserRouter(
       <Route path="/SignUpClient" element={<SignUpClient />} />
       <Route path="/LoginClient" element={<LoginClient />} />
       <Route path="/DashboardClient" element={<DashboardClient />} />
-      
-
 
       <Route path="/403" element={<Forbidden />} />
 
@@ -188,6 +188,9 @@ export const router = createBrowserRouter(
 
       <Route path="/chats/:courtfileId" element={<ChatOnDemand />} />
       <Route path="/chats" element={<ChatsOverview />} />
+
+      <Route path="/lawyers/:id/password" element={<ChangePassword kind="lawyer" />} />
+      <Route path="/clients/:id/password" element={<ChangePassword kind="client" />} />
 
     </Route>
   )

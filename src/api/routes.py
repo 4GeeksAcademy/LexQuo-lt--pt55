@@ -330,6 +330,25 @@ def lawyer_login():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@api.route('/lawyers/<int:lawyer_id>/password', methods=['PUT'])
+def change_lawyer_password(lawyer_id):
+    data = request.get_json() or {}
+    current = (data.get('current') or '').strip()
+    new = (data.get('new') or '').strip()
+
+    if not new or len(new) < 8:
+        return jsonify({'error': 'New password must be at least 8 characters'}), 400
+
+    lawyer = Lawyer.query.get_or_404(lawyer_id)
+
+    # Si tenés hash guardado:
+    if lawyer.password and not check_password_hash(lawyer.password, current):
+        return jsonify({'error': 'Current password is incorrect'}), 400
+
+    lawyer.password = generate_password_hash(new)
+    db.session.commit()
+    return jsonify({'ok': True}), 200
 
 
 # -----------------ROUTES PARA CLIENTS--------------------------------------------
@@ -502,6 +521,24 @@ def client_login():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+@api.route('/clients/<int:client_id>/password', methods=['PUT'])
+def change_client_password(client_id):
+    data = request.get_json() or {}
+    current = (data.get('current') or '').strip()
+    new = (data.get('new') or '').strip()
+
+    if not new or len(new) < 8:
+        return jsonify({'error': 'New password must be at least 8 characters'}), 400
+
+    client = Client.query.get_or_404(client_id)
+
+    if client.password and not check_password_hash(client.password, current):
+        return jsonify({'error': 'Current password is incorrect'}), 400
+
+    client.password = generate_password_hash(new)
+    db.session.commit()
+    return jsonify({'ok': True}), 200
 
 # -----------------ROUTES PARA COURTFILES, APPOINTMENTS Y DOCUMENTS DEL CLIENT--------------------------------------------
 
