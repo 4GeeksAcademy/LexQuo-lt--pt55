@@ -147,14 +147,49 @@ export const LawyerLinkOrCreateClient = () => {
       const newClient = await createResp.json().catch(() => ({}));
       if (!createResp.ok) throw new Error(newClient.error || `HTTP ${createResp.status}`);
 
-      // 3.2) Linkear al expediente
+      // 3.2) Linkear al expediente (si hay preselectedCourtfileId)
+      if (!preselectedCourtfileId) {
+        throw new Error("No courtfile provided para linkear.");
+      }
       await linkClientToCase(newClient.id);
+
+      // 3.3) Enviar invitación por mail
+      const inviteResp = await fetch(`${API}/api/emails/invite`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          firstname,
+          lastname,
+          courtfile_id: Number(preselectedCourtfileId),
+          courtfile_number: preselectedCourtfileNumber
+        })
+      });
+
+      // chequeo de respuesta del envío
+      let inviteJson = {};
+      try { inviteJson = await inviteResp.json(); } catch { }
+      if (!inviteResp.ok || inviteJson?.error) {
+        // no cortamos el flujo anterior (cliente creado y linkeado ya quedaron OK),
+        // pero informamos al usuario el problema con el mail
+        throw new Error(inviteJson?.error || `Falló el envío de invitación (HTTP ${inviteResp.status})`);
+      }
+
+      // todo OK: aviso + navegación
+      alert("Cliente creado, linkeado y mail de invitación enviado ✅");
+      navigate(returnTo);
     } catch (err) {
       setCreateErr(err.message || "Error creating client");
     } finally {
       setCreating(false);
     }
-  };
+  }; 
+
+
+
 
   return (
     <div className="container mt-4">
@@ -269,7 +304,7 @@ export const LawyerLinkOrCreateClient = () => {
               </div>
 
               <div className="form-text mt-2">
-                Default password will be: <code>LexQuoNombreApellido</code>
+                Default password will be: <code>{`LexQuo${capitalize(createForm.firstname)}${capitalize(createForm.lastname)}`}</code>
               </div>
 
               <div className="mt-3 d-flex justify-content-end">

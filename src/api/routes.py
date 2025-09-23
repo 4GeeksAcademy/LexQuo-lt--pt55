@@ -16,7 +16,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from sqlalchemy.orm import joinedload
-
+from api.mails_utils import send_email
 
 
 from api.validators import parse_iso_date, parse_24h_time, is_valid_24h_time, validate_required_fields, validate_time_order, create_error_response
@@ -35,6 +35,8 @@ cloudinary.config(
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
 os.getenv("FLASK_DEBUG")
+
+FRONTEND_BASE_URL = os.getenv("FRONTEND_ORIGIN")
 
 
 @api.route('/hello', methods=['POST', 'GET'])
@@ -2377,3 +2379,58 @@ def webhook():
         print(f'Unhandled event type: {event["type"]}')
 
     return jsonify(success=True)
+
+
+
+#=====================RUTAS PARA MAILS======================
+
+@api.route("/emails/invite", methods=["POST"])
+def send_invite_email():
+    data = request.get_json() or {}
+    email = (data.get("email") or "").strip().lower()
+    firstname = (data.get("firstname") or "").strip()
+    lastname = (data.get("lastname") or "").strip()
+    courtfile_number = data.get("courtfile_number")  # opcional, solo para el copy
+    courtfile_id = data.get("courtfile_id")          # opcional, p/ link
+
+    if not email or not firstname or not lastname:
+        return jsonify({"error": "email, firstname y lastname son obligatorios"}), 400
+
+    def cap(s): return s[:1].upper() + s[1:] if s else s
+    default_pwd = f"LexQuo{cap(firstname)}{cap(lastname)}"
+
+    # Si querés incluir un link de “aceptar invitación” en el frontend:
+    # (sin dominio está ok; usás tu FRONTEND_BASE_URL)
+    invite_url = f"{FRONTEND_BASE_URL}/accept-invite?email={email}"
+    if courtfile_id:
+        invite_url += f"&courtfile_id={courtfile_id}"
+
+    subject = "Invitación a LexQuo"
+    html = f"""
+    <h2>Hello {firstname} {lastname} 👋</h2>
+    <p>You have been invited to access your case in <b>LexQuo</b>.</p>
+    {"<p>Courtfile: <b>#"+str(courtfile_number)+"</b></p>" if courtfile_number else ""}
+    <p>You can log in with:</p>
+    <ul>
+      <li><b>Username::</b> {email}</li>
+      <li><b>Initial password:</b> <code>{default_pwd}</code></li>
+    </ul>
+    <p>We recommend changing your password on your first login.</p>
+    <p><a href="{invite_url}">Accept invitation</a></p>
+    <hr/>
+    <small>If you were not expecting this email, you can ignore it.</small>
+    """
+    text = (
+        f"Hello {firstname} {lastname}.\n"
+        "You have been invited to LexQuo.\n"
+        + (f"Case file: #{courtfile_number}\n" if courtfile_number else "")
+        + f"Username: {email}\nInitial password: {default_pwd}\n"
+        f"Accept invitation: {invite_url}\n"
+        "We recommend changing your password on your first login."
+    )
+
+    try:
+        send_email(email, subject, html, text)
+        return jsonify({"ok": True, "sent_to": email})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
