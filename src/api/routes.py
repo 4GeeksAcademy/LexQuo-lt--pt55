@@ -324,7 +324,6 @@ def lawyer_login():
         return jsonify({
             'message': 'Login successful',
             'token': token,
-            'role': 'lawyer',
             'lawyer': lawyer.serialize()
         }), 200
 
@@ -515,7 +514,6 @@ def client_login():
         return jsonify({
             'message': 'Login successful',
             'token': token,
-            'role': 'client',
             'client': client.serialize()
         }), 200
 
