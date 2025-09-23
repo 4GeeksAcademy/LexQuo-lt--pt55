@@ -1,7 +1,8 @@
-
 import { Link, useParams, useNavigate, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import useUnreadBadges from "../../hooks/useUnreadBadges";
+import { markNow } from "../../hooks/chatUnread";
 
 export const ViewCourtfileLawyer = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -14,6 +15,7 @@ export const ViewCourtfileLawyer = () => {
   const token = auth?.token;
   const authed = !!token;
   if (auth?.role !== 'lawyer') return <Navigate to="/403" replace />;
+  const role = String(auth?.role || "").toLowerCase();
 
   // ------------------- COURTFILE -------------------
   const [courtfile, setCourtfile] = useState(null);
@@ -461,6 +463,70 @@ export const ViewCourtfileLawyer = () => {
     }
   };
 
+  // 🔔 UNREAD (solo este expediente)
+  const caseIds = useMemo(() => [Number(courtfileId)], [courtfileId]);
+  const { unreadByCase, refresh: refreshUnread } = useUnreadBadges({
+    API,
+    auth,
+    role,             // "lawyer"
+    courtfileIds: caseIds,
+  });
+
+  // ---- marcar leído en backend  ----
+  async function markReadBackend(API, auth, role, cfid) {
+    const userId =
+      auth?.user?.id ??
+      auth?.lawyer?.id ??
+      auth?.client?.id ??
+      auth?.id ?? null;
+    if (!API || !auth?.token || !userId || !cfid) return;
+
+    try {
+      await fetch(`${API}/api/messages/read`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth.token}`,
+        },
+        body: JSON.stringify({
+          courtfile_id: cfid,
+          role: String(role || "").toLowerCase(),
+          user_id: userId,
+        }),
+      });
+    } catch (_) { }
+  }
+
+  // ---- abrir chat: marca local + backend y navega con state ----
+  const onOpenChatClick = async (e) => {
+    e.preventDefault();
+    const cfid = Number(courtfileId);
+    const uid =
+      auth?.user?.id ??
+      auth?.lawyer?.id ??
+      auth?.client?.id ??
+      auth?.id ?? null;
+
+    if (uid && cfid) {
+      // feedback inmediato
+      markNow(uid, cfid);
+      // persistir en backend
+      await markReadBackend(API, auth, role, cfid);
+      // refrescar badges
+      refreshUnread();
+      // navegar con el state
+      navigate(`/chats/${cfid}`, {
+        state: {
+          courtfileId: cfid,
+          courtfileNumber: courtfile.case_number,
+          courtfileTitle: courtfile.title,
+          senderRole: "lawyer",
+          returnTo: `/courtfiles/ViewCourtfileLawyer/${cfid}`,
+        },
+      });
+    }
+  };
+
   // ------------------- RENDER -------------------
   if (loading) {
     return (
@@ -530,14 +596,22 @@ export const ViewCourtfileLawyer = () => {
           <Link
             to={`/chats/${courtfile.id}`}
             state={{
+              courtfileId: courtfile.id,
               courtfileNumber: courtfile.case_number,
               courtfileTitle: courtfile.title,
               senderRole: "lawyer",
               returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
             }}
-            className="btn btn-sm btn-outline-primary me-1"
+            className="btn btn-sm btn-outline-primary me-1 position-relative"
+            title="Open chat"
+            onClick={onOpenChatClick}
           >
             <i className="bi bi-chat-dots"></i>
+            {unreadByCase.get(Number(courtfileId))?.hasUnread && (
+              <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                <span className="visually-hidden">New</span>
+              </span>
+            )}
           </Link>
 
           {/* Card con detalles */}

@@ -1,4 +1,3 @@
-# src/main.py
 import os
 from flask import Flask, request, jsonify, send_from_directory
 from flask_migrate import Migrate
@@ -16,8 +15,7 @@ from api.ai import bp_ai
 
 # === 1) Definí el origen del FRONT (EXACTO, el de tu 3000) ===
 FRONTEND_ORIGIN = os.getenv(
-    "FRONTEND_ORIGIN",
-    "https://ideal-system-pjg4rvjjppq7fr9rq-3000.app.github.dev"  # reemplazalo si cambió
+    "FRONTEND_ORIGIN"
 )
 
 ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"

@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation, Link, useParams, } from "react-router-dom";
 import { io } from "socket.io-client";
 import { setLastRead, getLastRead } from "../hooks/chatUnread.jsx";
+import { markNow } from "../hooks/chatUnread";
 
 export default function ChatOnDemand(props) {
   const location = useLocation();
@@ -309,6 +310,19 @@ export default function ChatOnDemand(props) {
       }
     };
   }, [courtfileId, currentUserId]);
+
+  useEffect(() => {
+    const uid =
+      auth?.user?.id ??
+      auth?.lawyer?.id ??
+      auth?.client?.id ??
+      auth?.id ??
+      null;
+
+    if (uid && courtfileId) {
+      markNow(uid, courtfileId);
+    }
+  }, [auth, courtfileId]);
 
   if (!courtfileId) {
     return (
