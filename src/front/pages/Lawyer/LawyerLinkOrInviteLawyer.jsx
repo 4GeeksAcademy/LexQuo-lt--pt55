@@ -102,7 +102,22 @@ export const LawyerLinkOrInviteLawyer = () => {
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
 
-      alert("Lawyer linked to case! ✅");
+      if (lw?.email) {
+        try {
+          await notifyLawyerLinkedEmail({
+            email: lw.email,
+            firstname: lw.firstname,
+            lastname: lw.lastname,
+            courtfileId: preselectedCourtfileId,
+            courtfileNumber: preselectedCourtfileNumber
+          });
+          alert("Lawyer linked to case and notification email sent ✅");
+        } catch (e) {
+          alert(`Lawyer linked, but email failed: ${e.message}`);
+        }
+      } else {
+        alert("Lawyer linked to case! ✅");
+      }
       navigate(returnTo);
     } catch (err) {
       alert(err.message || "Error linking lawyer");
@@ -186,7 +201,31 @@ export const LawyerLinkOrInviteLawyer = () => {
     }
   };
 
+  // Envía el correo cuando un LAWYER existente fue linkeado a un expediente
+  const notifyLawyerLinkedEmail = async ({ email, firstname, lastname, courtfileId, courtfileNumber }) => {
+    const resp = await fetch(`${API}/api/emails/linked`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        role: "lawyer",
+        email: (email || "").trim().toLowerCase(),
+        firstname: firstname || "",
+        lastname: lastname || "",
+        courtfile_id: Number(courtfileId),
+        courtfile_number: courtfileNumber || null
+      })
+    });
 
+    let data = {};
+    try { data = await resp.json(); } catch { }
+    if (!resp.ok || data?.error) {
+      throw new Error(data?.error || `Linked email failed (HTTP ${resp.status})`);
+    }
+    return data; // { ok: true, sent_to: ... }
+  };
 
 
 
@@ -247,7 +286,7 @@ export const LawyerLinkOrInviteLawyer = () => {
 
             <button
               className="btn btn-success"
-              onClick={() => linkLawyerToCase(foundLawyer.id)}
+              onClick={() => linkLawyerToCase(foundLawyer)}
               disabled={creating}
             >
               Link to this Case
@@ -266,7 +305,7 @@ export const LawyerLinkOrInviteLawyer = () => {
 
             {/* ---------- Create & Link ---------- */}
             <div className="mb-4">
-              
+
               <form onSubmit={handleCreateAndLink}>
                 <div className="row g-3">
                   <div className="col-md-3">
@@ -293,7 +332,7 @@ export const LawyerLinkOrInviteLawyer = () => {
                       disabled={creating}
                     />
                   </div>
-              
+
                   <div className="col-md-3">
                     <label className="form-label">Phone</label>
                     <input

@@ -98,7 +98,24 @@ export const LawyerLinkOrCreateClient = () => {
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
 
-      alert("Client linked to case!");
+      if (clientObj?.email) {
+        try {
+          await inviteClientByEmail({
+            email: clientObj.email,
+            firstname: clientObj.firstname,
+            lastname: clientObj.lastname,
+            courtfileId: preselectedCourtfileId,
+            courtfileNumber: preselectedCourtfileNumber
+          });
+          alert("Client linked to case and invitation email sent ✅");
+        } catch (e) {
+          // El link quedó hecho igual; avisamos del mail
+          alert(`Client linked, but invite email failed: ${e.message}`);
+        }
+      } else {
+        // Fallback si se llamó con sólo el ID (sin objeto)
+        alert("Client linked to case!");
+      }
       navigate(returnTo);
     } catch (err) {
       alert(err.message || "Error linking client");
@@ -186,7 +203,32 @@ export const LawyerLinkOrCreateClient = () => {
     } finally {
       setCreating(false);
     }
-  }; 
+  };
+
+  const inviteClientByEmail = async ({ email, firstname, lastname, courtfileId, courtfileNumber }) => {
+    const resp = await fetch(`${API}/api/emails/linked`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      },
+      body: JSON.stringify({
+        role: "client",
+        email: (email || "").trim().toLowerCase(),
+        firstname: firstname || "",
+        lastname: lastname || "",
+        courtfile_id: Number(courtfileId),
+        courtfile_number: courtfileNumber || null
+      })
+    });
+
+    let data = {};
+    try { data = await resp.json(); } catch { }
+    if (!resp.ok || data?.error) {
+      throw new Error(data?.error || `Invite failed (HTTP ${resp.status})`);
+    }
+    return data; // { ok: true, sent_to: ... }
+  };
 
 
 
@@ -248,7 +290,7 @@ export const LawyerLinkOrCreateClient = () => {
 
             <button
               className="btn btn-success"
-              onClick={() => linkClientToCase(foundClient.id)}
+              onClick={() => linkClientToCase(foundClient)} 
               disabled={creating}
             >
               Link to this Case
