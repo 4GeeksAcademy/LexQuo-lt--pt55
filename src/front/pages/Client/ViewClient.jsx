@@ -1,4 +1,4 @@
-import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -31,9 +31,16 @@ export const ViewClient = () => {
   const [linkedRelations, setLinkedRelations] = useState([]);
 
   // Auth
-  const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
-  const role = auth?.role;
-  const token = auth?.token;
+  const ssAuth = JSON.parse(sessionStorage.getItem("auth") || "null");
+  const token = ssAuth?.token || null;
+  const { store } = useGlobalReducer();
+  const role = (store?.me?.role || "").toLowerCase();
+
+  if (!token) {
+    return (
+      <Navigate to="/login" replace state={{ returnTo: location.pathname + location.search }} />
+    );
+  }
 
   // Datos del cliente
   const [client, setClient] = useState(null);
@@ -46,7 +53,9 @@ export const ViewClient = () => {
     const fetchClient = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API}/api/clients/${clientId}`);
+        const response = await fetch(`${API}/api/clients/${clientId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
         setClient(data);
@@ -133,7 +142,10 @@ export const ViewClient = () => {
     if (role === "lawyer") return;
     if (!window.confirm("Are you sure you want to delete this client?")) return;
     try {
-      const response = await fetch(`${API}/api/clients/${clientId}`, { method: "DELETE" });
+      const response = await fetch(`${API}/api/clients/${clientId}`, { 
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` } 
+      });
       if (response.ok) {
         dispatch({ type: "DELETE_CLIENT", payload: Number(clientId) || clientId });
         navigate(returnTo, { replace: true });

@@ -116,17 +116,16 @@ export const router = createBrowserRouter(
       <Route path="/single/:theId" element={<Single />} />  {/* Dynamic route for single items */}
       <Route path="/demo" element={<Demo />} />
 
+      {/* ==========RUTAS QUE SOLO ESTARIA USANDO EL ADMIN POR AHORA========== */}
+
       <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} />
       <Route path="/courtfiles" element={<Courtfiles />} />
+
       <Route path="/lawyers" element={<Lawyers />} />
       <Route path="/lawyers/addLawyer" element={<AddLawyer />} />
 
-
-
       <Route path="/clients" element={<Clients />} />
       <Route path="/clients/addClient" element={<AddClient />} />
-      <Route path="/clients/view/:clientId" element={<ViewClient />} />
-      <Route path="/clients/:clientId" element={<EditClient />} />
 
       <Route path="/admins" element={<Admins />} />
       <Route path="/admins/addAdmin" element={<AddAdmin />} />
@@ -134,9 +133,24 @@ export const router = createBrowserRouter(
       <Route path="/admins/:adminId" element={<EditAdmin />} />
 
       <Route path="/payments" element={<Payments />} />
-      <Route path="/payments/view/:paymentId" element={<ViewPayment />} />
-      <Route path="/payments/addPayment" element={<AddPayment />} />
-      <Route path="/payments/:paymentId" element={<EditPayment />} />
+
+
+      {/* ==========RUTAS QUE YA SERIAN INNECESARIAS========== */}
+      <Route path="/SignUpLawyer" element={<SignUpLawyer />} />
+      <Route path="/LoginLawyer" element={<LoginLawyer />} />
+
+      <Route path="/SignUpClient" element={<SignUpClient />} />
+      <Route path="/LoginClient" element={<LoginClient />} />
+
+      {/* ==========RUTAS ABIERTAS========== */}
+      <Route path="/403" element={<Forbidden />} />
+
+      <Route path="/login" element={<LoginForAll />} />
+      <Route path="/signUp" element={<SignUpForAll />} />
+
+
+
+
 
       <Route path="/deadlines" element={<Deadlines />} />
       <Route path="/deadlines/addDeadline" element={<AddDeadline />} />
@@ -171,15 +185,12 @@ export const router = createBrowserRouter(
       <Route path="/CourtfilesDocuments" element={<CourtfilesDocuments />} />
       <Route path="/AddCourtfilesDocuments" element={<AddCourtfilesDocuments />} />
 
-      <Route path="/SignUpLawyer" element={<SignUpLawyer />} />
-      <Route path="/LoginLawyer" element={<LoginLawyer />} />
+
 
 
       <Route path="/PaymentCourtfiles" element={<PaymentCourtfiles />} />
       <Route path="/AddPaymentCourtfile" element={<AddPaymentCourtfile />} />
 
-      <Route path="/SignUpClient" element={<SignUpClient />} />
-      <Route path="/LoginClient" element={<LoginClient />} />
 
 
       <Route element={<PrivateRoute />}>
@@ -191,9 +202,16 @@ export const router = createBrowserRouter(
         <Route path="/courtfiles/:courtfileId" element={<EditCourtfile />} />
         <Route path="/lawyers/view/:lawyerId" element={<ViewLawyer />} />
         <Route path="/lawyers/:lawyerId" element={<EditLawyer />} />
+        <Route path="/clients/view/:clientId" element={<ViewClient />} />
+        <Route path="/clients/:clientId" element={<EditClient />} />
+        <Route path="/payments/view/:paymentId" element={<ViewPayment />} />
+        <Route path="/payments/addPayment" element={<AddPayment />} />
+        <Route path="/payments/:paymentId" element={<EditPayment />} />
+
+
       </Route>
 
-      <Route path="/403" element={<Forbidden />} />
+
 
       <Route path="/clients/link-or-create" element={<LawyerLinkOrCreateClient />} />
       <Route path="/lawyers/link-or-invite" element={<LawyerLinkOrInviteLawyer />} />
@@ -204,8 +222,7 @@ export const router = createBrowserRouter(
       <Route path="/lawyers/:id/password" element={<ChangePassword kind="lawyer" />} />
       <Route path="/clients/:id/password" element={<ChangePassword kind="client" />} />
 
-      <Route path="/login" element={<LoginForAll />} />
-      <Route path="/signUp" element={<SignUpForAll />} />
+
 
     </Route>
   )

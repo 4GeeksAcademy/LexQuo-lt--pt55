@@ -1,19 +1,29 @@
 import React, { useState, useEffect } from "react";
-import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation, Navigate } from "react-router-dom";
+import useGlobalReducer from "../../hooks/useGlobalReducer";
 
 export const ViewPayment = () => {
   const { paymentId } = useParams();
+  const { store } = useGlobalReducer();
   const navigate = useNavigate();
   const location = useLocation();
   const returnTo = location.state?.returnTo || "/payments";
 
   const API = import.meta.env.VITE_BACKEND_URL;
   const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
+  const ssAuth = JSON.parse(sessionStorage.getItem("auth") || "null");
+  const token = store?.auth?.token;
 
   const [payment, setPayment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isProcessingStripe, setIsProcessingStripe] = useState(false);
+  const role = (store?.me?.role || "").toLowerCase();
+
+  const isPending = payment?.status === "pending";
+  const isAdminOrLawyer = ["admin_user", "lawyer"].includes(role);
+  const isClient = role === "client";
+  const canShowButtons = isPending; // Sólo con 'pending' se habilitan acciones
 
   // Función para capitalizar la primera letra
   const capitalizeFirstLetter = (str) => {
@@ -55,7 +65,9 @@ export const ViewPayment = () => {
     const fetchPayment = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API}/api/payments/${paymentId}`);
+        const response = await fetch(`${API}/api/payments/${paymentId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
         setPayment(data);
@@ -69,12 +81,16 @@ export const ViewPayment = () => {
     };
 
     if (paymentId) fetchPayment();
-  }, [paymentId, API]);
+  }, [paymentId, API, token]);
 
   const handleDelete = async () => {
+    if (!(isPending && isAdminOrLawyer)) return;
     if (!window.confirm("Are you sure you want to delete this payment?")) return;
     try {
-      const response = await fetch(`${API}/api/payments/${paymentId}`, { method: "DELETE" });
+      const response = await fetch(`${API}/api/payments/${paymentId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (response.ok) {
         navigate(returnTo, { replace: true });
         alert("Payment deleted successfully!");
@@ -89,6 +105,7 @@ export const ViewPayment = () => {
   };
 
   const handleStripeCheckout = async () => {
+    if (!isPending) return;
     setIsProcessingStripe(true);
     try {
       const response = await fetch(`${API}/api/payments/${paymentId}/create-checkout-session`, {
@@ -224,26 +241,50 @@ export const ViewPayment = () => {
 
             <div className="card-footer bg-light">
               <div className="d-flex gap-2 justify-content-end">
-                {(payment.status === "pending" || payment.status === "rejected") && (
-                  <button
-                    className="btn btn-success"
-                    onClick={() => handleStripeCheckout(payment)}
-                    disabled={isProcessingStripe}
-                  >
-                    {isProcessingStripe ? (
-                      <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    ) : (
-                      <i className="bi bi-credit-card"></i>
+                {canShowButtons && (
+                  <>
+                    {/* CLIENTE: sólo puede pagar */}
+                    {isClient && (
+                      <button
+                        className="btn btn-success"
+                        onClick={handleStripeCheckout}
+                        disabled={isProcessingStripe}
+                      >
+                        {isProcessingStripe ? (
+                          <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        ) : (
+                          <i className="bi bi-credit-card"></i>
+                        )}{" "}
+                        Pay
+                      </button>
                     )}
-                    {" "}Pay
-                  </button>
+
+                    {/* ADMIN/LAWYER: pueden hacer cualquier acción mientras esté 'pending' */}
+                    {isAdminOrLawyer && (
+                      <>
+                        <button
+                          className="btn btn-success"
+                          onClick={handleStripeCheckout}
+                          disabled={isProcessingStripe}
+                        >
+                          {isProcessingStripe ? (
+                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                          ) : (
+                            <i className="bi bi-credit-card"></i>
+                          )}{" "}
+                          Pay
+                        </button>
+                        <Link to={`/payments/${payment.id}`} state={{ returnTo }} className="btn btn-warning">
+                          <i className="bi bi-pencil"></i> Edit
+                        </Link>
+                        <button className="btn btn-danger" onClick={handleDelete}>
+                          <i className="bi bi-trash"></i> Delete
+                        </button>
+                      </>
+                    )}
+                  </>
                 )}
-                <Link to={`/payments/${payment.id}`} state={{ returnTo }} className="btn btn-warning">
-                  <i className="bi bi-pencil"></i> Edit
-                </Link>
-                <button className="btn btn-danger" onClick={handleDelete}>
-                  <i className="bi bi-trash"></i> Delete
-                </button>
+                {/* Si NO está 'pending': no se muestran botones (solo lectura) */}
               </div>
             </div>
           </div>
