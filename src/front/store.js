@@ -26,6 +26,7 @@ export const initialStore = () => {
     courtfileDocument: [],
     paymentCourtfiles: [],
     auth: persistedAuth || null,
+    me: null,
   };
 };
 
@@ -49,20 +50,21 @@ export default function storeReducer(store, action = {}) {
 
     /* AUTH (nuevo) */
     case "SET_AUTH": {
+
       return { ...store, auth: action.payload };
     }
-    case "CLEAR_AUTH": {
-      return { ...store, auth: null };
+
+    case "SET_ME": {
+      // payload: objeto usuario, debe incluir role ('lawyer'|'client'|'admin')
+      return { ...store, me: action.payload };
     }
-    case "UPDATE_AUTH_USER": {
-      if (!store.auth) return store;
-      return {
-        ...store,
-        auth: {
-          ...store.auth,
-          user: { ...store.auth.user, ...action.payload },
-        },
-      };
+
+    case "CLEAR_AUTH": {
+      // limpiar sessionStorage y memoria
+      try {
+        sessionStorage.removeItem("auth");
+      } catch {}
+      return { ...store, auth: null, me: null };
     }
 
     /* COURTFILES */
@@ -359,8 +361,8 @@ export default function storeReducer(store, action = {}) {
         paymentCourtfiles: store.paymentCourtfiles.filter(
           (pc) => pc.id !== action.payload
         ),
-      };      
-      
+      };
+
     default:
       throw Error("Unknown action.");
   }

@@ -6,16 +6,17 @@ import cloudinary
 import cloudinary.uploader
 import stripe
 from urllib.parse import urlencode
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_, or_, literal, case
 from flask import Flask, request, jsonify, url_for, Blueprint
-from api.models import Courtfile, PaymentCourtfile, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, Message
+from api.models import Courtfile, PaymentCourtfile, PaymentStatus, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, Message, ChatRead
 from api.utils import generate_sitemap, APIException
-from datetime import datetime, UTC, timedelta
+from datetime import datetime, UTC, timedelta, timezone
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from sqlalchemy.orm import joinedload
+from api.mails_utils import send_email
 
 
 from api.validators import parse_iso_date, parse_24h_time, is_valid_24h_time, validate_required_fields, validate_time_order, create_error_response
@@ -34,6 +35,8 @@ cloudinary.config(
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
 os.getenv("FLASK_DEBUG")
+
+FRONTEND_BASE_URL = os.getenv("FRONTEND_ORIGIN")
 
 
 @api.route('/hello', methods=['POST', 'GET'])
@@ -247,13 +250,11 @@ def update_lawyer(lawyer_id):
                 file, resource_type='image')
             lawyer.url_img = upload_result['secure_url']
 
+        # Email is immutable
         if 'email' in data:
             new_email = (data.get('email') or '').strip().lower()
-            if new_email != lawyer.email:
-                existing = Lawyer.query.filter_by(email=new_email).first()
-                if existing:
-                    return jsonify({'error': 'Email already exists'}), 409
-            lawyer.email = new_email
+            if new_email and new_email != (lawyer.email or "").lower():
+                return jsonify({'error': 'Email cannot be changed'}), 400
 
         if 'firstname' in data:
             lawyer.firstname = data['firstname']
@@ -323,12 +324,31 @@ def lawyer_login():
         return jsonify({
             'message': 'Login successful',
             'token': token,
-            'role': 'lawyer',
             'lawyer': lawyer.serialize()
         }), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@api.route('/lawyers/<int:lawyer_id>/password', methods=['PUT'])
+def change_lawyer_password(lawyer_id):
+    data = request.get_json() or {}
+    current = (data.get('current') or '').strip()
+    new = (data.get('new') or '').strip()
+
+    if not new or len(new) < 8:
+        return jsonify({'error': 'New password must be at least 8 characters'}), 400
+
+    lawyer = Lawyer.query.get_or_404(lawyer_id)
+
+    # Si tenés hash guardado:
+    if lawyer.password and not check_password_hash(lawyer.password, current):
+        return jsonify({'error': 'Current password is incorrect'}), 400
+
+    lawyer.password = generate_password_hash(new)
+    db.session.commit()
+    return jsonify({'ok': True}), 200
 
 
 # -----------------ROUTES PARA CLIENTS--------------------------------------------
@@ -421,12 +441,11 @@ def update_client(client_id):
                 file, resource_type='image')
             client.url_img = upload_result['secure_url']
 
+        # Email is immutable
         if 'email' in data:
-            if data['email'] != client.email:
-                existing = Client.query.filter_by(email=data['email']).first()
-                if existing:
-                    return jsonify({'error': 'Email already exists'}), 409
-            client.email = data['email']
+            new_email = (data.get('email') or '').strip().lower()
+            if new_email and new_email != (client.email or "").lower():
+                return jsonify({'error': 'Email cannot be changed'}), 400
 
         if 'firstname' in data:
             client.firstname = data['firstname']
@@ -496,12 +515,30 @@ def client_login():
         return jsonify({
             'message': 'Login successful',
             'token': token,
-            'role': 'client',
             'client': client.serialize()
         }), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@api.route('/clients/<int:client_id>/password', methods=['PUT'])
+def change_client_password(client_id):
+    data = request.get_json() or {}
+    current = (data.get('current') or '').strip()
+    new = (data.get('new') or '').strip()
+
+    if not new or len(new) < 8:
+        return jsonify({'error': 'New password must be at least 8 characters'}), 400
+
+    client = Client.query.get_or_404(client_id)
+
+    if client.password and not check_password_hash(client.password, current):
+        return jsonify({'error': 'Current password is incorrect'}), 400
+
+    client.password = generate_password_hash(new)
+    db.session.commit()
+    return jsonify({'ok': True}), 200
 
 # -----------------ROUTES PARA COURTFILES, APPOINTMENTS Y DOCUMENTS DEL CLIENT--------------------------------------------
 
@@ -970,9 +1007,9 @@ def get_document(document_id):
 def create_document():
     try:
         original_filename = None
-        
-        file = request.files.get('file')  
-        if file and file.filename.strip() == '': 
+
+        file = request.files.get('file')
+        if file and file.filename.strip() == '':
             file = None
 
         allowed_extensions = {
@@ -982,9 +1019,9 @@ def create_document():
             'm4a', 'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'mkv'
         }
 
-        original_filename = None  
-        file_extension = None     
-        file_url = None 
+        original_filename = None
+        file_extension = None
+        file_url = None
 
         name = request.form.get('name')
         description = request.form.get('description', None)
@@ -996,7 +1033,8 @@ def create_document():
 
         if file:
             original_filename = secure_filename(file.filename)
-            file_extension = original_filename.rsplit('.', 1)[1].lower() if '.' in original_filename else ''
+            file_extension = original_filename.rsplit(
+                '.', 1)[1].lower() if '.' in original_filename else ''
 
             if not file_extension or file_extension not in allowed_extensions:
                 return jsonify({'error': 'File type not allowed'}), 400
@@ -1019,12 +1057,12 @@ def create_document():
             if resource_type == "raw":
                 file_url += f"?fl_attachment={original_filename}"
         else:
-            file_extension = 'note'                             
+            file_extension = 'note'
             file_url = ""
 
         new_document = Document(
             name=name,
-            type=file_extension,  
+            type=file_extension,
             url_route=file_url,
             description=description,
             category=category,
@@ -1127,8 +1165,9 @@ def update_document(document_id):
         return jsonify({
             **document.serialize(),
             'original_filename': uploaded_original_filename or (
-                document.original_filename if hasattr(document, 'original_filename') else None
-            )  
+                document.original_filename if hasattr(
+                    document, 'original_filename') else None
+            )
         }), 200
 
     except Exception as e:
@@ -1162,13 +1201,15 @@ def get_client_courtfiles():
         requested_courtfile_id = request.args.get('courtfile_id', type=int)
 
         role, current_id = _get_role_and_identity()
-        if role == "lawyer":
-            requested_lawyer_id = int(current_id)
 
         q = ClientCourtfile.query.options(
             joinedload(ClientCourtfile.client),
             joinedload(ClientCourtfile.courtfile)
         )
+
+        # 🔒 Si es CLIENTE logueado, sólo sus vínculos
+        if role == "client":
+            q = q.filter(ClientCourtfile.client_id == int(current_id))
 
         if requested_lawyer_id is not None:
             subq = select(LawyerCourtfile.courtfile_id).where(
@@ -1188,8 +1229,8 @@ def get_client_courtfiles():
             'client_name': f"{cc.client.firstname} {cc.client.lastname}" if cc.client else None,
             'client_email': cc.client.email if cc.client else None,
             'client_phone': cc.client.phone if cc.client else None,
-            'courtfile_number': cc.courtfile.case_number if cc.courtfile else None,
-            'courtfile_title': cc.courtfile.title if cc.courtfile else None
+            # 🔁 Unificamos shape con /lawyers-courtfiles
+            'courtfile': cc.courtfile.serialize() if cc.courtfile else None,
         } for cc in client_courtfiles]), 200
 
     except Exception as e:
@@ -2013,14 +2054,30 @@ def delete_payment_courtfile(id):
 
 # -----------------------------RUTAS MENSAJES-----------------------------------------------------
 def _parse_iso(ts: str):
-    # acepta "2025-09-19T16:30:00" o "2025-09-19T16:30:00Z"
+    """
+    Acepta:
+      - 2025-09-19T16:30:00Z   (UTC)
+      - 2025-09-19T16:30:00+00:00
+      - 2025-09-19T16:30:00    (lo tratamos como UTC)
+    Devuelve datetime timezone-aware (UTC).
+    """
+    if not ts:
+        return None
+    ts = ts.strip()
     try:
-        ts = ts.rstrip("Z")
-        return datetime.fromisoformat(ts)
+        if ts.endswith("Z"):
+            ts = ts[:-1] + "+00:00"
+        dt = datetime.fromisoformat(ts)
+        if dt.tzinfo is None:
+            # Si vino naive, asumimos UTC
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
     except Exception:
         return None
 
 # GET /api/messages?courtfile_id=21&since=2025-09-19T16:30:00
+
+
 @api.route("/messages", methods=["GET"])
 def list_messages():
     courtfile_id = request.args.get("courtfile_id", type=int)
@@ -2037,6 +2094,7 @@ def list_messages():
     rows = q.order_by(Message.created_at.asc()).limit(100).all()
     return jsonify([m.to_front_dict() for m in rows])
 
+
 @api.route("/messages", methods=["POST"])
 def create_message():
     data = request.get_json() or {}
@@ -2046,19 +2104,19 @@ def create_message():
 
     if not cfid or not text or role not in {"lawyer", "client", "admin"}:
         return jsonify({"error": "courtfile_id, text y sender_role válidos son requeridos"}), 400
-    
+
     lawyer_id = None
     client_id = None
-    
+
     if role == "lawyer":
-        lawyer_id = data.get("sender_id")  
+        lawyer_id = data.get("sender_id")
     elif role == "client":
-        client_id = data.get("sender_id")  
+        client_id = data.get("sender_id")
 
     msg = Message(
-        id_courtfile=cfid,   
-        texto=text,         
-        sender=role,        
+        id_courtfile=cfid,
+        texto=text,
+        sender=role,
         lawyer_id=lawyer_id,
         client_id=client_id,
     )
@@ -2067,15 +2125,124 @@ def create_message():
     return jsonify(msg.to_front_dict()), 201
 
 
+@api.route("/messages/unread", methods=["GET"])
+def unread_counts():
+    """
+    Params:
+      role=lawyer|client|admin
+      user_id=<int>
+      courtfile_ids=1,2,3
+    Respuesta:
+      { "1": {"hasUnread": true, "count": 3}, "2": {"hasUnread": false, "count": 0}, ... }
+    """
+    role = (request.args.get("role") or "").strip().lower()
+    user_id = request.args.get("user_id", type=int)
+    ids_str = (request.args.get("courtfile_ids") or "").strip()
+    if not role or not user_id or not ids_str:
+        return jsonify({"error": "role, user_id y courtfile_ids son requeridos"}), 400
+
+    try:
+        cfids = [int(x) for x in ids_str.split(",") if x.strip().isdigit()]
+    except Exception:
+        return jsonify({"error": "courtfile_ids inválidos"}), 400
+
+    if not cfids:
+        return jsonify({})
+
+    # subquery con last_read por cfid
+    last_read_sq = (
+        select(ChatRead.id_courtfile, ChatRead.last_read_at)
+        .where(and_(ChatRead.role == role, ChatRead.user_id == user_id, ChatRead.id_courtfile.in_(cfids)))
+        .subquery()
+    )
+
+    # Mensajes “del otro lado”: sender != role
+    # Contamos por expediente desde last_read (o desde la fecha mínima si no hay marca)
+    msgs = (
+        select(
+            Message.id_courtfile.label("cfid"),
+            func.count(Message.id).label("cnt")
+        )
+        .outerjoin(last_read_sq, last_read_sq.c.id_courtfile == Message.id_courtfile)
+        .where(
+            and_(
+                Message.id_courtfile.in_(cfids),
+                Message.sender != role,
+                or_(
+                    last_read_sq.c.last_read_at.is_(None),
+                    Message.created_at > last_read_sq.c.last_read_at,
+                ),
+            )
+        )
+        .group_by(Message.id_courtfile)
+    )
+
+    rows = db.session.execute(msgs).all()
+    counts_by_cfid = {cfid: 0 for cfid in cfids}
+    for cfid, cnt in rows:
+        counts_by_cfid[int(cfid)] = int(cnt)
+
+    # respuesta shape ideal para tu hook
+    resp = {}
+    for cfid in cfids:
+        c = counts_by_cfid.get(cfid, 0)
+        resp[str(cfid)] = {"hasUnread": c > 0, "count": min(c, 99)}
+    return jsonify(resp)
+
+
+@api.route("/messages/read", methods=["POST"])
+def mark_read():
+    """
+    JSON:
+      {
+        "courtfile_id": 123,
+        "role": "lawyer",
+        "user_id": 7,
+        "until": "2025-09-23T12:34:56Z"  # opcional; si no, now()
+      }
+    """
+    data = request.get_json() or {}
+    cfid = data.get("courtfile_id")
+    role = (data.get("role") or "").strip().lower()
+    user_id = data.get("user_id")
+    until = data.get("until")  # ISO opcional
+
+    if not cfid or not role or not user_id:
+        return jsonify({"error": "courtfile_id, role y user_id requeridos"}), 400
+
+    if until:
+        try:
+            ts = datetime.fromisoformat(until.replace("Z", "+00:00"))
+        except Exception:
+            return jsonify({"error": "until debe ser ISO8601"}), 400
+    else:
+        ts = datetime.now(timezone.utc)
+
+    # UPSERT: si existe, update; si no, create
+    row = ChatRead.query.filter_by(
+        id_courtfile=cfid, role=role, user_id=user_id).first()
+    if row:
+        if ts > row.last_read_at:
+            row.last_read_at = ts
+    else:
+        row = ChatRead(id_courtfile=cfid, role=role,
+                       user_id=user_id, last_read_at=ts)
+        db.session.add(row)
+
+    db.session.commit()
+    return jsonify({"ok": True, "courtfile_id": cfid, "last_read_at": row.last_read_at.isoformat()})
+
     # -----------------------------STRIPE PAYMENT-----------------------------------------------------
+
+
 @api.route("payments/<int:paymentId>/create-checkout-session", methods=["POST"])
 def create_checkout_session(paymentId):
     try:
         payment = Payment.query.get(paymentId)
-        
+
         if not payment:
             return jsonify({'error': 'Payment not found'}), 404
-        
+
         if payment.status == PaymentStatus.processing:
             if payment.updated_at:
                 time_in_processing = datetime.utcnow() - payment.updated_at
@@ -2083,10 +2250,12 @@ def create_checkout_session(paymentId):
                     payment.status = PaymentStatus.pending
                     payment.stripe_payment_intent_id = None
                     db.session.commit()
-                    print(f"Payment {paymentId} reset from processing to pending (timeout 30min)")
+                    print(
+                        f"Payment {paymentId} reset from processing to pending (timeout 30min)")
                 else:
                     remaining_time = timedelta(minutes=30) - time_in_processing
-                    remaining_minutes = int(remaining_time.total_seconds() / 60)
+                    remaining_minutes = int(
+                        remaining_time.total_seconds() / 60)
                     return jsonify({
                         'error': f'Payment is already being processed. Please wait {remaining_minutes} minutes or try again later.'
                     }), 400
@@ -2097,7 +2266,8 @@ def create_checkout_session(paymentId):
                         payment.status = PaymentStatus.pending
                         payment.stripe_payment_intent_id = None
                         db.session.commit()
-                        print(f"Payment {paymentId} reset from processing to pending (timeout 30min - fallback)")
+                        print(
+                            f"Payment {paymentId} reset from processing to pending (timeout 30min - fallback)")
                     else:
                         return jsonify({
                             'error': 'Payment is already being processed. Please try again in 30 minutes.'
@@ -2106,13 +2276,14 @@ def create_checkout_session(paymentId):
                     payment.status = PaymentStatus.pending
                     payment.stripe_payment_intent_id = None
                     db.session.commit()
-                    print(f"Payment {paymentId} reset from processing to pending (no timestamp)")
-        
+                    print(
+                        f"Payment {paymentId} reset from processing to pending (no timestamp)")
+
         if payment.status == PaymentStatus.approved:
             return jsonify({
                 'error': 'Payment is already approved. Cannot proceed with checkout.'
             }), 400
-        
+
         courtfile_name = f"LexQuo Payment {paymentId}"
         payment_courtfile = PaymentCourtfile.query.filter_by(
             payment_id=paymentId
@@ -2132,7 +2303,7 @@ def create_checkout_session(paymentId):
                     'product_data': {
                         'name': product_name,
                     },
-                    'unit_amount': int(float(payment.amount) * 100) 
+                    'unit_amount': int(float(payment.amount) * 100)
                 },
                 'quantity': 1,
             }],
@@ -2147,11 +2318,12 @@ def create_checkout_session(paymentId):
 
         payment.status = PaymentStatus.processing
         payment.stripe_payment_intent_id = session.payment_intent
-        payment.updated_at = datetime.utcnow()  
-        
+        payment.updated_at = datetime.utcnow()
+
         db.session.commit()
-        
-        print(f"Payment {paymentId} set to processing, Stripe ID: {session.payment_intent}")
+
+        print(
+            f"Payment {paymentId} set to processing, Stripe ID: {session.payment_intent}")
 
         return jsonify({
             "url": session.url,
@@ -2175,6 +2347,8 @@ def create_checkout_session(paymentId):
 @api.route('/webhook', methods=['POST'])
 def webhook():
     payload = request.get_data(as_text=True)
+    print("Payload:")
+    print(payload)
     sig_header = request.headers.get('Stripe-Signature')
     webhook_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
 
@@ -2186,7 +2360,8 @@ def webhook():
         return jsonify(success=False), 400
     except stripe.error.SignatureVerificationError as e:
         return jsonify(success=False), 400
-
+    print("Evento:")
+    print(event)
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
         try:
@@ -2202,7 +2377,7 @@ def webhook():
                 if payment:
                     payment.status = PaymentStatus.approved
                     payment.paid_at = datetime.utcnow()
-                    payment.means = 'stripe'
+                    payment.means = 'TDC'
                     payment.stripe_payment_intent_id = payment_intent_id
 
                     db.session.commit()
@@ -2226,7 +2401,7 @@ def webhook():
                 if payment and payment.status != PaymentStatus.approved:
                     payment.status = PaymentStatus.approved
                     payment.paid_at = datetime.utcnow()
-                    payment.means = 'stripe'
+                    payment.means = 'TDC'
 
                     db.session.commit()
                     print(
@@ -2239,19 +2414,166 @@ def webhook():
         payment_intent = event['data']['object']
         try:
             payment_intent_id = payment_intent['id']
-            payment = Payment.query.filter_by(
-                stripe_payment_intent_id=payment_intent_id).first()
+            metadata = payment_intent.get('metadata', {})
+            payment_id = metadata.get('payment_id')
+            
+            print(f'🔴 Payment intent failed - Payment ID: {payment_id}, Intent ID: {payment_intent_id}')
+            print(f'Metadata del payment_intent: {metadata}')
 
-            if payment:
-                payment.status = PaymentStatus.rejected
-                db.session.commit()
-                print(f'❌ Pago {payment.id} marcado como rechazado')
+            payment = None
+            
+            if payment_id:
+                payment = Payment.query.get(payment_id)
+                if payment:
+                    print(f'✅ Encontrado pago {payment.id} por metadata')
+            
+            if not payment:
+                print("Buscando en pagos recientes en estado processing...")
+                recent_payments = Payment.query.filter(
+                    Payment.status == PaymentStatus.processing or Payment.status == PaymentStatus.rejected,
+                    Payment.created_at >= datetime.utcnow() - timedelta(hours=24)
+                ).order_by(Payment.created_at.desc()).all()
+                
+                print(f"Encontrados {len(recent_payments)} pagos recientes en processing")
+                
+                if recent_payments:
+                    payment = recent_payments[0]
+                    print(f'✅ Usando pago más reciente: {payment.id}')
+            
+            if not payment:
+                print("Creando nuevo registro de pago fallido...")
+                amount = payment_intent['amount'] / 100 
+                currency = payment_intent['currency']
+                
+                payment = Payment(
+                    amount=amount,
+                    currency=currency.upper(),
+                    status=PaymentStatus.rejected,
+                    means='TDC',
+                    stripe_payment_intent_id=payment_intent_id,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow()
+                )
+                db.session.add(payment)
+                print(f'Creado nuevo pago fallido: {payment.id}')
+            
+            payment.status = PaymentStatus.rejected
+            payment.stripe_payment_intent_id = payment_intent_id  # ⚠️ GUARDAR EL ID AQUÍ
+            payment.updated_at = datetime.utcnow()
+            
+            # Guardar información del error para debugging
+            last_error = payment_intent.get('last_payment_error', {})
+            payment.error_message = f"{last_error.get('code', 'unknown')}: {last_error.get('message', 'Unknown error')}"
+            
+            db.session.commit()
+
 
         except Exception as e:
-            print(f'❌ Error manejando payment intent failed: {e}')
             db.session.rollback()
 
     else:
         print(f'Unhandled event type: {event["type"]}')
-
     return jsonify(success=True)
+
+
+# =====================RUTAS PARA MAILS======================
+
+@api.route("/emails/invite", methods=["POST"])
+def send_invite_email():
+    data = request.get_json() or {}
+    email = (data.get("email") or "").strip().lower()
+    firstname = (data.get("firstname") or "").strip()
+    lastname = (data.get("lastname") or "").strip()
+    # opcional, solo para el copy
+    courtfile_number = data.get("courtfile_number")
+    courtfile_id = data.get("courtfile_id")          # opcional, p/ link
+
+    if not email or not firstname or not lastname:
+        return jsonify({"error": "email, firstname y lastname son obligatorios"}), 400
+
+    def cap(s): return s[:1].upper() + s[1:] if s else s
+    default_pwd = f"LexQuo{cap(firstname)}{cap(lastname)}"
+
+    # Si querés incluir un link de “aceptar invitación” en el frontend:
+    # (sin dominio está ok; usás tu FRONTEND_BASE_URL)
+    invite_url = f"{FRONTEND_BASE_URL}/accept-invite?email={email}"
+    if courtfile_id:
+        invite_url += f"&courtfile_id={courtfile_id}"
+
+    subject = "Invitación a LexQuo"
+    html = f"""
+    <h2>Hello {firstname} {lastname} 👋</h2>
+    <p>You have been invited to access your case in <b>LexQuo</b>.</p>
+    {"<p>Courtfile: <b>#"+str(courtfile_number)+"</b></p>" if courtfile_number else ""}
+    <p>You can log in with:</p>
+    <ul>
+      <li><b>Username::</b> {email}</li>
+      <li><b>Initial password:</b> <code>{default_pwd}</code></li>
+    </ul>
+    <p>We recommend changing your password on your first login.</p>
+    <p><a href="{invite_url}">Accept invitation</a></p>
+    <hr/>
+    <small>If you were not expecting this email, you can ignore it.</small>
+    """
+    text = (
+        f"Hello {firstname} {lastname}.\n"
+        "You have been invited to LexQuo.\n"
+        + (f"Case file: #{courtfile_number}\n" if courtfile_number else "")
+        + f"Username: {email}\nInitial password: {default_pwd}\n"
+        f"Accept invitation: {invite_url}\n"
+        "We recommend changing your password on your first login."
+    )
+
+    try:
+        send_email(email, subject, html, text)
+        return jsonify({"ok": True, "sent_to": email})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@api.route("/emails/linked", methods=["POST"])
+def send_linked_email():
+    data = request.get_json() or {}
+    email = (data.get("email") or "").strip().lower()
+    firstname = (data.get("firstname") or "").strip()
+    lastname = (data.get("lastname") or "").strip()
+    courtfile_number = data.get("courtfile_number")  # opcional
+    courtfile_id = data.get("courtfile_id")          # opcional
+
+    if not email or not firstname or not lastname:
+        return jsonify({"error": "email, firstname y lastname son obligatorios"}), 400
+
+    # Podés reusar la función cap() si la tenés definida global
+    def cap(s): return s[:1].upper() + s[1:] if s else s
+    default_pwd = f"LexQuo{cap(firstname)}{cap(lastname)}"
+
+    # Link al expediente en el front
+    case_url = f"{FRONTEND_BASE_URL}/courtfiles/{courtfile_id}" if courtfile_id else FRONTEND_BASE_URL
+
+    subject = "Nuevo acceso a tu expediente en LexQuo"
+    html = f"""
+    <h2>Hello {firstname} {lastname} 👋</h2>
+    <p>You have been linked to a new case in <b>LexQuo</b>.</p>
+    {"<p>Courtfile: <b>#"+str(courtfile_number)+"</b></p>" if courtfile_number else ""}
+    <p>You can log in with:</p>
+    <ul>
+      <li><b>Username:</b> {email}</li>
+      <li><b>Password:</b> <code>{default_pwd}</code></li>
+    </ul>
+    <p><a href="{case_url}">Go to your case</a></p>
+    <hr/>
+    <small>If you were not expecting this email, you can ignore it.</small>
+    """
+    text = (
+        f"Hello {firstname} {lastname}.\n"
+        "You have been linked to a new case in LexQuo.\n"
+        + (f"Case file: #{courtfile_number}\n" if courtfile_number else "")
+        + f"Username: {email}\nPassword: {default_pwd}\n"
+        f"Go to your case: {case_url}\n"
+    )
+
+    try:
+        send_email(email, subject, html, text)
+        return jsonify({"ok": True, "sent_to": email})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

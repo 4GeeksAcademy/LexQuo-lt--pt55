@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean, Text, Date, Time, DateTime, ForeignKey, Time, Float, Enum, func
+from sqlalchemy import String, Boolean, Text, Date, Time, DateTime, ForeignKey, Time, Float, Enum, func, UniqueConstraint, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from typing import List
 from werkzeug.security import generate_password_hash
@@ -63,7 +63,34 @@ class Message(db.Model):
             "text": self.texto,                         # <- mapeo
             "created_at": (self.created_at.isoformat() if self.created_at else None)
         }
+    
+    __table_args__ = (
+        db.Index("ix_message_cf_created", "id_courtfile", "created_at"),
+    )
 
+class ChatRead(db.Model):
+    __tablename__ = "chat_read"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    # mismo nombre de columna que usás en Message
+    id_courtfile: Mapped[int] = mapped_column(
+        ForeignKey("courtfile.id"), index=True, nullable=False
+    )
+
+    role: Mapped[str] = mapped_column(String(20), nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    last_read_at: Mapped["datetime"] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    courtfile: Mapped["Courtfile"] = relationship("Courtfile", lazy="joined")
+
+    __table_args__ = (
+        UniqueConstraint("id_courtfile", "role", "user_id", name="uq_chatread_cfid_role_user"),
+        db.Index("ix_chatread_role_user", "role", "user_id"),
+        db.Index("ix_chatread_cfid_lastread", "id_courtfile", "last_read_at"),
+    )
 
 class Lawyer(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -100,6 +127,7 @@ class Lawyer(db.Model):
             "phone": self.phone,
             "url_img": self.url_img,
             "is_active": self.is_active,
+            "role": "lawyer",
         }
 
 
@@ -138,6 +166,7 @@ class Client(db.Model):
             "phone": self.phone,
             "url_img": self.url_img,
             "is_active": self.is_active,
+            "role": "client",
         }
 
 
