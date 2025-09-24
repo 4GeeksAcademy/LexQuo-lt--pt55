@@ -14,11 +14,8 @@ export const DashboardClient = () => {
     // -------------------- AUTH + ME (nuevo esquema) --------------------
     const token = store?.auth?.token || null;                    // CHANGED
     const me = store?.me || null;                                // CHANGED
-    const authed = !!token;                                      // CHANGED
     const role = (me?.role || "").toLowerCase();                 // CHANGED
 
-    // Si querés bloquear estrictamente que solo "client" entre acá:
-    if (!authed || !me) return <Navigate to="/login" replace />; // CHANGED
     if (role !== "client") return <Navigate to="/403" replace />; // CHANGED
 
     const currentClientId = me?.id || null;                      // CHANGED
@@ -31,7 +28,6 @@ export const DashboardClient = () => {
     const [casesErr, setCasesErr] = useState("");
 
     const fetchClientData = async () => {
-        if (!authed) return;
         try {
             setLoadingCases(true);
             // ✅ Llamá al endpoint correcto; el back filtra por el JWT si sos client
@@ -139,7 +135,7 @@ export const DashboardClient = () => {
     return (
         <div className="container text-center mt-5">
             <h1>DASHBOARD CLIENT</h1>
-            <h1>¡HELLO {authed ? (name) : "you must log in"}!</h1>
+            <h1>¡HELLO {name}!</h1>
             {currentClientId && (
                 <Link
                     to={`/clients/view/${currentClientId}`}
@@ -152,7 +148,7 @@ export const DashboardClient = () => {
                 </Link>
             )}
 
-            {authed ? (
+           
                 <div className="mt-5 text-start">
                     {/* COURTFILES SECTION */}
                     <div className="d-flex justify-content-between align-items-center">
@@ -248,24 +244,6 @@ export const DashboardClient = () => {
                         <LogoutButton className="btn btn-sm btn-outline-danger mt-5" />
                     </div>
                 </div>
-            ) : (
-                <div className="d-flex gap-2 mt-5 justify-content-end">
-                    <Link
-                        to="/SignUpClient"
-                        className="btn btn-sm btn-outline-warning mt-3"
-                        style={{ border: "none" }}
-                    >
-                        Create User
-                    </Link>
-                    <Link
-                        to="/login"
-                        className="btn btn-sm btn-outline-primary mt-3"
-                        style={{ border: "none" }}
-                    >
-                        Login
-                    </Link>
-                </div>
-            )}
         </div>
     );
 };

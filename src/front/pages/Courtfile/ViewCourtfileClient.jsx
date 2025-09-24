@@ -8,21 +8,18 @@ import { markNow } from "../../hooks/chatUnread";
 export const ViewCourtfileClient = () => {
   const { store, dispatch } = useGlobalReducer();
   const { courtfileId } = useParams();
+  const { auth, me } = store;
   const navigate = useNavigate();
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
   // tomar todo del store (PrivateRoute ya rehidrata)
-  const token = store?.auth?.token || null;
-  const me = store?.me || null;
-  const role = (me?.role || "").toLowerCase();
+  const token = auth?.token;
+  const role = auth?.role
   const authed = !!token;
 
   // guards
-  if (!authed || !me) return <Navigate to="/login" replace />;
   if (role !== "client") return <Navigate to="/403" replace />;
-
-  const currentLawyerId = me?.id || null;
 
   // ------------------- COURTFILE -------------------
   const [courtfile, setCourtfile] = useState(null);

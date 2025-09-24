@@ -13,14 +13,8 @@ export const AddCourtfile = () => {
 
     const token = store?.auth?.token || null;
     const role = (store?.me?.role || "").toLowerCase();
-    if (!token) return navigate("/login", { replace: true }); 
-    if (!["lawyer","admin_user"].includes(role)) return <Navigate to="/403" replace />; 
 
-    const afterCreatePath = (role, id, fallback) =>
-        role === "lawyer"
-            ? `/courtfiles/ViewCourtfileLawyer/${id}`
-            : (fallback || "/courtfiles");
-
+    if (!["lawyer", "admin_user"].includes(role)) return <Navigate to="/403" replace />;
 
     const [formData, setFormData] = useState({
         case_number: '',
@@ -64,8 +58,8 @@ export const AddCourtfile = () => {
             const response = await fetch(`${API}/api/courtfiles`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    ...(token ? { Authorization: `Bearer ${token}` } : {})
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`, 
                 },
                 body: JSON.stringify(formData)
             });
@@ -74,9 +68,6 @@ export const AddCourtfile = () => {
                 const newCourtfile = await response.json();
 
                 dispatch({ type: 'ADD_COURTFILE', payload: newCourtfile }); if (linkToLawyer) {
-                    if (!token) {
-                        throw new Error("No token found to link the courtfile with the lawyer.");
-                    }
                     setLinking(true);
                     const relResp = await fetch(`${API}/api/lawyers-courtfiles`, {
                         method: "POST",

@@ -16,8 +16,6 @@ export const DashboardLawyer = () => {
     const token = store?.auth?.token || null;
     const me = store?.me || null;
     const role = (me?.role || "").toLowerCase();
-
-    console.log(token, me)
    
     if (role !== "lawyer") return <Navigate to="/403" replace />;
 
@@ -189,9 +187,9 @@ export const DashboardLawyer = () => {
         const userId = me?.id;
         if (!userId || !cfid) return;
 
-        markNow(userId, cfid);                 // feedback inmediato
-        await markReadBackend(API, token, role, cfid); // persiste en backend
-        refreshUnread();                       // actualiza badges
+        markNow(userId, cfid);                 
+        await markReadBackend(API, token, role, cfid); 
+        refreshUnread();                      
     };
 
     // ---- NUEVO: navegar a All Chats manteniendo state (sin marcar global) ----

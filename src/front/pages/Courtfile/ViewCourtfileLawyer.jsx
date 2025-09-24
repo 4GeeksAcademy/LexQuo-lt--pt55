@@ -7,17 +7,15 @@ import { markNow } from "../../hooks/chatUnread";
 export const ViewCourtfileLawyer = () => {
   const { store, dispatch } = useGlobalReducer();
   const { courtfileId } = useParams();
+  const { auth, me } = store;
   const navigate = useNavigate();
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  const token = store.auth.token;                    // garantizado por PrivateRoute
-  const me = store.me;                               // datos del usuario
-  const role = (store.auth.role || "").toLowerCase();// el rol viene en auth, no en me
-  const authed = !!token;
-  const auth = store.auth;
+  const token = store.auth.token;                              
+  const role = (store.auth.role || "").toLowerCase();
+  const currentLawyerId = auth?.user?.id;
 
-  if (!authed || !me) return <Navigate to="/login" replace />;
   if (role !== "lawyer") return <Navigate to="/403" replace />;
 
   // ------------------- COURTFILE -------------------
@@ -197,7 +195,7 @@ export const ViewCourtfileLawyer = () => {
     }
   };
 
-  const currentLawyerId = auth?.user?.id;
+  
 
   const fetchCaseLawyers = async () => {
     try {
@@ -299,14 +297,14 @@ export const ViewCourtfileLawyer = () => {
   }, [courtfileId, token]);
 
   useEffect(() => {
-    if (!authed || !courtfileId) return;
     fetchDeadlines();
     fetchAppointments();
     fetchDocuments();
     fetchClients();
     fetchCaseLawyers();
     fetchPayments();
-  }, [API, authed, token, courtfileId]);
+  }, [API, 
+    token, courtfileId]);
 
   // ------------------- HELPERS -------------------
   const getPriorityBadgeClass = (priority = "") => {
@@ -346,7 +344,7 @@ export const ViewCourtfileLawyer = () => {
   };
 
   const handleDeleteDeadlineRelation = async (relationId) => {
-    if (!authed) return;
+  
     if (!window.confirm("Delete this link? The deadline will no longer be associated with this case.")) return;
     try {
       setDeletingDeadlineRelId(relationId);
@@ -367,7 +365,6 @@ export const ViewCourtfileLawyer = () => {
   };
 
   const handleDeleteAppointmentRelation = async (relationId) => {
-    if (!authed) return;
     if (!window.confirm("Delete this link? The appointment will no longer be associated with this case.")) return;
     try {
       setDeletingApptRelId(relationId);
@@ -388,7 +385,6 @@ export const ViewCourtfileLawyer = () => {
   };
 
   const handleDeleteDocumentRelation = async (relationId) => {
-    if (!authed) return;
     if (!window.confirm("Unlink this document from the case?")) return;
     try {
       setDeletingDocRelId(relationId);
@@ -409,7 +405,6 @@ export const ViewCourtfileLawyer = () => {
   };
 
   const handleDeleteClientRelation = async (relationId) => {
-    if (!authed) return;
     if (!window.confirm("Unlink this client from the case?")) return;
     try {
       setDeletingClientRelId(relationId);
@@ -431,7 +426,6 @@ export const ViewCourtfileLawyer = () => {
 
 
   const handleDeleteLawyerRelation = async (relationId) => {
-    if (!authed) return;
     if (!window.confirm("¿Salir de este caso?")) return;
     try {
       setDeletingLawyerRelId(relationId);
@@ -450,7 +444,6 @@ export const ViewCourtfileLawyer = () => {
   };
 
   const handleDeletePaymentRelation = async (relationId) => {
-    if (!authed) return;
     if (!window.confirm("Unlink this payment from the case?")) return;
     try {
       setDeletingPaymentRelId(relationId);
