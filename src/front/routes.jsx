@@ -29,6 +29,10 @@ import { Admins } from "./pages/AdminUser/Admins";
 import { ViewAdmin } from "./pages/AdminUser/ViewAdmin";
 import { EditAdmin } from "./pages/AdminUser/EditAdmin";
 import { AddAdmin } from "./pages/AdminUser/AddAdmin";
+import { LoginAdminUser } from "./pages/AdminUser/LoginAdminUser";
+import { SignUpAdminUser } from "./pages/AdminUser/SignUpAdminUser";
+import { DashboardAdminUser } from "./pages/AdminUser/DashboardAdminUser";
+
 
 import { Clients } from "./pages/Client/Clients";
 import { ViewClient } from "./pages/Client/ViewClient";
@@ -124,6 +128,9 @@ export const router = createBrowserRouter(
       <Route path="/admins/addAdmin" element={<AddAdmin />} />
       <Route path="/admins/view/:adminId" element={<ViewAdmin />} />
       <Route path="/admins/:adminId" element={<EditAdmin />} />
+      <Route path="/loginAdmin" element={<LoginAdminUser />} />
+      <Route path="/admins/dashboard" element={<DashboardAdminUser />} />
+      <Route path="/signup/admin" element={<SignUpAdminUser />} />
 
       <Route path="/payments" element={<Payments />} />
       <Route path="/payments/view/:paymentId" element={<ViewPayment />} />

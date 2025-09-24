@@ -675,6 +675,43 @@ def delete_admin(admin_id):
         return jsonify({'error': str(e)}), 500
 
 
+@api.route('/admins/login', methods=['POST'])
+def admin_login():
+    try:
+        data = request.get_json()
+
+        if not data or 'email' not in data or 'password' not in data:
+            return jsonify({'error': 'Email and password required'}), 400
+
+        email = (data.get('email') or '').strip().lower()
+
+        admin = AdminUser.query.filter_by(email=email).first()
+
+        if not admin:
+            return jsonify({'error': 'Invalid credentials'}), 401
+
+        if not check_password_hash(admin.password, data['password']):
+            return jsonify({'error': 'Invalid credentials'}), 401
+
+        if hasattr(admin, 'is_active') and not admin.is_active:
+            return jsonify({'error': 'Account deactivated'}), 403
+
+        token = create_access_token(
+            identity=str(admin.id),
+            additional_claims={"role": "admin"}
+        )
+
+        return jsonify({
+            'message': 'Login successful',
+            'token': token,
+            'role': 'admin',
+            'admin': admin.serialize()
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # -----------------ROUTES PARA APPOINTMENTS--------------------------------------------
 
 @api.route('/appointments', methods=['GET'])
