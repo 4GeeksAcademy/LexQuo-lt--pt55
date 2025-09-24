@@ -8,11 +8,10 @@ export const LawyerLinkOrCreateClient = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
-  const token = auth?.token;
-
-  // Sólo abogados
-  if (auth?.role !== "lawyer") return <Navigate to="/403" replace />;
+  const token = store?.auth?.token;
+  const role = (store?.me?.role || "").toLowerCase();
+  if (!token) return <Navigate to="/Login" replace state={{ returnTo: location.pathname + location.search }} />;
+  if (role !== "lawyer") return <Navigate to="/403" replace />;
 
   const preselectedCourtfileId = location.state?.courtfileId || null;
   const preselectedCourtfileNumber = location.state?.courtfileNumber || null;
@@ -54,7 +53,7 @@ export const LawyerLinkOrCreateClient = () => {
 
       // Recomendado: backend /clients/lookup?email=
       const resp = await fetch(`${API}/api/clients/lookup?email=${encodeURIComponent(emailTrim)}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (!resp.ok) {
@@ -78,7 +77,9 @@ export const LawyerLinkOrCreateClient = () => {
   };
 
   // --- 2) Linkear cliente existente al expediente ---
-  const linkClientToCase = async (clientId) => {
+  const linkClientToCase = async (clientOrId) => {
+    const client = typeof clientOrId === "object" ? clientOrId : null;
+    const clientId = client ? client.id : clientOrId;
     if (!preselectedCourtfileId) {
       alert("No courtfile provided.");
       return;
@@ -88,7 +89,7 @@ export const LawyerLinkOrCreateClient = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           client_id: Number(clientId),
@@ -98,12 +99,12 @@ export const LawyerLinkOrCreateClient = () => {
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
 
-      if (clientObj?.email) {
+      if (client?.email) {
         try {
           await inviteClientByEmail({
-            email: clientObj.email,
-            firstname: clientObj.firstname,
-            lastname: clientObj.lastname,
+            email: client.email, 
+            firstname: client.firstname, 
+            lastname: client.lastname,
             courtfileId: preselectedCourtfileId,
             courtfileNumber: preselectedCourtfileNumber
           });
@@ -151,7 +152,7 @@ export const LawyerLinkOrCreateClient = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           firstname,
@@ -168,14 +169,14 @@ export const LawyerLinkOrCreateClient = () => {
       if (!preselectedCourtfileId) {
         throw new Error("No courtfile provided para linkear.");
       }
-      await linkClientToCase(newClient.id);
+      await linkClientToCase(newClient);
 
       // 3.3) Enviar invitación por mail
       const inviteResp = await fetch(`${API}/api/emails/invite`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           email: email.trim().toLowerCase(),
@@ -210,7 +211,7 @@ export const LawyerLinkOrCreateClient = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
         role: "client",
@@ -290,7 +291,7 @@ export const LawyerLinkOrCreateClient = () => {
 
             <button
               className="btn btn-success"
-              onClick={() => linkClientToCase(foundClient)} 
+              onClick={() => linkClientToCase(foundClient)}
               disabled={creating}
             >
               Link to this Case

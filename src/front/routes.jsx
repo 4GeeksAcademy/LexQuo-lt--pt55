@@ -136,6 +136,7 @@ export const router = createBrowserRouter(
 
       <Route path="/deadlines" element={<Deadlines />} />
 
+      <Route path="/appointments" element={<Appointments />} />
 
       {/* ==========RUTAS QUE YA SERIAN INNECESARIAS========== */}
       <Route path="/SignUpLawyer" element={<SignUpLawyer />} />
@@ -155,9 +156,9 @@ export const router = createBrowserRouter(
 
 
 
-      
 
-      <Route path="/appointments" element={<Appointments />} />
+
+
       <Route path="/appointments/addAppointment" element={<AddAppointment />} />
       <Route path="/appointments/view/:appointmentId" element={<ViewAppointment />} />
       <Route path="/appointments/:appointmentId" element={<EditAppointment />} />
@@ -204,6 +205,8 @@ export const router = createBrowserRouter(
         <Route path="/lawyers/:lawyerId" element={<EditLawyer />} />
         <Route path="/clients/view/:clientId" element={<ViewClient />} />
         <Route path="/clients/:clientId" element={<EditClient />} />
+        <Route path="/clients/link-or-create" element={<LawyerLinkOrCreateClient />} />
+        <Route path="/lawyers/link-or-invite" element={<LawyerLinkOrInviteLawyer />} />
         <Route path="/payments/view/:paymentId" element={<ViewPayment />} />
         <Route path="/payments/addPayment" element={<AddPayment />} />
         <Route path="/payments/:paymentId" element={<EditPayment />} />
@@ -211,13 +214,11 @@ export const router = createBrowserRouter(
         <Route path="/deadlines/view/:deadlineId" element={<ViewDeadline />} />
         <Route path="/deadlines/:deadlineId" element={<EditDeadline />} />
 
-
       </Route>
 
 
 
-      <Route path="/clients/link-or-create" element={<LawyerLinkOrCreateClient />} />
-      <Route path="/lawyers/link-or-invite" element={<LawyerLinkOrInviteLawyer />} />
+
 
       <Route path="/chats/:courtfileId" element={<ChatOnDemand />} />
       <Route path="/chats" element={<ChatsOverview />} />
