@@ -116,17 +116,12 @@ export const router = createBrowserRouter(
       <Route path="/single/:theId" element={<Single />} />  {/* Dynamic route for single items */}
       <Route path="/demo" element={<Demo />} />
 
-      <Route path="/courtfiles" element={<Courtfiles />} />
-      
       <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} />
-      <Route path="/courtfiles/:courtfileId" element={<EditCourtfile />} />
-      <Route path="/courtfiles/ViewCourtfileLawyer/:courtfileId" element={<ViewCourtfileLawyer />} />
-      <Route path="/courtfiles/viewclient/:courtfileId" element={<ViewCourtfileClient />} />
-
+      <Route path="/courtfiles" element={<Courtfiles />} />
       <Route path="/lawyers" element={<Lawyers />} />
       <Route path="/lawyers/addLawyer" element={<AddLawyer />} />
-      <Route path="/lawyers/view/:lawyerId" element={<ViewLawyer />} />
-      <Route path="/lawyers/:lawyerId" element={<EditLawyer />} />
+
+
 
       <Route path="/clients" element={<Clients />} />
       <Route path="/clients/addClient" element={<AddClient />} />
@@ -178,7 +173,7 @@ export const router = createBrowserRouter(
 
       <Route path="/SignUpLawyer" element={<SignUpLawyer />} />
       <Route path="/LoginLawyer" element={<LoginLawyer />} />
-      
+
 
       <Route path="/PaymentCourtfiles" element={<PaymentCourtfiles />} />
       <Route path="/AddPaymentCourtfile" element={<AddPaymentCourtfile />} />
@@ -191,6 +186,11 @@ export const router = createBrowserRouter(
         <Route path="/DashboardClient" element={<DashboardClient />} />
         <Route path="/DashboardLawyer" element={<DashboardLawyer />} />
         <Route path="/courtfiles/addcourtfile" element={<AddCourtfile />} />
+        <Route path="/courtfiles/ViewCourtfileLawyer/:courtfileId" element={<ViewCourtfileLawyer />} />
+        <Route path="/courtfiles/viewclient/:courtfileId" element={<ViewCourtfileClient />} />
+        <Route path="/courtfiles/:courtfileId" element={<EditCourtfile />} />
+        <Route path="/lawyers/view/:lawyerId" element={<ViewLawyer />} />
+        <Route path="/lawyers/:lawyerId" element={<EditLawyer />} />
       </Route>
 
       <Route path="/403" element={<Forbidden />} />

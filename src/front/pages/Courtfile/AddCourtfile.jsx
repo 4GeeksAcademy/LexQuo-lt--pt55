@@ -1,4 +1,4 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -13,7 +13,8 @@ export const AddCourtfile = () => {
 
     const token = store?.auth?.token || null;
     const role = (store?.me?.role || "").toLowerCase();
-    if (!token) return navigate("/login", { replace: true }); // guard opcional
+    if (!token) return navigate("/login", { replace: true }); 
+    if (!["lawyer","admin_user"].includes(role)) return <Navigate to="/403" replace />; 
 
     const afterCreatePath = (role, id, fallback) =>
         role === "lawyer"

@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams, useLocation  } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -10,10 +10,17 @@ export const EditCourtfile = () => {
 
     const API = import.meta.env.VITE_BACKEND_URL;
 
-    const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
-    const token = auth?.token;
+    const token = store?.auth?.token || null;
+    const role = (store?.me?.role || "").toLowerCase();
 
-    const returnTo = location.state?.returnTo || `/courtfiles/view/${courtfileId}`;
+    const defaultReturn =
+        role === "lawyer"
+            ? `/courtfiles/ViewCourtfileLawyer/${courtfileId}`
+            : "/courtfiles";
+    const returnTo = location.state?.returnTo || defaultReturn;
+
+    if (!token) return <Navigate to="/Login" replace />;
+    if (!["lawyer", "admin"].includes(role)) return <Navigate to="/403" replace />;
 
     const JURISDICCIONES_PJN = [
         'CSJ - Corte Suprema de Justicia de la Nación', 'CIV - Cámara Nacional de Apelaciones en lo Civil', 'CAF - Cámara Nacional de Apelaciones en lo Contencioso Administrativo Federal',

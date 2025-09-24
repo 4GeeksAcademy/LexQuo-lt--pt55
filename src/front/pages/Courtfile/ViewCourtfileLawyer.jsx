@@ -11,11 +11,13 @@ export const ViewCourtfileLawyer = () => {
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
-  const token = auth?.token;
+  const token = store?.auth?.token || null;
+  const me = store?.me || null;
+  const role = (me?.role || "").toLowerCase();
   const authed = !!token;
-  if (auth?.role !== 'lawyer') return <Navigate to="/403" replace />;
-  const role = String(auth?.role || "").toLowerCase();
+
+  if (!authed || !me) return <Navigate to="/login" replace />;
+  if (role !== "lawyer") return <Navigate to="/403" replace />;
 
   // ------------------- COURTFILE -------------------
   const [courtfile, setCourtfile] = useState(null);

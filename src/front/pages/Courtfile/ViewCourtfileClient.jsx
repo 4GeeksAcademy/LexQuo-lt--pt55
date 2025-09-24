@@ -12,13 +12,17 @@ export const ViewCourtfileClient = () => {
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
-  const token = auth?.token;
+  // tomar todo del store (PrivateRoute ya rehidrata)
+  const token = store?.auth?.token || null;
+  const me = store?.me || null;
+  const role = (me?.role || "").toLowerCase();
   const authed = !!token;
-  const role = (auth?.role || "").toLowerCase();
 
-  if (auth?.role !== 'client') return <Navigate to="/403" replace />;
+  // guards
+  if (!authed || !me) return <Navigate to="/login" replace />;
+  if (role !== "client") return <Navigate to="/403" replace />;
 
+  const currentLawyerId = me?.id || null;
 
   // ------------------- COURTFILE -------------------
   const [courtfile, setCourtfile] = useState(null);
@@ -117,28 +121,24 @@ export const ViewCourtfileClient = () => {
   // ------------------- 🔔 UNREAD -------------------
   // Usamos el id de la URL para suscribir el hook directamente
   const caseIds = useMemo(() => [Number(courtfileId)], [courtfileId]);
-  const { unreadByCase, totalUnread, refresh: refreshUnread } = useUnreadBadges({
+  const authForHook = useMemo(() => ({ token, user: { id: me.id } }), [token, me?.id]);
+
+  const { unreadByCase, refresh: refreshUnread } = useUnreadBadges({
     API,
-    auth,
+    auth: authForHook,
     role,
     courtfileIds: caseIds,
   });
 
   // ---- marcar leído en backend (igual que en los dashboards) ----
-  async function markReadBackend(API, auth, role, cfid) {
-    const userId =
-      auth?.user?.id ??
-      auth?.lawyer?.id ??
-      auth?.client?.id ??
-      auth?.id ?? null;
-    if (!API || !auth?.token || !userId || !cfid) return;
-
+  async function markReadBackend(API, token, role, userId, cfid) {
+    if (!API || !token || !userId || !cfid) return;
     try {
       await fetch(`${API}/api/messages/read`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${auth.token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           courtfile_id: cfid,
@@ -146,27 +146,23 @@ export const ViewCourtfileClient = () => {
           user_id: userId,
         }),
       });
-    } catch (_) { }
+    } catch { }
   }
 
   const onOpenChatClick = async (e) => {
     e.preventDefault();
     const cfid = Number(courtfileId);
-    if (auth?.user?.id && cfid) {
-      // feedback inmediato
-      markNow(auth.user.id, cfid);
-      // persistir en backend
-      await markReadBackend(API, auth, role, cfid);
-      // refrescar badges
-      refreshUnread();
-      // navegar con el state que ya pasabas
+    if (me?.id && cfid) {
+      markNow(me.id, cfid);                                 
+      await markReadBackend(API, token, role, me.id, cfid);  
+      refreshUnread();                                       
       navigate(`/chats/${cfid}`, {
         state: {
           courtfileId: cfid,
-          courtfileNumber: courtfile.case_number,
-          courtfileTitle: courtfile.title,
-          senderRole: "client",
-          returnTo: `/courtfiles/ViewCourtfileClient/${cfid}`,
+          courtfileNumber: courtfile?.case_number,
+          courtfileTitle: courtfile?.title,
+          senderRole: "lawyer",
+          returnTo: `/courtfiles/ViewCourtfileLawyer/${cfid}`,
         },
       });
     }
