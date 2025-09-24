@@ -1,6 +1,6 @@
 import { Link, useParams, useNavigate, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import useUnreadBadges from "../../hooks/useUnreadBadges";
 import { markNow } from "../../hooks/chatUnread";
 
@@ -41,6 +41,10 @@ export const ViewCourtfileLawyer = () => {
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [documentsErr, setDocumentsErr] = useState("");
   const [deletingDocRelId, setDeletingDocRelId] = useState(null);
+  // ------------------- AI DOCUMENT ANALYSIS -------------------
+  const [analyzingDocId, setAnalyzingDocId] = useState(null);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [analysisError, setAnalysisError] = useState("");
 
   // ------------------- CLIENTS (YA FILTRADOS) -------------------
   const [caseClients, setCaseClients] = useState([]);
@@ -529,6 +533,48 @@ export const ViewCourtfileLawyer = () => {
     }
   };
 
+  // ------------------- Document AI -------------------
+  const analyzeDocument = async (documentUrl, documentName, documentId) => {
+    try {
+      setAnalyzingDocId(documentId);
+      setAnalysisError("");
+      setAnalysisResult(null);
+
+      const resp = await fetch(`${API}/api/ai/analyze-document`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          document_url: documentUrl,
+          document_name: documentName,
+          case_description: courtfile?.description || "",
+          case_jurisdiction: courtfile?.jurisdiction || "",
+          case_court: courtfile?.court || "",
+          case_number: courtfile?.case_number || ""
+        })
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        throw new Error(data?.error || `HTTP ${resp.status}`);
+      }
+
+      setAnalysisResult({
+        documentId,
+        documentName,
+        analysis: data.analysis
+      });
+    } catch (err) {
+      setAnalysisError(err.message || "Error analyzing document");
+      console.error("Analysis error:", err);
+    } finally {
+      setAnalyzingDocId(null);
+    };
+  };
+
   // ------------------- RENDER -------------------
   if (loading) {
     return (
@@ -857,7 +903,26 @@ export const ViewCourtfileLawyer = () => {
                                 target="_blank" rel="noreferrer">Open</a>
                             ) : "—"}
                           </td>
+
                           <td className="text-end">
+                            {(doc.type === 'pdf' || doc.document_type === 'pdf') && (
+                              <button
+                                className="btn btn-sm btn-outline-primary me-1"
+                                onClick={() => analyzeDocument(
+                                  doc.url_route || doc.document_url,
+                                  doc.description || doc.document_name,
+                                  doc.document_id
+                                )}
+                                disabled={analyzingDocId === doc.document_id}
+                                title="Analyze with IA"
+                              >
+                                {analyzingDocId === doc.document_id ? (
+                                  <span className="spinner-border spinner-border-sm" role="status"></span>
+                                ) : (
+                                  <i className="bi bi-robot"></i>
+                                )} Analyze
+                              </button>
+                            )}
                             <Link
                               to={`/documents/view/${doc.document_id || doc.document?.id || doc.id}`}
                               state={{
@@ -900,6 +965,63 @@ export const ViewCourtfileLawyer = () => {
                       ))}
                   </tbody>
                 </table>
+                {analysisResult && (
+                  <div className="mt-4">
+                    <div className="card border-success">
+                      <div className="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h6 className="mb-0">
+                          <i className="bi bi-robot me-2"></i>
+                          Análisis del documento: {analysisResult.documentName}
+                        </h6>
+                        <button
+                          className="btn btn-sm btn-light"
+                          onClick={() => setAnalysisResult(null)}
+                        >
+                          <i className="bi bi-x"></i>
+                        </button>
+                      </div>
+                      <div className="card-body">
+                        <div className="list-group">
+                          {Array.isArray(analysisResult.analysis) ? (
+                            analysisResult.analysis.map((item, index) => (
+                              <div key={index} className="list-group-item">
+                                <div className="d-flex justify-content-between align-items-start">
+                                  <div className="flex-grow-1">
+                                    <h6 className="mb-1">{item.title || `Punto ${index + 1}`}</h6>
+                                    <p className="mb-1">{item.content}</p>
+                                    {item.actions && (
+                                      <small className="text-muted">
+                                        <strong>Acciones sugeridas:</strong> {item.actions}
+                                      </small>
+                                    )}
+                                  </div>
+                                  {item.urgency && (
+                                    <span className={`badge ms-2 ${item.urgency === 'urgent' ? 'bg-danger' :
+                                        item.urgency === 'high' ? 'bg-warning' :
+                                          item.urgency === 'medium' ? 'bg-info' : 'bg-secondary'
+                                      }`}>
+                                      {item.urgency.toUpperCase()}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="alert alert-info">
+                              El análisis se está procesando...
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {analysisError && (
+                  <div className="alert alert-danger mt-3">
+                    <i className="bi bi-exclamation-triangle"></i> Error en el análisis: {analysisError}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1325,7 +1447,6 @@ export const ViewCourtfileLawyer = () => {
               </div>
             )}
           </div>
-
         </div>
       </div>
     </div >
