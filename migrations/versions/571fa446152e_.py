@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 0578984eb8b4
+Revision ID: 571fa446152e
 Revises: 
-Create Date: 2025-09-19 15:05:41.339930
+Create Date: 2025-09-22 17:10:50.004109
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '0578984eb8b4'
+revision = '571fa446152e'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -99,9 +99,12 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('amount', sa.Float(), nullable=False),
     sa.Column('currency', sa.String(length=10), nullable=False),
-    sa.Column('status', sa.Enum('pending', 'approved', 'rejected', name='paymentstatus'), nullable=False),
+    sa.Column('status', sa.Enum('pending', 'processing', 'approved', 'rejected', name='paymentstatus'), nullable=False),
     sa.Column('paid_at', sa.DateTime(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=False),
     sa.Column('means', sa.String(length=50), nullable=True),
+    sa.Column('stripe_payment_intent_id', sa.String(length=100), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('appointment_courtfile',
@@ -176,6 +179,22 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_lawyer_courtfile_courtfile_id'), ['courtfile_id'], unique=False)
         batch_op.create_index(batch_op.f('ix_lawyer_courtfile_lawyer_id'), ['lawyer_id'], unique=False)
 
+    op.create_table('message',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id_courtfile', sa.Integer(), nullable=False),
+    sa.Column('sender', sa.String(length=20), nullable=False),
+    sa.Column('client_id', sa.Integer(), nullable=True),
+    sa.Column('lawyer_id', sa.Integer(), nullable=True),
+    sa.Column('texto', sa.Text(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['client_id'], ['client.id'], ),
+    sa.ForeignKeyConstraint(['id_courtfile'], ['courtfile.id'], ),
+    sa.ForeignKeyConstraint(['lawyer_id'], ['lawyer.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('message', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_message_id_courtfile'), ['id_courtfile'], unique=False)
+
     op.create_table('payment_courtfile',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('payment_id', sa.Integer(), nullable=False),
@@ -198,6 +217,10 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_payment_courtfile_courtfile_id'))
 
     op.drop_table('payment_courtfile')
+    with op.batch_alter_table('message', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_message_id_courtfile'))
+
+    op.drop_table('message')
     with op.batch_alter_table('lawyer_courtfile', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_lawyer_courtfile_lawyer_id'))
         batch_op.drop_index(batch_op.f('ix_lawyer_courtfile_courtfile_id'))

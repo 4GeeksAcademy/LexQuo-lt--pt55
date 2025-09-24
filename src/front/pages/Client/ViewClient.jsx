@@ -9,6 +9,7 @@ export const ViewClient = () => {
   const location = useLocation();
   const returnTo = location.state?.returnTo || "/clients";
 
+
   const API = import.meta.env.VITE_BACKEND_URL;
 
   // Contexto (opcional, si venís desde un expediente)
@@ -19,10 +20,10 @@ export const ViewClient = () => {
   const [linkedCourtfile, setLinkedCourtfile] = useState(
     location.state?.courtfileId
       ? {
-          id: location.state.courtfileId,
-          number: location.state.courtfileNumber,
-          title: location.state.courtfileTitle,
-        }
+        id: location.state.courtfileId,
+        number: location.state.courtfileNumber,
+        title: location.state.courtfileTitle,
+      }
       : null
   );
 
@@ -359,6 +360,13 @@ export const ViewClient = () => {
                   </button>
                 ) : (
                   <>
+                    <Link
+                      to={`/clients/${client.id}/password`}
+                      state={{ returnTo }}
+                      className="btn btn-outline-secondary"
+                    >
+                      <i className="bi bi-key"></i> Change Password
+                    </Link>
                     <Link
                       to={`/clients/${client.id}`}
                       state={{ returnTo }}

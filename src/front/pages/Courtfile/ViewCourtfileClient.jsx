@@ -1,6 +1,9 @@
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+
+import useUnreadBadges from "../../hooks/useUnreadBadges";
+import { markNow } from "../../hooks/chatUnread";
 
 export const ViewCourtfileClient = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -12,6 +15,10 @@ export const ViewCourtfileClient = () => {
   const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
   const token = auth?.token;
   const authed = !!token;
+  const role = (auth?.role || "").toLowerCase();
+
+  if (auth?.role !== 'client') return <Navigate to="/403" replace />;
+
 
   // ------------------- COURTFILE -------------------
   const [courtfile, setCourtfile] = useState(null);
@@ -107,6 +114,64 @@ export const ViewCourtfileClient = () => {
     fetchPayments();
   }, [API, authed, token, courtfileId]);
 
+  // ------------------- 🔔 UNREAD -------------------
+  // Usamos el id de la URL para suscribir el hook directamente
+  const caseIds = useMemo(() => [Number(courtfileId)], [courtfileId]);
+  const { unreadByCase, totalUnread, refresh: refreshUnread } = useUnreadBadges({
+    API,
+    auth,
+    role,
+    courtfileIds: caseIds,
+  });
+
+  // ---- marcar leído en backend (igual que en los dashboards) ----
+  async function markReadBackend(API, auth, role, cfid) {
+    const userId =
+      auth?.user?.id ??
+      auth?.lawyer?.id ??
+      auth?.client?.id ??
+      auth?.id ?? null;
+    if (!API || !auth?.token || !userId || !cfid) return;
+
+    try {
+      await fetch(`${API}/api/messages/read`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth.token}`,
+        },
+        body: JSON.stringify({
+          courtfile_id: cfid,
+          role: String(role || "").toLowerCase(),
+          user_id: userId,
+        }),
+      });
+    } catch (_) { }
+  }
+
+  const onOpenChatClick = async (e) => {
+    e.preventDefault();
+    const cfid = Number(courtfileId);
+    if (auth?.user?.id && cfid) {
+      // feedback inmediato
+      markNow(auth.user.id, cfid);
+      // persistir en backend
+      await markReadBackend(API, auth, role, cfid);
+      // refrescar badges
+      refreshUnread();
+      // navegar con el state que ya pasabas
+      navigate(`/chats/${cfid}`, {
+        state: {
+          courtfileId: cfid,
+          courtfileNumber: courtfile.case_number,
+          courtfileTitle: courtfile.title,
+          senderRole: "client",
+          returnTo: `/courtfiles/ViewCourtfileClient/${cfid}`,
+        },
+      });
+    }
+  };
+
   // ------------------- HELPERS -------------------
   const handlePay = async (paymentId) => {
     if (!authed) return;
@@ -173,6 +238,27 @@ export const ViewCourtfileClient = () => {
               </Link>
             </div>
           </div>
+
+          <Link
+            to={`/chats/${courtfile.id}`}
+            state={{
+              courtfileId: courtfile.id,
+              courtfileNumber: courtfile.case_number,
+              courtfileTitle: courtfile.title,
+              senderRole: "client",
+              returnTo: `/courtfiles/ViewCourtfileClient/${courtfile.id}`
+            }}
+            className="btn btn-outline-success position-relative"
+            onClick={onOpenChatClick}
+            title="Open chat"
+          >
+            <i className="bi bi-chat-dots"></i> Chat
+            {unreadByCase.get(Number(courtfileId))?.hasUnread && (
+              <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                <span className="visually-hidden">New</span>
+              </span>
+            )}
+          </Link>
 
           <div className="card">
             <div className="card-header bg-dark text-white">

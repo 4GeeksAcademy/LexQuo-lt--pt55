@@ -37,13 +37,13 @@ def seed_lawyers(session):
     rows = [
         dict(firstname="María",  lastname="González", email="maria.g@example.com",
              phone="+54 11 5555-1001", password="1234", is_active=True,
-             url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
+             url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758559963/nmqqsbodsdldg45po6mj.png"),
         dict(firstname="Juan",   lastname="Pérez",     email="juan.p@example.com",
              phone="+54 11 5555-1002", password="1234", is_active=True,
-             url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
+             url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758559963/nmqqsbodsdldg45po6mj.png"),
         dict(firstname="Lucía",  lastname="Martínez",  email="lucia.m@example.com",
              phone="+54 11 5555-1003", password="1234", is_active=True,
-             url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
+             url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758559963/nmqqsbodsdldg45po6mj.png"),
     ]
     created = 0
     for r in rows:
@@ -58,17 +58,17 @@ def seed_lawyers(session):
 def seed_clients(session):
     rows = [
         dict(firstname="Ana",    lastname="Suarez",    email="ana.s@example.com",
-             phone="+54 11 5555-2001", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
+             phone="+54 11 5555-2001", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758559963/nmqqsbodsdldg45po6mj.png"),
         dict(firstname="Pedro",  lastname="Lopez",     email="pedro.l@example.com",
-             phone="+54 11 5555-2002", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
+             phone="+54 11 5555-2002", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758559963/nmqqsbodsdldg45po6mj.png"),
         dict(firstname="Sofía",  lastname="Diaz",      email="sofia.d@example.com",
-             phone="+54 11 5555-2003", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
+             phone="+54 11 5555-2003", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758559963/nmqqsbodsdldg45po6mj.png"),
         dict(firstname="Diego",  lastname="Ruiz",      email="diego.r@example.com",
-             phone="+54 11 5555-2004", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
+             phone="+54 11 5555-2004", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758559963/nmqqsbodsdldg45po6mj.png"),
         dict(firstname="Camila", lastname="Fernández", email="camila.f@example.com",
-             phone="+54 11 5555-2005", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
+             phone="+54 11 5555-2005", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758559963/nmqqsbodsdldg45po6mj.png"),
         dict(firstname="Martin", lastname="Rossi",     email="martin.r@example.com",
-             phone="+54 11 5555-2006", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png"),
+             phone="+54 11 5555-2006", password="1234", is_active=True, url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758559963/nmqqsbodsdldg45po6mj.png"),
     ]
     created = 0
     for r in rows:
@@ -207,26 +207,64 @@ def seed_payments(session):
     # Campos NOT NULL: amount, currency, status (tiene default PaymentStatus.pending)
     now = datetime.utcnow()
     rows = [
-        dict(amount=50000.0, currency="ARS", status=PaymentStatus.approved,
-             paid_at=now - timedelta(days=2), means="transferencia"),
-        dict(amount=75000.0, currency="ARS", status=PaymentStatus.pending,
-             paid_at=None,                     means="mercadopago"),
-        dict(amount=120000.0, currency="ARS", status=PaymentStatus.rejected,
-             paid_at=None,                    means="efectivo"),
+        dict(
+            amount=5000.0,
+            currency="ARS",
+            status=PaymentStatus.approved,
+            paid_at=now - timedelta(days=2),
+            means="TDC",
+            stripe_payment_intent_id="pi_approved_123456"
+        ),
+        dict(
+            amount=7500.0,
+            currency="USD",
+            status=PaymentStatus.pending,
+            paid_at=None,
+            means="TDC",
+            stripe_payment_intent_id=None
+        ),
+        dict(
+            amount=12000.0,
+            currency="ARS",
+            status=PaymentStatus.rejected,
+            paid_at=None,
+            means="TDC",
+            stripe_payment_intent_id="pi_rejected_789012"
+        ),
+        dict(
+            amount=8500.0,
+            currency="EUR",
+            status=PaymentStatus.processing,
+            paid_at=None,
+            means="TDC",
+            stripe_payment_intent_id="pi_processing_345678"
+        ),
+        dict(
+            amount=6000.0,
+            currency="COP",
+            status=PaymentStatus.processing,
+            paid_at=None,
+            means="TDC",
+            stripe_payment_intent_id="pi_processing_901234"
+        )
     ]
+
     created = 0
     for r in rows:
-        # No hay campo único → heurística: (amount, currency, status, paid_at)
         unique = {
             "amount": r["amount"],
             "currency": r["currency"],
             "status": r["status"],
             "paid_at": r["paid_at"],
+            "stripe_payment_intent_id": r["stripe_payment_intent_id"]
         }
-        defaults = {"means": r.get("means")}
+        defaults = {
+            "means": r.get("means")
+        }
         _, was_created = get_or_create(session, Payment, unique, defaults)
         if was_created:
             created += 1
+
     print(f"Payments: agregados {created}")
 
 # ----------------------------- runner ----------------------------- #

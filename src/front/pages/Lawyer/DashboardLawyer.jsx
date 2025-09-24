@@ -1,19 +1,24 @@
-import { Navigate } from "react-router-dom";
 import { LogoutButton } from "../../components/LogoutButton";
-import { Link, useParams } from "react-router-dom";
+import { Navigate, Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import React, { useEffect, useState, useMemo } from "react";
+import useUnreadBadges from "../../hooks/useUnreadBadges";
+import { markNow } from "../../hooks/chatUnread";
+import { useNavigate, useParams } from "react-router-dom";
 
 export const DashboardLawyer = () => {
 
     const API = import.meta.env.VITE_BACKEND_URL;
     const { store, dispatch } = useGlobalReducer();
+    const navigate = useNavigate();
 
     const [auth, setAuth] = useState(() => {
         try { return store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null"); }
         catch { return null; }
     });
+
+
 
     useEffect(() => {
         if (!store?.auth && auth?.token) {
@@ -29,12 +34,20 @@ export const DashboardLawyer = () => {
 
     const authed = !!auth?.token;
 
+    const role = (auth?.role || "").toLowerCase();
+
     if (auth?.role !== 'lawyer') return <Navigate to="/403" replace />;
+
+    const currentLawyerId =
+        auth?.user?.id ??
+        auth?.lawyer?.id ??
+        null;
 
     const name =
         auth?.user
             ? `Dr/a. ${auth.user?.firstname ?? ""} ${auth.user?.lastname ?? ""}`.trim()
             : sessionStorage.getItem("user_name") || "";
+
 
     //....................... FLUJO COMPLETO PARA COURTFILES..........................................
     const [cases, setCases] = useState([]);
@@ -157,6 +170,76 @@ export const DashboardLawyer = () => {
         } finally {
             setLoadingCases(false);
         }
+    };
+
+    // 🔔 UNREAD: depende de cases (¡después de declararlo!)
+    const caseIds = Array.isArray(cases) ? cases.map((c) => c.id) : [];
+    const { unreadByCase, totalUnread, refresh: refreshUnread } = useUnreadBadges({
+        API,
+        auth,
+        role,
+        courtfileIds: caseIds,
+    });
+
+    // ---- NUEVO: marcar leído en backend ----
+    async function markReadBackend(API, auth, role, cfid) {
+        const userId =
+            auth?.user?.id ??
+            auth?.lawyer?.id ??
+            auth?.client?.id ??
+            auth?.id ?? null;
+        if (!API || !auth?.token || !userId || !cfid) return;
+
+        try {
+            await fetch(`${API}/api/messages/read`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${auth.token}`,
+                },
+                body: JSON.stringify({
+                    courtfile_id: cfid,
+                    role: String(role || "").toLowerCase(),
+                    user_id: userId,
+                }),
+            });
+        } catch (_) { }
+    }
+
+    // ---- REEMPLAZO: marcar local + backend y refrescar ----
+    const onOpenChatClick = async (cfid) => {
+        const uid =
+            auth?.user?.id ??
+            auth?.lawyer?.id ??
+            auth?.client?.id ??
+            auth?.id ?? null;
+
+        if (uid && cfid) {
+            markNow(uid, cfid);                   // feedback inmediato en UI
+            await markReadBackend(API, auth, role, cfid); // persistir en backend
+            refreshUnread();                      // refrescar badges
+        }
+    };
+
+    // ---- NUEVO: navegar a All Chats manteniendo state (sin marcar global) ----
+    const onOpenAllChats = (e) => {
+        e.preventDefault();
+        navigate("/chats", { state: { returnTo: "/DashboardLawyer" } });
+    };
+
+    // ---- NUEVO: abrir chat de un expediente esperando el markRead ----
+    const openCaseChat = async (e, cf) => {
+        e.preventDefault();
+        await onOpenChatClick(cf.id);
+        navigate(`/chats/${cf.id}`, {
+            state: {
+                courtfileId: cf.id,
+                courtfileNumber: cf.case_number,
+                courtfileTitle: cf.title,
+                senderRole: "lawyer",
+                returnTo: "/DashboardLawyer",
+            },
+        });
     };
 
 
@@ -402,19 +485,37 @@ export const DashboardLawyer = () => {
             <h1>DASHBOARD LAWYER</h1>
             <h1>¡HELLO {authed ? (name) : "Dr/a., you must log in"}!</h1>
 
-
+            {currentLawyerId && (
+                <Link
+                    to={`/lawyers/view/${currentLawyerId}`}
+                    className="btn btn-sm btn-info me-1"
+                    title="View details"
+                    state={{ returnTo: "/DashboardLawyer" }}
+                >
+                    <i className="bi bi-eye me-1"></i>
+                    View Profile
+                </Link>
+            )}
 
             {authed ? (
                 <div className="mt-5 text-start">
                     <div className="d-flex justify-content-between align-items-center">
                         <h3>COURTFILES</h3>
                         <div className="d-flex justify-content-end mb-3">
+
                             <Link
-                                to="/courtfiles/addcourtfile"
-                                state={{ linkToLawyer: true, returnTo: "/DashboardLawyer" }}
-                                className="btn btn-sm btn-success"
+                                to="/chats"
+                                state={{ returnTo: "/DashboardLawyer" }}
+                                className="btn btn-sm btn-outline-primary ms-2 position-relative"
+                                title="Ver todos los chats"
+                                onClick={onOpenAllChats}
                             >
-                                + Create New Courtfile
+                                <i className="bi bi-chat-dots" /> All Chats
+                                {totalUnread > 0 && (
+                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                        {totalUnread}
+                                    </span>
+                                )}
                             </Link>
                         </div>
                     </div>
@@ -455,6 +556,26 @@ export const DashboardLawyer = () => {
                                                 </span>
                                             </td>
                                             <td className="text-end">
+                                                <Link
+                                                    to={`/chats/${cf.id}`}
+                                                    state={{
+                                                        courtfileId: cf.id,
+                                                        courtfileNumber: cf.case_number,
+                                                        courtfileTitle: cf.title,
+                                                        senderRole: "lawyer",
+                                                        returnTo: "/DashboardLawyer",
+                                                    }}
+                                                    className="btn btn-sm btn-outline-primary me-1 position-relative"
+                                                    title="Open chat"
+                                                    onClick={(e) => openCaseChat(e, cf)}
+                                                >
+                                                    <i className="bi bi-chat-dots"></i>
+                                                    {unreadByCase.get(cf.id)?.hasUnread && (
+                                                        <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                                                            <span className="visually-hidden">New</span>
+                                                        </span>
+                                                    )}
+                                                </Link>
                                                 <Link
                                                     to={`/courtfiles/ViewCourtfileLawyer/${cf.id}`}
                                                     state={{ returnTo: "/DashboardLawyer" }}

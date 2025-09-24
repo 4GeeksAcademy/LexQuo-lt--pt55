@@ -1,7 +1,8 @@
-
 import { Link, useParams, useNavigate, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import React, { useState, useEffect } from "react";
+import useUnreadBadges from "../../hooks/useUnreadBadges";
+import { markNow } from "../../hooks/chatUnread";
 
 export const ViewCourtfileLawyer = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -13,7 +14,9 @@ export const ViewCourtfileLawyer = () => {
   const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
   const token = auth?.token;
   const authed = !!token;
+
   if (auth?.role !== 'lawyer') return <Navigate to="/403" replace />;
+  const role = String(auth?.role || "").toLowerCase();
 
   // ------------------- COURTFILE -------------------
   const [courtfile, setCourtfile] = useState(null);
@@ -37,6 +40,10 @@ export const ViewCourtfileLawyer = () => {
   const [loadingDocuments, setLoadingDocuments] = useState(false);
   const [documentsErr, setDocumentsErr] = useState("");
   const [deletingDocRelId, setDeletingDocRelId] = useState(null);
+  // ------------------- AI DOCUMENT ANALYSIS -------------------
+  const [analyzingDocId, setAnalyzingDocId] = useState(null);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [analysisError, setAnalysisError] = useState("");
 
   // ------------------- CLIENTS (YA FILTRADOS) -------------------
   const [caseClients, setCaseClients] = useState([]);
@@ -176,7 +183,7 @@ export const ViewCourtfileLawyer = () => {
         relation_id: r.id,
         courtfile_id: r.courtfile_id,
         client_id: r.client_id,
-        client_name: r.client_name,  
+        client_name: r.client_name,
         client_email: r.client_email,
         client_phone: r.client_phone
       }));
@@ -461,6 +468,112 @@ export const ViewCourtfileLawyer = () => {
     }
   };
 
+  // 🔔 UNREAD (solo este expediente)
+  const caseIds = useMemo(() => [Number(courtfileId)], [courtfileId]);
+  const { unreadByCase, refresh: refreshUnread } = useUnreadBadges({
+    API,
+    auth,
+    role,             // "lawyer"
+    courtfileIds: caseIds,
+  });
+
+  // ---- marcar leído en backend  ----
+  async function markReadBackend(API, auth, role, cfid) {
+    const userId =
+      auth?.user?.id ??
+      auth?.lawyer?.id ??
+      auth?.client?.id ??
+      auth?.id ?? null;
+    if (!API || !auth?.token || !userId || !cfid) return;
+
+    try {
+      await fetch(`${API}/api/messages/read`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${auth.token}`,
+        },
+        body: JSON.stringify({
+          courtfile_id: cfid,
+          role: String(role || "").toLowerCase(),
+          user_id: userId,
+        }),
+      });
+    } catch (_) { }
+  }
+
+  // ---- abrir chat: marca local + backend y navega con state ----
+  const onOpenChatClick = async (e) => {
+    e.preventDefault();
+    const cfid = Number(courtfileId);
+    const uid =
+      auth?.user?.id ??
+      auth?.lawyer?.id ??
+      auth?.client?.id ??
+      auth?.id ?? null;
+
+    if (uid && cfid) {
+      // feedback inmediato
+      markNow(uid, cfid);
+      // persistir en backend
+      await markReadBackend(API, auth, role, cfid);
+      // refrescar badges
+      refreshUnread();
+      // navegar con el state
+      navigate(`/chats/${cfid}`, {
+        state: {
+          courtfileId: cfid,
+          courtfileNumber: courtfile.case_number,
+          courtfileTitle: courtfile.title,
+          senderRole: "lawyer",
+          returnTo: `/courtfiles/ViewCourtfileLawyer/${cfid}`,
+        },
+      });
+    }
+  };
+
+  // ------------------- Document AI -------------------
+  const analyzeDocument = async (documentUrl, documentName, documentId) => {
+    try {
+      setAnalyzingDocId(documentId);
+      setAnalysisError("");
+      setAnalysisResult(null);
+
+      const resp = await fetch(`${API}/api/ai/analyze-document`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          document_url: documentUrl,
+          document_name: documentName,
+          case_description: courtfile?.description || "",
+          case_jurisdiction: courtfile?.jurisdiction || "",
+          case_court: courtfile?.court || "",
+          case_number: courtfile?.case_number || ""
+        })
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        throw new Error(data?.error || `HTTP ${resp.status}`);
+      }
+
+      setAnalysisResult({
+        documentId,
+        documentName,
+        analysis: data.analysis
+      });
+    } catch (err) {
+      setAnalysisError(err.message || "Error analyzing document");
+      console.error("Analysis error:", err);
+    } finally {
+      setAnalyzingDocId(null);
+    };
+  };
+
   // ------------------- RENDER -------------------
   if (loading) {
     return (
@@ -526,6 +639,27 @@ export const ViewCourtfileLawyer = () => {
               </button>
             </div>
           </div>
+
+          <Link
+            to={`/chats/${courtfile.id}`}
+            state={{
+              courtfileId: courtfile.id,
+              courtfileNumber: courtfile.case_number,
+              courtfileTitle: courtfile.title,
+              senderRole: "lawyer",
+              returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+            }}
+            className="btn btn-sm btn-outline-primary me-1 position-relative"
+            title="Open chat"
+            onClick={onOpenChatClick}
+          >
+            <i className="bi bi-chat-dots"></i>
+            {unreadByCase.get(Number(courtfileId))?.hasUnread && (
+              <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                <span className="visually-hidden">New</span>
+              </span>
+            )}
+          </Link>
 
           {/* Card con detalles */}
           <div className="card">
@@ -768,7 +902,26 @@ export const ViewCourtfileLawyer = () => {
                                 target="_blank" rel="noreferrer">Open</a>
                             ) : "—"}
                           </td>
+
                           <td className="text-end">
+                            {(doc.type === 'pdf' || doc.document_type === 'pdf') && (
+                              <button
+                                className="btn btn-sm btn-outline-primary me-1"
+                                onClick={() => analyzeDocument(
+                                  doc.url_route || doc.document_url,
+                                  doc.description || doc.document_name,
+                                  doc.document_id
+                                )}
+                                disabled={analyzingDocId === doc.document_id}
+                                title="Analyze with IA"
+                              >
+                                {analyzingDocId === doc.document_id ? (
+                                  <span className="spinner-border spinner-border-sm" role="status"></span>
+                                ) : (
+                                  <i className="bi bi-robot"></i>
+                                )} Analyze
+                              </button>
+                            )}
                             <Link
                               to={`/documents/view/${doc.document_id || doc.document?.id || doc.id}`}
                               state={{
@@ -811,6 +964,63 @@ export const ViewCourtfileLawyer = () => {
                       ))}
                   </tbody>
                 </table>
+                {analysisResult && (
+                  <div className="mt-4">
+                    <div className="card border-success">
+                      <div className="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h6 className="mb-0">
+                          <i className="bi bi-robot me-2"></i>
+                          Análisis del documento: {analysisResult.documentName}
+                        </h6>
+                        <button
+                          className="btn btn-sm btn-light"
+                          onClick={() => setAnalysisResult(null)}
+                        >
+                          <i className="bi bi-x"></i>
+                        </button>
+                      </div>
+                      <div className="card-body">
+                        <div className="list-group">
+                          {Array.isArray(analysisResult.analysis) ? (
+                            analysisResult.analysis.map((item, index) => (
+                              <div key={index} className="list-group-item">
+                                <div className="d-flex justify-content-between align-items-start">
+                                  <div className="flex-grow-1">
+                                    <h6 className="mb-1">{item.title || `Punto ${index + 1}`}</h6>
+                                    <p className="mb-1">{item.content}</p>
+                                    {item.actions && (
+                                      <small className="text-muted">
+                                        <strong>Acciones sugeridas:</strong> {item.actions}
+                                      </small>
+                                    )}
+                                  </div>
+                                  {item.urgency && (
+                                    <span className={`badge ms-2 ${item.urgency === 'urgent' ? 'bg-danger' :
+                                        item.urgency === 'high' ? 'bg-warning' :
+                                          item.urgency === 'medium' ? 'bg-info' : 'bg-secondary'
+                                      }`}>
+                                      {item.urgency.toUpperCase()}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="alert alert-info">
+                              El análisis se está procesando...
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {analysisError && (
+                  <div className="alert alert-danger mt-3">
+                    <i className="bi bi-exclamation-triangle"></i> Error en el análisis: {analysisError}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1236,7 +1446,6 @@ export const ViewCourtfileLawyer = () => {
               </div>
             )}
           </div>
-
         </div>
       </div>
     </div >
