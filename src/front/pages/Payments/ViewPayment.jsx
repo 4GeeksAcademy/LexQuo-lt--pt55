@@ -224,7 +224,7 @@ export const ViewPayment = () => {
 
             <div className="card-footer bg-light">
               <div className="d-flex gap-2 justify-content-end">
-                {payment.status === "pending" && (
+                {(payment.status === "pending" || payment.status === "rejected") && (
                   <button
                     className="btn btn-success"
                     onClick={() => handleStripeCheckout(payment)}
