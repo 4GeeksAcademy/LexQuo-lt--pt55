@@ -39,7 +39,7 @@ export default function Login() {
       if (!token) throw new Error("Respuesta inválida (falta token)");
       if (!role) throw new Error("Respuesta inválida (falta role)");
 
-      sessionStorage.setItem("auth", JSON.stringify({ token }));
+      localStorage.setItem("auth", JSON.stringify({ token }));
 
       dispatch({ type: "SET_AUTH", payload: { token, role } });
       dispatch({ type: "SET_ME", payload: user });

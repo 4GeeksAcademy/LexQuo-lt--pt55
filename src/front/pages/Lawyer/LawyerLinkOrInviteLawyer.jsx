@@ -11,7 +11,7 @@ export const LawyerLinkOrInviteLawyer = () => {
   const token = store?.auth?.token;
   const role = (store?.me?.role || "").toLowerCase();
   if (!token) return <Navigate to="/Login" replace state={{ returnTo: location.pathname + location.search }} />;
-  if (role !== "lawyer") return <Navigate to="/403" replace />;
+  if (role !== "lawyer" || role !== "admin_user") return <Navigate to="/403" replace />;
 
   const preselectedCourtfileId = location.state?.courtfileId || null;
   const preselectedCourtfileNumber = location.state?.courtfileNumber || null;

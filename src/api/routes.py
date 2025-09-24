@@ -2416,35 +2416,37 @@ def webhook():
             payment_intent_id = payment_intent['id']
             metadata = payment_intent.get('metadata', {})
             payment_id = metadata.get('payment_id')
-            
-            print(f'🔴 Payment intent failed - Payment ID: {payment_id}, Intent ID: {payment_intent_id}')
+
+            print(
+                f'🔴 Payment intent failed - Payment ID: {payment_id}, Intent ID: {payment_intent_id}')
             print(f'Metadata del payment_intent: {metadata}')
 
             payment = None
-            
+
             if payment_id:
                 payment = Payment.query.get(payment_id)
                 if payment:
                     print(f'✅ Encontrado pago {payment.id} por metadata')
-            
+
             if not payment:
                 print("Buscando en pagos recientes en estado processing...")
                 recent_payments = Payment.query.filter(
                     Payment.status == PaymentStatus.processing or Payment.status == PaymentStatus.rejected,
                     Payment.created_at >= datetime.utcnow() - timedelta(hours=24)
                 ).order_by(Payment.created_at.desc()).all()
-                
-                print(f"Encontrados {len(recent_payments)} pagos recientes en processing")
-                
+
+                print(
+                    f"Encontrados {len(recent_payments)} pagos recientes en processing")
+
                 if recent_payments:
                     payment = recent_payments[0]
                     print(f'✅ Usando pago más reciente: {payment.id}')
-            
+
             if not payment:
                 print("Creando nuevo registro de pago fallido...")
-                amount = payment_intent['amount'] / 100 
+                amount = payment_intent['amount'] / 100
                 currency = payment_intent['currency']
-                
+
                 payment = Payment(
                     amount=amount,
                     currency=currency.upper(),
@@ -2456,17 +2458,16 @@ def webhook():
                 )
                 db.session.add(payment)
                 print(f'Creado nuevo pago fallido: {payment.id}')
-            
+
             payment.status = PaymentStatus.rejected
             payment.stripe_payment_intent_id = payment_intent_id  # ⚠️ GUARDAR EL ID AQUÍ
             payment.updated_at = datetime.utcnow()
-            
+
             # Guardar información del error para debugging
             last_error = payment_intent.get('last_payment_error', {})
             payment.error_message = f"{last_error.get('code', 'unknown')}: {last_error.get('message', 'Unknown error')}"
-            
-            db.session.commit()
 
+            db.session.commit()
 
         except Exception as e:
             db.session.rollback()
@@ -2579,7 +2580,7 @@ def send_linked_email():
         return jsonify({"error": str(e)}), 500
 
 
-#=================LOGIN GENERAL =====================================
+# =================LOGIN GENERAL =====================================
 @api.route('/auth/login', methods=['POST'])
 def unified_login():
     try:
@@ -2599,7 +2600,8 @@ def unified_login():
             return jsonify({'error': 'Email is linked to multiple roles'}), 409
 
         # Determinamos user/role
-        user, role = (lawyer, 'lawyer') if lawyer else ((client, 'client') if client else (None, None))
+        user, role = (lawyer, 'lawyer') if lawyer else (
+            (client, 'client') if client else (None, None))
 
         if not user:
             return jsonify({'error': 'Invalid credentials'}), 401
@@ -2612,10 +2614,10 @@ def unified_login():
 
         # JWT: identidad y claim de role
         token = create_access_token(
-            identity=str(user.id),                
-            additional_claims={"role": role}      
+            identity=str(user.id),
+            additional_claims={"role": role}
         )
-        
+
         return jsonify({
             'message': 'Login successful',
             'token': token,
@@ -2625,6 +2627,7 @@ def unified_login():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 @api.route('/auth/me', methods=['GET'])
 @jwt_required()
@@ -2640,8 +2643,8 @@ def auth_me():
         user = Lawyer.query.get(int(user_id))
     elif role == "client":
         user = Client.query.get(int(user_id))
-    else:
-        return jsonify({"error": "Unknown role"}), 400
+    elif role == "admin_user":
+        user = AdminUser.query.get(int(user_id))
 
     if not user or getattr(user, "is_active", True) is False:
         return jsonify({"error": "User not found or deactivated"}), 404

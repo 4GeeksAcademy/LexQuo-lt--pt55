@@ -15,10 +15,10 @@ export const DashboardLawyer = () => {
 
     const token = store?.auth?.token || null;
     const me = store?.me || null;
-    const authed = !!token;
     const role = (me?.role || "").toLowerCase();
 
-    if (!authed || !me) return <Navigate to="/login" replace />;
+    console.log(token, me)
+   
     if (role !== "lawyer") return <Navigate to="/403" replace />;
 
     const currentLawyerId = me?.id || null;
@@ -50,7 +50,6 @@ export const DashboardLawyer = () => {
 
     const handleCreate = async (e) => {
         e.preventDefault();
-        if (!authed) return;
         setCreating(true);
         setCreateErr("");
         try {
@@ -108,7 +107,6 @@ export const DashboardLawyer = () => {
 
     const [deletingId, setDeletingId] = useState(null);
     const handleDeleteRelation = async (relationId) => {
-        if (!authed) return;
         if (!window.confirm("Delete this link? The case will no longer be associated with this lawyer.")) return;
         try {
             setDeletingId(relationId);
@@ -246,7 +244,6 @@ export const DashboardLawyer = () => {
     };
 
     const handleDeleteDeadlineRelation = async (relationId) => {
-        if (!authed) return;
         if (!window.confirm("Delete this link? The deadline will no longer be associated with this case.")) return;
         try {
             setDeletingDeadlineRelId(relationId);
@@ -304,7 +301,6 @@ export const DashboardLawyer = () => {
     };
 
     const handleDeleteAppointmentRelation = async (relationId) => {
-        if (!authed) return;
         if (!window.confirm("Delete this link? The appointment will no longer be associated with this case.")) return;
         try {
             setDeletingApptRelId(relationId);
@@ -330,7 +326,6 @@ export const DashboardLawyer = () => {
     const [clientsErr, setClientsErr] = useState("");
 
     const fetchClients = async () => {
-        if (!authed || !currentLawyerId) return;
         try {
             setLoadingClients(true);
             setClientsErr("");
@@ -397,7 +392,6 @@ export const DashboardLawyer = () => {
     };
 
     const handleDeletePaymentRelation = async (relationId) => {
-        if (!authed) return;
         if (!window.confirm("Unlink this payment from the case?")) return;
         try {
             setDeletingPaymentRelId(relationId);
@@ -418,7 +412,6 @@ export const DashboardLawyer = () => {
     };
 
     const handleMarkPaid = async (paymentId) => {
-        if (!authed) return;
         try {
             const resp = await fetch(`${API}/api/payments/${paymentId}`, {
                 method: "PUT",
@@ -447,19 +440,18 @@ export const DashboardLawyer = () => {
 
 
     useEffect(() => {
-        if (!authed) return;
         fetchCases();
         fetchDeadlines();
         fetchAppointments();
         fetchClients();
         fetchPayments();
-    }, [API, authed, token, currentLawyerId, dispatch]);
+    }, [API, token, currentLawyerId, dispatch]);
 
 
     return (
         <div className="container text-center mt-5">
             <h1>DASHBOARD LAWYER</h1>
-            <h1>¡HELLO {authed ? (name) : "Dr/a., you must log in"}!</h1>
+            <h1>¡HELLO {name}!</h1>
 
             {currentLawyerId && (
                 <Link
@@ -473,7 +465,7 @@ export const DashboardLawyer = () => {
                 </Link>
             )}
 
-            {authed ? (
+           
                 <div className="mt-5 text-start">
                     <div className="d-flex justify-content-between align-items-center">
                         <h3>COURTFILES</h3>
@@ -941,26 +933,8 @@ export const DashboardLawyer = () => {
                     <div className="text-end">
                         <LogoutButton className="btn btn-sm btn-outline-danger mt-5" />
                     </div>
-                </div>
-            ) : (
-                <div className="d-flex gap-2 mt-5 justify-content-end">
-                    <Link
-                        to="/SignUpLawyer"
-                        className="btn btn-sm btn-outline-warning mt-3"
-                        style={{ border: "none" }}
-                    >
-                        Create User
-                    </Link>
-                    <Link
-                        to="/login"
-                        className="btn btn-sm btn-outline-primary mt-3"
-                        style={{ border: "none" }}
-                    >
-                        Sign in
-                    </Link>
-                </div>
-            )
-            }
+                </div>          
+            
         </div >
     );
 };

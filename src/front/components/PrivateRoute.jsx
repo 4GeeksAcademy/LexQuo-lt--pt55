@@ -8,13 +8,13 @@ export default function PrivateRoute() {
   const API = import.meta.env.VITE_BACKEND_URL;
 
   // ✅ Solo token desde sessionStorage (nunca datos de usuario)
-  const token = JSON.parse(sessionStorage.getItem("auth") || "null")?.token || null;
+  const token = JSON.parse(localStorage.getItem("auth") || "null")?.token || null;
 
   // 1) Si no hay token -> a Login con returnTo
   if (!token) {
     return (
       <Navigate
-        to="/Login"
+        to="/login"
         replace
         state={{ returnTo: location.pathname + location.search }}
       />
@@ -24,44 +24,45 @@ export default function PrivateRoute() {
   // 2) Verificar token e hidratar store SIEMPRE que entres a una ruta privada
   //    (se dispara en el primer render y cuando cambia el path)
   const [checking, setChecking] = useState(true);
-  const [invalid, setInvalid] = useState(false);
+  const [invalid, setInvalid] = useState(null);
 
   useEffect(() => {
-    let abort = false;
+    
 
     const verify = async () => {
       try {
         setChecking(true);
         const resp = await fetch(`${API}/api/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
+          
         });
         const data = await resp.json().catch(() => ({}));
         if (!resp.ok) throw new Error(data?.error || "Auth failed");
 
-        if (abort) return;
-        // Hidrato SIEMPRE el store con los datos frescos del backend
         dispatch({ type: "SET_AUTH", payload: { token, role: data.role } });
         dispatch({ type: "SET_ME", payload: data.user });
         setInvalid(false);
-      } catch {
-        if (abort) return;
+      } catch (err) {
+                
         setInvalid(true);
-        dispatch({ type: "CLEAR_AUTH" }); // limpia store + sessionStorage
+        dispatch({ type: "CLEAR_AUTH" });
       } finally {
-        if (!abort) setChecking(false);
+        setChecking(false);
       }
     };
 
     verify();
-    return () => { abort = true; };
-  // disparar en cada acceso: cambia pathname o search
-  }, [API, token, location.pathname, location.search, dispatch]);
+
+    // Cleanup: si cambia la ruta o se desmonta, cancelamos la request en curso
+
+  }, []);
+
 
   // 3) Si el token falló -> Login
-  if (invalid) {
+  if (invalid == true) {
     return (
       <Navigate
-        to="/Login"
+        to="/login"
         replace
         state={{ returnTo: location.pathname + location.search }}
       />
@@ -69,7 +70,7 @@ export default function PrivateRoute() {
   }
 
   // 4) Mientras verifico, muestro un loader corto (evita “flash” sin datos)
-  if (checking) {
+  if (invalid == null) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 180 }}>
         <div className="spinner-border" role="status" aria-label="Verificando sesión..." />

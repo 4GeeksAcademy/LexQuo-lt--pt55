@@ -1,6 +1,6 @@
 import { Link, useParams, useNavigate, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import useUnreadBadges from "../../hooks/useUnreadBadges";
 import { markNow } from "../../hooks/chatUnread";
 
@@ -11,10 +11,11 @@ export const ViewCourtfileLawyer = () => {
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  const token = store?.auth?.token || null;
-  const me = store?.me || null;
-  const role = (me?.role || "").toLowerCase();
+  const token = store.auth.token;                    // garantizado por PrivateRoute
+  const me = store.me;                               // datos del usuario
+  const role = (store.auth.role || "").toLowerCase();// el rol viene en auth, no en me
   const authed = !!token;
+  const auth = store.auth;
 
   if (!authed || !me) return <Navigate to="/login" replace />;
   if (role !== "lawyer") return <Navigate to="/403" replace />;
@@ -997,8 +998,8 @@ export const ViewCourtfileLawyer = () => {
                                   </div>
                                   {item.urgency && (
                                     <span className={`badge ms-2 ${item.urgency === 'urgent' ? 'bg-danger' :
-                                        item.urgency === 'high' ? 'bg-warning' :
-                                          item.urgency === 'medium' ? 'bg-info' : 'bg-secondary'
+                                      item.urgency === 'high' ? 'bg-warning' :
+                                        item.urgency === 'medium' ? 'bg-info' : 'bg-secondary'
                                       }`}>
                                       {item.urgency.toUpperCase()}
                                     </span>

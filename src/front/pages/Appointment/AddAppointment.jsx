@@ -1,4 +1,4 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 import MapComponent from "../../components/Map/MapComponent";
@@ -16,8 +16,23 @@ export const AddAppointment = () => {
   const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
   const returnTo = location.state?.returnTo || "/appointments";
 
-  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
-  const token = auth?.token;
+  const token = store?.auth?.token || JSON.parse(sessionStorage.getItem("auth") || "null")?.token || null;
+  const role = (store?.me?.role || "").toLowerCase();
+  const ALLOWED_ROLES = ["lawyer", "admin_user"];
+
+  if (!token) {
+    return <Navigate to="/login" replace state={{ returnTo: location.pathname + location.search }} />;
+  }
+  if (!role) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 180 }}>
+        <div className="spinner-border" role="status" aria-label="Verificando permisos..." />
+      </div>
+    );
+  }
+  if (!ALLOWED_ROLES.includes(role)) {
+    return <Navigate to="/403" replace />;
+  }
 
   const [formData, setFormData] = useState({
     title: "",
@@ -47,12 +62,15 @@ export const AddAppointment = () => {
 
   useEffect(() => {
     const fetchCases = async () => {
+      if (!role) return; 
       try {
         setLoadingCases(true);
 
         if (preselectedCourtfileId) {
           if (!preselectedCf) {
-            const r = await fetch(`${API}/api/courtfiles/${preselectedCourtfileId}`);
+            const r = await fetch(`${API}/api/courtfiles/${preselectedCourtfileId}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
             if (r.ok) {
               const d = await r.json();
               setPreselectedCf({ case_number: d.case_number, title: d.title });
@@ -62,15 +80,17 @@ export const AddAppointment = () => {
           return;
         }
 
-        const endpoint = token ? `${API}/api/lawyers-courtfiles` : `${API}/api/courtfiles`;
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const endpoint = role === "lawyer"
+          ? `${API}/api/lawyers-courtfiles`
+          : `${API}/api/courtfiles`;
+        const headers = { Authorization: `Bearer ${token}` };
         const resp = await fetch(endpoint, { headers });
         if (!resp.ok) {
           const e = await resp.json().catch(() => ({}));
           throw new Error(e.error || `HTTP ${resp.status}`);
         }
         const data = await resp.json();
-        const mapped = token
+        const mapped = role === "lawyer"
           ? data.map(r => ({ id: r.courtfile.id, number: r.courtfile.case_number, title: r.courtfile.title }))
           : data.map(cf => ({ id: cf.id, number: cf.case_number, title: cf.title }));
         setMyCases(mapped);
@@ -81,7 +101,7 @@ export const AddAppointment = () => {
       }
     };
     fetchCases();
-  }, [API, token, preselectedCourtfileId, preselectedCf]);
+  }, [API, token, role, preselectedCourtfileId, preselectedCf]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -222,37 +242,37 @@ export const AddAppointment = () => {
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h1>Add New Appointment</h1>
             <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back 
+              <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
 
           {preselectedCourtfileId ? (
-                  <span className="badge bg-dark mt-1 mb-2">
-                      Related to Courtfile {preselectedCf?.case_number || "—"}
-                      {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
-                    </span>
-                  
-                ) : (
-                  <div className="mb-3">
-                    <label htmlFor="courtfile_id" className="form-label">Link to Courtfile *</label>
-                    <select
-                      className="form-select"
-                      id="courtfile_id"
-                      name="courtfile_id"
-                      value={formData.courtfile_id}
-                      onChange={handleInputChange}
-                      required
-                      disabled={loading || loadingCases}
-                    >
-                      <option value="">Select a courtfile</option>
-                      {myCases.map(c => (
-                        <option key={c.id} value={c.id}>
-                          {c.number} — {c.title}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+            <span className="badge bg-dark mt-1 mb-2">
+              Related to Courtfile {preselectedCf?.case_number || "—"}
+              {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
+            </span>
+
+          ) : (
+            <div className="mb-3">
+              <label htmlFor="courtfile_id" className="form-label">Link to Courtfile *</label>
+              <select
+                className="form-select"
+                id="courtfile_id"
+                name="courtfile_id"
+                value={formData.courtfile_id}
+                onChange={handleInputChange}
+                required
+                disabled={loading || loadingCases}
+              >
+                <option value="">Select a courtfile</option>
+                {myCases.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.number} — {c.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Card */}
           <div className="card">
@@ -263,7 +283,7 @@ export const AddAppointment = () => {
                 </div>
               )}
 
-              <form onSubmit={handleSubmit}>                
+              <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                   <label htmlFor="title" className="form-label">Title *</label>
                   <input

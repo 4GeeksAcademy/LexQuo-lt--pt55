@@ -138,6 +138,8 @@ export const router = createBrowserRouter(
 
       <Route path="/appointments" element={<Appointments />} />
 
+      <Route path="/documents" element={<Documents />} />
+
       {/* ==========RUTAS QUE YA SERIAN INNECESARIAS========== */}
       <Route path="/SignUpLawyer" element={<SignUpLawyer />} />
       <Route path="/LoginLawyer" element={<LoginLawyer />} />
@@ -159,11 +161,9 @@ export const router = createBrowserRouter(
 
 
 
-      <Route path="/appointments/addAppointment" element={<AddAppointment />} />
-      <Route path="/appointments/view/:appointmentId" element={<ViewAppointment />} />
-      <Route path="/appointments/:appointmentId" element={<EditAppointment />} />
 
-      <Route path="/documents" element={<Documents />} />
+
+ 
       <Route path="/documents/addDocument" element={<AddDocument />} />
       <Route path="/documents/view/:documentId" element={<ViewDocument />} />
       <Route path="/documents/:documentId" element={<EditDocument />} />
@@ -213,6 +213,9 @@ export const router = createBrowserRouter(
         <Route path="/deadlines/addDeadline" element={<AddDeadline />} />
         <Route path="/deadlines/view/:deadlineId" element={<ViewDeadline />} />
         <Route path="/deadlines/:deadlineId" element={<EditDeadline />} />
+        <Route path="/appointments/addAppointment" element={<AddAppointment />} />
+        <Route path="/appointments/view/:appointmentId" element={<ViewAppointment />} />
+        <Route path="/appointments/:appointmentId" element={<EditAppointment />} />
 
       </Route>
 
