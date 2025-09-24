@@ -23,6 +23,8 @@ sqlalchemy = "*"
 boto3 = "*"
 openai = "*"
 stripe = "*"
+pypdf2 = "*"
+google-genai = "*"
 
 [requires]
 python_version = "3.13"
