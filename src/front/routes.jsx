@@ -134,6 +134,8 @@ export const router = createBrowserRouter(
 
       <Route path="/payments" element={<Payments />} />
 
+      <Route path="/deadlines" element={<Deadlines />} />
+
 
       {/* ==========RUTAS QUE YA SERIAN INNECESARIAS========== */}
       <Route path="/SignUpLawyer" element={<SignUpLawyer />} />
@@ -152,10 +154,8 @@ export const router = createBrowserRouter(
 
 
 
-      <Route path="/deadlines" element={<Deadlines />} />
-      <Route path="/deadlines/addDeadline" element={<AddDeadline />} />
-      <Route path="/deadlines/view/:deadlineId" element={<ViewDeadline />} />
-      <Route path="/deadlines/:deadlineId" element={<EditDeadline />} />
+
+      
 
       <Route path="/appointments" element={<Appointments />} />
       <Route path="/appointments/addAppointment" element={<AddAppointment />} />
@@ -207,6 +207,9 @@ export const router = createBrowserRouter(
         <Route path="/payments/view/:paymentId" element={<ViewPayment />} />
         <Route path="/payments/addPayment" element={<AddPayment />} />
         <Route path="/payments/:paymentId" element={<EditPayment />} />
+        <Route path="/deadlines/addDeadline" element={<AddDeadline />} />
+        <Route path="/deadlines/view/:deadlineId" element={<ViewDeadline />} />
+        <Route path="/deadlines/:deadlineId" element={<EditDeadline />} />
 
 
       </Route>
