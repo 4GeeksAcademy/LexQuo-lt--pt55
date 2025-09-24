@@ -329,7 +329,8 @@ def lawyer_login():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
+
+
 @api.route('/lawyers/<int:lawyer_id>/password', methods=['PUT'])
 def change_lawyer_password(lawyer_id):
     data = request.get_json() or {}
@@ -519,7 +520,8 @@ def client_login():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
+
+
 @api.route('/clients/<int:client_id>/password', methods=['PUT'])
 def change_client_password(client_id):
     data = request.get_json() or {}
@@ -2345,6 +2347,8 @@ def create_checkout_session(paymentId):
 @api.route('/webhook', methods=['POST'])
 def webhook():
     payload = request.get_data(as_text=True)
+    print("Payload:")
+    print(payload)
     sig_header = request.headers.get('Stripe-Signature')
     webhook_secret = os.environ.get('STRIPE_WEBHOOK_SECRET')
 
@@ -2356,7 +2360,8 @@ def webhook():
         return jsonify(success=False), 400
     except stripe.error.SignatureVerificationError as e:
         return jsonify(success=False), 400
-
+    print("Evento:")
+    print(event)
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
         try:
@@ -2372,7 +2377,7 @@ def webhook():
                 if payment:
                     payment.status = PaymentStatus.approved
                     payment.paid_at = datetime.utcnow()
-                    payment.means = 'stripe'
+                    payment.means = 'TDC'
                     payment.stripe_payment_intent_id = payment_intent_id
 
                     db.session.commit()
@@ -2396,7 +2401,7 @@ def webhook():
                 if payment and payment.status != PaymentStatus.approved:
                     payment.status = PaymentStatus.approved
                     payment.paid_at = datetime.utcnow()
-                    payment.means = 'stripe'
+                    payment.means = 'TDC'
 
                     db.session.commit()
                     print(
@@ -2409,21 +2414,65 @@ def webhook():
         payment_intent = event['data']['object']
         try:
             payment_intent_id = payment_intent['id']
-            payment = Payment.query.filter_by(
-                stripe_payment_intent_id=payment_intent_id).first()
+            metadata = payment_intent.get('metadata', {})
+            payment_id = metadata.get('payment_id')
+            
+            print(f'🔴 Payment intent failed - Payment ID: {payment_id}, Intent ID: {payment_intent_id}')
+            print(f'Metadata del payment_intent: {metadata}')
 
-            if payment:
-                payment.status = PaymentStatus.rejected
-                db.session.commit()
-                print(f'❌ Pago {payment.id} marcado como rechazado')
+            payment = None
+            
+            if payment_id:
+                payment = Payment.query.get(payment_id)
+                if payment:
+                    print(f'✅ Encontrado pago {payment.id} por metadata')
+            
+            if not payment:
+                print("Buscando en pagos recientes en estado processing...")
+                recent_payments = Payment.query.filter(
+                    Payment.status == PaymentStatus.processing or Payment.status == PaymentStatus.rejected,
+                    Payment.created_at >= datetime.utcnow() - timedelta(hours=24)
+                ).order_by(Payment.created_at.desc()).all()
+                
+                print(f"Encontrados {len(recent_payments)} pagos recientes en processing")
+                
+                if recent_payments:
+                    payment = recent_payments[0]
+                    print(f'✅ Usando pago más reciente: {payment.id}')
+            
+            if not payment:
+                print("Creando nuevo registro de pago fallido...")
+                amount = payment_intent['amount'] / 100 
+                currency = payment_intent['currency']
+                
+                payment = Payment(
+                    amount=amount,
+                    currency=currency.upper(),
+                    status=PaymentStatus.rejected,
+                    means='TDC',
+                    stripe_payment_intent_id=payment_intent_id,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow()
+                )
+                db.session.add(payment)
+                print(f'Creado nuevo pago fallido: {payment.id}')
+            
+            payment.status = PaymentStatus.rejected
+            payment.stripe_payment_intent_id = payment_intent_id  # ⚠️ GUARDAR EL ID AQUÍ
+            payment.updated_at = datetime.utcnow()
+            
+            # Guardar información del error para debugging
+            last_error = payment_intent.get('last_payment_error', {})
+            payment.error_message = f"{last_error.get('code', 'unknown')}: {last_error.get('message', 'Unknown error')}"
+            
+            db.session.commit()
+
 
         except Exception as e:
-            print(f'❌ Error manejando payment intent failed: {e}')
             db.session.rollback()
 
     else:
         print(f'Unhandled event type: {event["type"]}')
-
     return jsonify(success=True)
 
 
