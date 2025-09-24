@@ -18,7 +18,7 @@ export const DashboardClient = () => {
     const role = (me?.role || "").toLowerCase();                 // CHANGED
 
     // Si querés bloquear estrictamente que solo "client" entre acá:
-    if (!authed || !me) return <Navigate to="/LoginClient" replace />; // CHANGED
+    if (!authed || !me) return <Navigate to="/login" replace />; // CHANGED
     if (role !== "client") return <Navigate to="/403" replace />; // CHANGED
 
     const currentClientId = me?.id || null;                      // CHANGED
@@ -32,23 +32,29 @@ export const DashboardClient = () => {
 
     const fetchClientData = async () => {
         if (!authed) return;
-
         try {
-            const clientId = me.id;
-
-            // Fetch client's courtfiles
             setLoadingCases(true);
-            const courtfilesResponse = await fetch(`${API}/api/clients/${clientId}/get-courtfiles`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            // ✅ Llamá al endpoint correcto; el back filtra por el JWT si sos client
+            const resp = await fetch(`${API}/api/clients-courtfiles`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data?.error || "Failed to fetch courtfiles");
 
-            if (courtfilesResponse.ok) {
-                const courtfilesData = await courtfilesResponse.json();
-                setCases(courtfilesData);
-            } else {
-                throw new Error('Failed to fetch courtfiles');
-            }
-
+            // ✅ Normalizá a "expedientes planos" (usando los campos de courtfile)
+            const normalized = (Array.isArray(data) ? data : []).map((row) => {
+                const cf = row?.courtfile || {};
+                return {
+                    id: cf.id,                                // ahora sí es ID del expediente
+                    case_number: cf.case_number,
+                    title: cf.title,
+                    jurisdiction: cf.jurisdiction,
+                    court: cf.court,
+                    status: cf.status,
+                    assigned_lawyers: cf.assigned_lawyers || [], // según tu serialize()
+                };
+            });
+            setCases(normalized);
         } catch (error) {
             console.error("Error fetching client data:", error);
             setCasesErr(error.message);
@@ -252,7 +258,7 @@ export const DashboardClient = () => {
                         Create User
                     </Link>
                     <Link
-                        to="/LoginClient"
+                        to="/login"
                         className="btn btn-sm btn-outline-primary mt-3"
                         style={{ border: "none" }}
                     >

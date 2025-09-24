@@ -11,8 +11,9 @@ export const AddCourtfile = () => {
     const linkToLawyer = location.state?.linkToLawyer === true;
     const returnTo = location.state?.returnTo || "/courtfiles";
 
-    const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
-    const token = auth?.token;
+    const token = store?.auth?.token || null;
+    const role = (store?.me?.role || "").toLowerCase();
+    if (!token) return navigate("/login", { replace: true }); // guard opcional
 
     const afterCreatePath = (role, id, fallback) =>
         role === "lawyer"
@@ -90,8 +91,10 @@ export const AddCourtfile = () => {
                     }
                 }
 
-                const target = afterCreatePath(auth?.role, newCourtfile.id, returnTo);
-                navigate(target, { replace: true });
+                navigate(`/courtfiles/ViewCourtfileLawyer/${newCourtfile.id}`, {
+                    replace: true,
+                    state: { returnTo: "/DashboardLawyer" }
+                });
 
                 alert('Courtfile created successfully!');
             } else {

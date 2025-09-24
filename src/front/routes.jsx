@@ -92,6 +92,9 @@ import ChangePassword from "./pages/ChangePassword";
 
 import PrivateRoute from "./components/PrivateRoute.jsx";
 
+import LoginForAll from "./pages/LoginForAll.jsx";
+import SignUpForAll from "./pages/SignUpForAll.jsx";
+
 
 
 
@@ -114,7 +117,7 @@ export const router = createBrowserRouter(
       <Route path="/demo" element={<Demo />} />
 
       <Route path="/courtfiles" element={<Courtfiles />} />
-      <Route path="/courtfiles/addcourtfile" element={<AddCourtfile />} />
+      
       <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} />
       <Route path="/courtfiles/:courtfileId" element={<EditCourtfile />} />
       <Route path="/courtfiles/ViewCourtfileLawyer/:courtfileId" element={<ViewCourtfileLawyer />} />
@@ -175,7 +178,7 @@ export const router = createBrowserRouter(
 
       <Route path="/SignUpLawyer" element={<SignUpLawyer />} />
       <Route path="/LoginLawyer" element={<LoginLawyer />} />
-      <Route path="/DashboardLawyer" element={<DashboardLawyer />} />
+      
 
       <Route path="/PaymentCourtfiles" element={<PaymentCourtfiles />} />
       <Route path="/AddPaymentCourtfile" element={<AddPaymentCourtfile />} />
@@ -184,9 +187,10 @@ export const router = createBrowserRouter(
       <Route path="/LoginClient" element={<LoginClient />} />
 
 
-      <Route element={<PrivateRoute roles={["client"]} />}>
+      <Route element={<PrivateRoute />}>
         <Route path="/DashboardClient" element={<DashboardClient />} />
-
+        <Route path="/DashboardLawyer" element={<DashboardLawyer />} />
+        <Route path="/courtfiles/addcourtfile" element={<AddCourtfile />} />
       </Route>
 
       <Route path="/403" element={<Forbidden />} />
@@ -200,7 +204,8 @@ export const router = createBrowserRouter(
       <Route path="/lawyers/:id/password" element={<ChangePassword kind="lawyer" />} />
       <Route path="/clients/:id/password" element={<ChangePassword kind="client" />} />
 
-
+      <Route path="/login" element={<LoginForAll />} />
+      <Route path="/signUp" element={<SignUpForAll />} />
 
     </Route>
   )

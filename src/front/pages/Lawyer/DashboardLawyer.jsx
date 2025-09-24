@@ -13,46 +13,23 @@ export const DashboardLawyer = () => {
     const { store, dispatch } = useGlobalReducer();
     const navigate = useNavigate();
 
-    const [auth, setAuth] = useState(() => {
-        try { return store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null"); }
-        catch { return null; }
-    });
+    const token = store?.auth?.token || null;
+    const me = store?.me || null;
+    const authed = !!token;
+    const role = (me?.role || "").toLowerCase();
 
+    if (!authed || !me) return <Navigate to="/login" replace />;
+    if (role !== "lawyer") return <Navigate to="/403" replace />;
 
-
-    useEffect(() => {
-        if (!store?.auth && auth?.token) {
-            dispatch({ type: "SET_AUTH", payload: auth });
-        }
-    }, [store?.auth, auth, dispatch]);
-
-    useEffect(() => {
-        if (store?.auth && store.auth !== auth) {
-            setAuth(store.auth);
-        }
-    }, [store?.auth]);
-
-    const authed = !!auth?.token;
-
-    const role = (auth?.role || "").toLowerCase();
-
-    if (auth?.role !== 'lawyer') return <Navigate to="/403" replace />;
-
-    const currentLawyerId =
-        auth?.user?.id ??
-        auth?.lawyer?.id ??
-        null;
-
-    const name =
-        auth?.user
-            ? `Dr/a. ${auth.user?.firstname ?? ""} ${auth.user?.lastname ?? ""}`.trim()
-            : sessionStorage.getItem("user_name") || "";
+    const currentLawyerId = me?.id || null;
+    const name = `Dr/a. ${me?.firstname ?? ""} ${me?.lastname ?? ""}`.trim();
 
 
     //....................... FLUJO COMPLETO PARA COURTFILES..........................................
     const [cases, setCases] = useState([]);
     const [loadingCases, setLoadingCases] = useState(false);
     const [casesErr, setCasesErr] = useState("");
+
 
     const [creating, setCreating] = useState(false);
     const [createErr, setCreateErr] = useState("");
@@ -81,7 +58,7 @@ export const DashboardLawyer = () => {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${auth.token}`,
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     case_number: form.case_number,
@@ -102,7 +79,7 @@ export const DashboardLawyer = () => {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${auth.token}`,
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     courtfile_id: newCF.id,
@@ -137,7 +114,7 @@ export const DashboardLawyer = () => {
             setDeletingId(relationId);
             const resp = await fetch(`${API}/api/lawyers-courtfiles/${relationId}`, {
                 method: "DELETE",
-                headers: { Authorization: `Bearer ${auth.token}` },
+                headers: { Authorization: `Bearer ${token}` },
             });
             if (!resp.ok) {
                 const e = await resp.json().catch(() => ({}));
@@ -157,7 +134,7 @@ export const DashboardLawyer = () => {
             setLoadingCases(true);
             setCasesErr("");
             const resp = await fetch(`${API}/api/lawyers-courtfiles`, {
-                headers: { Authorization: `Bearer ${auth.token}` },
+                headers: { Authorization: `Bearer ${token}` },
             });
             if (!resp.ok) {
                 const e = await resp.json().catch(() => ({}));
@@ -172,30 +149,31 @@ export const DashboardLawyer = () => {
         }
     };
 
+    // ----------------------FLUJO PARA MENSAJES------------------------------------
     // 🔔 UNREAD: depende de cases (¡después de declararlo!)
     const caseIds = Array.isArray(cases) ? cases.map((c) => c.id) : [];
+    const authForHook = useMemo(
+        () => ({ token, user: { id: me?.id || null } }),
+        [token, me?.id]
+    );
     const { unreadByCase, totalUnread, refresh: refreshUnread } = useUnreadBadges({
         API,
-        auth,
+        auth: authForHook,
         role,
         courtfileIds: caseIds,
     });
 
     // ---- NUEVO: marcar leído en backend ----
-    async function markReadBackend(API, auth, role, cfid) {
-        const userId =
-            auth?.user?.id ??
-            auth?.lawyer?.id ??
-            auth?.client?.id ??
-            auth?.id ?? null;
-        if (!API || !auth?.token || !userId || !cfid) return;
+    async function markReadBackend(API, token, role, cfid) {
+        const userId = me?.id;
+        if (!API || !token || !userId || !cfid) return;
 
         try {
             await fetch(`${API}/api/messages/read`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${auth.token}`,
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({
                     courtfile_id: cfid,
@@ -203,22 +181,19 @@ export const DashboardLawyer = () => {
                     user_id: userId,
                 }),
             });
-        } catch (_) { }
+        } catch (err) {
+            // no rompo el flujo, pero dejo log
+            console.error("Error marcando leído:", err);
+        }
     }
-
     // ---- REEMPLAZO: marcar local + backend y refrescar ----
     const onOpenChatClick = async (cfid) => {
-        const uid =
-            auth?.user?.id ??
-            auth?.lawyer?.id ??
-            auth?.client?.id ??
-            auth?.id ?? null;
+        const userId = me?.id;
+        if (!userId || !cfid) return;
 
-        if (uid && cfid) {
-            markNow(uid, cfid);                   // feedback inmediato en UI
-            await markReadBackend(API, auth, role, cfid); // persistir en backend
-            refreshUnread();                      // refrescar badges
-        }
+        markNow(userId, cfid);                 // feedback inmediato
+        await markReadBackend(API, token, role, cfid); // persiste en backend
+        refreshUnread();                       // actualiza badges
     };
 
     // ---- NUEVO: navegar a All Chats manteniendo state (sin marcar global) ----
@@ -254,7 +229,7 @@ export const DashboardLawyer = () => {
             setLoadingDeadlines(true);
             setDeadlinesErr("");
             const resp = await fetch(`${API}/api/deadlines-courtfiles`, {
-                headers: { Authorization: `Bearer ${auth.token}` },
+                headers: { Authorization: `Bearer ${token}` },
             });
             if (!resp.ok) {
                 const e = await resp.json().catch(() => ({}));
@@ -277,7 +252,7 @@ export const DashboardLawyer = () => {
             setDeletingDeadlineRelId(relationId);
             const resp = await fetch(`${API}/api/deadlines-courtfiles/${relationId}`, {
                 method: "DELETE",
-                headers: { Authorization: `Bearer ${auth.token}` },
+                headers: { Authorization: `Bearer ${token}` },
             });
             if (!resp.ok) {
                 const e = await resp.json().catch(() => ({}));
@@ -312,7 +287,7 @@ export const DashboardLawyer = () => {
             setLoadingAppointments(true);
             setAppointmentsErr("");
             const resp = await fetch(`${API}/api/appointments-courtfiles`, {
-                headers: { Authorization: `Bearer ${auth.token}` },
+                headers: { Authorization: `Bearer ${token}` },
             });
             if (!resp.ok) {
                 const e = await resp.json().catch(() => ({}));
@@ -335,7 +310,7 @@ export const DashboardLawyer = () => {
             setDeletingApptRelId(relationId);
             const resp = await fetch(`${API}/api/appointments-courtfiles/${relationId}`, {
                 method: "DELETE",
-                headers: { Authorization: `Bearer ${auth.token}` },
+                headers: { Authorization: `Bearer ${token}` },
             });
             if (!resp.ok) {
                 const e = await resp.json().catch(() => ({}));
@@ -355,13 +330,14 @@ export const DashboardLawyer = () => {
     const [clientsErr, setClientsErr] = useState("");
 
     const fetchClients = async () => {
+        if (!authed || !currentLawyerId) return;
         try {
             setLoadingClients(true);
             setClientsErr("");
 
             const resp = await fetch(
-                `${API}/api/clients-courtfiles`,
-                { headers: { Authorization: `Bearer ${auth.token}` } }
+                `${API}/api/clients-courtfiles?lawyer_id=${currentLawyerId}`,
+                { headers: { Authorization: `Bearer ${token}` } }
             );
             if (!resp.ok) {
                 const e = await resp.json().catch(() => ({}));
@@ -405,7 +381,7 @@ export const DashboardLawyer = () => {
             setLoadingPayments(true);
             setPaymentsErr("");
             const resp = await fetch(`${API}/api/payments-courtfile?expand=payment`, {
-                headers: { Authorization: `Bearer ${auth.token}` },
+                headers: { Authorization: `Bearer ${token}` },
             });
             if (!resp.ok) {
                 const e = await resp.json().catch(() => ({}));
@@ -427,7 +403,7 @@ export const DashboardLawyer = () => {
             setDeletingPaymentRelId(relationId);
             const resp = await fetch(`${API}/api/payments-courtfile/${relationId}`, {
                 method: "DELETE",
-                headers: { Authorization: `Bearer ${auth.token}` },
+                headers: { Authorization: `Bearer ${token}` },
             });
             if (!resp.ok) {
                 const e = await resp.json().catch(() => ({}));
@@ -448,7 +424,7 @@ export const DashboardLawyer = () => {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${auth.token}`
+                    Authorization: `Bearer ${token}`
                 },
                 body: JSON.stringify({ status: "approved" })
             });
@@ -477,7 +453,7 @@ export const DashboardLawyer = () => {
         fetchAppointments();
         fetchClients();
         fetchPayments();
-    }, [API, authed, auth?.token, dispatch]);
+    }, [API, authed, token, currentLawyerId, dispatch]);
 
 
     return (
@@ -502,6 +478,13 @@ export const DashboardLawyer = () => {
                     <div className="d-flex justify-content-between align-items-center">
                         <h3>COURTFILES</h3>
                         <div className="d-flex justify-content-end mb-3">
+                            <Link
+                                to="/courtfiles/addcourtfile"
+                                state={{ linkToLawyer: true, returnTo: "/DashboardLawyer" }}
+                                className="btn btn-sm btn-success"
+                            >
+                                + Create New Courtfile
+                            </Link>
 
                             <Link
                                 to="/chats"
@@ -969,14 +952,15 @@ export const DashboardLawyer = () => {
                         Create User
                     </Link>
                     <Link
-                        to="/"
+                        to="/login"
                         className="btn btn-sm btn-outline-primary mt-3"
                         style={{ border: "none" }}
                     >
                         Sign in
                     </Link>
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 };

@@ -87,6 +87,19 @@ export const Home = () => {
 			</div>
 
 			<div className="container mt-5 mb-5">
+				<h1>LOGIN</h1>
+				<div className="ml-auto mt-5 mb-5">
+					<Link to="/login">
+						<button className="btn btn-light me-2">Login</button>
+					</Link>
+					<Link to="/signUp">
+						<button className="btn btn-light me-2">SignUp</button>
+					</Link>
+				</div>
+			</div>
+
+
+			<div className="container mt-5 mb-5">
 				<h1>LOGIN LAWYER</h1>
 				<div className="ml-auto mt-5 mb-5">
 					<Link to="/LoginLawyer">

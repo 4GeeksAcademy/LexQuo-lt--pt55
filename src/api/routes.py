@@ -2528,3 +2528,73 @@ def send_linked_email():
         return jsonify({"ok": True, "sent_to": email})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+#=================LOGIN GENERAL =====================================
+@api.route('/auth/login', methods=['POST'])
+def unified_login():
+    try:
+        data = request.get_json() or {}
+        email = (data.get('email') or '').strip().lower()
+        password = data.get('password') or ''
+
+        if not email or not password:
+            return jsonify({'error': 'Email and password required'}), 400
+
+        # Buscamos en ambas tablas
+        lawyer = Lawyer.query.filter_by(email=email).first()
+        client = Client.query.filter_by(email=email).first()
+
+        # Si por algún error el mismo email está en ambas, devolvemos conflicto explícito
+        if lawyer and client:
+            return jsonify({'error': 'Email is linked to multiple roles'}), 409
+
+        # Determinamos user/role
+        user, role = (lawyer, 'lawyer') if lawyer else ((client, 'client') if client else (None, None))
+
+        if not user:
+            return jsonify({'error': 'Invalid credentials'}), 401
+
+        if not check_password_hash(user.password, password):
+            return jsonify({'error': 'Invalid credentials'}), 401
+
+        if getattr(user, 'is_active', True) is False:
+            return jsonify({'error': 'Account deactivated'}), 403
+
+        # JWT: identidad y claim de role
+        token = create_access_token(
+            identity=str(user.id),                
+            additional_claims={"role": role}      
+        )
+        
+        return jsonify({
+            'message': 'Login successful',
+            'token': token,
+            'role': role,
+            'user': user.serialize()
+        }), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@api.route('/auth/me', methods=['GET'])
+@jwt_required()
+def auth_me():
+    jwt = get_jwt()
+    role = jwt.get("role")
+    user_id = get_jwt_identity()
+
+    if not role or not user_id:
+        return jsonify({"error": "Invalid token"}), 401
+
+    if role == "lawyer":
+        user = Lawyer.query.get(int(user_id))
+    elif role == "client":
+        user = Client.query.get(int(user_id))
+    else:
+        return jsonify({"error": "Unknown role"}), 400
+
+    if not user or getattr(user, "is_active", True) is False:
+        return jsonify({"error": "User not found or deactivated"}), 404
+
+    return jsonify({"role": role, "user": user.serialize()}), 200
