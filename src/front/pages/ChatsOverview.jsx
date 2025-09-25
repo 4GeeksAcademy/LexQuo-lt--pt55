@@ -2,33 +2,25 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
+import useUnreadBadges from "../hooks/useUnreadBadges.jsx";
 
 export default function ChatsOverview() {
   const API = import.meta.env.VITE_BACKEND_URL;
   const { store } = useGlobalReducer();
   const location = useLocation();
 
-  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
-  const role = (auth?.role || "").toLowerCase();
+  // PrivateRoute ya aseguró sesión, así que usamos solo el store:
+  const token = store?.auth?.token || null;
+  const me = store?.me || null;
+  const role = (me?.role || "").toLowerCase();
 
-  // Gatekeeping
-  if (!auth?.token) return <Navigate to="/" replace />;
   if (!["lawyer", "client", "admin_user"].includes(role)) return <Navigate to="/403" replace />;
 
   const returnTo =
-  location.state?.returnTo ||
-  (() => {
-    switch (role) {
-      case "lawyer":
-        return "/DashboardLawyer";
-      case "client":
-        return "/DashboardClient";
-      case "admin_user":
-        return "/DashboardAdmin";
-      default:
-        return "/";
-    }
-  })();
+    location.state?.returnTo ||
+    (role === "lawyer" ? "/DashboardLawyer"
+      : role === "client" ? "/DashboardClient"
+        : "/DashboardAdmin");
 
   // Endpoint según rol
   const listEndpoint = useMemo(() => {
@@ -39,11 +31,21 @@ export default function ChatsOverview() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
+  const caseIds = useMemo(() => rows.map(r => Number(r.id)).filter(Boolean), [rows]);
+
+  const { unreadByCase, totalUnread } = useUnreadBadges({
+    API,
+    token,
+    userId: me?.id,
+    role,
+    courtfileIds: caseIds,
+  });
+
   const fetchData = async () => {
     try {
       setLoading(true); setErr("");
       const resp = await fetch(`${API}${listEndpoint}`, {
-        headers: { Authorization: `Bearer ${auth.token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -60,12 +62,17 @@ export default function ChatsOverview() {
     }
   };
 
-  useEffect(() => { fetchData(); }, [API, listEndpoint]);
+  useEffect(() => { fetchData(); }, [API, listEndpoint, token]);
 
   return (
     <div className="container mt-4">
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h1>All Chats</h1>
+        {totalUnread > 0 && (
+          <span className="badge bg-danger align-middle ms-2">
+            {totalUnread > 99 ? "99+" : totalUnread}
+          </span>
+        )}
         <Link to={returnTo} className="btn btn-sm btn-outline-secondary">
           <i className="bi bi-arrow-left" /> Volver
         </Link>
@@ -105,12 +112,23 @@ export default function ChatsOverview() {
                         courtfileId: cf.id,
                         courtfileNumber: cf.case_number,
                         courtfileTitle: cf.title,
-                        senderRole: role,            
-                        returnTo: "/chats",         
+                        senderRole: role,
+                        returnTo: "/chats",
                       }}
                       className="btn btn-sm btn-outline-primary"
                     >
                       <i className="bi bi-chat-dots" /> Open Chat
+                      {unreadByCase.get(Number(cf.id))?.count > 0 && (
+                        <span
+                          className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary"
+                          title="unread"
+                        >
+                          {unreadByCase.get(Number(cf.id))?.count > 99
+                            ? "99+"
+                            : unreadByCase.get(Number(cf.id))?.count}
+                          <span className="visually-hidden">unread messages</span>
+                        </span>
+                      )}
                     </Link>
                   </td>
                 </tr>

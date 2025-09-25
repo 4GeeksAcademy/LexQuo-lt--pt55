@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -10,6 +10,16 @@ export const EditDocument = () => {
   const returnTo = location.state?.returnTo || `/documents/view/${documentId}`;
 
   const API = import.meta.env.VITE_BACKEND_URL;
+
+  const token = store?.auth?.token;
+  const role = (store?.me?.role || "").toLowerCase();
+
+  // ---------- Guards ----------
+  const allowed =
+    role === "admin_user" ||
+    role === "lawyer";
+
+  if (!allowed) return <Navigate to="/403" replace />;
 
   const [formData, setFormData] = useState({
     name: "",
@@ -47,7 +57,9 @@ export const EditDocument = () => {
     try {
       setFetching(true);
 
-      const response = await fetch(`${API}/api/documents/${documentId}`);
+      const response = await fetch(`${API}/api/documents/${documentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
@@ -74,10 +86,8 @@ export const EditDocument = () => {
     const fetchLinked = async () => {
       try {
         if (linkedCourtfile || !documentId) return;
-        const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
-        const token = auth?.token;
         const resp = await fetch(`${API}/api/courtfile-document`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
+          headers: { Authorization: `Bearer ${token}` }
         });
         if (!resp.ok) return;
         const rows = await resp.json();
@@ -134,7 +144,7 @@ export const EditDocument = () => {
       const response = await fetch(`${API}/api/documents/${documentId}`, {
         method: "PUT",
         headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          Authorization: `Bearer ${token}`
         },
         body: data,
       });

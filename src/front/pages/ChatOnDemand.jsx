@@ -4,16 +4,19 @@ import { useLocation, Link, useParams, } from "react-router-dom";
 import { io } from "socket.io-client";
 import { setLastRead, getLastRead } from "../hooks/chatUnread.jsx";
 import { markNow } from "../hooks/chatUnread";
+import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 
 export default function ChatOnDemand(props) {
   const location = useLocation();
   const API = import.meta.env.VITE_BACKEND_URL;
   const { courtfileId: paramCourtfileId } = useParams()
 
-  // === Auth (para rol y sender_id) ===
-  const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
-  const currentUserId = auth?.user?.id;
-  const role = (auth?.role || "").toLowerCase();
+  // === Auth desde el store (Private ya rehidrata) ===
+  const { store } = useGlobalReducer();
+  const token = store?.auth?.token || null; // si lo necesitás para fetch/emit
+  const me = store?.me || null;
+  const role = (me?.role || "").toLowerCase();
+  const currentUserId = me?.id || null;
 
   // === Derivar datos desde props, state o query ===
   const query = new URLSearchParams(location.search);
@@ -32,20 +35,19 @@ export default function ChatOnDemand(props) {
   const senderRole = (
     props.senderRole ??
     location.state?.senderRole ??
-    auth?.role
+    role
   )?.toLowerCase();
 
   // === ReturnTo ===
   let returnTo = location.state?.returnTo;
   if (!returnTo) {
     if (courtfileId) {
-      if (role === "lawyer") {
-        returnTo = `/courtfiles/ViewCourtfileLawyer/${courtfileId}`;
-      } else if (role === "client") {
-        returnTo = `/courtfiles/Viewclient/${courtfileId}`;
-      } else {
-        returnTo = `/`;
-      }
+      returnTo =
+        role === "lawyer"
+          ? `/courtfiles/ViewCourtfileLawyer/${courtfileId}`
+          : role === "client"
+            ? `/courtfiles/Viewclient/${courtfileId}`
+            : `/`;
     } else {
       returnTo = `/`;
     }
@@ -110,7 +112,7 @@ export default function ChatOnDemand(props) {
       text: text,
       sender_role: senderRole,
       sender_id: currentUserId,
-      sender_name: `${auth?.user?.firstname || ""} ${auth?.user?.lastname || ""}`.trim(),
+      sender_name: `${me?.firstname || ""} ${me?.lastname || ""}`.trim(),
       created_at: new Date().toISOString(),
       isOptimistic: true
     };
@@ -125,7 +127,7 @@ export default function ChatOnDemand(props) {
       text,
       sender_role: senderRole,
       sender_id: currentUserId,
-      sender_name: `${auth?.user?.firstname || ""} ${auth?.user?.lastname || ""}`.trim()
+      sender_name: `${me?.firstname || ""} ${me?.lastname || ""}`.trim()
     }, (ack) => {
       if (ack?.error) {
         setErr(`Error al enviar: ${ack.error}`);
@@ -171,6 +173,7 @@ export default function ChatOnDemand(props) {
       reconnectionDelayMax: 10000,
       randomizationFactor: 0.5,
       timeout: 20000,
+      auth: { token }
     });
 
     socketRef.current = s;
@@ -296,7 +299,7 @@ export default function ChatOnDemand(props) {
 
       s.disconnect();
     };
-  }, [courtfileId, API, saveCache, scrollToBottom]);
+  }, [courtfileId, API, token, saveCache, scrollToBottom]);
 
   // Efecto para scroll automático cuando hay nuevos mensajes
   useEffect(() => {
@@ -312,17 +315,12 @@ export default function ChatOnDemand(props) {
   }, [courtfileId, currentUserId]);
 
   useEffect(() => {
-    const uid =
-      auth?.user?.id ??
-      auth?.lawyer?.id ??
-      auth?.client?.id ??
-      auth?.id ??
-      null;
+    const uid = me?.id;
+    const cfid = Number(courtfileId);
+    if (!uid || !cfid) return;
 
-    if (uid && courtfileId) {
-      markNow(uid, courtfileId);
-    }
-  }, [auth, courtfileId]);
+    markNow(uid, cfid);
+  }, [me?.id, courtfileId]);
 
   if (!courtfileId) {
     return (

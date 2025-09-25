@@ -8,8 +8,15 @@ export const AddDocument = () => {
   const navigate = useNavigate();
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
-  const token = auth?.token;
+  const token = store?.auth?.token;
+  const role = (store?.me?.role || "").toLowerCase();
+
+  // ---------- Guards ----------
+  const allowed =
+    role === "admin_user" ||
+    role === "lawyer";
+
+  if (!allowed) return <Navigate to="/403" replace />;
 
   const preselectedCourtfileId = location.state?.courtfileId || null;
   const preselectedCourtfileNumber = location.state?.courtfileNumber || null;
@@ -54,8 +61,8 @@ export const AddDocument = () => {
           return;
         }
 
-        const endpoint = token ? `${API}/api/lawyers-courtfiles` : `${API}/api/courtfiles`;
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const endpoint = `${API}/api/lawyers-courtfiles` 
+        const headers = { Authorization: `Bearer ${token}` } 
         const resp = await fetch(endpoint, { headers });
 
         if (!resp.ok) {
@@ -141,7 +148,7 @@ export const AddDocument = () => {
       const response = await fetch(`${API}/api/documents`, {
         method: "POST",
         headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          Authorization: `Bearer ${token}`
         },
         body: data
       });
@@ -163,7 +170,7 @@ export const AddDocument = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
+            Authorization: `Bearer ${token}` 
           },
           body: JSON.stringify({
             document_id: newDocument.id,
@@ -205,7 +212,7 @@ export const AddDocument = () => {
             </div>
 
             <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back 
+              <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
 

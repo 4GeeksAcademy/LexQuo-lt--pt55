@@ -12,7 +12,7 @@ export const ViewCourtfileLawyer = () => {
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  const token = store.auth.token;                              
+  const token = store.auth.token;
   const role = (store.auth.role || "").toLowerCase();
   const currentLawyerId = auth?.user?.id;
 
@@ -140,8 +140,10 @@ export const ViewCourtfileLawyer = () => {
       setDocumentsErr("");
       const resp = await fetch(
         `${API}/api/courtfile-document?courtfile_id=${Number(courtfileId)}`,
-        { headers: 
-          { Authorization: `Bearer ${token}` } }
+        {
+          headers:
+            { Authorization: `Bearer ${token}` }
+        }
       );
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -173,8 +175,10 @@ export const ViewCourtfileLawyer = () => {
       setClientsErr("");
       const resp = await fetch(
         `${API}/api/clients-courtfiles?courtfile_id=${Number(courtfileId)}`,
-        { headers: 
-          { Authorization: `Bearer ${token}` }}
+        {
+          headers:
+            { Authorization: `Bearer ${token}` }
+        }
       );
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -197,7 +201,7 @@ export const ViewCourtfileLawyer = () => {
     }
   };
 
-  
+
 
   const fetchCaseLawyers = async () => {
     try {
@@ -305,7 +309,7 @@ export const ViewCourtfileLawyer = () => {
     fetchClients();
     fetchCaseLawyers();
     fetchPayments();
-  }, [API, 
+  }, [API,
     token, courtfileId]);
 
   // ------------------- HELPERS -------------------
@@ -346,7 +350,7 @@ export const ViewCourtfileLawyer = () => {
   };
 
   const handleDeleteDeadlineRelation = async (relationId) => {
-  
+
     if (!window.confirm("Delete this link? The deadline will no longer be associated with this case.")) return;
     try {
       setDeletingDeadlineRelId(relationId);
@@ -412,7 +416,7 @@ export const ViewCourtfileLawyer = () => {
       setDeletingClientRelId(relationId);
       const resp = await fetch(`${API}/api/clients-courtfiles/${relationId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` } ,
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -451,7 +455,7 @@ export const ViewCourtfileLawyer = () => {
       setDeletingPaymentRelId(relationId);
       const resp = await fetch(`${API}/api/payments-courtfile/${relationId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` } 
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -467,13 +471,13 @@ export const ViewCourtfileLawyer = () => {
 
   // 🔔 UNREAD (solo este expediente)
   const caseIds = useMemo(() => [Number(courtfileId)], [courtfileId]);
-  const { unreadByCase, refresh: refreshUnread } = useUnreadBadges({
+  const { unreadByCase, totalUnread, refresh: refreshUnread } = useUnreadBadges({
     API,
-    auth,
-    role,             // "lawyer"
+    token,
+    userId: me?.id,
+    role,
     courtfileIds: caseIds,
   });
-
   // ---- marcar leído en backend  ----
   async function markReadBackend(API, auth, role, cfid) {
     const userId =

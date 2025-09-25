@@ -39,7 +39,7 @@ export default function Login() {
       if (!token) throw new Error("Respuesta inválida (falta token)");
       if (!role) throw new Error("Respuesta inválida (falta role)");
 
-      localStorage.setItem("auth", JSON.stringify({ token }));
+      localStorage.setItem("auth", JSON.stringify({ token, role }));
 
       dispatch({ type: "SET_AUTH", payload: { token, role } });
       dispatch({ type: "SET_ME", payload: user });
@@ -48,7 +48,7 @@ export default function Login() {
       const byRole =
         role === "lawyer" ? "/DashboardLawyer" :
           role === "client" ? "/DashboardClient" :
-            "/";
+            role === "admin_user" ? "/DashboardAdmin" : "/";
 
       const returnTo = location.state?.returnTo || byRole;
       navigate(returnTo, { replace: true });

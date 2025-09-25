@@ -16,7 +16,7 @@ export const DashboardLawyer = () => {
     const token = store?.auth?.token || null;
     const me = store?.me || null;
     const role = (me?.role || "").toLowerCase();
-   
+
     if (role !== "lawyer") return <Navigate to="/403" replace />;
 
     const currentLawyerId = me?.id || null;
@@ -148,13 +148,10 @@ export const DashboardLawyer = () => {
     // ----------------------FLUJO PARA MENSAJES------------------------------------
     // 🔔 UNREAD: depende de cases (¡después de declararlo!)
     const caseIds = Array.isArray(cases) ? cases.map((c) => c.id) : [];
-    const authForHook = useMemo(
-        () => ({ token, user: { id: me?.id || null } }),
-        [token, me?.id]
-    );
     const { unreadByCase, totalUnread, refresh: refreshUnread } = useUnreadBadges({
         API,
-        auth: authForHook,
+        token,
+        userId: me?.id,
         role,
         courtfileIds: caseIds,
     });
@@ -187,9 +184,9 @@ export const DashboardLawyer = () => {
         const userId = me?.id;
         if (!userId || !cfid) return;
 
-        markNow(userId, cfid);                 
-        await markReadBackend(API, token, role, cfid); 
-        refreshUnread();                      
+        markNow(userId, cfid);
+        await markReadBackend(API, token, role, cfid);
+        refreshUnread();
     };
 
     // ---- NUEVO: navegar a All Chats manteniendo state (sin marcar global) ----
@@ -463,117 +460,294 @@ export const DashboardLawyer = () => {
                 </Link>
             )}
 
-           
+
+            <div className="mt-5 text-start">
+                <div className="d-flex justify-content-between align-items-center">
+                    <h3>COURTFILES</h3>
+                    <div className="d-flex justify-content-end mb-3">
+                        <Link
+                            to="/courtfiles/addcourtfile"
+                            state={{ linkToLawyer: true, returnTo: "/DashboardLawyer" }}
+                            className="btn btn-sm btn-success"
+                        >
+                            + Create New Courtfile
+                        </Link>
+
+                        <Link
+                            to="/chats"
+                            state={{ returnTo: "/DashboardLawyer" }}
+                            className="btn btn-sm btn-outline-primary ms-2 position-relative"
+                            title="Ver todos los chats"
+                            onClick={onOpenAllChats}
+                        >
+                            <i className="bi bi-chat-dots" /> All Chats
+                            {totalUnread > 0 && (
+                                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    {totalUnread}
+                                </span>
+                            )}
+                        </Link>
+                    </div>
+                </div>
+                {loadingCases && <p>Loading courtfiles...</p>}
+                {casesErr && (
+                    <div className="alert alert-danger">{casesErr}</div>
+                )}
+                {!loadingCases && !casesErr && cases.length === 0 && (
+                    <div className="alert alert-info">
+                        No courtfiles linked yet. Please add one!
+                    </div>
+                )}
+                {!loadingCases && cases.length > 0 && (
+                    <div className="table-responsive">
+                        <table className="table table-striped table-hover">
+                            <thead className="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Case Number</th>
+                                    <th>Title</th>
+                                    <th>Jurisdiction</th>
+                                    <th>Court</th>
+                                    <th>Status</th>
+                                    <th className="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {cases.map(cf => (
+                                    <tr key={cf.id}>
+                                        <td>{cf.id}</td>
+                                        <td>{cf.case_number}</td>
+                                        <td>{cf.title}</td>
+                                        <td>{cf.jurisdiction}</td>
+                                        <td>{cf.court}</td>
+                                        <td>
+                                            <span className={`badge ${cf.status === true ? "bg-success" : cf.status === false ? "bg-secondary" : "bg-info"}`}>
+                                                {typeof cf.status === "boolean" ? (cf.status ? "Active" : "Inactive") : cf.status}
+                                            </span>
+                                        </td>
+                                        <td className="text-end">
+                                            <Link
+                                                to={`/chats/${cf.id}`}
+                                                state={{
+                                                    courtfileId: cf.id,
+                                                    courtfileNumber: cf.case_number,
+                                                    courtfileTitle: cf.title,
+                                                    senderRole: "lawyer",
+                                                    returnTo: "/DashboardLawyer",
+                                                }}
+                                                className="btn btn-sm btn-outline-primary me-1 position-relative"
+                                                title="Open chat"
+                                                onClick={(e) => openCaseChat(e, cf)}
+                                            >
+                                                <i className="bi bi-chat-dots"></i>
+                                                {unreadByCase.get(cf.id)?.hasUnread && (
+                                                    <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                                                        <span className="visually-hidden">New</span>
+                                                    </span>
+                                                )}
+                                            </Link>
+                                            <Link
+                                                to={`/courtfiles/ViewCourtfileLawyer/${cf.id}`}
+                                                state={{ returnTo: "/DashboardLawyer" }}
+                                                className="btn btn-sm btn-info me-1"
+                                                title="View"
+                                            >
+                                                <i className="bi bi-eye"></i>
+                                            </Link>
+
+                                            <Link
+                                                to={`/courtfiles/${cf.id}`}
+                                                state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${cf.id}` }}
+                                                className="btn btn-sm btn-warning me-1"
+                                                title="Edit"
+                                            >
+                                                <i className="bi bi-pencil"></i>
+                                            </Link>
+
+                                            <button
+                                                className="btn btn-sm btn-danger"
+                                                title={cf.relation_id ? "Unlink" : "No link available"}
+                                                disabled={!cf.relation_id || deletingId === cf.relation_id}
+                                                onClick={() => handleDeleteRelation(cf.relation_id)}
+                                            >
+                                                {deletingId === cf.relation_id ? (
+                                                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                                ) : (
+                                                    <i className="bi bi-trash"></i>
+                                                )}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                {/* DEADLINES */}
                 <div className="mt-5 text-start">
                     <div className="d-flex justify-content-between align-items-center">
-                        <h3>COURTFILES</h3>
-                        <div className="d-flex justify-content-end mb-3">
-                            <Link
-                                to="/courtfiles/addcourtfile"
-                                state={{ linkToLawyer: true, returnTo: "/DashboardLawyer" }}
-                                className="btn btn-sm btn-success"
-                            >
-                                + Create New Courtfile
-                            </Link>
-
-                            <Link
-                                to="/chats"
-                                state={{ returnTo: "/DashboardLawyer" }}
-                                className="btn btn-sm btn-outline-primary ms-2 position-relative"
-                                title="Ver todos los chats"
-                                onClick={onOpenAllChats}
-                            >
-                                <i className="bi bi-chat-dots" /> All Chats
-                                {totalUnread > 0 && (
-                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                        {totalUnread}
-                                    </span>
-                                )}
-                            </Link>
-                        </div>
+                        <h3>DEADLINES</h3>
+                        <Link
+                            to="/deadlines/addDeadline"
+                            state={{ returnTo: "/DashboardLawyer" }}
+                            className="btn btn-sm btn-success"
+                        >
+                            + Create New Deadline
+                        </Link>
                     </div>
-                    {loadingCases && <p>Loading courtfiles...</p>}
-                    {casesErr && (
-                        <div className="alert alert-danger">{casesErr}</div>
+
+                    {loadingDeadlines && <p className="mt-3">Loading deadlines...</p>}
+
+                    {deadlinesErr && (
+                        <div className="alert alert-danger mt-3">{deadlinesErr}</div>
                     )}
-                    {!loadingCases && !casesErr && cases.length === 0 && (
-                        <div className="alert alert-info">
-                            No courtfiles linked yet. Please add one!
+
+                    {!loadingDeadlines && !deadlinesErr && deadlines.length === 0 && (
+                        <div className="alert alert-info mt-3">
+                            No deadlines linked yet. Please add one!
                         </div>
                     )}
-                    {!loadingCases && cases.length > 0 && (
-                        <div className="table-responsive">
+
+                    {!loadingDeadlines && deadlines.length > 0 && (
+                        <div className="table-responsive mt-3">
                             <table className="table table-striped table-hover">
                                 <thead className="table-dark">
                                     <tr>
-                                        <th>ID</th>
+                                        <th>Deadline ID</th>
+                                        <th>Type</th>
+                                        <th>Date</th>
+                                        <th>Hour</th>
+                                        <th>Priority</th>
                                         <th>Case Number</th>
-                                        <th>Title</th>
-                                        <th>Jurisdiction</th>
-                                        <th>Court</th>
-                                        <th>Status</th>
+                                        <th>Case Title</th>
                                         <th className="text-end">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {cases.map(cf => (
-                                        <tr key={cf.id}>
-                                            <td>{cf.id}</td>
-                                            <td>{cf.case_number}</td>
-                                            <td>{cf.title}</td>
-                                            <td>{cf.jurisdiction}</td>
-                                            <td>{cf.court}</td>
+                                    {deadlines.map(dl => (
+                                        <tr key={`${dl.relation_id}`}>
+                                            <td>{dl.deadline_id}</td>
+                                            <td>{dl.deadline_type}</td>
+                                            <td>{dl.deadline_date}</td>
+                                            <td>{dl.deadline_hour}</td>
                                             <td>
-                                                <span className={`badge ${cf.status === true ? "bg-success" : cf.status === false ? "bg-secondary" : "bg-info"}`}>
-                                                    {typeof cf.status === "boolean" ? (cf.status ? "Active" : "Inactive") : cf.status}
+                                                <span className={`badge ${getPriorityBadgeClass(dl.priority)}`}>
+                                                    {String(dl.priority).charAt(0).toUpperCase() + String(dl.priority).slice(1).toLowerCase()}
                                                 </span>
                                             </td>
+                                            <td>{dl.courtfile_number}</td>
+                                            <td>{dl.courtfile_title}</td>
                                             <td className="text-end">
                                                 <Link
-                                                    to={`/chats/${cf.id}`}
-                                                    state={{
-                                                        courtfileId: cf.id,
-                                                        courtfileNumber: cf.case_number,
-                                                        courtfileTitle: cf.title,
-                                                        senderRole: "lawyer",
-                                                        returnTo: "/DashboardLawyer",
-                                                    }}
-                                                    className="btn btn-sm btn-outline-primary me-1 position-relative"
-                                                    title="Open chat"
-                                                    onClick={(e) => openCaseChat(e, cf)}
-                                                >
-                                                    <i className="bi bi-chat-dots"></i>
-                                                    {unreadByCase.get(cf.id)?.hasUnread && (
-                                                        <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
-                                                            <span className="visually-hidden">New</span>
-                                                        </span>
-                                                    )}
-                                                </Link>
-                                                <Link
-                                                    to={`/courtfiles/ViewCourtfileLawyer/${cf.id}`}
-                                                    state={{ returnTo: "/DashboardLawyer" }}
+                                                    to={`/deadlines/view/${dl.deadline_id}`}
+                                                    state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${dl.courtfile_id}` }}
                                                     className="btn btn-sm btn-info me-1"
                                                     title="View"
                                                 >
                                                     <i className="bi bi-eye"></i>
                                                 </Link>
-
                                                 <Link
-                                                    to={`/courtfiles/${cf.id}`}
-                                                    state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${cf.id}` }}
+                                                    to={`/deadlines/${dl.deadline_id}`}
+                                                    state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${dl.courtfile_id}` }}
                                                     className="btn btn-sm btn-warning me-1"
                                                     title="Edit"
                                                 >
                                                     <i className="bi bi-pencil"></i>
                                                 </Link>
-
                                                 <button
                                                     className="btn btn-sm btn-danger"
-                                                    title={cf.relation_id ? "Unlink" : "No link available"}
-                                                    disabled={!cf.relation_id || deletingId === cf.relation_id}
-                                                    onClick={() => handleDeleteRelation(cf.relation_id)}
+                                                    title={dl.relation_id ? "Unlink" : "No link available"}
+                                                    disabled={!dl.relation_id || deletingDeadlineRelId === dl.relation_id}
+                                                    onClick={() => handleDeleteDeadlineRelation(dl.relation_id)}
                                                 >
-                                                    {deletingId === cf.relation_id ? (
+                                                    <i className="bi bi-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+
+                {/* appointments */}
+                <div className="mt-5 text-start">
+                    <div className="d-flex justify-content-between align-items-center">
+                        <h3>APPOINTMENTS</h3>
+                        <Link
+                            to="/appointments/addAppointment"
+                            state={{ returnTo: "/DashboardLawyer" }}
+                            className="btn btn-sm btn-success"
+                        >
+                            + Create New Appointment
+                        </Link>
+                    </div>
+
+                    {loadingAppointments && <p className="mt-3">Loading appointments...</p>}
+
+                    {appointmentsErr && (
+                        <div className="alert alert-danger mt-3">{appointmentsErr}</div>
+                    )}
+
+                    {!loadingAppointments && !appointmentsErr && appointments.length === 0 && (
+                        <div className="alert alert-info mt-3">
+                            No appointments linked yet. Please add one!
+                        </div>
+                    )}
+
+                    {!loadingAppointments && appointments.length > 0 && (
+                        <div className="table-responsive mt-3">
+                            <table className="table table-striped table-hover">
+                                <thead className="table-dark">
+                                    <tr>
+                                        <th>Appointment ID</th>
+                                        <th>Title</th>
+                                        <th>Date</th>
+                                        <th>Starts</th>
+                                        <th>Ends</th>
+                                        <th>Location</th>
+                                        <th>Case Number</th>
+                                        <th>Case Title</th>
+                                        <th className="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {appointments.map(ap => (
+                                        <tr key={`${ap.relation_id}`}>
+                                            <td>{ap.appointment_id}</td>
+                                            <td>{ap.appointment_title}</td>
+                                            <td>{ap.appointment_date}</td>
+                                            <td>{ap.starts_at}</td>
+                                            <td>{ap.ends_at}</td>
+                                            <td>{ap.appointment_location}</td>
+                                            <td>{ap.courtfile_number}</td>
+                                            <td>{ap.courtfile_title}</td>
+                                            <td className="text-end">
+                                                <Link
+                                                    to={`/appointments/view/${ap.appointment_id}`}
+                                                    state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${ap.courtfile_id}` }}
+                                                    className="btn btn-sm btn-info me-1"
+                                                    title="View"
+                                                >
+                                                    <i className="bi bi-eye"></i>
+                                                </Link>
+                                                <Link
+                                                    to={`/appointments/${ap.appointment_id}`}
+                                                    state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${ap.courtfile_id}` }}
+                                                    className="btn btn-sm btn-warning me-1"
+                                                    title="Edit"
+                                                >
+                                                    <i className="bi bi-pencil"></i>
+                                                </Link>
+                                                <button
+                                                    className="btn btn-sm btn-danger"
+                                                    title={ap.relation_id ? "Unlink" : "No link available"}
+                                                    disabled={!ap.relation_id || deletingApptRelId === ap.relation_id}
+                                                    onClick={() => handleDeleteAppointmentRelation(ap.relation_id)}
+                                                >
+                                                    {deletingApptRelId === ap.relation_id ? (
                                                         <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                                     ) : (
                                                         <i className="bi bi-trash"></i>
@@ -586,171 +760,156 @@ export const DashboardLawyer = () => {
                             </table>
                         </div>
                     )}
+                </div>
 
-                    {/* DEADLINES */}
-                    <div className="mt-5 text-start">
-                        <div className="d-flex justify-content-between align-items-center">
-                            <h3>DEADLINES</h3>
-                            <Link
-                                to="/deadlines/addDeadline"
-                                state={{ returnTo: "/DashboardLawyer" }}
-                                className="btn btn-sm btn-success"
-                            >
-                                + Create New Deadline
-                            </Link>
-                        </div>
-
-                        {loadingDeadlines && <p className="mt-3">Loading deadlines...</p>}
-
-                        {deadlinesErr && (
-                            <div className="alert alert-danger mt-3">{deadlinesErr}</div>
-                        )}
-
-                        {!loadingDeadlines && !deadlinesErr && deadlines.length === 0 && (
-                            <div className="alert alert-info mt-3">
-                                No deadlines linked yet. Please add one!
-                            </div>
-                        )}
-
-                        {!loadingDeadlines && deadlines.length > 0 && (
-                            <div className="table-responsive mt-3">
-                                <table className="table table-striped table-hover">
-                                    <thead className="table-dark">
-                                        <tr>
-                                            <th>Deadline ID</th>
-                                            <th>Type</th>
-                                            <th>Date</th>
-                                            <th>Hour</th>
-                                            <th>Priority</th>
-                                            <th>Case Number</th>
-                                            <th>Case Title</th>
-                                            <th className="text-end">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {deadlines.map(dl => (
-                                            <tr key={`${dl.relation_id}`}>
-                                                <td>{dl.deadline_id}</td>
-                                                <td>{dl.deadline_type}</td>
-                                                <td>{dl.deadline_date}</td>
-                                                <td>{dl.deadline_hour}</td>
-                                                <td>
-                                                    <span className={`badge ${getPriorityBadgeClass(dl.priority)}`}>
-                                                        {String(dl.priority).charAt(0).toUpperCase() + String(dl.priority).slice(1).toLowerCase()}
-                                                    </span>
-                                                </td>
-                                                <td>{dl.courtfile_number}</td>
-                                                <td>{dl.courtfile_title}</td>
-                                                <td className="text-end">
-                                                    <Link
-                                                        to={`/deadlines/view/${dl.deadline_id}`}
-                                                        state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${dl.courtfile_id}` }}
-                                                        className="btn btn-sm btn-info me-1"
-                                                        title="View"
-                                                    >
-                                                        <i className="bi bi-eye"></i>
-                                                    </Link>
-                                                    <Link
-                                                        to={`/deadlines/${dl.deadline_id}`}
-                                                        state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${dl.courtfile_id}` }}
-                                                        className="btn btn-sm btn-warning me-1"
-                                                        title="Edit"
-                                                    >
-                                                        <i className="bi bi-pencil"></i>
-                                                    </Link>
-                                                    <button
-                                                        className="btn btn-sm btn-danger"
-                                                        title={dl.relation_id ? "Unlink" : "No link available"}
-                                                        disabled={!dl.relation_id || deletingDeadlineRelId === dl.relation_id}
-                                                        onClick={() => handleDeleteDeadlineRelation(dl.relation_id)}
-                                                    >
-                                                        <i className="bi bi-trash"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
+                {/* CLIENTS */}
+                <div className="mt-5 text-start">  {/* [NEW] */}
+                    <div className="d-flex justify-content-between align-items-center">
+                        <h3>CLIENTS</h3>
                     </div>
 
-                    {/* appointments */}
-                    <div className="mt-5 text-start">
-                        <div className="d-flex justify-content-between align-items-center">
-                            <h3>APPOINTMENTS</h3>
-                            <Link
-                                to="/appointments/addAppointment"
-                                state={{ returnTo: "/DashboardLawyer" }}
-                                className="btn btn-sm btn-success"
-                            >
-                                + Create New Appointment
-                            </Link>
-                        </div>
+                    {loadingClients && <p className="mt-3">Loading clients...</p>}
+                    {clientsErr && <div className="alert alert-danger mt-3">{clientsErr}</div>}
+                    {!loadingClients && !clientsErr && clients.length === 0 && (
+                        <div className="alert alert-info mt-3">No clients yet. Please add one!</div>
+                    )}
 
-                        {loadingAppointments && <p className="mt-3">Loading appointments...</p>}
-
-                        {appointmentsErr && (
-                            <div className="alert alert-danger mt-3">{appointmentsErr}</div>
-                        )}
-
-                        {!loadingAppointments && !appointmentsErr && appointments.length === 0 && (
-                            <div className="alert alert-info mt-3">
-                                No appointments linked yet. Please add one!
-                            </div>
-                        )}
-
-                        {!loadingAppointments && appointments.length > 0 && (
-                            <div className="table-responsive mt-3">
-                                <table className="table table-striped table-hover">
-                                    <thead className="table-dark">
-                                        <tr>
-                                            <th>Appointment ID</th>
-                                            <th>Title</th>
-                                            <th>Date</th>
-                                            <th>Starts</th>
-                                            <th>Ends</th>
-                                            <th>Location</th>
-                                            <th>Case Number</th>
-                                            <th>Case Title</th>
-                                            <th className="text-end">Actions</th>
+                    {!loadingClients && clients.length > 0 && (
+                        <div className="table-responsive mt-3">
+                            <table className="table table-striped table-hover">
+                                <thead className="table-dark">
+                                    <tr>
+                                        <th>Client ID</th>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Phone</th>
+                                        <th># Cases</th>
+                                        <th className="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {clients.map(c => (
+                                        <tr key={c.client_id}>
+                                            <td>{c.client_id}</td>
+                                            <td>{c.client_name || "—"}</td>
+                                            <td>{c.client_email || "—"}</td>
+                                            <td>{c.client_phone || "—"}</td>
+                                            <td>{c.case_count}</td>
+                                            <td className="text-end">
+                                                <Link
+                                                    to={`/clients/view/${c.client_id}`}
+                                                    className="btn btn-sm btn-info"
+                                                    title="View"
+                                                >
+                                                    <i className="bi bi-eye"></i>
+                                                </Link>
+                                            </td>
                                         </tr>
-                                    </thead>
-                                    <tbody>
-                                        {appointments.map(ap => (
-                                            <tr key={`${ap.relation_id}`}>
-                                                <td>{ap.appointment_id}</td>
-                                                <td>{ap.appointment_title}</td>
-                                                <td>{ap.appointment_date}</td>
-                                                <td>{ap.starts_at}</td>
-                                                <td>{ap.ends_at}</td>
-                                                <td>{ap.appointment_location}</td>
-                                                <td>{ap.courtfile_number}</td>
-                                                <td>{ap.courtfile_title}</td>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+
+                {/* ================= PAYMENTS ================= */}
+                <div className="mt-5 text-start">
+                    <div className="d-flex justify-content-between align-items-center">
+                        <h3>PAYMENTS</h3>
+
+                    </div>
+
+                    {loadingPayments && <p className="mt-3">Loading payments...</p>}
+                    {paymentsErr && <div className="alert alert-danger mt-3">{paymentsErr}</div>}
+                    {!loadingPayments && !paymentsErr && payments.length === 0 && (
+                        <div className="alert alert-info mt-3">
+                            No payments linked yet. Please add one!
+                        </div>
+                    )}
+
+                    {!loadingPayments && payments.length > 0 && (
+                        <div className="table-responsive mt-3">
+                            <table className="table table-striped table-hover">
+                                <thead className="table-dark">
+                                    <tr>
+                                        <th style={{ width: "90px" }}>Payment</th>
+                                        <th>Amount</th>
+                                        <th>Currency</th>
+                                        <th>Status</th>
+                                        <th>Means</th>
+                                        <th>Paid At</th>
+                                        <th>Case Number</th>
+                                        <th>Case Title</th>
+                                        <th className="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {payments.map(p => {
+                                        const cf = caseById.get(p.courtfile_id);
+                                        return (
+                                            <tr key={`${p.id}-${p.relation_id}`}>
+                                                <td>#{p.id}</td>
+                                                <td>{p.amount}</td>
+                                                <td>{p.currency}</td>
+                                                <td>
+                                                    <span className={`badge ${p.status === "approved" ? "bg-success"
+                                                        : p.status === "pending" ? "bg-warning"
+                                                            : "bg-danger"
+                                                        }`}>
+                                                        {p.status || "—"}
+                                                    </span>
+                                                </td>
+                                                <td>{p.means || "—"}</td>
+                                                <td>{p.paid_at ? new Date(p.paid_at).toLocaleString() : "—"}</td>
+                                                <td>{cf?.case_number || "—"}</td>
+                                                <td className="text-truncate" style={{ maxWidth: 260 }} title={cf?.title}>{cf?.title || "—"}</td>
                                                 <td className="text-end">
+
                                                     <Link
-                                                        to={`/appointments/view/${ap.appointment_id}`}
-                                                        state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${ap.courtfile_id}` }}
+                                                        to={`/payments/view/${p.id}`}
+                                                        state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${p.courtfile_id}` }}
                                                         className="btn btn-sm btn-info me-1"
                                                         title="View"
                                                     >
                                                         <i className="bi bi-eye"></i>
                                                     </Link>
+
                                                     <Link
-                                                        to={`/appointments/${ap.appointment_id}`}
-                                                        state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${ap.courtfile_id}` }}
-                                                        className="btn btn-sm btn-warning me-1"
-                                                        title="Edit"
+                                                        to={p.status === "approved" ? "#" : `/payments/${p.id}`}
+                                                        state={p.status === "approved" ? undefined : { returnTo: `/courtfiles/ViewCourtfileLawyer/${p.courtfile_id}` }}
+                                                        className={`btn btn-sm btn-warning me-1 ${p.status === "approved" ? "disabled" : ""}`}
+                                                        aria-disabled={p.status === "approved"}
+                                                        title={p.status === "approved" ? "Approved payments are read-only" : "Edit"}
+                                                        onClick={(e) => { if (p.status === "approved") e.preventDefault(); }}
                                                     >
                                                         <i className="bi bi-pencil"></i>
                                                     </Link>
+
+                                                    {p.status === "pending" && (
+                                                        <button
+                                                            onClick={() => handleMarkPaid(p.id)}
+                                                            className="btn btn-sm btn-success me-1"
+                                                            title="Mark as paid"
+                                                        >
+                                                            <i className="bi bi-cash"></i>
+                                                        </button>
+                                                    )}
+
                                                     <button
                                                         className="btn btn-sm btn-danger"
-                                                        title={ap.relation_id ? "Unlink" : "No link available"}
-                                                        disabled={!ap.relation_id || deletingApptRelId === ap.relation_id}
-                                                        onClick={() => handleDeleteAppointmentRelation(ap.relation_id)}
+                                                        title={
+                                                            p.status === "approved"
+                                                                ? "Cannot unlink an approved payment"
+                                                                : (p.relation_id ? "Unlink" : "No link available")
+                                                        }
+                                                        disabled={
+                                                            p.status === "approved" ||
+                                                            !p.relation_id ||
+                                                            deletingPaymentRelId === p.relation_id
+                                                        }
+                                                        onClick={() => handleDeletePaymentRelation(p.relation_id)}
                                                     >
-                                                        {deletingApptRelId === ap.relation_id ? (
+                                                        {deletingPaymentRelId === p.relation_id ? (
                                                             <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                                                         ) : (
                                                             <i className="bi bi-trash"></i>
@@ -758,181 +917,19 @@ export const DashboardLawyer = () => {
                                                     </button>
                                                 </td>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* CLIENTS */}
-                    <div className="mt-5 text-start">  {/* [NEW] */}
-                        <div className="d-flex justify-content-between align-items-center">
-                            <h3>CLIENTS</h3>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
                         </div>
+                    )}
+                </div>
 
-                        {loadingClients && <p className="mt-3">Loading clients...</p>}
-                        {clientsErr && <div className="alert alert-danger mt-3">{clientsErr}</div>}
-                        {!loadingClients && !clientsErr && clients.length === 0 && (
-                            <div className="alert alert-info mt-3">No clients yet. Please add one!</div>
-                        )}
+                <div className="text-end">
+                    <LogoutButton className="btn btn-sm btn-outline-danger mt-5" />
+                </div>
+            </div>
 
-                        {!loadingClients && clients.length > 0 && (
-                            <div className="table-responsive mt-3">
-                                <table className="table table-striped table-hover">
-                                    <thead className="table-dark">
-                                        <tr>
-                                            <th>Client ID</th>
-                                            <th>Name</th>
-                                            <th>Email</th>
-                                            <th>Phone</th>
-                                            <th># Cases</th>
-                                            <th className="text-end">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {clients.map(c => (
-                                            <tr key={c.client_id}>
-                                                <td>{c.client_id}</td>
-                                                <td>{c.client_name || "—"}</td>
-                                                <td>{c.client_email || "—"}</td>
-                                                <td>{c.client_phone || "—"}</td>
-                                                <td>{c.case_count}</td>
-                                                <td className="text-end">
-                                                    <Link
-                                                        to={`/clients/view/${c.client_id}`}
-                                                        className="btn btn-sm btn-info"
-                                                        title="View"
-                                                    >
-                                                        <i className="bi bi-eye"></i>
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* ================= PAYMENTS ================= */}
-                    <div className="mt-5 text-start">
-                        <div className="d-flex justify-content-between align-items-center">
-                            <h3>PAYMENTS</h3>
-
-                        </div>
-
-                        {loadingPayments && <p className="mt-3">Loading payments...</p>}
-                        {paymentsErr && <div className="alert alert-danger mt-3">{paymentsErr}</div>}
-                        {!loadingPayments && !paymentsErr && payments.length === 0 && (
-                            <div className="alert alert-info mt-3">
-                                No payments linked yet. Please add one!
-                            </div>
-                        )}
-
-                        {!loadingPayments && payments.length > 0 && (
-                            <div className="table-responsive mt-3">
-                                <table className="table table-striped table-hover">
-                                    <thead className="table-dark">
-                                        <tr>
-                                            <th style={{ width: "90px" }}>Payment</th>
-                                            <th>Amount</th>
-                                            <th>Currency</th>
-                                            <th>Status</th>
-                                            <th>Means</th>
-                                            <th>Paid At</th>
-                                            <th>Case Number</th>
-                                            <th>Case Title</th>
-                                            <th className="text-end">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {payments.map(p => {
-                                            const cf = caseById.get(p.courtfile_id);
-                                            return (
-                                                <tr key={`${p.id}-${p.relation_id}`}>
-                                                    <td>#{p.id}</td>
-                                                    <td>{p.amount}</td>
-                                                    <td>{p.currency}</td>
-                                                    <td>
-                                                        <span className={`badge ${p.status === "approved" ? "bg-success"
-                                                            : p.status === "pending" ? "bg-warning"
-                                                                : "bg-danger"
-                                                            }`}>
-                                                            {p.status || "—"}
-                                                        </span>
-                                                    </td>
-                                                    <td>{p.means || "—"}</td>
-                                                    <td>{p.paid_at ? new Date(p.paid_at).toLocaleString() : "—"}</td>
-                                                    <td>{cf?.case_number || "—"}</td>
-                                                    <td className="text-truncate" style={{ maxWidth: 260 }} title={cf?.title}>{cf?.title || "—"}</td>
-                                                    <td className="text-end">
-
-                                                        <Link
-                                                            to={`/payments/view/${p.id}`}
-                                                            state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${p.courtfile_id}` }}
-                                                            className="btn btn-sm btn-info me-1"
-                                                            title="View"
-                                                        >
-                                                            <i className="bi bi-eye"></i>
-                                                        </Link>
-
-                                                        <Link
-                                                            to={p.status === "approved" ? "#" : `/payments/${p.id}`}
-                                                            state={p.status === "approved" ? undefined : { returnTo: `/courtfiles/ViewCourtfileLawyer/${p.courtfile_id}` }}
-                                                            className={`btn btn-sm btn-warning me-1 ${p.status === "approved" ? "disabled" : ""}`}
-                                                            aria-disabled={p.status === "approved"}
-                                                            title={p.status === "approved" ? "Approved payments are read-only" : "Edit"}
-                                                            onClick={(e) => { if (p.status === "approved") e.preventDefault(); }}
-                                                        >
-                                                            <i className="bi bi-pencil"></i>
-                                                        </Link>
-
-                                                        {p.status === "pending" && (
-                                                            <button
-                                                                onClick={() => handleMarkPaid(p.id)}
-                                                                className="btn btn-sm btn-success me-1"
-                                                                title="Mark as paid"
-                                                            >
-                                                                <i className="bi bi-cash"></i>
-                                                            </button>
-                                                        )}
-
-                                                        <button
-                                                            className="btn btn-sm btn-danger"
-                                                            title={
-                                                                p.status === "approved"
-                                                                    ? "Cannot unlink an approved payment"
-                                                                    : (p.relation_id ? "Unlink" : "No link available")
-                                                            }
-                                                            disabled={
-                                                                p.status === "approved" ||
-                                                                !p.relation_id ||
-                                                                deletingPaymentRelId === p.relation_id
-                                                            }
-                                                            onClick={() => handleDeletePaymentRelation(p.relation_id)}
-                                                        >
-                                                            {deletingPaymentRelId === p.relation_id ? (
-                                                                <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                                                            ) : (
-                                                                <i className="bi bi-trash"></i>
-                                                            )}
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="text-end">
-                        <LogoutButton className="btn btn-sm btn-outline-danger mt-5" />
-                    </div>
-                </div>          
-            
         </div >
     );
 };

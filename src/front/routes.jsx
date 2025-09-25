@@ -122,6 +122,13 @@ export const router = createBrowserRouter(
 
       {/* ==========RUTAS QUE SOLO ESTARIA USANDO EL ADMIN POR AHORA========== */}
 
+      <Route path="/admins" element={<Admins />} />
+      <Route path="/admins/addAdmin" element={<AddAdmin />} />
+      <Route path="/admins/view/:adminId" element={<ViewAdmin />} />
+      <Route path="/admins/:adminId" element={<EditAdmin />} />
+      <Route path="/admins/dashboard" element={<DashboardAdminUser />} />
+      <Route path="/SignUpAdminUser" element={<SignUpAdminUser />} />
+
       <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} />
       <Route path="/courtfiles" element={<Courtfiles />} />
 
@@ -131,49 +138,10 @@ export const router = createBrowserRouter(
       <Route path="/clients" element={<Clients />} />
       <Route path="/clients/addClient" element={<AddClient />} />
 
-      <Route path="/admins" element={<Admins />} />
-      <Route path="/admins/addAdmin" element={<AddAdmin />} />
-      <Route path="/admins/view/:adminId" element={<ViewAdmin />} />
-      <Route path="/admins/:adminId" element={<EditAdmin />} />
-      <Route path="/loginAdmin" element={<LoginAdminUser />} />
-      <Route path="/admins/dashboard" element={<DashboardAdminUser />} />
-      <Route path="/SignUpAdminUser" element={<SignUpAdminUser />} />
-
       <Route path="/payments" element={<Payments />} />
-
       <Route path="/deadlines" element={<Deadlines />} />
-
       <Route path="/appointments" element={<Appointments />} />
-
       <Route path="/documents" element={<Documents />} />
-
-      {/* ==========RUTAS QUE YA SERIAN INNECESARIAS========== */}
-      <Route path="/SignUpLawyer" element={<SignUpLawyer />} />
-      <Route path="/LoginLawyer" element={<LoginLawyer />} />
-
-      <Route path="/SignUpClient" element={<SignUpClient />} />
-      <Route path="/LoginClient" element={<LoginClient />} />
-
-      {/* ==========RUTAS ABIERTAS========== */}
-      <Route path="/403" element={<Forbidden />} />
-
-      <Route path="/login" element={<LoginForAll />} />
-      <Route path="/signUp" element={<SignUpForAll />} />
-
-
-
-
-
-
-
-
-
-
-
- 
-      <Route path="/documents/addDocument" element={<AddDocument />} />
-      <Route path="/documents/view/:documentId" element={<ViewDocument />} />
-      <Route path="/documents/:documentId" element={<EditDocument />} />
 
       <Route path="/ClientsCourtfiles" element={<ClientsCourtfiles />} />
       <Route path="/AddClientsCourtfiles" element={<AddClientsCourtfiles />} />
@@ -193,13 +161,30 @@ export const router = createBrowserRouter(
       <Route path="/CourtfilesDocuments" element={<CourtfilesDocuments />} />
       <Route path="/AddCourtfilesDocuments" element={<AddCourtfilesDocuments />} />
 
-
-
-
       <Route path="/PaymentCourtfiles" element={<PaymentCourtfiles />} />
       <Route path="/AddPaymentCourtfile" element={<AddPaymentCourtfile />} />
 
 
+
+      {/* ==========RUTAS QUE YA SERIAN INNECESARIAS========== */}
+      
+      <Route path="/SignUpLawyer" element={<SignUpLawyer />} />
+      <Route path="/LoginLawyer" element={<LoginLawyer />} />
+
+      <Route path="/SignUpClient" element={<SignUpClient />} />
+      <Route path="/LoginClient" element={<LoginClient />} />
+
+      <Route path="/loginAdmin" element={<LoginAdminUser />} />
+
+      {/* ==========RUTAS ABIERTAS========== */}
+      
+      <Route path="/403" element={<Forbidden />} />
+
+      <Route path="/login" element={<LoginForAll />} />
+      <Route path="/signUp" element={<SignUpForAll />} />
+
+
+      {/* ==========RUTAS PROTEGIDAS========== */}
 
       <Route element={<PrivateRoute />}>
         <Route path="/DashboardClient" element={<DashboardClient />} />
@@ -223,20 +208,17 @@ export const router = createBrowserRouter(
         <Route path="/appointments/addAppointment" element={<AddAppointment />} />
         <Route path="/appointments/view/:appointmentId" element={<ViewAppointment />} />
         <Route path="/appointments/:appointmentId" element={<EditAppointment />} />
+        <Route path="/documents/addDocument" element={<AddDocument />} />
+        <Route path="/documents/view/:documentId" element={<ViewDocument />} />
+        <Route path="/documents/:documentId" element={<EditDocument />} />
+
+        <Route path="/chats/:courtfileId" element={<ChatOnDemand />} />
+        <Route path="/chats" element={<ChatsOverview />} />
+
+        <Route path="/lawyers/:id/password" element={<ChangePassword kind="lawyer" />} />
+        <Route path="/clients/:id/password" element={<ChangePassword kind="client" />} />
 
       </Route>
-
-
-
-
-
-      <Route path="/chats/:courtfileId" element={<ChatOnDemand />} />
-      <Route path="/chats" element={<ChatsOverview />} />
-
-      <Route path="/lawyers/:id/password" element={<ChangePassword kind="lawyer" />} />
-      <Route path="/clients/:id/password" element={<ChangePassword kind="client" />} />
-
-
 
     </Route>
   )

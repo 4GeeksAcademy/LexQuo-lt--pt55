@@ -2603,7 +2603,7 @@ def send_linked_email():
         + (f"Case file: #{courtfile_number}\n" if courtfile_number else "")
         + f"Go to your case: {case_url}\n"
     )
-    
+
     try:
         send_email(email, subject, html, text)
         return jsonify({"ok": True, "sent_to": email})
@@ -2622,28 +2622,35 @@ def unified_login():
         if not email or not password:
             return jsonify({'error': 'Email and password required'}), 400
 
-        # Buscamos en ambas tablas
+        # Buscar en las tres tablas
+        admin = AdminUser.query.filter_by(email=email).first()
         lawyer = Lawyer.query.filter_by(email=email).first()
         client = Client.query.filter_by(email=email).first()
 
-        # Si por algún error el mismo email está en ambas, devolvemos conflicto explícito
-        if lawyer and client:
+        # Si aparece en más de una, conflicto explícito
+        found = [x for x in (admin, lawyer, client) if x is not None]
+        if len(found) > 1:
             return jsonify({'error': 'Email is linked to multiple roles'}), 409
 
-        # Determinamos user/role
-        user, role = (lawyer, 'lawyer') if lawyer else (
-            (client, 'client') if client else (None, None))
-
-        if not user:
+        # Determinar user/role
+        if admin:
+            user, role = admin, 'admin_user'   # <- CONSISTENTE CON TUS GUARDS
+        elif lawyer:
+            user, role = lawyer, 'lawyer'
+        elif client:
+            user, role = client, 'client'
+        else:
             return jsonify({'error': 'Invalid credentials'}), 401
 
+        # Password
         if not check_password_hash(user.password, password):
             return jsonify({'error': 'Invalid credentials'}), 401
 
-        if getattr(user, 'is_active', True) is False:
+        # is_active si existe
+        if hasattr(user, 'is_active') and user.is_active is False:
             return jsonify({'error': 'Account deactivated'}), 403
 
-        # JWT: identidad y claim de role
+        # JWT con claim de role
         token = create_access_token(
             identity=str(user.id),
             additional_claims={"role": role}

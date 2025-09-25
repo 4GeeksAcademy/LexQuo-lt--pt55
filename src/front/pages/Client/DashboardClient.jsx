@@ -65,20 +65,13 @@ export const DashboardClient = () => {
 
     // 🔔 UNREAD (total y por expediente)
     const caseIds = useMemo(() => (Array.isArray(cases) ? cases.map((c) => c.id) : []), [cases]);
-
-    // Si tu hook espera "auth" y "role", armamos un objeto mínimo compatible:
-    const authForHook = useMemo(
-        () => ({ token, user: { id: me.id } }),                     // CHANGED
-        [token, me?.id]
-    );
-
     const { unreadByCase, totalUnread, refresh: refreshUnread } = useUnreadBadges({
         API,
-        auth: authForHook,                                          // CHANGED
-        role,                                                       // "client"
+        token,
+        userId: me?.id,
+        role,
         courtfileIds: caseIds,
     });
-
 
 
     // markReadBackend y onOpenCaseChat 
@@ -148,102 +141,102 @@ export const DashboardClient = () => {
                 </Link>
             )}
 
-           
-                <div className="mt-5 text-start">
-                    {/* COURTFILES SECTION */}
-                    <div className="d-flex justify-content-between align-items-center">
-                        <h3>COURTFILES</h3>
-                        <Link
-                            to="/chats"
-                            state={{ returnTo: "/DashboardClient" }}
-                            className="btn btn-sm btn-outline-primary position-relative"
-                            title="View all chats"
-                            onClick={onOpenAllChats}   // ⬅️ ahora existe y navega con state
-                        >
-                            <i className="bi bi-chat-dots" /> All Chats
-                            {totalUnread > 0 && (
-                                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                    {totalUnread}
-                                </span>
-                            )}
-                        </Link>
-                    </div>
-                    {!loadingCases && cases.length > 0 && (
-                        <div className="table-responsive">
-                            <table className="table table-striped table-hover">
-                                <thead className="table-dark">
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Case Number</th>
-                                        <th>Title</th>
-                                        <th>Jurisdiction</th>
-                                        <th>Court</th>
-                                        <th>Status</th>
-                                        <th>Assigned Lawyers</th>
-                                        <th className="text-end">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {cases.map(cf => (
-                                        <tr key={cf.id}>
-                                            <td>{cf.id}</td>
-                                            <td>{cf.case_number}</td>
-                                            <td>{cf.title}</td>
-                                            <td>{cf.jurisdiction}</td>
-                                            <td>{cf.court}</td>
-                                            <td>
-                                                <span className={`badge ${cf.status ? 'bg-success' : 'bg-secondary'}`}>
-                                                    {cf.status ? 'Active' : 'Inactive'}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                {cf.assigned_lawyers?.map(lawyer => (
-                                                    <div key={lawyer.id} className="mb-1">
-                                                        <strong>{lawyer.name}</strong>
-                                                        <br />
-                                                    </div>
-                                                )) || 'No lawyers assigned'}
-                                            </td>
-                                            <td className="text-end">
-                                                <Link
-                                                    to={`/chats/${cf.id}`}
-                                                    state={{
-                                                        courtfileId: cf.id,
-                                                        courtfileNumber: cf.case_number,
-                                                        courtfileTitle: cf.title,
-                                                        senderRole: "client",
-                                                        returnTo: "/DashboardClient",
-                                                    }}
-                                                    className="btn btn-sm btn-outline-primary me-1 position-relative"
-                                                    title="Open chat"
-                                                    onClick={(e) => openCaseChat(e, cf)}  // ⬅️ esperamos markRead y luego navigate con state
-                                                >
-                                                    <i className="bi bi-chat-dots"></i>
-                                                    {unreadByCase.get(cf.id)?.hasUnread && (
-                                                        <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
-                                                            <span className="visually-hidden">New</span>
-                                                        </span>
-                                                    )}
-                                                </Link>
-                                                <Link
-                                                    to={`/courtfiles/viewclient/${cf.id}`}
-                                                    className="btn btn-sm btn-info me-1"
-                                                    title="View"
-                                                >
-                                                    <i className="bi bi-eye"></i> View
-                                                </Link>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
 
-                    <div className="text-end">
-                        <LogoutButton className="btn btn-sm btn-outline-danger mt-5" />
-                    </div>
+            <div className="mt-5 text-start">
+                {/* COURTFILES SECTION */}
+                <div className="d-flex justify-content-between align-items-center">
+                    <h3>COURTFILES</h3>
+                    <Link
+                        to="/chats"
+                        state={{ returnTo: "/DashboardClient" }}
+                        className="btn btn-sm btn-outline-primary position-relative"
+                        title="View all chats"
+                        onClick={onOpenAllChats}   // ⬅️ ahora existe y navega con state
+                    >
+                        <i className="bi bi-chat-dots" /> All Chats
+                        {totalUnread > 0 && (
+                            <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {totalUnread}
+                            </span>
+                        )}
+                    </Link>
                 </div>
+                {!loadingCases && cases.length > 0 && (
+                    <div className="table-responsive">
+                        <table className="table table-striped table-hover">
+                            <thead className="table-dark">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Case Number</th>
+                                    <th>Title</th>
+                                    <th>Jurisdiction</th>
+                                    <th>Court</th>
+                                    <th>Status</th>
+                                    <th>Assigned Lawyers</th>
+                                    <th className="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {cases.map(cf => (
+                                    <tr key={cf.id}>
+                                        <td>{cf.id}</td>
+                                        <td>{cf.case_number}</td>
+                                        <td>{cf.title}</td>
+                                        <td>{cf.jurisdiction}</td>
+                                        <td>{cf.court}</td>
+                                        <td>
+                                            <span className={`badge ${cf.status ? 'bg-success' : 'bg-secondary'}`}>
+                                                {cf.status ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {cf.assigned_lawyers?.map(lawyer => (
+                                                <div key={lawyer.id} className="mb-1">
+                                                    <strong>{lawyer.name}</strong>
+                                                    <br />
+                                                </div>
+                                            )) || 'No lawyers assigned'}
+                                        </td>
+                                        <td className="text-end">
+                                            <Link
+                                                to={`/chats/${cf.id}`}
+                                                state={{
+                                                    courtfileId: cf.id,
+                                                    courtfileNumber: cf.case_number,
+                                                    courtfileTitle: cf.title,
+                                                    senderRole: "client",
+                                                    returnTo: "/DashboardClient",
+                                                }}
+                                                className="btn btn-sm btn-outline-primary me-1 position-relative"
+                                                title="Open chat"
+                                                onClick={(e) => openCaseChat(e, cf)}  // ⬅️ esperamos markRead y luego navigate con state
+                                            >
+                                                <i className="bi bi-chat-dots"></i>
+                                                {unreadByCase.get(cf.id)?.hasUnread && (
+                                                    <span className="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                                                        <span className="visually-hidden">New</span>
+                                                    </span>
+                                                )}
+                                            </Link>
+                                            <Link
+                                                to={`/courtfiles/viewclient/${cf.id}`}
+                                                className="btn btn-sm btn-info me-1"
+                                                title="View"
+                                            >
+                                                <i className="bi bi-eye"></i> View
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+
+                <div className="text-end">
+                    <LogoutButton className="btn btn-sm btn-outline-danger mt-5" />
+                </div>
+            </div>
         </div>
     );
 };

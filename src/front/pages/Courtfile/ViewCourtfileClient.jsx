@@ -41,7 +41,7 @@ export const ViewCourtfileClient = () => {
     try {
       setLoading(true);
       const response = await fetch(`${API}/api/courtfiles/${courtfileId}`, {
-        headers: { Authorization: `Bearer ${token}`}
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
@@ -118,11 +118,10 @@ export const ViewCourtfileClient = () => {
   // ------------------- 🔔 UNREAD -------------------
   // Usamos el id de la URL para suscribir el hook directamente
   const caseIds = useMemo(() => [Number(courtfileId)], [courtfileId]);
-  const authForHook = useMemo(() => ({ token, user: { id: me.id } }), [token, me?.id]);
-
-  const { unreadByCase, refresh: refreshUnread } = useUnreadBadges({
+  const { unreadByCase, totalUnread, refresh: refreshUnread } = useUnreadBadges({
     API,
-    auth: authForHook,
+    token,
+    userId: me?.id,
     role,
     courtfileIds: caseIds,
   });
@@ -150,9 +149,9 @@ export const ViewCourtfileClient = () => {
     e.preventDefault();
     const cfid = Number(courtfileId);
     if (me?.id && cfid) {
-      markNow(me.id, cfid);                                 
-      await markReadBackend(API, token, role, me.id, cfid);  
-      refreshUnread();                                       
+      markNow(me.id, cfid);
+      await markReadBackend(API, token, role, me.id, cfid);
+      refreshUnread();
       navigate(`/chats/${cfid}`, {
         state: {
           courtfileId: cfid,

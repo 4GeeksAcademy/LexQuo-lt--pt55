@@ -1,6 +1,6 @@
 // src/pages/common/ChangePassword.jsx
 import React, { useState } from "react";
-import { Link, useNavigate, useLocation, useParams } from "react-router-dom";
+import { Link, useNavigate, useLocation, useParams, Navigate } from "react-router-dom";
 
 export default function ChangePassword({ kind }) {
   const { id } = useParams(); // :id
@@ -9,14 +9,20 @@ export default function ChangePassword({ kind }) {
   const returnTo = location.state?.returnTo || `/${kind}s/view/${id}`;
 
   const API = import.meta.env.VITE_BACKEND_URL;
-  const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
-  const token = auth?.token;
+  
+  // ---------- Guards ----------
+    const allowed =
+      role === "admin_user" ||
+      role === "lawyer" ||
+      role === "client";
+      
+    if (!allowed) return <Navigate to="/403" replace />;
 
   const [form, setForm] = useState({ current: "", newer: "", confirm: "" });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
-  // 👀 estados para show/hide
+  // estados para show/hide
   const [show, setShow] = useState({
     current: false,
     newer: false,
@@ -47,7 +53,7 @@ export default function ChangePassword({ kind }) {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}` 
         },
         body: JSON.stringify({ current: form.current, new: form.newer }),
       });
