@@ -8,7 +8,7 @@ from datetime import date, time, datetime, timedelta
 from api.models import (
     Lawyer, Client, Courtfile,
     Appointment, Deadlines, Document,
-    Payment, PaymentStatus
+    Payment, PaymentStatus, AdminUser
 )
 
 # ------------------------- utilidades ------------------------- #
@@ -30,6 +30,22 @@ def get_or_create(session, model, unique_fields: dict, defaults: dict | None = N
 
 # --------------------------- seeders --------------------------- #
 
+def seed_admins(session):
+    # password: se hashea automáticamente por @validates en tu modelo
+    rows = [
+        dict(firstname="Carlos", lastname="Ramirez", email="carlos.r@example.com",
+             password="1234", is_active=True),
+        dict(firstname="Laura",  lastname="Mendez",  email="laura.m@example.com",
+             password="1234", is_active=True),
+    ]
+    created = 0
+    for r in rows:
+        unique = {"email": r["email"]}
+        defaults = {k: v for k, v in r.items() if k not in unique}
+        _, was_created = get_or_create(session, AdminUser, unique, defaults)
+        if was_created:
+            created += 1
+    print(f"Admins: agregados {created}")
 
 def seed_lawyers(session):
     # password: se hashea automáticamente por @validates en tu modelo
@@ -273,6 +289,7 @@ def run(session):
     # with app.app_context():
     # session = db.session
     print(">> Seed base: insertando sin borrar ni relacionar…")
+    seed_admins(session)  
     seed_lawyers(session)
     seed_clients(session)
     seed_courtfiles(session)
@@ -283,6 +300,7 @@ def run(session):
 
     # Resumen actual
     print("\n== Totales actuales ==")
+    print(f"Admins:      {session.query(AdminUser).count()}")
     print(f"Lawyers:     {session.query(Lawyer).count()}")
     print(f"Clients:     {session.query(Client).count()}")
     print(f"Courtfiles:  {session.query(Courtfile).count()}")

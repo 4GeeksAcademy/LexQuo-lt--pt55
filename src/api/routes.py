@@ -486,7 +486,7 @@ def change_lawyer_password(lawyer_id):
 
 # -----------------ROUTES PARA CLIENTS--------------------------------------------
 @api.route('/clients', methods=['GET'])
-@jwt_required
+@jwt_required()
 def get_clients():
     try:
         if not _is_admin():
@@ -748,9 +748,9 @@ def get_client_appointments(client_id):
             courtfile_appointments = (AppointmentCourtfile.query
                                       .filter_by(courtfile_id=courtfile_id)
                                       .options(
-                                          db.joinedload(
+                                          joinedload(
                                               AppointmentCourtfile.appointment),
-                                          db.joinedload(
+                                          joinedload(
                                               AppointmentCourtfile.courtfile)
                                       )
                                       .all())
@@ -2212,7 +2212,6 @@ def get_payments():
         return jsonify({'error': str(e)}), 500
 
 
-
 @api.route('/payments/<int:payment_id>', methods=['GET'])
 @jwt_required()
 def get_payment(payment_id):
@@ -2229,7 +2228,7 @@ def get_payment(payment_id):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 404
-    
+
 
 @api.route('/payments/<int:payment_id>', methods=['PUT'])
 @jwt_required()
@@ -2489,6 +2488,7 @@ def _parse_iso(ts: str):
     except Exception:
         return None
 
+
 @api.route("/messages", methods=["GET"])
 @jwt_required()
 def list_messages():
@@ -2703,7 +2703,7 @@ def mark_read():
     return jsonify({"ok": True, "courtfile_id": cfid, "last_read_at": row.last_read_at.isoformat()}), 200
 
 
-#------------------------------STRIPE PAYMENT-----------------------------------------------------
+# ------------------------------STRIPE PAYMENT-----------------------------------------------------
 
 
 @api.route("/payments/<int:paymentId>/create-checkout-session", methods=["POST"])
@@ -2958,7 +2958,8 @@ def send_invite_email():
     email = (data.get("email") or "").strip().lower()
     firstname = (data.get("firstname") or "").strip()
     lastname = (data.get("lastname") or "").strip()
-    courtfile_number = data.get("courtfile_number")  # opcional, solo para el copy
+    # opcional, solo para el copy
+    courtfile_number = data.get("courtfile_number")
     courtfile_id = data.get("courtfile_id")          # opcional, p/ link
 
     if not email or not firstname or not lastname:
@@ -3064,6 +3065,8 @@ def send_linked_email():
         return jsonify({"error": str(e)}), 500
 
 # =================LOGIN GENERAL =====================================
+
+
 @api.route('/auth/login', methods=['POST'])
 def unified_login():
     try:
@@ -3086,7 +3089,7 @@ def unified_login():
 
         # Determinar user/role
         if admin:
-            user, role = admin, 'admin_user'   
+            user, role = admin, 'admin_user'
         elif lawyer:
             user, role = lawyer, 'lawyer'
         elif client:
