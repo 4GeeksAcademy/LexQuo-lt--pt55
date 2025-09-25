@@ -8,11 +8,11 @@ export const AddCourtfile = () => {
     const API = import.meta.env.VITE_BACKEND_URL;
 
     const location = useLocation();
-    const linkToLawyer = location.state?.linkToLawyer === true;
     const returnTo = location.state?.returnTo || "/courtfiles";
 
     const token = store?.auth?.token || null;
     const role = (store?.me?.role || "").toLowerCase();
+    const meId = store?.me?.id || null; 
 
     if (!["lawyer", "admin_user"].includes(role)) return <Navigate to="/403" replace />;
 
@@ -67,7 +67,13 @@ export const AddCourtfile = () => {
             if (response.ok) {
                 const newCourtfile = await response.json();
 
-                dispatch({ type: 'ADD_COURTFILE', payload: newCourtfile }); if (linkToLawyer) {
+                // Guardamos en store
+                dispatch({ type: 'ADD_COURTFILE', payload: newCourtfile });
+                // Si es LAWYER: vincula automáticamente con su propio id
+                if (role === "lawyer") {
+                    if (!meId) {
+                        throw new Error("No pude obtener tu ID (me.id) para vincular el expediente.");
+                    }
                     setLinking(true);
                     const relResp = await fetch(`${API}/api/lawyers-courtfiles`, {
                         method: "POST",
@@ -75,7 +81,7 @@ export const AddCourtfile = () => {
                             "Content-Type": "application/json",
                             Authorization: `Bearer ${token}`
                         },
-                        body: JSON.stringify({ courtfile_id: newCourtfile.id })
+                        body: JSON.stringify({ lawyer_id: meId, courtfile_id: newCourtfile.id })
                     });
                     if (!relResp.ok) {
                         const e = await relResp.json().catch(() => ({}));
@@ -83,10 +89,13 @@ export const AddCourtfile = () => {
                     }
                 }
 
-                navigate(`/courtfiles/ViewCourtfileLawyer/${newCourtfile.id}`, {
-                    replace: true,
-                    state: { returnTo: "/DashboardLawyer" }
-                });
+                // Navegación por rol
+                const viewPath = role === "lawyer"
+                  ? `/courtfiles/ViewCourtfileLawyer/${newCourtfile.id}`
+                  : `/courtfiles/ViewCourtfileAdmin/${newCourtfile.id}`;
+                const backTo = role === "lawyer" ? "/DashboardLawyer" : "/DashboardAdmin";
+
+                navigate(viewPath, { replace: true, state: { returnTo: backTo } });
 
                 alert('Courtfile created successfully!');
             } else {

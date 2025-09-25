@@ -2163,15 +2163,16 @@ def delete_courtfile_document(id):
         return jsonify({'error': str(e)}), 500
 
 
-# -----------------ROUTES PARA PAYMENTS--------------------------------------------
+# ----------------- ROUTES PARA PAYMENTS --------------------------------------------
 @api.route('/payments', methods=['POST'])
 @jwt_required()
 def create_payment():
     try:
-        if not _is_admin():
+        role, current_id = _get_role_and_identity()
+        if not (_is_admin() or role == "lawyer"):
             return jsonify({'error': 'forbidden'}), 403
 
-        data = request.get_json()
+        data = request.get_json() or {}
         required_fields = ['amount', 'currency', 'means']
         for field in required_fields:
             if field not in data:
@@ -2184,8 +2185,20 @@ def create_payment():
         )
 
         db.session.add(payment)
-        db.session.commit()
 
+        # Lawyer: debe venir courtfile_id y estar vinculado; autolink
+        if role == "lawyer":
+            cf_id = data.get('courtfile_id')
+            if not cf_id:
+                return jsonify({'error': 'courtfile_id required for lawyer'}), 400
+            linked = LawyerCourtfile.query.filter_by(
+                lawyer_id=int(current_id), courtfile_id=int(cf_id)
+            ).first()
+            if not linked:
+                return jsonify({'error': 'Forbidden for this courtfile'}), 403
+            db.session.add(PaymentCourtfile(payment_id=payment.id, courtfile_id=int(cf_id)))
+
+        db.session.commit()
         return jsonify(payment.serialize()), 201
 
     except Exception as e:
@@ -2197,17 +2210,31 @@ def create_payment():
 @jwt_required()
 def get_payments():
     try:
-        role = _role()
-        uid = _current_user_id()
+        role, uid = _get_role_and_identity()
 
         if role == "admin_user":
-            payments = Payment.query.all()
+            q = Payment.query
+        elif role == "lawyer":
+            q = (
+                db.session.query(Payment)
+                .join(PaymentCourtfile, PaymentCourtfile.payment_id == Payment.id)
+                .join(LawyerCourtfile, LawyerCourtfile.courtfile_id == PaymentCourtfile.courtfile_id)
+                .filter(LawyerCourtfile.lawyer_id == int(uid))
+                .distinct()
+            )
         elif role == "client":
-            payments = Payment.query.filter_by(client_id=uid).all()
+            q = (
+                db.session.query(Payment)
+                .join(PaymentCourtfile, PaymentCourtfile.payment_id == Payment.id)
+                .join(ClientCourtfile, ClientCourtfile.courtfile_id == PaymentCourtfile.courtfile_id)
+                .filter(ClientCourtfile.client_id == int(uid))
+                .distinct()
+            )
         else:
             return jsonify({'error': 'forbidden'}), 403
 
-        return jsonify([payment.serialize() for payment in payments]), 200
+        payments = q.all()
+        return jsonify([p.serialize() for p in payments]), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -2216,14 +2243,36 @@ def get_payments():
 @jwt_required()
 def get_payment(payment_id):
     try:
-        role = _role()
-        uid = _current_user_id()
+        role, uid = _get_role_and_identity()
         payment = Payment.query.get_or_404(payment_id)
 
         if role == "admin_user":
             return jsonify(payment.serialize()), 200
-        elif role == "client" and payment.client_id == uid:
+
+        if role == "lawyer":
+            linked = (
+                db.session.query(PaymentCourtfile)
+                .join(LawyerCourtfile, LawyerCourtfile.courtfile_id == PaymentCourtfile.courtfile_id)
+                .filter(PaymentCourtfile.payment_id == payment_id,
+                        LawyerCourtfile.lawyer_id == int(uid))
+                .first()
+            )
+            if not linked:
+                return jsonify({'error': 'forbidden'}), 403
             return jsonify(payment.serialize()), 200
+
+        if role == "client":
+            linked = (
+                db.session.query(PaymentCourtfile)
+                .join(ClientCourtfile, ClientCourtfile.courtfile_id == PaymentCourtfile.courtfile_id)
+                .filter(PaymentCourtfile.payment_id == payment_id,
+                        ClientCourtfile.client_id == int(uid))
+                .first()
+            )
+            if not linked:
+                return jsonify({'error': 'forbidden'}), 403
+            return jsonify(payment.serialize()), 200
+
         return jsonify({'error': 'forbidden'}), 403
 
     except Exception as e:
@@ -2234,23 +2283,37 @@ def get_payment(payment_id):
 @jwt_required()
 def update_payment(payment_id):
     try:
-        if not _is_admin():
+        role, uid = _get_role_and_identity()
+        payment = Payment.query.get_or_404(payment_id)
+
+        if _is_admin():
+            pass  # admin edita siempre
+        elif role == "lawyer":
+            # lawyer: sólo si está vinculado y status pending
+            linked = (
+                db.session.query(PaymentCourtfile)
+                .join(LawyerCourtfile, LawyerCourtfile.courtfile_id == PaymentCourtfile.courtfile_id)
+                .filter(PaymentCourtfile.payment_id == payment_id,
+                        LawyerCourtfile.lawyer_id == int(uid))
+                .first()
+            )
+            if not linked:
+                return jsonify({'error': 'forbidden'}), 403
+            if payment.status != "pending":
+                return jsonify({'error': 'Only pending payments can be edited by lawyer'}), 403
+        else:
             return jsonify({'error': 'forbidden'}), 403
 
-        payment = Payment.query.get_or_404(payment_id)
-        data = request.get_json()
+        data = request.get_json() or {}
 
         if 'amount' in data:
             payment.amount = data['amount']
-
         if 'currency' in data:
             payment.currency = data['currency']
-
         if 'status' in data:
             payment.status = data['status']
             if data['status'] == "approved":
                 payment.paid_at = datetime.now(UTC)
-
         if 'means' in data:
             payment.means = data['means']
 
@@ -2266,13 +2329,29 @@ def update_payment(payment_id):
 @jwt_required()
 def delete_payment(payment_id):
     try:
-        if not _is_admin():
+        role, uid = _get_role_and_identity()
+        payment = Payment.query.get_or_404(payment_id)
+
+        if _is_admin():
+            pass  # admin borra siempre
+        elif role == "lawyer":
+            # lawyer: sólo si está vinculado y pending
+            linked = (
+                db.session.query(PaymentCourtfile)
+                .join(LawyerCourtfile, LawyerCourtfile.courtfile_id == PaymentCourtfile.courtfile_id)
+                .filter(PaymentCourtfile.payment_id == payment_id,
+                        LawyerCourtfile.lawyer_id == int(uid))
+                .first()
+            )
+            if not linked:
+                return jsonify({'error': 'forbidden'}), 403
+            if payment.status != "pending":
+                return jsonify({'error': 'Only pending payments can be deleted by lawyer'}), 403
+        else:
             return jsonify({'error': 'forbidden'}), 403
 
-        payment = Payment.query.get_or_404(payment_id)
         db.session.delete(payment)
         db.session.commit()
-
         return jsonify({'message': 'Payment successfully deleted'}), 200
 
     except Exception as e:
@@ -2280,14 +2359,13 @@ def delete_payment(payment_id):
         return jsonify({'error': str(e)}), 500
 
 
-# -----------------ROUTES PARA PAYMENTS COURTFILE--------------------------------------------
-
+# ----------------- ROUTES PARA PAYMENTS COURTFILE --------------------------------------------
 @api.route('/payments-courtfile', methods=['POST'])
 @jwt_required()
 def create_payment_courtfile():
     try:
         role, current_id = _get_role_and_identity()
-        if not (_is_admin() or role == "lawyer"):   # 👈 client ya no puede crear
+        if not (_is_admin() or role == "lawyer"):
             return jsonify({'error': 'forbidden'}), 403
 
         data = request.get_json() or {}
@@ -2322,7 +2400,6 @@ def create_payment_courtfile():
 
         db.session.add(payment_courtfile)
         db.session.commit()
-
         return jsonify(payment_courtfile.serialize()), 201
 
     except Exception as e:
@@ -2399,7 +2476,7 @@ def get_payment_courtfile(id):
 def update_payment_courtfile(id):
     try:
         role, current_id = _get_role_and_identity()
-        if not (_is_admin() or role == "lawyer"):   # 👈 client no edita
+        if not (_is_admin() or role == "lawyer"):
             return jsonify({'error': 'forbidden'}), 403
 
         payment_courtfile = PaymentCourtfile.query.get_or_404(id)
@@ -2443,7 +2520,7 @@ def update_payment_courtfile(id):
 def delete_payment_courtfile(id):
     try:
         role, current_id = _get_role_and_identity()
-        if not (_is_admin() or role == "lawyer"):   # 👈 client no borra
+        if not (_is_admin() or role == "lawyer"):
             return jsonify({'error': 'forbidden'}), 403
 
         payment_courtfile = PaymentCourtfile.query.get_or_404(id)
@@ -2457,7 +2534,6 @@ def delete_payment_courtfile(id):
 
         db.session.delete(payment_courtfile)
         db.session.commit()
-
         return jsonify({'message': 'PaymentCourtfile successfully deleted'}), 200
 
     except Exception as e:

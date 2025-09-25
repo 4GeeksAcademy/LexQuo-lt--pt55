@@ -15,7 +15,9 @@ export const EditPayment = () => {
   }
 
   const token = store?.auth?.token;
+  const me = store?.me || null;
   const role = (me?.role || "").toLowerCase();
+  const meId = me?.id || null;
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
@@ -189,7 +191,7 @@ export const EditPayment = () => {
                     onChange={handleInputChange}
                     required
                     placeholder="0.00"
-                    disabled={loading || isLawyerReadOnly}
+                    disabled={loading || isReadOnly}
                   />
                 </div>
 
@@ -203,7 +205,7 @@ export const EditPayment = () => {
                     value={formData.currency}
                     onChange={handleInputChange}
                     required
-                    disabled={loading || isLawyerReadOnly}
+                    disabled={loading || isReadOnly}
                   >
                     <option value="">Select currency</option>
                     {currencyOptions.map(option => (
@@ -224,7 +226,7 @@ export const EditPayment = () => {
                     value={formData.status}
                     onChange={handleInputChange}
                     required
-                    disabled={loading || isLawyerReadOnly}
+                    disabled={loading || isReadOnly}
                   >
                     <option value="">Select status</option>
                     {statusOptions.map(option => (
@@ -257,7 +259,7 @@ export const EditPayment = () => {
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                   <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>
-                  <button type="submit" className="btn btn-primary" disabled={loading || isLawyerReadOnly}>
+                  <button type="submit" className="btn btn-primary" disabled={loading || isReadOnly}>
                     {loading ? (
                       <>
                         <span className="spinner-border spinner-border-sm" role="status"></span>

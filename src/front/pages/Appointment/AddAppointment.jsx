@@ -146,7 +146,8 @@ export const AddAppointment = () => {
           starts_at: formData.starts_at,
           ends_at: formData.ends_at,
           latitud: formData.latitud,
-          longitud: formData.longitud
+          longitud: formData.longitud,
+          courtfile_id: Number(formData.courtfile_id)
         })
       });
 
@@ -158,23 +159,6 @@ export const AddAppointment = () => {
       const newAppointment = await resp.json();
       dispatch?.({ type: "ADD_APPOINTMENT", payload: newAppointment });
 
-      setLinking(true);
-      const linkResp = await fetch(`${API}/api/appointments-courtfiles`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          appointment_id: newAppointment.id,
-          courtfile_id: Number(formData.courtfile_id)
-        })
-      });
-
-      if (!linkResp.ok) {
-        const e = await linkResp.json().catch(() => ({}));
-        throw new Error(e.error || `Failed to link appointment (HTTP ${linkResp.status})`);
-      }
 
       alert("Appointment created and linked successfully!");
       navigate(returnTo, { replace: true });
