@@ -3,7 +3,7 @@ import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
 export const ViewDeadline = () => {
-  const { dispatch } = useGlobalReducer();
+  const { store, dispatch } = useGlobalReducer();
   const { deadlineId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -11,25 +11,37 @@ export const ViewDeadline = () => {
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
+  // ---------- AUTH + ME ----------
+  const token = store?.auth?.token || null;
+  const me    = store?.me || null;
+  const role  = (me?.role || "").toLowerCase();
+
+  // ---------- Guards ----------
+      const allowed =
+          role === "admin_user" ||
+          role === "lawyer";
+  
+      if (!allowed) return <Navigate to="/403" replace />;
+
   const [deadline, setDeadline] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Si vino por state desde un expediente
   const prelinked = location.state?.courtfileId
-    ? {
-      id: location.state.courtfileId,
-      number: location.state.courtfileNumber,
-      title: location.state.courtfileTitle
-    }
+    ? { id: location.state.courtfileId, number: location.state.courtfileNumber, title: location.state.courtfileTitle }
     : null;
 
   const [linkedCourtfile, setLinkedCourtfile] = useState(prelinked);
+
 
   useEffect(() => {
     const fetchDeadline = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API}/api/deadlines/${deadlineId}`);
+        const response = await fetch(`${API}/api/deadlines/${deadlineId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
         setDeadline(data);
@@ -50,10 +62,9 @@ export const ViewDeadline = () => {
     const fetchLinked = async () => {
       try {
         if (linkedCourtfile || !deadlineId) return;
-        const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
-        const token = auth?.token;
+        
         const resp = await fetch(`${API}/api/deadlines-courtfiles`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
+          headers: { Authorization: `Bearer ${token}` }
         });
         if (!resp.ok) return;
         const rows = await resp.json();
@@ -70,12 +81,15 @@ export const ViewDeadline = () => {
       }
     };
     fetchLinked();
-  }, [API, deadlineId, linkedCourtfile]);
+  }, [API, deadlineId, linkedCourtfile, token]);
 
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this deadline?")) return;
     try {
-      const response = await fetch(`${API}/api/deadlines/${deadlineId}`, { method: "DELETE" });
+      const response = await fetch(`${API}/api/deadlines/${deadlineId}`, { 
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (response.ok) {
         dispatch({ type: "DELETE_DEADLINE", payload: Number(deadlineId) || deadlineId });
         navigate(returnTo, { replace: true });

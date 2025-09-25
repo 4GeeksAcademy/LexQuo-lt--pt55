@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, Navigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -6,8 +6,36 @@ export const EditLawyer = () => {
     const { store, dispatch } = useGlobalReducer();
     const { lawyerId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const API = import.meta.env.VITE_BACKEND_URL;
+
+    // ---------- AUTH + ME ----------
+    const token = store?.auth?.token || null;
+    const me = store?.me || null;
+    const role = (me?.role || "").toLowerCase();
+
+    // ---------- Guards ----------
+    const allowed =
+        role === "admin_user" ||
+        role === "lawyer";
+
+    if (!allowed) return <Navigate to="/403" replace />;
+
+    // ---------- Estado local ----------
+    const [loading, setLoading] = useState(false);
+    const [fetching, setFetching] = useState(true);
+    const [error, setError] = useState(null);
+
+
+    const ALLOWED_ROLES = ["lawyer", "admin_user"];
+    if (!ALLOWED_ROLES.includes(role)) {
+        return <Navigate to="/403" replace />;
+    }
+
+    const isAdmin = role === "admin_user";
+    const isSelf = String(me?.id) === String(lawyerId);
+    if (!isAdmin && !isSelf) return <Navigate to="/403" replace />;
 
     const [formData, setFormData] = useState({
         firstname: '',
@@ -19,15 +47,15 @@ export const EditLawyer = () => {
         is_active: true
     });
 
-    const [loading, setLoading] = useState(false);
-    const [fetching, setFetching] = useState(true);
-    const [error, setError] = useState(null);
+
 
     const fetchLawyer = async () => {
         try {
             setFetching(true);
 
-            const response = await fetch(`${API}/api/lawyers/${lawyerId}`);
+            const response = await fetch(`${API}/api/lawyers/${lawyerId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -54,7 +82,7 @@ export const EditLawyer = () => {
 
     useEffect(() => {
         fetchLawyer();
-    }, [lawyerId, API]);
+    }, [lawyerId, API, token]);
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -69,13 +97,13 @@ export const EditLawyer = () => {
         setLoading(true);
         setError(null);
 
-        
+
         if (!formData.firstname?.trim() || !formData.lastname?.trim() || !formData.phone?.trim()) {
             setError("Firstname, Lastname and Phone are required.");
             setLoading(false);
             return;
         }
-        
+
         if (formData.password && formData.password.length < 8) {
             setError("Password must have at least 8 characters.");
             setLoading(false);
@@ -99,6 +127,7 @@ export const EditLawyer = () => {
 
             const response = await fetch(`${API}/api/lawyers/${lawyerId}`, {
                 method: "PUT",
+                headers: { Authorization: `Bearer ${token}` },
                 body: data,
             });
 
@@ -137,7 +166,7 @@ export const EditLawyer = () => {
             } else {
                 setFormData(prev => ({ ...prev, file: null }));
                 setError("Only image formats (JPEG, PNG, GIF, WEBP) are allowed.");
-                e.target.value = null; 
+                e.target.value = null;
             }
         }
     };

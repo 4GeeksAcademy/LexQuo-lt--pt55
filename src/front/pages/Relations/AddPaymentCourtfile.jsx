@@ -7,6 +7,8 @@ export const AddPaymentCourtfile = () => {
   const navigate = useNavigate();
   const API = import.meta.env.VITE_BACKEND_URL;
 
+  const token = store?.auth?.token;
+
   const [formData, setFormData] = useState({
     payment: "",
     courtfile: ""
@@ -24,9 +26,11 @@ export const AddPaymentCourtfile = () => {
     setFormData(prev => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
   };
 
-    const fetchPayments = async () => {
+  const fetchPayments = async () => {
     try {
-      const response = await fetch(`${API}/api/payments`);
+      const response = await fetch(`${API}/api/payments`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
       if (response.ok) {
         const data = await response.json();
         setPayments(data)
@@ -38,19 +42,21 @@ export const AddPaymentCourtfile = () => {
     }
   };
 
-        const fetchCourtfiles = async () => {
-            try {
-                const response = await fetch(`${API}/api/courtfiles`);
-                if (response.ok) {
-                    const data = await response.json();
-                    setCourtfiles(data)
-                } else {
-                    console.error("Error fetching courtfiles");
-                }
-            } catch (error) {
-                console.error("Error:", error);
-            }
-        };
+  const fetchCourtfiles = async () => {
+    try {
+      const response = await fetch(`${API}/api/courtfiles`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCourtfiles(data)
+      } else {
+        console.error("Error fetching courtfiles");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -62,8 +68,8 @@ export const AddPaymentCourtfile = () => {
 
       const response = await fetch(`${API}/api/payments-courtfile`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({payment_id: payload.payment, courtfile_id: payload.courtfile})
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        body: JSON.stringify({ payment_id: payload.payment, courtfile_id: payload.courtfile })
       });
 
       if (response.ok) {
@@ -86,7 +92,7 @@ export const AddPaymentCourtfile = () => {
   useEffect(() => {
     fetchPayments()
     fetchCourtfiles()
-  }, []) 
+  }, [])
 
   return (
     <div className="container mt-4">
@@ -110,45 +116,45 @@ export const AddPaymentCourtfile = () => {
               )}
 
               <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label htmlFor="payment" className="form-label">Payment *</label>
-              <select
-                className="form-select"
-                id="payment"
-                name="payment"
-                value={formData.payment}
-                onChange={handleInputChange}
-                required
-                disabled={loading}
-              >
-                <option value="" disabled>Select payment</option>
-                {payments && payments.length > 0 && payments.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {`$${p.amount} - ${p.method || "Payment"}`}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <div className="mb-3">
+                  <label htmlFor="payment" className="form-label">Payment *</label>
+                  <select
+                    className="form-select"
+                    id="payment"
+                    name="payment"
+                    value={formData.payment}
+                    onChange={handleInputChange}
+                    required
+                    disabled={loading}
+                  >
+                    <option value="" disabled>Select payment</option>
+                    {payments && payments.length > 0 && payments.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {`$${p.amount} - ${p.method || "Payment"}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div className="mb-3">
-              <label htmlFor="courtfile" className="form-label">Courtfile *</label>
-              <select
-                className="form-select"
-                id="courtfile"
-                name="courtfile"
-                value={formData.courtfile}
-                onChange={handleInputChange}
-                required
-                disabled={loading}
-              >
-                <option value="" disabled>Select courtfile</option>
-                {courtfiles && courtfiles.length > 0 && courtfiles.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {`Expediente: ${c.case_number}`}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <div className="mb-3">
+                  <label htmlFor="courtfile" className="form-label">Courtfile *</label>
+                  <select
+                    className="form-select"
+                    id="courtfile"
+                    name="courtfile"
+                    value={formData.courtfile}
+                    onChange={handleInputChange}
+                    required
+                    disabled={loading}
+                  >
+                    <option value="" disabled>Select courtfile</option>
+                    {courtfiles && courtfiles.length > 0 && courtfiles.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {`Expediente: ${c.case_number}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
                 <div className="d-grid gap-2 d-md-flex justify-content-md-end">
                   <Link to="/PaymentCourtfiles" className="btn btn-secondary me-md-2">Cancel</Link>

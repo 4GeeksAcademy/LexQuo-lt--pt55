@@ -1,22 +1,37 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, Navigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
 export const EditClient = () => {
-  const { dispatch } = useGlobalReducer();
+  const { store, dispatch } = useGlobalReducer();
   const { clientId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
+  // ---------- AUTH + ME (fuente única) ----------
+  const token = store?.auth?.token || null;
+  const me = store?.me || null;
+  const role = (me?.role || "").toLowerCase();
+
+  // ---------- Guards (un solo Private por componente) ----------
+  const ALLOWED_ROLES = ["client", "admin_user"];
+  if (!ALLOWED_ROLES.includes(role)) return <Navigate to="/403" replace />;
+
+  const isAdmin = role === "admin_user";
+  const isSelf = String(me?.id) === String(clientId);
+  if (!isAdmin && !isSelf) return <Navigate to="/403" replace />;
+
+  // ---------- Estado local ----------
   const [formData, setFormData] = useState({
-    firstname: '',
-    lastname: '',
-    email: '',
-    phone: '',
-    password: '',
+    firstname: "",
+    lastname: "",
+    email: "",
+    phone: "",
+    password: "",
     file: null,
-    is_active: true
+    is_active: true,
   });
 
   const [loading, setLoading] = useState(false);
@@ -26,7 +41,9 @@ export const EditClient = () => {
   const fetchClient = async () => {
     try {
       setFetching(true);
-      const response = await fetch(`${API}/api/clients/${clientId}`);
+      const response = await fetch(`${API}/api/clients/${clientId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
@@ -51,7 +68,7 @@ export const EditClient = () => {
 
   useEffect(() => {
     if (clientId) fetchClient();
-  }, [clientId]);
+  }, [clientId, token]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -68,7 +85,7 @@ export const EditClient = () => {
       setLoading(false);
       return;
     }
-    
+
     if (formData.password && formData.password.length < 8) {
       setError("Password must have at least 8 characters.");
       setLoading(false);
@@ -92,6 +109,7 @@ export const EditClient = () => {
 
       const response = await fetch(`${API}/api/clients/${clientId}`, {
         method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
         body: data,
       });
 

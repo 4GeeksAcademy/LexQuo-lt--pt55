@@ -1,15 +1,26 @@
-import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
 export const EditDeadline = () => {
-  const { dispatch } = useGlobalReducer();
+  const { store, dispatch } = useGlobalReducer();
   const { deadlineId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const returnTo = location.state?.returnTo || `/deadlines/view/${deadlineId}`;
 
   const API = import.meta.env.VITE_BACKEND_URL;
+
+  const token = store?.auth?.token;
+  const me    = store?.me || null;
+  const role  = (me?.role || "").toLowerCase();
+
+  // ---------- Guards ----------
+      const allowed =
+          role === "admin_user" ||
+          role === "lawyer";
+  
+      if (!allowed) return <Navigate to="/403" replace />;
 
   const [formData, setFormData] = useState({
     deadline_type: "",
@@ -37,7 +48,9 @@ export const EditDeadline = () => {
   const fetchDeadline = async () => {
     try {
       setFetching(true);
-      const response = await fetch(`${API}/api/deadlines/${deadlineId}`);
+      const response = await fetch(`${API}/api/deadlines/${deadlineId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
 
@@ -59,10 +72,9 @@ export const EditDeadline = () => {
 
   const fetchLinkedCourtfile = async () => {
     try {
-      const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
-      const token = auth?.token;
+
       const resp = await fetch(`${API}/api/deadlines-courtfiles`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const rows = await resp.json();
@@ -83,17 +95,19 @@ export const EditDeadline = () => {
   };
 
   useEffect(() => {
-  if (deadlineId) {
-    fetchDeadline();
-    if (!linkedCourtfile) fetchLinkedCourtfile();
-  }
-}, [deadlineId, linkedCourtfile, API]);
+    if (deadlineId) {
+      fetchDeadline();
+      if (!linkedCourtfile) fetchLinkedCourtfile();
+    }
+  }, [deadlineId, linkedCourtfile, API, token]);
 
   useEffect(() => {
     const loadCf = async () => {
       try {
         if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
-          const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`);
+          const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
           if (resp.ok) {
             const d = await resp.json();
             setLinkedCourtfile(cf => ({ ...(cf || {}), number: d.case_number, title: d.title }));
@@ -104,7 +118,7 @@ export const EditDeadline = () => {
       }
     };
     loadCf();
-  }, [API, linkedCourtfile?.id]);
+  }, [API, linkedCourtfile?.id, token]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -119,7 +133,7 @@ export const EditDeadline = () => {
 
       const response = await fetch(`${API}/api/deadlines/${deadlineId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(formData)
       });
 

@@ -6,6 +6,8 @@ export const CourtfilesDocuments = () => {
     const { store, dispatch } = useGlobalReducer();
     const API = import.meta.env.VITE_BACKEND_URL;
 
+    const token = store?.auth?.token;
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -16,7 +18,9 @@ export const CourtfilesDocuments = () => {
     const fetchCourtfileDocuments = async () => {
         try {
             setLoading(true);
-            const response = await fetch(`${API}/api/courtfile-document`);
+            const response = await fetch(`${API}/api/courtfile-document`, {
+                headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+            });
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -41,6 +45,7 @@ export const CourtfilesDocuments = () => {
         try {
             const response = await fetch(`${API}/api/courtfile-document/${id}`, {
                 method: "DELETE",
+                headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
             });
 
             if (response.ok) {

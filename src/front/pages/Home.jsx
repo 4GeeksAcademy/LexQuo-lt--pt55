@@ -42,6 +42,22 @@ export const Home = () => {
 	<HomeButtons/>
 
 			<div className="container mt-5 mb-5">
+				<h1>LOGIN</h1>
+				<div className="ml-auto mt-5 mb-5">
+					<Link to="/login">
+						<button className="btn btn-light me-2">Login</button>
+					</Link>
+					<Link to="/signUp">
+						<button className="btn btn-light me-2">SignUp</button>
+					</Link>
+					<Link to="/SignUpAdminUser">
+						<button className="btn btn-light me-2">Sign Up Admin</button>
+					</Link>
+				</div>
+			</div>
+
+
+			<div className="container mt-5 mb-5">
 				<h1>LOGIN LAWYER</h1>
 				<div className="ml-auto mt-5 mb-5">
 					<Link to="/LoginLawyer">
@@ -80,7 +96,7 @@ export const Home = () => {
 					<Link to="/SignUpAdminUser">
 						<button className="btn btn-light me-2">Sign Up Admin</button>
 					</Link>
-					<Link to="/DashboardAdminUser">
+					<Link to="admins/dashboard">
 						<button className="btn btn-light me-2">Dashboard Admin</button>
 					</Link>
 				</div>

@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 571fa446152e
+Revision ID: 3883f5b2f61a
 Revises: 
-Create Date: 2025-09-22 17:10:50.004109
+Create Date: 2025-09-25 15:29:33.772904
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '571fa446152e'
+revision = '3883f5b2f61a'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -119,6 +119,21 @@ def upgrade():
         batch_op.create_index(batch_op.f('ix_appointment_courtfile_appointment_id'), ['appointment_id'], unique=False)
         batch_op.create_index(batch_op.f('ix_appointment_courtfile_courtfile_id'), ['courtfile_id'], unique=False)
 
+    op.create_table('chat_read',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('id_courtfile', sa.Integer(), nullable=False),
+    sa.Column('role', sa.String(length=20), nullable=False),
+    sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('last_read_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.ForeignKeyConstraint(['id_courtfile'], ['courtfile.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('id_courtfile', 'role', 'user_id', name='uq_chatread_cfid_role_user')
+    )
+    with op.batch_alter_table('chat_read', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_chat_read_id_courtfile'), ['id_courtfile'], unique=False)
+        batch_op.create_index('ix_chatread_cfid_lastread', ['id_courtfile', 'last_read_at'], unique=False)
+        batch_op.create_index('ix_chatread_role_user', ['role', 'user_id'], unique=False)
+
     op.create_table('client_courtfile',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('client_id', sa.Integer(), nullable=False),
@@ -193,6 +208,7 @@ def upgrade():
     sa.PrimaryKeyConstraint('id')
     )
     with op.batch_alter_table('message', schema=None) as batch_op:
+        batch_op.create_index('ix_message_cf_created', ['id_courtfile', 'created_at'], unique=False)
         batch_op.create_index(batch_op.f('ix_message_id_courtfile'), ['id_courtfile'], unique=False)
 
     op.create_table('payment_courtfile',
@@ -219,6 +235,7 @@ def downgrade():
     op.drop_table('payment_courtfile')
     with op.batch_alter_table('message', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_message_id_courtfile'))
+        batch_op.drop_index('ix_message_cf_created')
 
     op.drop_table('message')
     with op.batch_alter_table('lawyer_courtfile', schema=None) as batch_op:
@@ -246,6 +263,12 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_client_courtfile_client_id'))
 
     op.drop_table('client_courtfile')
+    with op.batch_alter_table('chat_read', schema=None) as batch_op:
+        batch_op.drop_index('ix_chatread_role_user')
+        batch_op.drop_index('ix_chatread_cfid_lastread')
+        batch_op.drop_index(batch_op.f('ix_chat_read_id_courtfile'))
+
+    op.drop_table('chat_read')
     with op.batch_alter_table('appointment_courtfile', schema=None) as batch_op:
         batch_op.drop_index(batch_op.f('ix_appointment_courtfile_courtfile_id'))
         batch_op.drop_index(batch_op.f('ix_appointment_courtfile_appointment_id'))

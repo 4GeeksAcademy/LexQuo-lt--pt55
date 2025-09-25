@@ -6,9 +6,14 @@ export const Clients = () => {
   const { store, dispatch } = useGlobalReducer();
   const API = import.meta.env.VITE_BACKEND_URL;
 
+  const token = store?.auth?.token;
+
   const fetchClients = async () => {
     try {
-      const response = await fetch(`${API}/api/clients`);
+      const response = await fetch(`${API}/api/clients`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+
       if (response.ok) {
         const data = await response.json();
         dispatch({ type: "SET_CLIENTS", payload: data });

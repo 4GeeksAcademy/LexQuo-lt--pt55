@@ -1,4 +1,4 @@
-import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -7,21 +7,27 @@ export const ViewLawyer = () => {
   const { lawyerId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const returnTo = location.state?.returnTo || "/lawyers";
-
-
-  const API = import.meta.env.VITE_BACKEND_URL;
-
-  const [lawyer, setLawyer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lawyer, setLawyer] = useState(null);
+
+  const API = import.meta.env.VITE_BACKEND_URL;
+  const returnTo = location.state?.returnTo || "/lawyers";
+
+  // ---------- AUTH + ME ----------
+  const token = store?.auth?.token || null;
+  const me    = store?.me || null;
+  const role  = (me?.role || "").toLowerCase();
+
 
   useEffect(() => {
     const fetchLawyer = async () => {
       try {
         setLoading(true);
 
-        const response = await fetch(`${API}/api/lawyers/${lawyerId}`);
+        const response = await fetch(`${API}/api/lawyers/${lawyerId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -39,14 +45,16 @@ export const ViewLawyer = () => {
     };
 
     if (lawyerId) fetchLawyer();
-  }, [lawyerId]);
+  }, [lawyerId, API, token]);
 
   const handleDelete = async () => {
+    if (!["lawyer","admin_user"].includes(role)) return;
     if (!window.confirm("Are you sure you want to delete this lawyer?")) return;
 
     try {
       const response = await fetch(`${API}/api/lawyers/${lawyerId}`, {
         method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.ok) {
@@ -156,22 +164,23 @@ export const ViewLawyer = () => {
 
             <div className="card-footer bg-light">
               <div className="d-flex gap-2 justify-content-end">
-
-                <Link
-                  to={`/lawyers/${lawyer.id}/password`}
-                  state={{ returnTo: `/lawyers/view/${lawyer.id}` }}
-                  className="btn btn-outline-secondary"
-                >
-                  <i className="bi bi-key"></i> Change Password
-                </Link>
-
-                <Link to={`/lawyers/${lawyer.id}`} className="btn btn-warning">
-                  <i className="bi bi-pencil"></i> Edit
-                </Link>
-
-                <button className="btn btn-danger" onClick={handleDelete}>
-                  <i className="bi bi-trash"></i> Delete
-                </button>
+                {["lawyer", "admin_user"].includes(role) && (
+                  <>
+                    <Link
+                      to={`/lawyers/${lawyer.id}/password`}
+                      state={{ returnTo: `/lawyers/view/${lawyer.id}` }}
+                      className="btn btn-outline-secondary"
+                    >
+                      <i className="bi bi-key"></i> Change Password
+                    </Link>
+                    <Link to={`/lawyers/${lawyer.id}`} className="btn btn-warning">
+                      <i className="bi bi-pencil"></i> Edit
+                    </Link>
+                    <button className="btn btn-danger" onClick={handleDelete}>
+                      <i className="bi bi-trash"></i> Delete
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

@@ -6,9 +6,14 @@ export const Documents = () => {
   const { store, dispatch } = useGlobalReducer();
   const API = import.meta.env.VITE_BACKEND_URL;
 
+  const token = store?.auth?.token;
+
   const fetchDocuments = async () => {
     try {
-      const response = await fetch(`${API}/api/documents`);
+      const response = await fetch(`${API}/api/documents`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+
       if (response.ok) {
         const data = await response.json();
         dispatch({ type: "SET_DOCUMENTS", payload: data });
@@ -45,7 +50,7 @@ export const Documents = () => {
     try {
       const response = await fetch(`${API}/api/documents/${id}`, {
         method: "DELETE",
-        headers: { Accept: "application/json", "Content-Type": "application/json" }
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       });
 
       if (response.ok) {

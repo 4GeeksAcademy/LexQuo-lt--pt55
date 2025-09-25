@@ -15,13 +15,13 @@ import { fetchUnreadMap } from "./chatUnread.jsx";
  * - totalUnread: number (suma, recortada a 99)
  * - refresh: función para refrescar manualmente
  */
-export default function useUnreadBadges({ API, auth, role, courtfileIds }) {
+export default function useUnreadBadges({ API, token, userId, role, courtfileIds }) {
   const [unreadByCase, setUnreadByCase] = useState(new Map());
   const [totalUnread, setTotalUnread] = useState(0);
 
   const refresh = async () => {
     try {
-      const map = await fetchUnreadMap({ API, auth, courtfileIds, role });
+      const map = await fetchUnreadMap({ API, token, userId, courtfileIds, role });
       setUnreadByCase(map);
 
       let total = 0;
@@ -36,14 +36,14 @@ export default function useUnreadBadges({ API, auth, role, courtfileIds }) {
   };
 
   useEffect(() => {
-    if (!API || !auth?.token || !Array.isArray(courtfileIds)) return;
+    if (!API || !token || !Array.isArray(courtfileIds)) return;
     refresh();
 
     // refresco automático cada 30 segundos
     const id = setInterval(refresh, 30000);
     return () => clearInterval(id);
     // ⚠️ stringify en deps para detectar cambios de array
-  }, [API, auth?.token, JSON.stringify(courtfileIds), role]);
+  }, [API, token, JSON.stringify(courtfileIds), role]);
 
   return { unreadByCase, totalUnread, refresh };
 }

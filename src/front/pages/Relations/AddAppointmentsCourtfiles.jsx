@@ -7,6 +7,8 @@ export const AddAppointmentsCourtfiles = () => {
   const navigate = useNavigate();
   const API = import.meta.env.VITE_BACKEND_URL;
 
+  const token = store?.auth?.token;
+
   const [formData, setFormData] = useState({
     appointment_id: "",
     courtfile_id: "",
@@ -37,7 +39,10 @@ export const AddAppointmentsCourtfiles = () => {
     const loadData = async () => {
       try {
         if (appointments.length === 0) {
-          const response = await fetch(`${API}/api/appointments`);
+          const response = await fetch(`${API}/api/appointments`, {
+            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+          });
+
           if (response.ok) {
             const data = await response.json();
             if (alive) dispatch({ type: "SET_APPOINTMENTS", payload: data });
@@ -45,7 +50,10 @@ export const AddAppointmentsCourtfiles = () => {
         }
 
         if (courtfiles.length === 0) {
-          const response = await fetch(`${API}/api/courtfiles`);
+          const response = await fetch(`${API}/api/courtfiles`, {
+            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+          });
+
           if (response.ok) {
             const data = await response.json();
             if (alive) dispatch({ type: "SET_COURTFILES", payload: data });
@@ -80,7 +88,7 @@ export const AddAppointmentsCourtfiles = () => {
 
       const res = await fetch(`${API}/api/appointments-courtfiles`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
         body: JSON.stringify(payload),
       });
 
@@ -90,7 +98,10 @@ export const AddAppointmentsCourtfiles = () => {
       }
 
       // Actualizar la lista de relaciones en el store
-      const relationsResponse = await fetch(`${API}/api/appointments-courtfiles`);
+      const relationsResponse = await fetch(`${API}/api/appointments-courtfiles`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+
       if (relationsResponse.ok) {
         const allRelations = await relationsResponse.json();
         dispatch({ type: "SET_APPOINTMENT_COURTFILES", payload: allRelations });

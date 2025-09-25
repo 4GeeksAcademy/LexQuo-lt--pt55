@@ -14,10 +14,18 @@ export const EditPayment = () => {
     return <Navigate to="/payments" replace />;
   }
 
-  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
-  const role = auth?.role;
+  const token = store?.auth?.token;
+  const role = (me?.role || "").toLowerCase();
 
   const API = import.meta.env.VITE_BACKEND_URL;
+
+  // ---------- Guards ----------
+  const allowed =
+    role === "admin_user" ||
+    role === "lawyer";
+
+  if (!allowed) return <Navigate to="/403" replace />;
+
 
   // Opciones para los desplegables
   const currencyOptions = [
@@ -46,7 +54,7 @@ export const EditPayment = () => {
     means: "",
   });
 
-  const isLawyerReadOnly = role === "lawyer" && formData.status === "approved";
+  const isReadOnly = !(["admin_user", "lawyer"].includes(role) && formData.status === "pending");
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -61,7 +69,9 @@ export const EditPayment = () => {
   const fetchPayment = async () => {
     try {
       setFetching(true);
-      const response = await fetch(`${API}/api/payments/${paymentId}`);
+      const response = await fetch(`${API}/api/payments/${paymentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
       setFormData(prev => ({
@@ -79,7 +89,7 @@ export const EditPayment = () => {
 
   useEffect(() => {
     if (paymentId) fetchPayment();
-  }, [paymentId]);
+  }, [paymentId, token]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -88,7 +98,7 @@ export const EditPayment = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isLawyerReadOnly) return;
+    if (isReadOnly) return;
     setLoading(true);
     setError(null);
     try {
@@ -96,7 +106,7 @@ export const EditPayment = () => {
 
       const response = await fetch(`${API}/api/payments/${paymentId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload)
       });
 
@@ -147,14 +157,14 @@ export const EditPayment = () => {
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h1>Edit Payment</h1>
             <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back 
+              <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
 
           {/* Form */}
-          {isLawyerReadOnly && (
+          {isReadOnly && (
             <div className="alert alert-info mb-3">
-              This payment is approved and cannot be edited by a lawyer.
+              This payment can only be edited by admin or lawyer while status is <strong>pending</strong>.
             </div>
           )}
           <div className="card">
@@ -234,7 +244,7 @@ export const EditPayment = () => {
                     name="means"
                     value={formData.means}
                     onChange={handleInputChange}
-                    disabled={loading || isLawyerReadOnly}
+                    disabled={loading || isReadOnly}
                   >
                     <option value="">Select payment method</option>
                     {meansOptions.map(option => (

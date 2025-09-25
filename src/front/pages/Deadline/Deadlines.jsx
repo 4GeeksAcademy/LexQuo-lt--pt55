@@ -6,9 +6,14 @@ export const Deadlines = () => {
   const { store, dispatch } = useGlobalReducer();
   const API = import.meta.env.VITE_BACKEND_URL;
 
+  const token = store?.auth?.token;
+
   const fetchDeadlines = async () => {
     try {
-      const response = await fetch(`${API}/api/deadlines`);
+      const response = await fetch(`${API}/api/deadlines`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+
       if (response.ok) {
         const data = await response.json();
         dispatch({ type: "SET_DEADLINES", payload: data });
@@ -30,7 +35,7 @@ export const Deadlines = () => {
     try {
       const response = await fetch(`${API}/api/deadlines/${id}`, {
         method: "DELETE",
-        headers: { Accept: "application/json", "Content-Type": "application/json" }
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       });
 
       if (response.ok) {

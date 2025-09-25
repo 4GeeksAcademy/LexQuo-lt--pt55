@@ -23,18 +23,12 @@ export function markNow(userId, cfid) {
  * NUEVO: usa /messages/unread del backend.
  * Retorna Map<number, {hasUnread:boolean, count:number}>
  */
-export async function fetchUnreadMap({ API, auth, courtfileIds, role }) {
-  const userId =
-    auth?.user?.id ??
-    auth?.lawyer?.id ??
-    auth?.client?.id ??
-    auth?.id ?? null;
-
-  if (!API || !auth?.token || !userId || !Array.isArray(courtfileIds) || courtfileIds.length === 0) {
+export async function fetchUnreadMap({ API, token, userId, role, courtfileIds }) {
+  if (!API || !token || !userId || !Array.isArray(courtfileIds) || courtfileIds.length === 0) {
     return new Map();
   }
 
-  const headers = { Authorization: `Bearer ${auth.token}` };
+  const headers = { Authorization: `Bearer ${token}` };
   const qs = new URLSearchParams({
     role: String(role || "").toLowerCase(),
     user_id: String(userId),

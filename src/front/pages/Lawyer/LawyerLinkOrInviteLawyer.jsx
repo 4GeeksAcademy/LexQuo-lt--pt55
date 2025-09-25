@@ -8,11 +8,10 @@ export const LawyerLinkOrInviteLawyer = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
-  const token = auth?.token;
-
-  // Sólo abogados
-  if (auth?.role !== "lawyer") return <Navigate to="/403" replace />;
+  const token = store?.auth?.token;
+  const role = (store?.me?.role || "").toLowerCase();
+  
+  if (role !== "lawyer") return <Navigate to="/403" replace />;
 
   const preselectedCourtfileId = location.state?.courtfileId || null;
   const preselectedCourtfileNumber = location.state?.courtfileNumber || null;
@@ -54,7 +53,7 @@ export const LawyerLinkOrInviteLawyer = () => {
 
       // /lawyers/lookup?email=
       const resp = await fetch(`${API}/api/lawyers/lookup?email=${encodeURIComponent(emailTrim)}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (resp.status === 404) {
@@ -81,7 +80,9 @@ export const LawyerLinkOrInviteLawyer = () => {
   };
 
   // --- 2) Linkear lawyer existente al expediente ---
-  const linkLawyerToCase = async (lawyerId) => {
+  const linkLawyerToCase = async (lawyerOrId) => {
+    const lawyer = typeof lawyerOrId === "object" ? lawyerOrId : null;
+    const lawyerId = lawyer ? lawyer.id : lawyerOrId;
     if (!preselectedCourtfileId) {
       alert("No courtfile provided.");
       return;
@@ -92,7 +93,7 @@ export const LawyerLinkOrInviteLawyer = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           lawyer_id: Number(lawyerId),           // <- target lawyer
@@ -102,12 +103,12 @@ export const LawyerLinkOrInviteLawyer = () => {
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
 
-      if (lw?.email) {
+      if (lawyer?.email) {
         try {
           await notifyLawyerLinkedEmail({
-            email: lw.email,
-            firstname: lw.firstname,
-            lastname: lw.lastname,
+            email: lawyer.email, 
+            firstname: lawyer.firstname, 
+            lastname: lawyer.lastname,
             courtfileId: preselectedCourtfileId,
             courtfileNumber: preselectedCourtfileNumber
           });
@@ -152,7 +153,7 @@ export const LawyerLinkOrInviteLawyer = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          Authorization: `Bearer ${token}` 
         },
         body: JSON.stringify({
           firstname,
@@ -167,14 +168,14 @@ export const LawyerLinkOrInviteLawyer = () => {
       if (!createResp.ok) throw new Error(newLawyer.error || `HTTP ${createResp.status}`);
 
       // 3.2) Linkear al expediente
-      await linkLawyerToCase(newLawyer.id);
+      await linkLawyerToCase(newLawyer);
 
       // 3.3) Enviar invitación por mail (inline)
       const inviteResp = await fetch(`${API}/api/emails/invite`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          Authorization: `Bearer ${token}` 
         },
         body: JSON.stringify({
           role: "lawyer",
@@ -207,7 +208,7 @@ export const LawyerLinkOrInviteLawyer = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
         role: "lawyer",

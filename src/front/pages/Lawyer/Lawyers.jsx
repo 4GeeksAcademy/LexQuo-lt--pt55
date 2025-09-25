@@ -10,7 +10,10 @@ export const Lawyers = () => {
 
     const fetchLawyers = async () => {
         try {
-            const response = await fetch(`${API}/api/lawyers`);
+            const token = JSON.parse(localStorage.getItem("auth") || "null")?.token || "";
+            const response = await fetch(`${API}/api/lawyers`, {
+                headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
+            });
             if (response.ok) {
                 const data = await response.json();
                 dispatch({ type: "SET_LAWYERS", payload: data });
@@ -38,6 +41,7 @@ export const Lawyers = () => {
                 headers: {
                     Accept: "application/json",
                     "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
                 },
             });
 
@@ -53,6 +57,13 @@ export const Lawyers = () => {
             alert(`Error deleting lawyer: ${error.message}`);
         }
     };
+
+    useEffect(() => {
+        const role = String(store?.auth?.role || "").toLowerCase();
+        if (role && role !== "admin_user") {
+            navigate("/403", { replace: true });
+        }
+    }, [store?.auth?.role]);
 
 
     return (

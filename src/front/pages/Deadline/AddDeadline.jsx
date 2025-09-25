@@ -13,8 +13,15 @@ export const AddDeadline = () => {
   const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
   const returnTo = location.state?.returnTo || "/deadlines";
 
-  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
-  const token = auth?.token;
+  const token = store?.auth?.token;
+  const role = (store?.me?.role || "").toLowerCase();
+
+  // ---------- Guards ----------
+      const allowed =
+          role === "admin_user" ||
+          role === "lawyer";
+  
+      if (!allowed) return <Navigate to="/403" replace />;
 
   const Deadline_Categories = ["Contestación de demanda", "Traslado / Vista", "Ofrecimiento de prueba", "Producción de prueba", "Audiencia",
     "Recurso / Apelación", "Ejecución / Cumplimiento", "Caducidad de instancia", "Plazo penal (excarcelación, preventiva, etc.)",
@@ -48,7 +55,9 @@ export const AddDeadline = () => {
 
         if (preselectedCourtfileId) {
           if (!preselectedCf) {
-            const r = await fetch(`${API}/api/courtfiles/${preselectedCourtfileId}`);
+            const r = await fetch(`${API}/api/courtfiles/${preselectedCourtfileId}`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
             if (r.ok) {
               const d = await r.json();
               setPreselectedCf({ case_number: d.case_number, title: d.title });
@@ -58,12 +67,12 @@ export const AddDeadline = () => {
           return;
         }
 
-        const endpoint = token
+        const endpoint = role === "lawyer"
           ? `${API}/api/lawyers-courtfiles`
           : `${API}/api/courtfiles`;
-
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const resp = await fetch(endpoint, { headers });
+        const resp = await fetch(endpoint, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
         if (!resp.ok) {
           const e = await resp.json().catch(() => ({}));
@@ -72,7 +81,7 @@ export const AddDeadline = () => {
 
         const data = await resp.json();
 
-        const mapped = token
+        const mapped = role === "lawyer"
           ? data.map(r => ({
             id: r.courtfile.id,
             number: r.courtfile.case_number,
@@ -114,7 +123,7 @@ export const AddDeadline = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           deadline_type: formData.deadline_type,
@@ -138,7 +147,7 @@ export const AddDeadline = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           deadline_id: newDeadline.id,
@@ -188,32 +197,32 @@ export const AddDeadline = () => {
           </div>
 
           {preselectedCourtfileId ? (
-                <span className="badge bg-dark mt-1 mb-2">
-                  Related to Courtfile {preselectedCf?.case_number || "—"}
-                  {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
-                </span>
-              
-            ) : (
-              <div className="mb-3">
-                <label htmlFor="courtfile_id" className="form-label">Link to Courtfile *</label>
-                <select
-                  className="form-select"
-                  id="courtfile_id"
-                  name="courtfile_id"
-                  value={formData.courtfile_id}
-                  onChange={handleInputChange}
-                  required
-                  disabled={loading || loadingCases}
-                >
-                  <option value="">Select a courtfile</option>
-                  {myCases.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.number} — {c.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            <span className="badge bg-dark mt-1 mb-2">
+              Related to Courtfile {preselectedCf?.case_number || "—"}
+              {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
+            </span>
+
+          ) : (
+            <div className="mb-3">
+              <label htmlFor="courtfile_id" className="form-label">Link to Courtfile *</label>
+              <select
+                className="form-select"
+                id="courtfile_id"
+                name="courtfile_id"
+                value={formData.courtfile_id}
+                onChange={handleInputChange}
+                required
+                disabled={loading || loadingCases}
+              >
+                <option value="">Select a courtfile</option>
+                {myCases.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.number} — {c.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Card */}
           <div className="card">

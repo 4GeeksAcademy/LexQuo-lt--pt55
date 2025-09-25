@@ -3,9 +3,11 @@ import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState } from "react";
 
 export const AddAdmin = () => {
-  const { dispatch } = useGlobalReducer();
+  const { store, dispatch } = useGlobalReducer();
   const navigate = useNavigate();
   const API = import.meta.env.VITE_BACKEND_URL;
+
+  const token = store?.auth?.token;
 
   const [formData, setFormData] = useState({
     firstname: "",
@@ -35,7 +37,7 @@ export const AddAdmin = () => {
     try {
       const response = await fetch(`${API}/api/admins`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
         body: JSON.stringify(formData),
       });
 

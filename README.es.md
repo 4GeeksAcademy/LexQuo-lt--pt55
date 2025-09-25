@@ -22,6 +22,7 @@ CLOUDINARY_API_SECRET=*********************
 ## 🌱 Seed de datos básicos
 ```sh
 PYTHONPATH=./src pipenv run python -m api.seed
+pipenv run insert-seed
 ```  
 ⚠️ Importante: un cambio en los modelos puede generar error en el seed.
 Por ejemplo, si Lawyer empieza a requerir url_img, hay que agregarlo al seed.

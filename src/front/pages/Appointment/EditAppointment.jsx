@@ -1,17 +1,29 @@
-import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 import MapComponent from "../../components/Map/MapComponent";
 import LocationAutocomplete from "../../components/Map/LocationAutocomplete";
 
 export const EditAppointment = () => {
-  const { dispatch } = useGlobalReducer();
+  const { store, dispatch } = useGlobalReducer();
   const { appointmentId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const returnTo = location.state?.returnTo || `/appointments/view/${appointmentId}`;
 
   const API = import.meta.env.VITE_BACKEND_URL;
+
+  const token = store?.auth?.token;
+  const role = (store?.me?.role || "").toLowerCase();
+
+  // ---------- Guards ----------
+  const allowed =
+    role === "admin_user" ||
+    role === "lawyer";
+
+  if (!allowed) return <Navigate to="/403" replace />;
+
+  
 
   const initialLinked =
     location.state?.courtfileId
@@ -39,7 +51,9 @@ export const EditAppointment = () => {
   const fetchAppointment = async () => {
     try {
       setFetching(true);
-      const response = await fetch(`${API}/api/appointments/${appointmentId}`);
+      const response = await fetch(`${API}/api/appointments/${appointmentId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!response.ok) {
         throw new Error(`Failed to load appointment data. Status: ${response.status}`);
       }
@@ -111,18 +125,18 @@ export const EditAppointment = () => {
     : times15;
 
   useEffect(() => {
-    if (appointmentId) fetchAppointment();
-  }, [appointmentId]);
+    if (!appointmentId || !token) return;
+    fetchAppointment();
+  }, [API, appointmentId, token]);
 
   useEffect(() => {
     const fetchLinked = async () => {
       try {
         if (linkedCourtfile || !appointmentId) return;
-        const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
-        const token = auth?.token;
         const resp = await fetch(`${API}/api/appointments-courtfiles`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
+          headers: { Authorization: `Bearer ${token}` },
         });
+
         if (!resp.ok) return;
         const rows = await resp.json();
         const rel = (rows || []).find(r => Number(r.appointment_id) === Number(appointmentId));
@@ -137,8 +151,10 @@ export const EditAppointment = () => {
         // noop
       }
     };
-    fetchLinked();
-  }, [API, appointmentId, linkedCourtfile]);
+    if (token) fetchLinked();
+  }, [API, appointmentId, token, linkedCourtfile]);
+
+
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -174,7 +190,10 @@ export const EditAppointment = () => {
 
       const response = await fetch(`${API}/api/appointments/${appointmentId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(payload)
       });
 

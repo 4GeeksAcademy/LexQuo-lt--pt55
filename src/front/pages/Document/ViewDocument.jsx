@@ -1,15 +1,25 @@
-import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
 export const ViewDocument = () => {
-  const { dispatch } = useGlobalReducer();
+  const { store, dispatch } = useGlobalReducer();
   const { documentId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const returnTo = location.state?.returnTo || "/documents";
 
   const API = import.meta.env.VITE_BACKEND_URL;
+
+  const token = store?.auth?.token;
+  const role = (store?.me?.role || "").toLowerCase();
+
+  // ---------- Guards ----------
+  const allowed =
+    role === "admin_user" ||
+    role === "lawyer";
+
+  if (!allowed) return <Navigate to="/403" replace />;
 
   const [documentData, setDocumentData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,7 +38,9 @@ export const ViewDocument = () => {
     const fetchDocument = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API}/api/documents/${documentId}`);
+        const response = await fetch(`${API}/api/documents/${documentId}`, {
+          headers: { Authorization: `Bearer ${token}` } 
+        });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
         setDocumentData(data);
@@ -48,7 +60,9 @@ export const ViewDocument = () => {
     const loadCf = async () => {
       try {
         if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
-          const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`);
+          const resp = await fetch(`${API}/api/documents/${documentId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
           if (resp.ok) {
             const d = await resp.json();
             setLinkedCourtfile(cf => ({ ...(cf || {}), number: d.case_number, title: d.title }));
@@ -65,10 +79,8 @@ export const ViewDocument = () => {
     const fetchLinked = async () => {
       try {
         if (linkedCourtfile || !documentId) return;
-        const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
-        const token = auth?.token;
         const resp = await fetch(`${API}/api/courtfile-document`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
+          headers: { Authorization: `Bearer ${token}` }
         });
         if (!resp.ok) return;
         const rows = await resp.json();
@@ -90,7 +102,8 @@ export const ViewDocument = () => {
 
     try {
       const response = await fetch(`${API}/api/documents/${documentId}`, {
-        method: "DELETE"
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.ok) {

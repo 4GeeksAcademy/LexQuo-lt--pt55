@@ -6,6 +6,8 @@ export const DeadlinesCourtfiles = () => {
   const { store, dispatch } = useGlobalReducer();
   const API = import.meta.env.VITE_BACKEND_URL;
 
+  const token = store?.auth?.token;
+
   const fetchRelations = async () => {
     try {
       const response = await fetch(`${API}/api/deadlines-courtfiles`);

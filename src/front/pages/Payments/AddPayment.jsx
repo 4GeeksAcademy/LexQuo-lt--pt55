@@ -1,4 +1,4 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -8,8 +8,17 @@ export const AddPayment = () => {
   const location = useLocation();
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
-  const token = auth?.token;
+  const token = store?.auth?.token;
+  const me = store?.me || null;
+  const role = (me?.role || "").toLowerCase();
+
+  // ---------- Guards ----------
+    const allowed =
+        role === "admin_user" ||
+        role === "lawyer";
+
+    if (!allowed) return <Navigate to="/403" replace />;
+
 
   // Vienen desde ViewCourtfileLawyer (si abrís desde el caso)
   const preselectedCourtfileId = location.state?.courtfileId || null;
@@ -57,7 +66,7 @@ export const AddPayment = () => {
         if (preselectedCourtfileId) {
           if (!preselectedCf) {
             const r = await fetch(`${API}/api/courtfiles/${preselectedCourtfileId}`, {
-              headers: token ? { Authorization: `Bearer ${token}` } : {},
+              headers: { Authorization: `Bearer ${token}` },
             });
             if (r.ok) {
               const d = await r.json();
@@ -71,26 +80,20 @@ export const AddPayment = () => {
         // Si NO viene preseleccionado, traemos los expedientes:
         // - si está logueado lawyer, usamos /api/lawyers-courtfiles (filtrados a sus casos)
         // - si no, /api/courtfiles
-        const endpoint = token ? `${API}/api/lawyers-courtfiles` : `${API}/api/courtfiles`;
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const resp = await fetch(endpoint, { headers });
+        const resp = await fetch(`${API}/api/lawyers-courtfiles`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         if (!resp.ok) {
           const e = await resp.json().catch(() => ({}));
           throw new Error(e.error || `HTTP ${resp.status}`);
         }
         const data = await resp.json();
 
-        const mapped = token
-          ? data.map(r => ({
-            id: r.courtfile.id,
-            number: r.courtfile.case_number,
-            title: r.courtfile.title,
-          }))
-          : data.map(cf => ({
-            id: cf.id,
-            number: cf.case_number,
-            title: cf.title,
-          }));
+        const mapped = data.map(r => ({
+          id: r.courtfile.id,
+          number: r.courtfile.case_number,
+          title: r.courtfile.title,
+        }));
 
         setMyCases(mapped);
       } catch (err) {
@@ -131,7 +134,7 @@ export const AddPayment = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           amount: formData.amount,
@@ -154,7 +157,7 @@ export const AddPayment = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           payment_id: newPayment.id,

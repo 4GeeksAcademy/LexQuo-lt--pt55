@@ -41,6 +41,13 @@ export default function PrivateRoute() {
 
         dispatch({ type: "SET_AUTH", payload: { token, role: data.role } });
         dispatch({ type: "SET_ME", payload: data.user });
+
+        // 🔒 check de rol admin_user
+        if (String(data.role || "").toLowerCase() !== "admin_user") {
+          setPhase("forbidden");
+          return;
+        }
+
         setInvalid(false);
       } catch (err) {
                 

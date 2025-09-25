@@ -7,9 +7,13 @@ export const ClientsCourtfiles = () => {
   const { store, dispatch } = useGlobalReducer();
   const API = import.meta.env.VITE_BACKEND_URL;
 
+  const token = store?.auth?.token;
+
   const fetchRelations = async () => {
     try {
-      const response = await fetch(`${API}/api/clients-courtfiles`);
+      const response = await fetch(`${API}/api/clients-courtfiles`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
       if (response.ok) {
         const data = await response.json();
         dispatch({ type: "SET_CLIENT_COURTFILES", payload: data });
@@ -31,7 +35,7 @@ export const ClientsCourtfiles = () => {
     try {
       const response = await fetch(`${API}/api/clients-courtfiles/${id}`, {
         method: "DELETE",
-        headers: { Accept: "application/json", "Content-Type": "application/json" }
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       });
 
       if (response.ok) {

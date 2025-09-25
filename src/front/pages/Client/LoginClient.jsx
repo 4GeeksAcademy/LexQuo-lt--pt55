@@ -52,7 +52,7 @@ export const LoginClient = () => {
         const client = data?.client;
 
         // persistimos solo token
-        sessionStorage.setItem("auth", JSON.stringify({ token }));
+        localeStorage.setItem("auth", JSON.stringify({ token }));
         dispatch({ type: "SET_AUTH", payload: { token } });
 
         // guardamos el usuario en memoria con rol

@@ -9,9 +9,14 @@ export const Appointments = () => {
     const { store, dispatch } = useGlobalReducer()
     const API = import.meta.env.VITE_BACKEND_URL;
 
+    const token = store?.auth?.token;
+
     const fetchAppointments = async () => {
         try {
-            const response = await fetch(`${API}/api/appointments`);
+            const response = await fetch(`${API}/api/appointments`, {
+                headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+            });
+
             if (response.ok) {
                 const data = await response.json();
                 dispatch({ type: 'SET_APPOINTMENTS', payload: data });
@@ -33,10 +38,8 @@ export const Appointments = () => {
         try {
             const response = await fetch(`${API}/api/appointments/${id}`, {
                 method: 'DELETE',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                }
+                headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+
             });
 
             if (response.ok) {

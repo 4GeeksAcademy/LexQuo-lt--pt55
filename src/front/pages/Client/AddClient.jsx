@@ -8,8 +8,7 @@ export const AddClient = () => {
   const location = useLocation();
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
-  const token = auth?.token;
+  const token = store?.auth?.token;
 
   const preselectedCourtfileId = location.state?.courtfileId || null;
   const preselectedCourtfileNumber = location.state?.courtfileNumber || null;
@@ -48,7 +47,7 @@ export const AddClient = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          Authorization: `Bearer ${token}` 
         },
         body: JSON.stringify(payload)
       });
@@ -67,7 +66,7 @@ export const AddClient = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
+            Authorization: `Bearer ${token}`
           },
           body: JSON.stringify({
             client_id: newClient.id,

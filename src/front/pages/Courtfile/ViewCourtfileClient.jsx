@@ -8,17 +8,18 @@ import { markNow } from "../../hooks/chatUnread";
 export const ViewCourtfileClient = () => {
   const { store, dispatch } = useGlobalReducer();
   const { courtfileId } = useParams();
+  const { auth, me } = store;
   const navigate = useNavigate();
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
+  // tomar todo del store (PrivateRoute ya rehidrata)
   const token = auth?.token;
+  const role = String(auth?.role || "").toLowerCase();
   const authed = !!token;
-  const role = (auth?.role || "").toLowerCase();
 
-  if (auth?.role !== 'client') return <Navigate to="/403" replace />;
-
+  // guards
+  if (role !== "client") return <Navigate to="/403" replace />;
 
   // ------------------- COURTFILE -------------------
   const [courtfile, setCourtfile] = useState(null);
@@ -40,7 +41,7 @@ export const ViewCourtfileClient = () => {
     try {
       setLoading(true);
       const response = await fetch(`${API}/api/courtfiles/${courtfileId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
@@ -60,7 +61,7 @@ export const ViewCourtfileClient = () => {
       setAppointmentsErr("");
       const resp = await fetch(
         `${API}/api/appointments-courtfiles`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -87,7 +88,7 @@ export const ViewCourtfileClient = () => {
       const idNum = Number(courtfileId);
       const resp = await fetch(
         `${API}/api/payments-courtfile?courtfile_id=${idNum}&expand=payment`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -119,26 +120,21 @@ export const ViewCourtfileClient = () => {
   const caseIds = useMemo(() => [Number(courtfileId)], [courtfileId]);
   const { unreadByCase, totalUnread, refresh: refreshUnread } = useUnreadBadges({
     API,
-    auth,
+    token,
+    userId: me?.id,
     role,
     courtfileIds: caseIds,
   });
 
   // ---- marcar leído en backend (igual que en los dashboards) ----
-  async function markReadBackend(API, auth, role, cfid) {
-    const userId =
-      auth?.user?.id ??
-      auth?.lawyer?.id ??
-      auth?.client?.id ??
-      auth?.id ?? null;
-    if (!API || !auth?.token || !userId || !cfid) return;
-
+  async function markReadBackend(API, token, role, userId, cfid) {
+    if (!API || !token || !userId || !cfid) return;
     try {
       await fetch(`${API}/api/messages/read`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${auth.token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           courtfile_id: cfid,
@@ -146,27 +142,23 @@ export const ViewCourtfileClient = () => {
           user_id: userId,
         }),
       });
-    } catch (_) { }
+    } catch { }
   }
 
   const onOpenChatClick = async (e) => {
     e.preventDefault();
     const cfid = Number(courtfileId);
-    if (auth?.user?.id && cfid) {
-      // feedback inmediato
-      markNow(auth.user.id, cfid);
-      // persistir en backend
-      await markReadBackend(API, auth, role, cfid);
-      // refrescar badges
+    if (me?.id && cfid) {
+      markNow(me.id, cfid);
+      await markReadBackend(API, token, role, me.id, cfid);
       refreshUnread();
-      // navegar con el state que ya pasabas
       navigate(`/chats/${cfid}`, {
         state: {
           courtfileId: cfid,
-          courtfileNumber: courtfile.case_number,
-          courtfileTitle: courtfile.title,
+          courtfileNumber: courtfile?.case_number,
+          courtfileTitle: courtfile?.title,
           senderRole: "client",
-          returnTo: `/courtfiles/ViewCourtfileClient/${cfid}`,
+          returnTo: `/courtfiles/ViewCourtfileLawyer/${cfid}`,
         },
       });
     }
@@ -346,6 +338,21 @@ export const ViewCourtfileClient = () => {
                         <td>{ap.appointment_date}</td>
                         <td>{ap.starts_at} - {ap.ends_at}</td>
                         <td>{ap.appointment_location || 'Not specified'}</td>
+                        <td className="text-end">
+                          <Link
+                            to={`/appointments/view/${ap.appointment_id}`}
+                            state={{
+                              returnTo: `/courtfiles/ViewCourtfileClient/${courtfile.id}`,
+                              courtfileId: courtfile.id,
+                              courtfileNumber: courtfile.case_number,
+                              courtfileTitle: courtfile.title
+                            }}
+                            className="btn btn-sm btn-info me-1"
+                            title="View"
+                          >
+                            <i className="bi bi-eye"></i>
+                          </Link>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
