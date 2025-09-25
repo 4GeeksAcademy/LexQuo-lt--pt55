@@ -48,36 +48,145 @@ def handle_hello():
 
     return jsonify(response_body), 200
 
+# ----------------------HELPERS PARA PROTECCION DE RUTAS-----------------------------
+
+
+def _role():
+    claims = get_jwt() or {}
+    return (claims.get("role") or "").lower()
+
+
+def _is_admin():
+    return _role() == "admin_user"
+
+
+def _current_user_id():
+    # identity fue guardado como str(user.id)
+    ident = get_jwt_identity()
+    try:
+        return int(ident)
+    except (TypeError, ValueError):
+        return ident  # por las dudas
+
+
+def _is_linked_to_courtfile_id(courtfile_id: int) -> bool:
+    """
+    Lawyer/Client sólo si están vinculados al courtfile (tablas puente).
+    Admin siempre True (lo tratamos afuera).
+    """
+    r = _role()
+    uid = _current_user_id()
+    if r == "lawyer":
+        return db.session.query(LawyerCourtfile).filter_by(
+            courtfile_id=courtfile_id, lawyer_id=uid
+        ).first() is not None
+    if r == "client":
+        return db.session.query(ClientCourtfile).filter_by(
+            courtfile_id=courtfile_id, client_id=uid
+        ).first() is not None
+    return False
+
+
+def _shares_courtfile_with(lawyer_id=None, client_id=None) -> bool:
+    """
+    Devuelve True si el current_user comparte al menos un courtfile
+    con el lawyer_id o client_id pasado.
+    """
+    uid = _current_user_id()
+    r = _role()
+
+    # client viendo lawyer
+    if r == "client" and lawyer_id:
+        return db.session.query(ClientCourtfile).join(
+            LawyerCourtfile,
+            ClientCourtfile.courtfile_id == LawyerCourtfile.courtfile_id
+        ).filter(
+            ClientCourtfile.client_id == uid,
+            LawyerCourtfile.lawyer_id == lawyer_id
+        ).first() is not None
+
+    # lawyer viendo client
+    if r == "lawyer" and client_id:
+        return db.session.query(LawyerCourtfile).join(
+            ClientCourtfile,
+            LawyerCourtfile.courtfile_id == ClientCourtfile.courtfile_id
+        ).filter(
+            LawyerCourtfile.lawyer_id == uid,
+            ClientCourtfile.client_id == client_id
+        ).first() is not None
+
+    return False
+
+
+def _is_linked_to_resource(resource_id: int, pivot_model, pivot_field: str) -> bool:
+    """
+    Verifica si el usuario actual (lawyer/client) está vinculado a un recurso 
+    (appointment, deadline, document, payment, etc.) a través de un courtfile.
+
+    - resource_id: id del recurso (appointment_id, deadline_id…)
+    - pivot_model: modelo SQLAlchemy de la tabla puente (AppointmentCourtfile, DeadlineCourtfile…)
+    - pivot_field: nombre del campo en pivot_model que apunta al recurso (e.g. "appointment_id")
+    """
+    r = _role()
+    uid = _current_user_id()
+
+    q = db.session.query(pivot_model).filter(
+        getattr(pivot_model, pivot_field) == resource_id
+    )
+
+    if r == "lawyer":
+        q = q.join(LawyerCourtfile, pivot_model.courtfile_id ==
+                   LawyerCourtfile.courtfile_id)
+        q = q.filter(LawyerCourtfile.lawyer_id == uid)
+        return q.first() is not None
+
+    if r == "client":
+        q = q.join(ClientCourtfile, pivot_model.courtfile_id ==
+                   ClientCourtfile.courtfile_id)
+        q = q.filter(ClientCourtfile.client_id == uid)
+        return q.first() is not None
+
+    return False
+
 # -----------------ROUTES PARA COURTFILES--------------------------------------------
 
 
 @api.route('/courtfiles', methods=['GET'])
+@jwt_required()
 def get_courtfiles():
     try:
+        if not _is_admin():
+            return jsonify({'error': 'forbidden'}), 403
         courtfiles = Courtfile.query.all()
-        return jsonify([courtfile.serialize() for courtfile in courtfiles]), 200
+        return jsonify([c.serialize() for c in courtfiles]), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
 @api.route('/courtfiles/<int:courtfile_id>', methods=['GET'])
+@jwt_required()
 def get_courtfile(courtfile_id):
     try:
         courtfile = Courtfile.query.get_or_404(courtfile_id)
-        return jsonify(courtfile.serialize()), 200
+        if _is_admin() or _is_linked_to_courtfile_id(courtfile_id):
+            return jsonify(courtfile.serialize()), 200
+        return jsonify({'error': 'forbidden'}), 403
     except Exception as e:
         return jsonify({'error': str(e)}), 404
 
 
 @api.route('/courtfiles', methods=['POST'])
+@jwt_required()
 def create_courtfile():
     try:
-        data = request.get_json()
+        if _role() not in ('admin_user', 'lawyer'):
+            return jsonify({'error': 'forbidden'}), 403
+        data = request.get_json() or {}
 
         required_fields = ['case_number', 'title',
                            'description', 'jurisdiction', 'court', 'status']
         for field in required_fields:
-            if field not in data:
+            if field not in data or data[field] in (None, ""):
                 return jsonify({'error': f'Required field: {field}'}), 400
 
         existing = Courtfile.query.filter_by(
@@ -105,10 +214,13 @@ def create_courtfile():
 
 
 @api.route('/courtfiles/<int:courtfile_id>', methods=['PUT'])
+@jwt_required()
 def update_courtfile(courtfile_id):
     try:
         courtfile = Courtfile.query.get_or_404(courtfile_id)
-        data = request.get_json()
+        if not (_is_admin() or _is_linked_to_courtfile_id(courtfile_id)):
+            return jsonify({'error': 'forbidden'}), 403
+        data = request.get_json() or {}
 
         if 'case_number' in data:
             if data['case_number'] != courtfile.case_number:
@@ -143,13 +255,14 @@ def update_courtfile(courtfile_id):
 
 
 @api.route('/courtfiles/<int:courtfile_id>', methods=['DELETE'])
+@jwt_required()
 def delete_courtfile(courtfile_id):
     try:
+        if not _is_admin():
+            return jsonify({'error': 'forbidden'}), 403
         courtfile = Courtfile.query.get_or_404(courtfile_id)
-
         db.session.delete(courtfile)
         db.session.commit()
-
         return jsonify({'message': 'Courtfile succesfully deleted'}), 200
 
     except Exception as e:
@@ -160,8 +273,11 @@ def delete_courtfile(courtfile_id):
 
 
 @api.route('/lawyers', methods=['GET'])
+@jwt_required()
 def get_lawyers():
     try:
+        if not _is_admin():
+            return jsonify({'error': 'forbidden'}), 403
         lawyers = Lawyer.query.all()
         return jsonify([lawyer.serialize() for lawyer in lawyers]), 200
     except Exception as e:
@@ -169,10 +285,18 @@ def get_lawyers():
 
 
 @api.route('/lawyers/<int:lawyer_id>', methods=['GET'])
+@jwt_required()
 def get_lawyer(lawyer_id):
     try:
         lawyer = Lawyer.query.get_or_404(lawyer_id)
-        return jsonify(lawyer.serialize()), 200
+        # Admin puede ver cualquiera
+        if _is_admin():
+            return jsonify(lawyer.serialize()), 200
+        if _role() == "lawyer" and _current_user_id() == lawyer.id:
+            return jsonify(lawyer.serialize()), 200
+        if _shares_courtfile_with(lawyer_id=lawyer_id):
+            return jsonify(lawyer.serialize()), 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 404
 
@@ -195,6 +319,7 @@ def lookup_lawyer_by_email():
 
 
 @api.route('/lawyers', methods=['POST'])
+@jwt_required()
 def create_lawyer():
     try:
         data = request.get_json()
@@ -231,11 +356,15 @@ def create_lawyer():
 
 
 @api.route('/lawyers/<int:lawyer_id>', methods=['PUT'])
+@jwt_required()
 def update_lawyer(lawyer_id):
     try:
         lawyer = Lawyer.query.get_or_404(lawyer_id)
 
-        data = request.form
+        if not (_is_admin() or (_role() == "lawyer" and _current_user_id() == lawyer.id)):
+            return jsonify({'error': 'forbidden'}), 403
+
+        data = request.form or {}
         file = request.files.get('file')
 
         if file:
@@ -269,7 +398,7 @@ def update_lawyer(lawyer_id):
             lawyer.is_active = data['is_active'].lower() in ['true', '1']
 
         if 'password' in data and data['password']:
-            lawyer.password = generate_password_hash(data['password'])
+            return jsonify({'error': 'Use /clients/<id>/password to change password'}), 400
 
         db.session.commit()
 
@@ -281,13 +410,14 @@ def update_lawyer(lawyer_id):
 
 
 @api.route('/lawyers/<int:lawyer_id>', methods=['DELETE'])
+@jwt_required()
 def delete_lawyer(lawyer_id):
     try:
+        if not _is_admin():
+            return jsonify({'error': 'forbidden'}), 403
         lawyer = Lawyer.query.get_or_404(lawyer_id)
-
         db.session.delete(lawyer)
         db.session.commit()
-
         return jsonify({'message': 'Lawyer succesfully deleted'}), 200
 
     except Exception as e:
@@ -332,7 +462,11 @@ def lawyer_login():
 
 
 @api.route('/lawyers/<int:lawyer_id>/password', methods=['PUT'])
+@jwt_required()
 def change_lawyer_password(lawyer_id):
+    if not (_is_admin() or (_role() == "lawyer" and _current_user_id() == lawyer_id)):
+        return jsonify({'error': 'forbidden'}), 403
+
     data = request.get_json() or {}
     current = (data.get('current') or '').strip()
     new = (data.get('new') or '').strip()
@@ -342,9 +476,9 @@ def change_lawyer_password(lawyer_id):
 
     lawyer = Lawyer.query.get_or_404(lawyer_id)
 
-    # Si tenés hash guardado:
-    if lawyer.password and not check_password_hash(lawyer.password, current):
-        return jsonify({'error': 'Current password is incorrect'}), 400
+    if not _is_admin():
+        if lawyer.password and not check_password_hash(lawyer.password, current):
+            return jsonify({'error': 'Current password is incorrect'}), 400
 
     lawyer.password = generate_password_hash(new)
     db.session.commit()
@@ -353,8 +487,11 @@ def change_lawyer_password(lawyer_id):
 
 # -----------------ROUTES PARA CLIENTS--------------------------------------------
 @api.route('/clients', methods=['GET'])
+@jwt_required
 def get_clients():
     try:
+        if not _is_admin():
+            return jsonify({'error': 'forbidden'}), 403
         clients = Client.query.all()
         return jsonify([client.serialize() for client in clients]), 200
     except Exception as e:
@@ -362,10 +499,16 @@ def get_clients():
 
 
 @api.route('/clients/<int:client_id>', methods=['GET'])
+@jwt_required()
 def get_client(client_id):
     try:
         client = Client.query.get_or_404(client_id)
-        return jsonify(client.serialize()), 200
+        if _is_admin():
+            return jsonify(client.serialize()), 200
+        if _role() == "client" and _current_user_id() == client.id:
+            return jsonify(client.serialize()), 200
+        if _shares_courtfile_with(client_id=client_id):
+            return jsonify(client.serialize()), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 404
 
@@ -421,12 +564,16 @@ def create_client():
 
 
 @api.route('/clients/<int:client_id>', methods=['PUT'])
+@jwt_required()
 def update_client(client_id):
     try:
 
         client = Client.query.get_or_404(client_id)
+        # 🔧 CHANGED: admin o client (self) pueden editar; lawyer NO
+        if not (_is_admin() or (_role() == "client" and _current_user_id() == client.id)):
+            return jsonify({'error': 'forbidden'}), 403
 
-        data = request.form
+        data = request.form or {}
         file = request.files.get('file')
 
         if file:
@@ -459,8 +606,8 @@ def update_client(client_id):
         if 'is_active' in data:
             client.is_active = bool(data['is_active'])
 
-        if 'password' in data:
-            client.password = generate_password_hash(data['password'])
+        if 'password' in data and data['password']:
+            return jsonify({'error': 'Use /clients/<id>/password to change password'}), 400
 
         db.session.commit()
 
@@ -472,13 +619,14 @@ def update_client(client_id):
 
 
 @api.route('/clients/<int:client_id>', methods=['DELETE'])
+@jwt_required()
 def delete_client(client_id):
     try:
+        if not _is_admin():
+            return jsonify({'error': 'forbidden'}), 403
         client = Client.query.get_or_404(client_id)
-
         db.session.delete(client)
         db.session.commit()
-
         return jsonify({'message': 'Client successfully deleted'}), 200
 
     except Exception as e:
@@ -523,7 +671,11 @@ def client_login():
 
 
 @api.route('/clients/<int:client_id>/password', methods=['PUT'])
+@jwt_required()
 def change_client_password(client_id):
+    if not (_is_admin() or (_role() == "client" and _current_user_id() == client_id)):
+        return jsonify({'error': 'forbidden'}), 403
+
     data = request.get_json() or {}
     current = (data.get('current') or '').strip()
     new = (data.get('new') or '').strip()
@@ -533,14 +685,16 @@ def change_client_password(client_id):
 
     client = Client.query.get_or_404(client_id)
 
-    if client.password and not check_password_hash(client.password, current):
-        return jsonify({'error': 'Current password is incorrect'}), 400
+    if not _is_admin():
+        if client.password and not check_password_hash(client.password, current):
+            return jsonify({'error': 'Current password is incorrect'}), 400
 
     client.password = generate_password_hash(new)
     db.session.commit()
     return jsonify({'ok': True}), 200
 
 # -----------------ROUTES PARA COURTFILES, APPOINTMENTS Y DOCUMENTS DEL CLIENT--------------------------------------------
+# -------------------NO SE ESTAN USANDO...-------------------------------------------------------------------------------
 
 
 @api.route('/clients/<int:client_id>/get-courtfiles', methods=['GET'])
@@ -617,8 +771,11 @@ def get_client_appointments(client_id):
 
 
 @api.route('/admins', methods=['GET'])
+@jwt_required()
 def get_admins():
     try:
+        if not _is_admin():
+            return jsonify({'error': 'forbidden'}), 403
         admins = AdminUser.query.all()
         return jsonify([admin.serialize() for admin in admins]), 200
     except Exception as e:
@@ -626,9 +783,12 @@ def get_admins():
 
 
 @api.route('/admins/<int:admin_id>', methods=['GET'])
+@jwt_required()
 def get_admin(admin_id):
     try:
         admin = AdminUser.query.get_or_404(admin_id)
+        if not _is_admin():
+            return jsonify({'error': 'forbidden'}), 403
         return jsonify(admin.serialize()), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 404
@@ -666,18 +826,16 @@ def create_admin():
 
 
 @api.route('/admins/<int:admin_id>', methods=['PUT'])
+@jwt_required()
 def update_admin(admin_id):
     try:
         admin = AdminUser.query.get_or_404(admin_id)
-        data = request.get_json()
+        if not _is_admin():
+            return jsonify({'error': 'forbidden'}), 403
+        data = request.get_json() or {}
 
-        if 'email' in data:
-            if data['email'] != admin.email:
-                existing = AdminUser.query.filter_by(
-                    email=data['email']).first()
-                if existing:
-                    return jsonify({'error': 'Email already exists'}), 409
-            admin.email = data['email']
+        if 'email' in data and data['email'] != admin.email:
+            return jsonify({'error': 'Email cannot be changed'}), 400
 
         if 'firstname' in data:
             admin.firstname = data['firstname']
@@ -688,8 +846,8 @@ def update_admin(admin_id):
         if 'is_active' in data:
             admin.is_active = bool(data['is_active'])
 
-        if 'password' in data:
-            admin.password = generate_password_hash(data['password'])
+        if 'password' in data and data['password']:
+            return jsonify({'error': 'Use /admins/<id>/password to change password'}), 400
 
         db.session.commit()
 
@@ -701,13 +859,14 @@ def update_admin(admin_id):
 
 
 @api.route('/admins/<int:admin_id>', methods=['DELETE'])
+@jwt_required()
 def delete_admin(admin_id):
     try:
+        if not _is_admin():
+            return jsonify({'error': 'forbidden'}), 403
         admin = AdminUser.query.get_or_404(admin_id)
-
         db.session.delete(admin)
         db.session.commit()
-
         return jsonify({'message': 'Admin user successfully deleted'}), 200
 
     except Exception as e:
@@ -755,26 +914,64 @@ def admin_login():
 # -----------------ROUTES PARA APPOINTMENTS--------------------------------------------
 
 @api.route('/appointments', methods=['GET'])
+@jwt_required()
 def get_appointments():
-    appointments = Appointment.query.order_by(
-        Appointment.date, Appointment.starts_at).all()
-    return jsonify([appt.serialize() for appt in appointments])
+    if _is_admin():
+        appointments = Appointment.query.order_by(
+            Appointment.date, Appointment.starts_at
+        ).all()
+        return jsonify([appt.serialize() for appt in appointments]), 200
+
+    uid = _current_user_id()
+    r = _role()
+
+    if r == "lawyer":
+        appointments = db.session.query(Appointment).join(
+            AppointmentCourtfile
+        ).join(LawyerCourtfile).filter(
+            LawyerCourtfile.lawyer_id == uid
+        ).all()
+        return jsonify([appt.serialize() for appt in appointments]), 200
+
+    if r == "client":
+        appointments = db.session.query(Appointment).join(
+            AppointmentCourtfile
+        ).join(ClientCourtfile).filter(
+            ClientCourtfile.client_id == uid
+        ).all()
+        return jsonify([appt.serialize() for appt in appointments]), 200
+
+    return jsonify({'error': 'forbidden'}), 403
 
 
 @api.route('/appointments/<int:appointment_id>', methods=['GET'])
+@jwt_required()
 def get_appointment(appointment_id):
     appointment = Appointment.query.get_or_404(appointment_id)
-    return jsonify(appointment.serialize()), 200
+    if _is_admin():
+        return jsonify(appointment.serialize()), 200
+    if _is_linked_to_resource(appointment_id, AppointmentCourtfile, "appointment_id"):
+        return jsonify(appointment.serialize()), 200
+    return jsonify({'error': 'forbidden'}), 403
 
 
 @api.route('/appointments', methods=['POST'])
+@jwt_required()
 def create_appointment():
     try:
+        if not (_is_admin() or _role() == "lawyer"):
+            return jsonify({'error': 'forbidden'}), 403
+
         data = request.get_json()
+
+        # 🔒 Lawyer debe estar vinculado al courtfile donde lo crea
+        if _role() == "lawyer":
+            cf_id = data.get("courtfile_id")
+            if not cf_id or not _is_linked_to_courtfile_id(cf_id):
+                return jsonify({'error': 'forbidden'}), 403
 
         required_fields = ['title', 'date', 'starts_at', 'location', 'ends_at']
         missing_fields = validate_required_fields(data, required_fields)
-
         if missing_fields:
             return create_error_response(
                 f'Required fields are missing: {", ".join(missing_fields)}'
@@ -782,46 +979,26 @@ def create_appointment():
 
         appointment_date = parse_iso_date(data['date'])
         if not appointment_date:
-            return create_error_response(
-                'Invalid date format. Use YYYY-MM-DD (e.g., 2024-01-15)'
-            )
+            return create_error_response('Invalid date format. Use YYYY-MM-DD')
 
         if not is_valid_24h_time(data['starts_at']):
-            return create_error_response(
-                'Invalid start time format. Use HH:MM in 24h format (e.g., 09:30 or 14:45)'
-            )
+            return create_error_response('Invalid start time format')
 
         if not is_valid_24h_time(data['ends_at']):
-            return create_error_response(
-                'Invalid end time format. Use HH:MM in 24h format (e.g., 09:30 or 14:45)'
-            )
+            return create_error_response('Invalid end time format')
 
         start_time = parse_24h_time(data['starts_at'])
         end_time = parse_24h_time(data['ends_at'])
 
         if not validate_time_order(start_time, end_time):
-            return create_error_response(
-                'Start time must be before end time'
-            )
+            return create_error_response('Start time must be before end time')
 
         latitud = None
         longitud = None
-
         if 'latitud' in data:
-            try:
-                latitud = float(data['latitud'])
-                if not (-90 <= latitud <= 90):
-                    return create_error_response('Latitude must be between -90 and 90')
-            except (ValueError, TypeError):
-                return create_error_response('Latitude must be a valid number')
-
+            latitud = float(data['latitud'])
         if 'longitud' in data:
-            try:
-                longitud = float(data['longitud'])
-                if not (-180 <= longitud <= 180):
-                    return create_error_response('Longitude must be between -180 and 180')
-            except (ValueError, TypeError):
-                return create_error_response('Longitude must be a valid number')
+            longitud = float(data['longitud'])
 
         details = data.get('details', '').strip()
 
@@ -839,6 +1016,15 @@ def create_appointment():
         db.session.add(new_appointment)
         db.session.commit()
 
+        # 🔗 Vincular appointment a courtfile
+        if _role() == "lawyer":
+            link = AppointmentCourtfile(
+                appointment_id=new_appointment.id,
+                courtfile_id=cf_id
+            )
+            db.session.add(link)
+            db.session.commit()
+
         return jsonify(new_appointment.serialize()), 201
 
     except Exception as e:
@@ -847,9 +1033,19 @@ def create_appointment():
 
 
 @api.route('/appointments/<int:id>', methods=['PUT'])
+@jwt_required()
 def update_appointment(id):
     try:
         appointment = Appointment.query.get_or_404(id)
+
+        if _is_admin():
+            pass
+        elif _role() == "lawyer":
+            if not _is_linked_to_resource(id, AppointmentCourtfile, "appointment_id"):
+                return jsonify({'error': 'forbidden'}), 403
+        else:
+            return jsonify({'error': 'forbidden'}), 403
+
         data = request.get_json()
 
         if 'title' in data:
@@ -878,29 +1074,16 @@ def update_appointment(id):
             appointment.details = data['details'].strip()
 
         if 'latitud' in data:
-            try:
-                latitud = float(data['latitud'])
-                if not (-90 <= latitud <= 90):
-                    return create_error_response('Latitude must be between -90 and 90')
-                appointment.latitud = latitud
-            except (ValueError, TypeError):
-                return create_error_response('Latitude must be a valid number')
+            appointment.latitud = float(data['latitud'])
 
         if 'longitud' in data:
-            try:
-                longitud = float(data['longitud'])
-                if not (-180 <= longitud <= 180):
-                    return create_error_response('Longitude must be between -180 and 180')
-                appointment.longitud = longitud
-            except (ValueError, TypeError):
-                return create_error_response('Longitude must be a valid number')
+            appointment.longitud = float(data['longitud'])
 
         if not validate_time_order(appointment.starts_at, appointment.ends_at):
             return create_error_response('Start time must be before end time')
 
         db.session.commit()
-
-        return jsonify(appointment.serialize())
+        return jsonify(appointment.serialize()), 200
 
     except Exception as e:
         db.session.rollback()
@@ -908,42 +1091,82 @@ def update_appointment(id):
 
 
 @api.route('/appointments/<int:id>', methods=['DELETE'])
+@jwt_required()
 def delete_appointment(id):
     appointment = Appointment.query.get_or_404(id)
-    db.session.delete(appointment)
-    db.session.commit()
-    return jsonify({'message': 'Appointment eliminado exitosamente'})
+
+    if _is_admin():
+        db.session.delete(appointment)
+        db.session.commit()
+        return jsonify({'message': 'Appointment eliminado exitosamente'}), 200
+
+    if _role() == "lawyer":
+        # Lawyer solo puede borrar el vínculo, no el appointment global
+        link = AppointmentCourtfile.query.filter_by(
+            appointment_id=id
+        ).join(
+            LawyerCourtfile, AppointmentCourtfile.courtfile_id == LawyerCourtfile.courtfile_id
+        ).filter(
+            LawyerCourtfile.lawyer_id == _current_user_id()
+        ).first()
+        if link:
+            db.session.delete(link)
+            db.session.commit()
+            return jsonify({'message': 'Vínculo con courtfile eliminado'}), 200
+
+    return jsonify({'error': 'forbidden'}), 403
+
+
 # -----------------ROUTES PARA DEADLINES--------------------------------------------
 
-
 @api.route('/deadlines', methods=['GET'])
+@jwt_required()
 def get_deadlines():
-    try:
+    if _is_admin():
         deadlines = Deadlines.query.all()
         return jsonify([deadline.serialize() for deadline in deadlines]), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+
+    if _role() == "lawyer":
+        deadlines = db.session.query(Deadlines).join(
+            DeadlineCourtfile
+        ).join(LawyerCourtfile).filter(
+            LawyerCourtfile.lawyer_id == _current_user_id()
+        ).all()
+        return jsonify([d.serialize() for d in deadlines]), 200
+
+    # client y otros → no ven deadlines
+    return jsonify({'error': 'forbidden'}), 403
 
 
 @api.route('/deadlines/<int:deadline_id>', methods=['GET'])
+@jwt_required()
 def get_deadline(deadline_id):
-    try:
-        deadline = Deadlines.query.get_or_404(deadline_id)
+    deadline = Deadlines.query.get_or_404(deadline_id)
+    if _is_admin():
         return jsonify(deadline.serialize()), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 404
+    if _role() == "lawyer" and _is_linked_to_resource(deadline_id, DeadlineCourtfile, "deadline_id"):
+        return jsonify(deadline.serialize()), 200
+    return jsonify({'error': 'forbidden'}), 403
 
 
 @api.route('/deadlines', methods=['POST'])
+@jwt_required()
 def create_deadline():
     try:
-        data = request.get_json()
+        if not (_is_admin() or _role() == "lawyer"):
+            return jsonify({'error': 'forbidden'}), 403
 
-        required_fields = ['deadline_type',
-                           'deadline_date', 'deadline_hour', 'priority']
+        data = request.get_json()
+        required_fields = ['deadline_type', 'deadline_date',
+                           'deadline_hour', 'priority', 'courtfile_id']
         for field in required_fields:
             if field not in data:
                 return jsonify({'error': f'Required field: {field}'}), 400
+
+        # Lawyer solo en courtfiles vinculados
+        cf_id = data['courtfile_id']
+        if _role() == "lawyer" and not _is_linked_to_courtfile_id(cf_id):
+            return jsonify({'error': 'forbidden'}), 403
 
         deadline_date = data['deadline_date']
         if isinstance(deadline_date, str):
@@ -957,10 +1180,15 @@ def create_deadline():
             deadline_type=data['deadline_type'],
             deadline_date=deadline_date,
             deadline_hour=deadline_hour,
-            priority=data['priority'],
+            priority=data['priority']
         )
 
         db.session.add(deadline)
+        db.session.commit()
+
+        # Vincular al courtfile
+        link = DeadlineCourtfile(deadline_id=deadline.id, courtfile_id=cf_id)
+        db.session.add(link)
         db.session.commit()
 
         return jsonify(deadline.serialize()), 201
@@ -971,10 +1199,20 @@ def create_deadline():
 
 
 @api.route('/deadlines/<int:deadline_id>', methods=['PUT'])
+@jwt_required()
 def update_deadline(deadline_id):
     try:
         deadline = Deadlines.query.get_or_404(deadline_id)
-        data = request.get_json()
+
+        if _is_admin():
+            pass
+        elif _role() == "lawyer":
+            if not _is_linked_to_resource(deadline_id, DeadlineCourtfile, "deadline_id"):
+                return jsonify({'error': 'forbidden'}), 403
+        else:
+            return jsonify({'error': 'forbidden'}), 403
+
+        data = request.get_json() or {}
 
         if 'deadline_type' in data:
             deadline.deadline_type = data['deadline_type']
@@ -997,7 +1235,6 @@ def update_deadline(deadline_id):
             deadline.priority = data['priority']
 
         db.session.commit()
-
         return jsonify(deadline.serialize()), 200
 
     except Exception as e:
@@ -1006,45 +1243,79 @@ def update_deadline(deadline_id):
 
 
 @api.route('/deadlines/<int:deadline_id>', methods=['DELETE'])
+@jwt_required()
 def delete_deadline(deadline_id):
-    try:
-        deadline = Deadlines.query.get_or_404(deadline_id)
+    deadline = Deadlines.query.get_or_404(deadline_id)
 
+    if _is_admin():
         db.session.delete(deadline)
         db.session.commit()
+        return jsonify({'message': 'Deadline eliminado exitosamente'}), 200
 
-        return jsonify({'message': 'Deadline successfully deleted'}), 200
+    if _role() == "lawyer":
+        # Lawyer solo puede eliminar el vínculo
+        link = DeadlineCourtfile.query.filter_by(deadline_id=deadline_id).join(
+            LawyerCourtfile, DeadlineCourtfile.courtfile_id == LawyerCourtfile.courtfile_id
+        ).filter(
+            LawyerCourtfile.lawyer_id == _current_user_id()
+        ).first()
+        if link:
+            db.session.delete(link)
+            db.session.commit()
+            return jsonify({'message': 'Vínculo con courtfile eliminado'}), 200
 
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+    return jsonify({'error': 'forbidden'}), 403
 
 
 # -----------------ROUTES PARA DOCUMENTS--------------------------------------------
-
 @api.route('/documents', methods=['GET'])
+@jwt_required()
 def get_documents():
     try:
-        documents = Document.query.all()
-        return jsonify([document.serialize() for document in documents]), 200
+        if _is_admin():
+            documents = Document.query.all()
+            return jsonify([document.serialize() for document in documents]), 200
+
+        uid = _current_user_id()
+        r = _role()
+
+        if r == "lawyer":
+            documents = db.session.query(Document).join(
+                CourtfileDocument
+            ).join(LawyerCourtfile).filter(
+                LawyerCourtfile.lawyer_id == uid
+            ).all()
+            return jsonify([doc.serialize() for doc in documents]), 200
+
+        # Client no accede
+        return jsonify({'error': 'forbidden'}), 403
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
 @api.route('/documents/<int:document_id>', methods=['GET'])
+@jwt_required()
 def get_document(document_id):
     try:
         document = Document.query.get_or_404(document_id)
-        return jsonify(document.serialize()), 200
+        if _is_admin():
+            return jsonify(document.serialize()), 200
+        if _role() == "lawyer" and _is_linked_to_resource(document_id, CourtfileDocument, "document_id"):
+            return jsonify(document.serialize()), 200
+        return jsonify({'error': 'forbidden'}), 403
     except Exception as e:
         return jsonify({'error': str(e)}), 404
 
 
 @api.route('/documents', methods=['POST'])
+@jwt_required()
 def create_document():
     try:
-        original_filename = None
+        if not (_is_admin() or _role() == "lawyer"):
+            return jsonify({'error': 'forbidden'}), 403
 
+        # 🔽 código original intacto
+        original_filename = None
         file = request.files.get('file')
         if file and file.filename.strip() == '':
             file = None
@@ -1080,7 +1351,7 @@ def create_document():
                 'pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'
             ] else "auto"
 
-            upload_result = cloudinary.uploader.upload(   # <— antes fallaba porque file=None
+            upload_result = cloudinary.uploader.upload(
                 file,
                 folder="documents/",
                 resource_type=resource_type,
@@ -1128,10 +1399,15 @@ def create_document():
 
 
 @api.route('/documents/<int:document_id>', methods=['PUT'])
+@jwt_required()
 def update_document(document_id):
     try:
         document = Document.query.get_or_404(document_id)
 
+        if not (_is_admin() or (_role() == "lawyer" and _is_linked_to_resource(document_id, CourtfileDocument, "document_id"))):
+            return jsonify({'error': 'forbidden'}), 403
+
+        # 🔽 código original intacto
         uploaded_original_filename = None
 
         if 'file' in request.files:
@@ -1214,24 +1490,36 @@ def update_document(document_id):
 
 
 @api.route('/documents/<int:document_id>', methods=['DELETE'])
+@jwt_required()
 def delete_document(document_id):
     try:
         document = Document.query.get_or_404(document_id)
 
-        db.session.delete(document)
-        db.session.commit()
+        if _is_admin():
+            db.session.delete(document)
+            db.session.commit()
+            return jsonify({'message': 'Document succesfully deleted'}), 200
 
-        return jsonify({'message': 'Document succesfully deleted'}), 200
+        if _role() == "lawyer" and _is_linked_to_resource(document_id, CourtfileDocument, "document_id"):
+            # Lawyer solo corta vínculo, no borra el doc global
+            link = CourtfileDocument.query.filter_by(
+                document_id=document_id).first()
+            if link:
+                db.session.delete(link)
+                db.session.commit()
+                return jsonify({'message': 'Vínculo con courtfile eliminado'}), 200
+
+        return jsonify({'error': 'forbidden'}), 403
 
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
 # -----------------ROUTES PARA CLIENTS-COURTFILES--------------------------------------------
 
-
 @api.route('/clients-courtfiles', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_client_courtfiles():
     try:
         requested_lawyer_id = request.args.get('lawyer_id', type=int)
@@ -1244,9 +1532,18 @@ def get_client_courtfiles():
             joinedload(ClientCourtfile.courtfile)
         )
 
-        # 🔒 Si es CLIENTE logueado, sólo sus vínculos
+        # 🔒 Client → sólo sus vínculos
         if role == "client":
             q = q.filter(ClientCourtfile.client_id == int(current_id))
+
+        # Lawyer → solo expedientes donde esté vinculado
+        if role == "lawyer":
+            subq = select(LawyerCourtfile.courtfile_id).where(
+                LawyerCourtfile.lawyer_id == current_id
+            )
+            q = q.filter(ClientCourtfile.courtfile_id.in_(subq))
+
+        # Admin → no filtramos nada
 
         if requested_lawyer_id is not None:
             subq = select(LawyerCourtfile.courtfile_id).where(
@@ -1275,9 +1572,13 @@ def get_client_courtfiles():
 
 
 @api.route('/clients-courtfiles', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_client_courtfile():
     try:
+        role, current_id = _get_role_and_identity()
+        if not (_is_admin() or role == "lawyer"):
+            return jsonify({'error': 'forbidden'}), 403
+
         data = request.get_json() or {}
         client_id = data.get('client_id')
         courtfile_id = data.get('courtfile_id')
@@ -1289,11 +1590,10 @@ def create_client_courtfile():
         if not client or not courtfile:
             return jsonify({'error': 'Client or Courtfile not found'}), 404
 
-        # Permiso: si es lawyer, debe estar vinculado al expediente
-        role, current_id = _get_role_and_identity()
+        # Lawyer → solo si está vinculado al expediente
         if role == "lawyer":
             linked = LawyerCourtfile.query.filter_by(
-                lawyer_id=int(current_id), courtfile_id=int(courtfile_id)
+                lawyer_id=current_id, courtfile_id=courtfile_id
             ).first()
             if not linked:
                 return jsonify({'error': 'Forbidden for this courtfile'}), 403
@@ -1305,7 +1605,8 @@ def create_client_courtfile():
             return jsonify({'error': 'Relationship already exists'}), 400
 
         new_relation = ClientCourtfile(
-            client_id=client_id, courtfile_id=courtfile_id)
+            client_id=client_id, courtfile_id=courtfile_id
+        )
         db.session.add(new_relation)
         db.session.commit()
 
@@ -1317,7 +1618,7 @@ def create_client_courtfile():
 
 
 @api.route('/clients-courtfiles/<int:id>', methods=['DELETE'])
-@jwt_required(optional=True)
+@jwt_required()
 def delete_client_courtfile(id):
     try:
         relation = ClientCourtfile.query.get(id)
@@ -1325,9 +1626,12 @@ def delete_client_courtfile(id):
             return jsonify({'error': 'Relationship not found'}), 404
 
         role, current_id = _get_role_and_identity()
+        if not (_is_admin() or role == "lawyer"):
+            return jsonify({'error': 'forbidden'}), 403
+
         if role == "lawyer":
             linked = LawyerCourtfile.query.filter_by(
-                lawyer_id=int(current_id), courtfile_id=int(relation.courtfile_id)
+                lawyer_id=current_id, courtfile_id=relation.courtfile_id
             ).first()
             if not linked:
                 return jsonify({'error': 'Forbidden'}), 403
@@ -1340,8 +1644,8 @@ def delete_client_courtfile(id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-# -----------------ROUTES PARA LAWYERS-COURTFILES--------------------------------------------
 
+# -----------------ROUTES PARA LAWYERS-COURTFILES--------------------------------------------
 
 def _get_role_and_identity():
     try:
@@ -1352,7 +1656,7 @@ def _get_role_and_identity():
 
 
 @api.route('/lawyers-courtfiles', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_lawyers_courtfiles():
     try:
         requested_lawyer_id = request.args.get('lawyer_id', type=int)
@@ -1361,9 +1665,12 @@ def get_lawyers_courtfiles():
         role, current_id = _get_role_and_identity()
         query = LawyerCourtfile.query
 
-        if role == "lawyer":
+        if role == "admin_user":
+            # admin ve todo
+            pass
+        elif role == "lawyer":
             if requested_courtfile_id:
-                # Solo si el lawyer actual está vinculado a ese caso puede ver sus miembros
+                # solo si el lawyer actual está vinculado a ese caso
                 is_linked = LawyerCourtfile.query.filter_by(
                     lawyer_id=int(current_id), courtfile_id=requested_courtfile_id
                 ).first()
@@ -1371,8 +1678,10 @@ def get_lawyers_courtfiles():
                     return jsonify({'error': 'You are not linked to this courtfile'}), 403
                 query = query.filter_by(courtfile_id=requested_courtfile_id)
             else:
-                # Sin courtfile_id: limitar a ver sus propios vínculos
+                # sin courtfile_id: limitar a ver sus propios vínculos
                 requested_lawyer_id = int(current_id)
+        else:
+            return jsonify({'error': 'forbidden'}), 403
 
         if requested_lawyer_id is not None:
             query = query.filter_by(lawyer_id=requested_lawyer_id)
@@ -1395,31 +1704,30 @@ def get_lawyers_courtfiles():
 
 
 @api.route('/lawyers-courtfiles', methods=['POST'])
-# !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
-@jwt_required(optional=True)
+@jwt_required()
 def create_lawyer_courtfile():
     try:
         data = request.get_json() or {}
         lawyer_id = data.get('lawyer_id')
         courtfile_id = data.get('courtfile_id')
 
+        if not lawyer_id or not courtfile_id:
+            return jsonify({'error': 'lawyer_id and courtfile_id required'}), 400
+
         role, current_id = _get_role_and_identity()
 
-        if role == "lawyer":
-            if not lawyer_id:
-                # sin target explícito, se asume self
-                lawyer_id = int(current_id)
-            elif int(lawyer_id) != int(current_id):
-                # invitante debe estar vinculado a ese expediente
+        if role == "admin_user":
+            pass  # admin puede todo
+        elif role == "lawyer":
+            if int(lawyer_id) != int(current_id):
+                # invitante debe estar vinculado al expediente
                 inviter_rel = LawyerCourtfile.query.filter_by(
                     lawyer_id=int(current_id), courtfile_id=int(courtfile_id)
                 ).first()
                 if not inviter_rel:
                     return jsonify({'error': 'You are not linked to this courtfile'}), 403
-        # ------------------------------------------------------------------------------
-
-        if not lawyer_id or not courtfile_id:
-            return jsonify({'error': 'lawyer_id and courtfile_id required'}), 400
+        else:
+            return jsonify({'error': 'forbidden'}), 403
 
         lawyer = Lawyer.query.get(lawyer_id)
         courtfile = Courtfile.query.get(courtfile_id)
@@ -1430,11 +1738,11 @@ def create_lawyer_courtfile():
             lawyer_id=lawyer_id, courtfile_id=courtfile_id
         ).first()
         if existing:
-            # <- 200 en vez de 400
             return jsonify({'message': 'Relationship already exists'}), 200
 
         new_relation = LawyerCourtfile(
-            lawyer_id=lawyer_id, courtfile_id=courtfile_id)
+            lawyer_id=lawyer_id, courtfile_id=courtfile_id
+        )
         db.session.add(new_relation)
         db.session.commit()
 
@@ -1446,8 +1754,7 @@ def create_lawyer_courtfile():
 
 
 @api.route('/lawyers-courtfiles/<int:id>', methods=['DELETE'])
-# !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
-@jwt_required(optional=True)
+@jwt_required()
 def delete_lawyer_courtfile(id):
     try:
         relation = LawyerCourtfile.query.get(id)
@@ -1456,9 +1763,14 @@ def delete_lawyer_courtfile(id):
 
         role, current_id = _get_role_and_identity()
 
-        # Si es lawyer autenticado, solo puede borrar relaciones suyas
-        if role == "lawyer" and str(relation.lawyer_id) != str(current_id):
-            return jsonify({'error': 'Forbidden'}), 403
+        if role == "admin_user":
+            pass  # admin puede borrar cualquier relación
+        elif role == "lawyer":
+            # solo puede borrarse a sí mismo
+            if str(relation.lawyer_id) != str(current_id):
+                return jsonify({'error': 'Forbidden'}), 403
+        else:
+            return jsonify({'error': 'forbidden'}), 403
 
         db.session.delete(relation)
         db.session.commit()
@@ -1469,34 +1781,35 @@ def delete_lawyer_courtfile(id):
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-# -----------------ROUTES PARA Deadlines-COURTFILES--------------------------------------------
 
+# -----------------ROUTES PARA DEADLINES-COURTFILES--------------------------------------------
 
 @api.route('/deadlines-courtfiles', methods=['GET'])
-# !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
-@jwt_required(optional=True)
+@jwt_required()
 def get_deadlines_courtfiles():
     try:
         requested_lawyer_id = request.args.get('lawyer_id', type=int)
         requested_courtfile_id = request.args.get('courtfile_id', type=int)
 
         role, current_id = _get_role_and_identity()
-        if role == "lawyer":
-            requested_lawyer_id = int(current_id)
-
         query = DeadlineCourtfile.query
 
-        if requested_lawyer_id is not None:
+        if role == "admin_user":
+            pass  # Admin ve todo
+        elif role == "lawyer":
+            if requested_lawyer_id is None:
+                requested_lawyer_id = int(current_id)
             subq = select(LawyerCourtfile.courtfile_id).where(
                 LawyerCourtfile.lawyer_id == requested_lawyer_id
             )
             query = query.filter(DeadlineCourtfile.courtfile_id.in_(subq))
+        else:
+            return jsonify({'error': 'forbidden'}), 403
 
         if requested_courtfile_id is not None:
             query = query.filter_by(courtfile_id=requested_courtfile_id)
 
         deadlines_courtfiles = query.all()
-
         return jsonify([{
             'id': dc.id,
             'deadline_id': dc.deadline_id,
@@ -1508,13 +1821,13 @@ def get_deadlines_courtfiles():
             'courtfile_number': dc.courtfile.case_number,
             'courtfile_title': dc.courtfile.title
         } for dc in deadlines_courtfiles]), 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
 @api.route('/deadlines-courtfiles', methods=['POST'])
-# !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
-@jwt_required(optional=True)
+@jwt_required()
 def create_deadline_courtfile():
     try:
         data = request.get_json() or {}
@@ -1526,31 +1839,32 @@ def create_deadline_courtfile():
 
         deadline = Deadlines.query.get(deadline_id)
         courtfile = Courtfile.query.get(courtfile_id)
-
         if not deadline or not courtfile:
             return jsonify({'error': 'Deadline or Courtfile not found'}), 404
 
         role, current_id = _get_role_and_identity()
-        if role == "lawyer":
+        if role == "admin_user":
+            pass
+        elif role == "lawyer":
             linked = LawyerCourtfile.query.filter_by(
                 lawyer_id=int(current_id), courtfile_id=int(courtfile_id)
             ).first()
             if not linked:
                 return jsonify({'error': 'Forbidden for this courtfile'}), 403
+        else:
+            return jsonify({'error': 'forbidden'}), 403
 
         existing = DeadlineCourtfile.query.filter_by(
             deadline_id=deadline_id,
             courtfile_id=courtfile_id
         ).first()
-
         if existing:
-            return jsonify({'error': 'Relationship already exists'}), 400
+            return jsonify({'message': 'Relationship already exists'}), 200
 
         new_relation = DeadlineCourtfile(
             deadline_id=deadline_id,
             courtfile_id=courtfile_id
         )
-
         db.session.add(new_relation)
         db.session.commit()
 
@@ -1565,61 +1879,68 @@ def create_deadline_courtfile():
 
 
 @api.route('/deadlines-courtfiles/<int:id>', methods=['DELETE'])
-# !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
-@jwt_required(optional=True)
+@jwt_required()
 def delete_deadline_courtfile(id):
     try:
         relation = DeadlineCourtfile.query.get(id)
         if not relation:
             return jsonify({'error': 'Relationship not found'}), 404
 
-        role, current_id = _get_role_and_identity()  # [NUEVO]
+        role, current_id = _get_role_and_identity()
 
-        # [NUEVO] si es lawyer, solo puede borrar si está vinculado a ese courtfile
-        if role == "lawyer":
+        if role == "admin_user":
+            pass
+        elif role == "lawyer":
             linked = LawyerCourtfile.query.filter_by(
                 lawyer_id=int(current_id), courtfile_id=int(relation.courtfile_id)
             ).first()
             if not linked:
                 return jsonify({'error': 'Forbidden'}), 403
+        else:
+            return jsonify({'error': 'forbidden'}), 403
 
         db.session.delete(relation)
         db.session.commit()
-
         return jsonify({'message': 'Relationship deleted successfully'}), 200
 
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
+
 # -----------------ROUTES PARA APPOINTMENTS-COURTFILES--------------------------------------------
 
-
 @api.route('/appointments-courtfiles', methods=['GET'])
-# !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
-@jwt_required(optional=True)
+@jwt_required()
 def get_appointments_courtfiles():
     try:
         requested_lawyer_id = request.args.get('lawyer_id', type=int)
         requested_courtfile_id = request.args.get('courtfile_id', type=int)
 
         role, current_id = _get_role_and_identity()
-        if role == "lawyer":
-            requested_lawyer_id = int(current_id)
-
         query = AppointmentCourtfile.query
 
-        if requested_lawyer_id is not None:
+        if role == "admin_user":
+            pass  # Admin ve todo
+        elif role == "lawyer":
+            if requested_lawyer_id is None:
+                requested_lawyer_id = int(current_id)
             subq = select(LawyerCourtfile.courtfile_id).where(
                 LawyerCourtfile.lawyer_id == requested_lawyer_id
             )
             query = query.filter(AppointmentCourtfile.courtfile_id.in_(subq))
+        elif role == "client":
+            subq = select(ClientCourtfile.courtfile_id).where(
+                ClientCourtfile.client_id == int(current_id)
+            )
+            query = query.filter(AppointmentCourtfile.courtfile_id.in_(subq))
+        else:
+            return jsonify({'error': 'forbidden'}), 403
 
         if requested_courtfile_id is not None:
             query = query.filter_by(courtfile_id=requested_courtfile_id)
 
         appointments_courtfiles = query.all()
-
         return jsonify([{
             'id': ac.id,
             'appointment_id': ac.appointment_id,
@@ -1632,13 +1953,13 @@ def get_appointments_courtfiles():
             'courtfile_number': ac.courtfile.case_number,
             'courtfile_title': ac.courtfile.title
         } for ac in appointments_courtfiles]), 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
 @api.route('/appointments-courtfiles', methods=['POST'])
-# !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
-@jwt_required(optional=True)
+@jwt_required()
 def create_appointment_courtfile():
     try:
         data = request.get_json() or {}
@@ -1650,31 +1971,32 @@ def create_appointment_courtfile():
 
         appointment = Appointment.query.get(appointment_id)
         courtfile = Courtfile.query.get(courtfile_id)
-
         if not appointment or not courtfile:
             return jsonify({'error': 'Appointment or Courtfile not found'}), 404
 
         role, current_id = _get_role_and_identity()
-        if role == "lawyer":
+        if role == "admin_user":
+            pass
+        elif role == "lawyer":
             linked = LawyerCourtfile.query.filter_by(
                 lawyer_id=int(current_id), courtfile_id=int(courtfile_id)
             ).first()
             if not linked:
                 return jsonify({'error': 'Forbidden for this courtfile'}), 403
+        else:
+            return jsonify({'error': 'forbidden'}), 403
 
         existing = AppointmentCourtfile.query.filter_by(
             appointment_id=appointment_id,
             courtfile_id=courtfile_id
         ).first()
-
         if existing:
-            return jsonify({'error': 'Relationship already exists'}), 400
+            return jsonify({'message': 'Relationship already exists'}), 200
 
         new_relation = AppointmentCourtfile(
             appointment_id=appointment_id,
             courtfile_id=courtfile_id
         )
-
         db.session.add(new_relation)
         db.session.commit()
 
@@ -1689,8 +2011,7 @@ def create_appointment_courtfile():
 
 
 @api.route('/appointments-courtfiles/<int:id>', methods=['DELETE'])
-# !!!!!!!!!!!!!!! CUANDO TENGAMOS ADMIN CON TOKEN CAMBIAR
-@jwt_required(optional=True)
+@jwt_required()
 def delete_appointment_courtfile(id):
     try:
         relation = AppointmentCourtfile.query.get(id)
@@ -1699,16 +2020,19 @@ def delete_appointment_courtfile(id):
 
         role, current_id = _get_role_and_identity()
 
-        if role == "lawyer":
+        if role == "admin_user":
+            pass
+        elif role == "lawyer":
             linked = LawyerCourtfile.query.filter_by(
                 lawyer_id=int(current_id), courtfile_id=int(relation.courtfile_id)
             ).first()
             if not linked:
                 return jsonify({'error': 'Forbidden'}), 403
+        else:
+            return jsonify({'error': 'forbidden'}), 403
 
         db.session.delete(relation)
         db.session.commit()
-
         return jsonify({'message': 'Relationship deleted successfully'}), 200
 
     except Exception as e:
@@ -1718,9 +2042,8 @@ def delete_appointment_courtfile(id):
 
 # -----------------ROUTES PARA COURTFILE-DOCUMENT--------------------------------------------
 
-
 @api.route('/courtfile-document', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_courtfile_document():
     try:
         requested_courtfile_id = request.args.get('courtfile_id', type=int)
@@ -1728,11 +2051,15 @@ def get_courtfile_document():
         role, current_id = _get_role_and_identity()
         query = CourtfileDocument.query
 
-        if role == "lawyer":
+        if role == "admin_user":
+            pass  # Admin ve todo
+        elif role == "lawyer":
             subq = select(LawyerCourtfile.courtfile_id).where(
                 LawyerCourtfile.lawyer_id == int(current_id)
             )
             query = query.filter(CourtfileDocument.courtfile_id.in_(subq))
+        else:
+            return jsonify({'error': 'forbidden'}), 403  # client u otro rol
 
         if requested_courtfile_id is not None:
             query = query.filter_by(courtfile_id=requested_courtfile_id)
@@ -1755,12 +2082,11 @@ def get_courtfile_document():
 
 
 @api.route('/courtfile-document', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_courtfile_document():
     try:
         data = request.get_json() or {}
 
-        # Validaciones básicas
         courtfile_id = data.get('courtfile_id')
         document_id = data.get('document_id')
         if not courtfile_id or not document_id:
@@ -1768,25 +2094,27 @@ def create_courtfile_document():
 
         courtfile = Courtfile.query.get(courtfile_id)
         document = Document.query.get(document_id)
-
         if not courtfile or not document:
             return jsonify({'error': 'Courtfile or Document not found'}), 404
 
         role, current_id = _get_role_and_identity()
-        if role == "lawyer":
+        if role == "admin_user":
+            pass
+        elif role == "lawyer":
             linked = LawyerCourtfile.query.filter_by(
                 lawyer_id=int(current_id), courtfile_id=int(courtfile_id)
             ).first()
             if not linked:
                 return jsonify({'error': 'Forbidden for this courtfile'}), 403
+        else:
+            return jsonify({'error': 'forbidden'}), 403  # client u otro rol
 
         existing = CourtfileDocument.query.filter_by(
             courtfile_id=courtfile_id,
             document_id=document_id
         ).first()
-
         if existing:
-            return jsonify({'error': 'Relationship already exists'}), 400
+            return jsonify({'message': 'Relationship already exists'}), 200
 
         new_relation = CourtfileDocument(
             courtfile_id=courtfile_id,
@@ -1805,13 +2133,9 @@ def create_courtfile_document():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
 
 @api.route('/courtfile-document/<int:id>', methods=['DELETE'])
-@jwt_required(optional=True)
+@jwt_required()
 def delete_courtfile_document(id):
     try:
         relation = CourtfileDocument.query.get(id)
@@ -1819,12 +2143,16 @@ def delete_courtfile_document(id):
             return jsonify({'error': 'Relationship not found'}), 404
 
         role, current_id = _get_role_and_identity()
-        if role == "lawyer":
+        if role == "admin_user":
+            pass
+        elif role == "lawyer":
             linked = LawyerCourtfile.query.filter_by(
                 lawyer_id=int(current_id), courtfile_id=int(relation.courtfile_id)
             ).first()
             if not linked:
                 return jsonify({'error': 'Forbidden'}), 403
+        else:
+            return jsonify({'error': 'forbidden'}), 403  # client u otro rol
 
         db.session.delete(relation)
         db.session.commit()
@@ -1838,10 +2166,13 @@ def delete_courtfile_document(id):
 
 # -----------------ROUTES PARA PAYMENTS--------------------------------------------
 @api.route('/payments', methods=['POST'])
+@jwt_required()
 def create_payment():
     try:
-        data = request.get_json()
+        if not _is_admin():
+            return jsonify({'error': 'forbidden'}), 403
 
+        data = request.get_json()
         required_fields = ['amount', 'currency', 'means']
         for field in required_fields:
             if field not in data:
@@ -1850,7 +2181,6 @@ def create_payment():
         payment = Payment(
             amount=data['amount'],
             currency=data['currency'],
-            # paid_at=datetime.now(UTC)
             means=data['means']
         )
 
@@ -1865,26 +2195,50 @@ def create_payment():
 
 
 @api.route('/payments', methods=['GET'])
+@jwt_required()
 def get_payments():
     try:
-        payments = Payment.query.all()
+        role = _role()
+        uid = _current_user_id()
+
+        if role == "admin_user":
+            payments = Payment.query.all()
+        elif role == "client":
+            payments = Payment.query.filter_by(client_id=uid).all()
+        else:
+            return jsonify({'error': 'forbidden'}), 403
+
         return jsonify([payment.serialize() for payment in payments]), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
+
 @api.route('/payments/<int:payment_id>', methods=['GET'])
+@jwt_required()
 def get_payment(payment_id):
     try:
+        role = _role()
+        uid = _current_user_id()
         payment = Payment.query.get_or_404(payment_id)
-        return jsonify(payment.serialize()), 200
+
+        if role == "admin_user":
+            return jsonify(payment.serialize()), 200
+        elif role == "client" and payment.client_id == uid:
+            return jsonify(payment.serialize()), 200
+        return jsonify({'error': 'forbidden'}), 403
+
     except Exception as e:
         return jsonify({'error': str(e)}), 404
-
+    
 
 @api.route('/payments/<int:payment_id>', methods=['PUT'])
+@jwt_required()
 def update_payment(payment_id):
     try:
+        if not _is_admin():
+            return jsonify({'error': 'forbidden'}), 403
+
         payment = Payment.query.get_or_404(payment_id)
         data = request.get_json()
 
@@ -1903,7 +2257,6 @@ def update_payment(payment_id):
             payment.means = data['means']
 
         db.session.commit()
-
         return jsonify(payment.serialize()), 200
 
     except Exception as e:
@@ -1912,28 +2265,34 @@ def update_payment(payment_id):
 
 
 @api.route('/payments/<int:payment_id>', methods=['DELETE'])
+@jwt_required()
 def delete_payment(payment_id):
     try:
-        payment = Payment.query.get_or_404(payment_id)
+        if not _is_admin():
+            return jsonify({'error': 'forbidden'}), 403
 
+        payment = Payment.query.get_or_404(payment_id)
         db.session.delete(payment)
         db.session.commit()
+
         return jsonify({'message': 'Payment successfully deleted'}), 200
 
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-# end payments
+
 
 # -----------------ROUTES PARA PAYMENTS COURTFILE--------------------------------------------
 
-
 @api.route('/payments-courtfile', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_payment_courtfile():
     try:
-        data = request.get_json() or {}
+        role, current_id = _get_role_and_identity()
+        if not (_is_admin() or role == "lawyer"):   # 👈 client ya no puede crear
+            return jsonify({'error': 'forbidden'}), 403
 
+        data = request.get_json() or {}
         required_fields = ['payment_id', 'courtfile_id']
         for field in required_fields:
             if field not in data:
@@ -1944,7 +2303,6 @@ def create_payment_courtfile():
         if not payment or not courtfile:
             return jsonify({'error': 'Payment or Courtfile not found'}), 404
 
-        role, current_id = _get_role_and_identity()
         if role == "lawyer":
             linked = LawyerCourtfile.query.filter_by(
                 lawyer_id=int(current_id), courtfile_id=int(data['courtfile_id'])
@@ -1975,22 +2333,29 @@ def create_payment_courtfile():
 
 
 @api.route('/payments-courtfile', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_payments_courtfile():
     try:
         courtfile_id = request.args.get('courtfile_id', type=int)
         expand = request.args.get('expand', default='')
 
-        query = PaymentCourtfile.query
-        if courtfile_id:
-            query = query.filter_by(courtfile_id=courtfile_id)
-
         role, current_id = _get_role_and_identity()
+        query = PaymentCourtfile.query
+
         if role == "lawyer":
             subq = select(LawyerCourtfile.courtfile_id).where(
                 LawyerCourtfile.lawyer_id == int(current_id)
             )
             query = query.filter(PaymentCourtfile.courtfile_id.in_(subq))
+
+        if role == "client":
+            subq = select(ClientCourtfile.courtfile_id).where(
+                ClientCourtfile.client_id == int(current_id)
+            )
+            query = query.filter(PaymentCourtfile.courtfile_id.in_(subq))
+
+        if courtfile_id is not None:
+            query = query.filter_by(courtfile_id=courtfile_id)
 
         pcs = query.all()
         result = []
@@ -2006,7 +2371,7 @@ def get_payments_courtfile():
 
 
 @api.route('/payments-courtfile/<int:id>', methods=['GET'])
-@jwt_required(optional=True)
+@jwt_required()
 def get_payment_courtfile(id):
     try:
         pc = PaymentCourtfile.query.get_or_404(id)
@@ -2019,19 +2384,29 @@ def get_payment_courtfile(id):
             if not linked:
                 return jsonify({'error': 'Forbidden'}), 403
 
+        if role == "client":
+            linked = ClientCourtfile.query.filter_by(
+                client_id=int(current_id), courtfile_id=int(pc.courtfile_id)
+            ).first()
+            if not linked:
+                return jsonify({'error': 'Forbidden'}), 403
+
         return jsonify(pc.serialize()), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 404
 
 
 @api.route('/payments-courtfile/<int:id>', methods=['PUT'])
-@jwt_required(optional=True)
+@jwt_required()
 def update_payment_courtfile(id):
     try:
+        role, current_id = _get_role_and_identity()
+        if not (_is_admin() or role == "lawyer"):   # 👈 client no edita
+            return jsonify({'error': 'forbidden'}), 403
+
         payment_courtfile = PaymentCourtfile.query.get_or_404(id)
         data = request.get_json() or {}
 
-        role, current_id = _get_role_and_identity()
         if role == "lawyer":
             linked_old = LawyerCourtfile.query.filter_by(
                 lawyer_id=int(current_id), courtfile_id=int(payment_courtfile.courtfile_id)
@@ -2066,12 +2441,15 @@ def update_payment_courtfile(id):
 
 
 @api.route('/payments-courtfile/<int:id>', methods=['DELETE'])
-@jwt_required(optional=True)
+@jwt_required()
 def delete_payment_courtfile(id):
     try:
+        role, current_id = _get_role_and_identity()
+        if not (_is_admin() or role == "lawyer"):   # 👈 client no borra
+            return jsonify({'error': 'forbidden'}), 403
+
         payment_courtfile = PaymentCourtfile.query.get_or_404(id)
 
-        role, current_id = _get_role_and_identity()
         if role == "lawyer":
             linked = LawyerCourtfile.query.filter_by(
                 lawyer_id=int(current_id), courtfile_id=int(payment_courtfile.courtfile_id)
@@ -2112,14 +2490,29 @@ def _parse_iso(ts: str):
     except Exception:
         return None
 
-# GET /api/messages?courtfile_id=21&since=2025-09-19T16:30:00
-
-
 @api.route("/messages", methods=["GET"])
+@jwt_required()
 def list_messages():
     courtfile_id = request.args.get("courtfile_id", type=int)
     if not courtfile_id:
         return jsonify({"error": "courtfile_id requerido"}), 400
+
+    role, current_id = _get_role_and_identity()
+
+    # 🔒 Permisos
+    if not _is_admin():
+        if role == "lawyer":
+            linked = LawyerCourtfile.query.filter_by(
+                lawyer_id=int(current_id), courtfile_id=courtfile_id
+            ).first()
+            if not linked:
+                return jsonify({"error": "forbidden"}), 403
+        elif role == "client":
+            linked = ClientCourtfile.query.filter_by(
+                client_id=int(current_id), courtfile_id=courtfile_id
+            ).first()
+            if not linked:
+                return jsonify({"error": "forbidden"}), 403
 
     since_str = request.args.get("since")
     q = Message.query.filter(Message.id_courtfile == courtfile_id)
@@ -2129,33 +2522,41 @@ def list_messages():
             q = q.filter(Message.created_at > since_dt)
 
     rows = q.order_by(Message.created_at.asc()).limit(100).all()
-    return jsonify([m.to_front_dict() for m in rows])
+    return jsonify([m.to_front_dict() for m in rows]), 200
 
 
 @api.route("/messages", methods=["POST"])
+@jwt_required()
 def create_message():
     data = request.get_json() or {}
     cfid = data.get("courtfile_id")
     text = (data.get("text") or "").strip()
-    role = (data.get("sender_role") or "").strip().lower()
+    role, current_id = _get_role_and_identity()
 
-    if not cfid or not text or role not in {"lawyer", "client", "admin"}:
-        return jsonify({"error": "courtfile_id, text y sender_role válidos son requeridos"}), 400
+    if not cfid or not text:
+        return jsonify({"error": "courtfile_id y text requeridos"}), 400
 
-    lawyer_id = None
-    client_id = None
-
-    if role == "lawyer":
-        lawyer_id = data.get("sender_id")
-    elif role == "client":
-        client_id = data.get("sender_id")
+    # 🔒 Permisos
+    if not _is_admin():
+        if role == "lawyer":
+            linked = LawyerCourtfile.query.filter_by(
+                lawyer_id=int(current_id), courtfile_id=cfid
+            ).first()
+            if not linked:
+                return jsonify({"error": "forbidden"}), 403
+        elif role == "client":
+            linked = ClientCourtfile.query.filter_by(
+                client_id=int(current_id), courtfile_id=cfid
+            ).first()
+            if not linked:
+                return jsonify({"error": "forbidden"}), 403
 
     msg = Message(
         id_courtfile=cfid,
         texto=text,
         sender=role,
-        lawyer_id=lawyer_id,
-        client_id=client_id,
+        lawyer_id=(current_id if role == "lawyer" else None),
+        client_id=(current_id if role == "client" else None),
     )
     db.session.add(msg)
     db.session.commit()
@@ -2163,24 +2564,12 @@ def create_message():
 
 
 @api.route("/messages/unread", methods=["GET"])
+@jwt_required()
 def unread_counts():
-    """
-    Params:
-      role=lawyer|client|admin
-      user_id=<int>
-      courtfile_ids=1,2,3
-    Respuesta:
-      {
-        "1": {"hasUnread": true, "count": 3, "last_message_at": "2025-09-23T12:34:56+00:00"},
-        "2": {"hasUnread": false, "count": 0, "last_message_at": null},
-        ...
-      }
-    """
-    role = (request.args.get("role") or "").strip().lower()
-    user_id = request.args.get("user_id", type=int)
+    role, current_id = _get_role_and_identity()
     ids_str = (request.args.get("courtfile_ids") or "").strip()
-    if not role or not user_id or not ids_str:
-        return jsonify({"error": "role, user_id y courtfile_ids son requeridos"}), 400
+    if not ids_str:
+        return jsonify({"error": "courtfile_ids requeridos"}), 400
 
     try:
         cfids = [int(x) for x in ids_str.split(",") if x.strip().isdigit()]
@@ -2190,15 +2579,33 @@ def unread_counts():
     if not cfids:
         return jsonify({})
 
+    # 🔒 Permisos: limitar cfids
+    if not _is_admin():
+        if role == "lawyer":
+            linked_ids = db.session.query(LawyerCourtfile.courtfile_id).filter_by(
+                lawyer_id=int(current_id)
+            ).all()
+            allowed_ids = {cid for (cid,) in linked_ids}
+        elif role == "client":
+            linked_ids = db.session.query(ClientCourtfile.courtfile_id).filter_by(
+                client_id=int(current_id)
+            ).all()
+            allowed_ids = {cid for (cid,) in linked_ids}
+        else:
+            return jsonify({"error": "forbidden"}), 403
+        cfids = [cid for cid in cfids if cid in allowed_ids]
+
+    if not cfids:
+        return jsonify({})
+
     # subquery con last_read por cfid
     last_read_sq = (
         select(ChatRead.id_courtfile, ChatRead.last_read_at)
-        .where(and_(ChatRead.role == role, ChatRead.user_id == user_id, ChatRead.id_courtfile.in_(cfids)))
+        .where(and_(ChatRead.role == role, ChatRead.user_id == current_id, ChatRead.id_courtfile.in_(cfids)))
         .subquery()
     )
 
-    # Mensajes “del otro lado”: sender != role
-    # Contamos por expediente desde last_read (o desde la fecha mínima si no hay marca)
+    # Mensajes “del otro lado”
     msgs = (
         select(
             Message.id_courtfile.label("cfid"),
@@ -2222,7 +2629,7 @@ def unread_counts():
     for cfid, cnt in rows:
         counts_by_cfid[int(cfid)] = int(cnt)
 
-    # ⬇️ NUEVO (mínimo): última actividad por expediente
+    # última actividad
     last_msg_sq = (
         select(
             Message.id_courtfile.label("cfid"),
@@ -2234,7 +2641,6 @@ def unread_counts():
     last_rows = db.session.execute(last_msg_sq).all()
     last_by_cfid = {int(cfid): ts for cfid, ts in last_rows}
 
-    # respuesta
     resp = {}
     for cfid in cfids:
         c = counts_by_cfid.get(cfid, 0)
@@ -2245,28 +2651,35 @@ def unread_counts():
             "last_message_at": (ts.isoformat() if ts else None),
         }
 
-    return jsonify(resp)
+    return jsonify(resp), 200
 
 
 @api.route("/messages/read", methods=["POST"])
+@jwt_required()
 def mark_read():
-    """
-    JSON:
-      {
-        "courtfile_id": 123,
-        "role": "lawyer",
-        "user_id": 7,
-        "until": "2025-09-23T12:34:56Z"  # opcional; si no, now()
-      }
-    """
     data = request.get_json() or {}
     cfid = data.get("courtfile_id")
-    role = (data.get("role") or "").strip().lower()
-    user_id = data.get("user_id")
-    until = data.get("until")  # ISO opcional
+    until = data.get("until")
 
-    if not cfid or not role or not user_id:
-        return jsonify({"error": "courtfile_id, role y user_id requeridos"}), 400
+    role, current_id = _get_role_and_identity()
+
+    if not cfid:
+        return jsonify({"error": "courtfile_id requerido"}), 400
+
+    # 🔒 Permisos
+    if not _is_admin():
+        if role == "lawyer":
+            linked = LawyerCourtfile.query.filter_by(
+                lawyer_id=int(current_id), courtfile_id=cfid
+            ).first()
+            if not linked:
+                return jsonify({"error": "forbidden"}), 403
+        elif role == "client":
+            linked = ClientCourtfile.query.filter_by(
+                client_id=int(current_id), courtfile_id=cfid
+            ).first()
+            if not linked:
+                return jsonify({"error": "forbidden"}), 403
 
     if until:
         try:
@@ -2276,24 +2689,26 @@ def mark_read():
     else:
         ts = datetime.now(timezone.utc)
 
-    # UPSERT: si existe, update; si no, create
     row = ChatRead.query.filter_by(
-        id_courtfile=cfid, role=role, user_id=user_id).first()
+        id_courtfile=cfid, role=role, user_id=current_id
+    ).first()
     if row:
         if ts > row.last_read_at:
             row.last_read_at = ts
     else:
         row = ChatRead(id_courtfile=cfid, role=role,
-                       user_id=user_id, last_read_at=ts)
+                       user_id=current_id, last_read_at=ts)
         db.session.add(row)
 
     db.session.commit()
-    return jsonify({"ok": True, "courtfile_id": cfid, "last_read_at": row.last_read_at.isoformat()})
-
-    # -----------------------------STRIPE PAYMENT-----------------------------------------------------
+    return jsonify({"ok": True, "courtfile_id": cfid, "last_read_at": row.last_read_at.isoformat()}), 200
 
 
-@api.route("payments/<int:paymentId>/create-checkout-session", methods=["POST"])
+#------------------------------STRIPE PAYMENT-----------------------------------------------------
+
+
+@api.route("/payments/<int:paymentId>/create-checkout-session", methods=["POST"])
+@jwt_required()
 def create_checkout_session(paymentId):
     try:
         payment = Payment.query.get(paymentId)
@@ -2538,23 +2953,33 @@ def webhook():
 # =====================RUTAS PARA MAILS======================
 
 @api.route("/emails/invite", methods=["POST"])
+@jwt_required()
 def send_invite_email():
     data = request.get_json() or {}
     email = (data.get("email") or "").strip().lower()
     firstname = (data.get("firstname") or "").strip()
     lastname = (data.get("lastname") or "").strip()
-    # opcional, solo para el copy
-    courtfile_number = data.get("courtfile_number")
+    courtfile_number = data.get("courtfile_number")  # opcional, solo para el copy
     courtfile_id = data.get("courtfile_id")          # opcional, p/ link
 
     if not email or not firstname or not lastname:
         return jsonify({"error": "email, firstname y lastname son obligatorios"}), 400
 
+    # 🔒 Permisos
+    role, current_id = _get_role_and_identity()
+    if not _is_admin():
+        if role != "lawyer":
+            return jsonify({"error": "forbidden"}), 403
+        if courtfile_id:
+            linked = LawyerCourtfile.query.filter_by(
+                lawyer_id=int(current_id), courtfile_id=int(courtfile_id)
+            ).first()
+            if not linked:
+                return jsonify({"error": "forbidden"}), 403
+
     def cap(s): return s[:1].upper() + s[1:] if s else s
     default_pwd = f"LexQuo{cap(firstname)}{cap(lastname)}"
 
-    # Si querés incluir un link de “aceptar invitación” en el frontend:
-    # (sin dominio está ok; usás tu FRONTEND_BASE_URL)
     invite_url = f"{FRONTEND_BASE_URL}/accept-invite?email={email}"
     if courtfile_id:
         invite_url += f"&courtfile_id={courtfile_id}"
@@ -2566,7 +2991,7 @@ def send_invite_email():
     {"<p>Courtfile: <b>#"+str(courtfile_number)+"</b></p>" if courtfile_number else ""}
     <p>You can log in with:</p>
     <ul>
-      <li><b>Username::</b> {email}</li>
+      <li><b>Username:</b> {email}</li>
       <li><b>Initial password:</b> <code>{default_pwd}</code></li>
     </ul>
     <p>We recommend changing your password on your first login.</p>
@@ -2591,6 +3016,7 @@ def send_invite_email():
 
 
 @api.route("/emails/linked", methods=["POST"])
+@jwt_required()
 def send_linked_email():
     data = request.get_json() or {}
     email = (data.get("email") or "").strip().lower()
@@ -2602,11 +3028,18 @@ def send_linked_email():
     if not email or not firstname or not lastname:
         return jsonify({"error": "email, firstname y lastname son obligatorios"}), 400
 
-    # Podés reusar la función cap() si la tenés definida global
-    def cap(s): return s[:1].upper() + s[1:] if s else s
-    default_pwd = f"LexQuo{cap(firstname)}{cap(lastname)}"
+    # 🔒 Permisos
+    role, current_id = _get_role_and_identity()
+    if not _is_admin():
+        if role != "lawyer":
+            return jsonify({"error": "forbidden"}), 403
+        if courtfile_id:
+            linked = LawyerCourtfile.query.filter_by(
+                lawyer_id=int(current_id), courtfile_id=int(courtfile_id)
+            ).first()
+            if not linked:
+                return jsonify({"error": "forbidden"}), 403
 
-    # Link al expediente en el front
     case_url = f"{FRONTEND_BASE_URL}/courtfiles/{courtfile_id}" if courtfile_id else FRONTEND_BASE_URL
 
     subject = "Nuevo acceso a tu expediente en LexQuo"
@@ -2631,7 +3064,6 @@ def send_linked_email():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 # =================LOGIN GENERAL =====================================
 @api.route('/auth/login', methods=['POST'])
 def unified_login():
@@ -2655,7 +3087,7 @@ def unified_login():
 
         # Determinar user/role
         if admin:
-            user, role = admin, 'admin_user'   # <- CONSISTENTE CON TUS GUARDS
+            user, role = admin, 'admin_user'   
         elif lawyer:
             user, role = lawyer, 'lawyer'
         elif client:

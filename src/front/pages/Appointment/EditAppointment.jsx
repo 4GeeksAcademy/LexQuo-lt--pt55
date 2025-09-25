@@ -23,25 +23,7 @@ export const EditAppointment = () => {
 
   if (!allowed) return <Navigate to="/403" replace />;
 
-  if (!token) {
-    return (
-      <Navigate
-        to="/Login"
-        replace
-        state={{ returnTo: location.pathname + location.search }}
-      />
-    );
-  }
-  if (!role) {
-    return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 180 }}>
-        <div className="spinner-border" role="status" aria-label="Verificando permisos..." />
-      </div>
-    );
-  }
-  if (!ALLOWED_ROLES.includes(role)) {
-    return <Navigate to="/403" replace />;
-  }
+  
 
   const initialLinked =
     location.state?.courtfileId
