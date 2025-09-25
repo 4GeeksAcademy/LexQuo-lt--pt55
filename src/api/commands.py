@@ -1,6 +1,7 @@
 
 import click
 from api.models import db
+from api.seed import run 
 
 """
 In this file, you can add as many commands as you want using the @app.cli.command decorator
@@ -29,6 +30,6 @@ def setup_commands(app):
 
         print("All test users created")
 
-    @app.cli.command("insert-test-data")
-    def insert_test_data():
-        pass
+    @app.cli.command("insert-seed")
+    def insert_seed():
+        run(db.session)
