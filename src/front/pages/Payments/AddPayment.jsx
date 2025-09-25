@@ -13,11 +13,11 @@ export const AddPayment = () => {
   const role = (me?.role || "").toLowerCase();
 
   // ---------- Guards ----------
-    const allowed =
-        role === "admin_user" ||
-        role === "lawyer";
+  const allowed =
+    role === "admin_user" ||
+    role === "lawyer";
 
-    if (!allowed) return <Navigate to="/403" replace />;
+  if (!allowed) return <Navigate to="/403" replace />;
 
 
   // Vienen desde ViewCourtfileLawyer (si abrís desde el caso)
@@ -140,6 +140,7 @@ export const AddPayment = () => {
           amount: formData.amount,
           currency: formData.currency,
           means: formData.means,
+          courtfile_id: Number(formData.courtfile_id)
         }),
       });
 
@@ -152,22 +153,14 @@ export const AddPayment = () => {
       dispatch({ type: "ADD_PAYMENT", payload: newPayment });
 
       // 2) Vincular con courtfile (OBLIGATORIO)
-      setLinking(true);
-      const linkResp = await fetch(`${API}/api/payments-courtfile`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          payment_id: newPayment.id,
-          courtfile_id: Number(formData.courtfile_id),
-        }),
-      });
-
-      if (!linkResp.ok) {
-        const e = await linkResp.json().catch(() => ({}));
-        throw new Error(e.error || `Failed to link payment (HTTP ${linkResp.status})`);
+      if (role === "admin_user") {
+        setLinking(true);
+        const listEndpoint = role === "lawyer" ? `${API}/api/lawyers-courtfiles` : `${API}/api/courtfiles`;
+        const resp = await fetch(listEndpoint, { headers: { Authorization: `Bearer ${token}` } });
+        if (!linkResp.ok) {
+          const e = await linkResp.json().catch(() => ({}));
+          throw new Error(e.error || `Failed to link payment (HTTP ${linkResp.status})`);
+        }
       }
 
       alert("Payment created and linked successfully!");

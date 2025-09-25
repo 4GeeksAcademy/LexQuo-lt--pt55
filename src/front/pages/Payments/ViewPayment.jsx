@@ -13,20 +13,22 @@ export const ViewPayment = () => {
   const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
 
   const token = store?.auth?.token;
+  const me = store?.me || null;
   const role = (me?.role || "").toLowerCase();
 
   // ---------- Guards ----------
-    const allowed =
-        role === "admin_user" ||
-        role === "lawyer";
-
-    if (!allowed) return <Navigate to="/403" replace />;
+  // admin_user, lawyer y client pueden VER
+  const allowed =
+    role === "admin_user" ||
+    role === "lawyer" ||
+    role === "client";
+  if (!allowed) return <Navigate to="/403" replace />;
 
   const [payment, setPayment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isProcessingStripe, setIsProcessingStripe] = useState(false);
- 
+
 
   const isPending = payment?.status === "pending";
   const isAdminOrLawyer = ["admin_user", "lawyer"].includes(role);

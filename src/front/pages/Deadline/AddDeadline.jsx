@@ -1,4 +1,4 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -129,7 +129,8 @@ export const AddDeadline = () => {
           deadline_type: formData.deadline_type,
           deadline_date: formData.deadline_date,
           deadline_hour: formData.deadline_hour,
-          priority: String(formData.priority).toUpperCase()
+          priority: String(formData.priority).toUpperCase(),
+          courtfile_id: Number(formData.courtfile_id) 
         })
       });
 
