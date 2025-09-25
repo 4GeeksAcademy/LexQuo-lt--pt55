@@ -9,6 +9,7 @@ export const EditPayment = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const returnTo = location.state?.returnTo || `/payments/view/${paymentId}`;
+  const [serverStatus, setServerStatus] = useState(null);
 
   if (!paymentId) {
     return <Navigate to="/payments" replace />;
@@ -27,6 +28,11 @@ export const EditPayment = () => {
     role === "lawyer";
 
   if (!allowed) return <Navigate to="/403" replace />;
+
+  // canEdit basado en lo que dice el servidor, no en el formulario
+  const canEdit =
+    role === "admin_user" ||
+    (role === "lawyer" && serverStatus === "pending");
 
 
   // Opciones para los desplegables
@@ -56,7 +62,8 @@ export const EditPayment = () => {
     means: "",
   });
 
-  const isReadOnly = !(["admin_user", "lawyer"].includes(role) && formData.status === "pending");
+  // Reemplaza tu isReadOnly:
+  const isReadOnly = !canEdit;
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -68,6 +75,7 @@ export const EditPayment = () => {
     return str.charAt(0).toUpperCase() + str.slice(1);
   };
 
+  // Al cargar el pago, guardá también el serverStatus
   const fetchPayment = async () => {
     try {
       setFetching(true);
@@ -76,10 +84,15 @@ export const EditPayment = () => {
       });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
+
       setFormData(prev => ({
         ...prev,
-        ...data
+        amount: data.amount ?? "",
+        currency: data.currency ?? "",
+        means: data.means ?? "",
+        status: data.status ?? ""
       }));
+      setServerStatus(String(data.status || "").toLowerCase());
       setError(null);
     } catch (err) {
       console.error("Error fetching payment:", err);
@@ -101,22 +114,37 @@ export const EditPayment = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isReadOnly) return;
+
     setLoading(true);
     setError(null);
+
     try {
-      const payload = { ...formData };
+      // Construí el payload según rol
+      const basePayload = {
+        amount: formData.amount,
+        currency: formData.currency,
+        means: formData.means
+      };
+
+      const payload =
+        role === "admin_user"
+          ? { ...basePayload, status: formData.status } // admin puede tocar status
+          : basePayload; // lawyer NO manda status
 
       const response = await fetch(`${API}/api/payments/${paymentId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify(payload)
       });
 
       if (response.ok) {
         const updatedPayment = await response.json();
         dispatch({ type: "UPDATE_PAYMENT", payload: updatedPayment });
-        navigate(returnTo, { replace: true });
         alert("Payment updated successfully!");
+        navigate(returnTo, { replace: true });
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to update Payment");
@@ -164,9 +192,11 @@ export const EditPayment = () => {
           </div>
 
           {/* Form */}
-          {isReadOnly && (
+          {!canEdit && (
             <div className="alert alert-info mb-3">
-              This payment can only be edited by admin or lawyer while status is <strong>pending</strong>.
+              {role === "lawyer"
+                ? <>Only <strong>pending</strong> payments can be edited by lawyers.</>
+                : <>You don't have permission to edit this payment.</>}
             </div>
           )}
           <div className="card">

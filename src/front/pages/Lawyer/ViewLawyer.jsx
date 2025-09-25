@@ -16,8 +16,8 @@ export const ViewLawyer = () => {
 
   // ---------- AUTH + ME ----------
   const token = store?.auth?.token || null;
-  const me    = store?.me || null;
-  const role  = (me?.role || "").toLowerCase();
+  const me = store?.me || null;
+  const role = (me?.role || "").toLowerCase();
 
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export const ViewLawyer = () => {
   }, [lawyerId, API, token]);
 
   const handleDelete = async () => {
-    if (!["lawyer","admin_user"].includes(role)) return;
+    if (!["lawyer", "admin_user"].includes(role)) return;
     if (!window.confirm("Are you sure you want to delete this lawyer?")) return;
 
     try {
@@ -91,7 +91,7 @@ export const ViewLawyer = () => {
           <i className="bi bi-exclamation-triangle"></i>{" "}
           {error || "Lawyer not found"}
         </div>
-        <Link to="/lawyers" className="btn btn-primary">
+        <Link to={returnTo} state={{ from: location.pathname }} className="btn btn-primary">
           <i className="bi bi-arrow-left"></i> Back to Lawyers
         </Link>
       </div>
@@ -109,7 +109,7 @@ export const ViewLawyer = () => {
               <h1>Lawyer Details</h1>
               <p className="text-muted">ID #{lawyer.id}</p>
             </div>
-            <Link to="/lawyers" className="btn btn-outline-secondary">
+            <Link to={returnTo} state={{ from: location.pathname }} className="btn btn-outline-secondary">
               <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>

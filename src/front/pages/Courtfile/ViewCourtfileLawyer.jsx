@@ -14,7 +14,11 @@ export const ViewCourtfileLawyer = () => {
 
   const token = store.auth.token;
   const role = (store.auth.role || "").toLowerCase();
-  const currentLawyerId = auth?.user?.id;
+  // ID del abogado logueado (normalizado a Number)
+  const currentLawyerId = useMemo(() => {
+    const raw = store?.me?.id ?? null;
+    return raw != null ? Number(raw) : null;
+  }, [store?.me?.id]);
 
   if (role !== "lawyer") return <Navigate to="/403" replace />;
 
@@ -219,7 +223,7 @@ export const ViewCourtfileLawyer = () => {
 
       // ⬇️ excluye a la/el lawyer logueado
       const filtered = (Array.isArray(data) ? data : []).filter(
-        (r) => r.lawyer_id !== currentLawyerId
+        (r) => Number(r.lawyer_id) !== currentLawyerId
       );
 
       setCaseLawyers(
@@ -306,6 +310,7 @@ export const ViewCourtfileLawyer = () => {
   }, [courtfileId, token]);
 
   useEffect(() => {
+    if (!courtfileId || !token || currentLawyerId == null) return;
     fetchDeadlines();
     fetchAppointments();
     fetchDocuments();
@@ -874,6 +879,21 @@ export const ViewCourtfileLawyer = () => {
                               title="Crear Appointment desde esta sugerencia"
                             >
                               <i className="bi bi-clock"></i> Appt
+                            </Link>
+
+                            <Link
+                              to="/documents/addDocument"
+                              state={{
+                                courtfileId: courtfile.id,
+                                courtfileNumber: courtfile.case_number,
+                                courtfileTitle: courtfile.title,
+                                prefill: { title: sug.title || "", content: sug.reasoning || "" },
+                                returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
+                              }}
+                              className="btn btn-sm btn-outline-success"
+                              title="Crear Document/Nota desde esta sugerencia"
+                            >
+                              <i className="bi bi-file-earmark-plus"></i> Doc
                             </Link>
                           </div>
                         </div>
