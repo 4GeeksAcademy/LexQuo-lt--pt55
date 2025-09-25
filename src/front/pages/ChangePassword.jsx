@@ -1,14 +1,22 @@
 // src/pages/common/ChangePassword.jsx
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation, useParams, Navigate } from "react-router-dom";
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 export default function ChangePassword({ kind }) {
   const { id } = useParams(); // :id
   const navigate = useNavigate();
   const location = useLocation();
   const returnTo = location.state?.returnTo || `/${kind}s/view/${id}`;
+  const { store, dispatch } = useGlobalReducer();
 
   const API = import.meta.env.VITE_BACKEND_URL;
+
+  // ---------- AUTH + ME ----------
+    const token = store?.auth?.token || null;
+    const me = store?.me || null;
+    const role = (me?.role || "").toLowerCase();
+
   
   // ---------- Guards ----------
     const allowed =

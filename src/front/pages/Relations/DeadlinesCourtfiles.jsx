@@ -10,7 +10,12 @@ export const DeadlinesCourtfiles = () => {
 
   const fetchRelations = async () => {
     try {
-      const response = await fetch(`${API}/api/deadlines-courtfiles`);
+      const response = await fetch(`${API}/api/deadlines-courtfiles`, {
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,          
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         dispatch({ type: "SET_DEADLINE_COURTFILES", payload: data });
@@ -38,7 +43,7 @@ export const DeadlinesCourtfiles = () => {
     try {
       const response = await fetch(`${API}/api/deadlines-courtfiles/${id}`, {
         method: "DELETE",
-        headers: { Accept: "application/json", "Content-Type": "application/json" }
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       });
 
       if (response.ok) {

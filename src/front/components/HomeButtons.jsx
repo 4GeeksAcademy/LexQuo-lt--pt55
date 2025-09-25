@@ -39,9 +39,6 @@ const HomeButtons = () => {
                     <Link to="/AppointmentsCourtfiles">
                         <button className="btn btn-light me-2">Appointments-Courtfiles</button>
                     </Link>
-                    <Link to="/LawyersClients">
-                        <button className="btn btn-light me-2">Lawyers-Clients</button>
-                    </Link>
                     <Link to="/CourtfilesDocuments">
                         <button className="btn btn-light me-2">Courtfile-Documents</button>
                     </Link>
