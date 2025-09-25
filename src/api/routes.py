@@ -2181,7 +2181,8 @@ def create_payment():
         payment = Payment(
             amount=data['amount'],
             currency=data['currency'],
-            means=data['means']
+            means=data['means'],
+            status="pending"
         )
 
         db.session.add(payment)
@@ -2287,9 +2288,8 @@ def update_payment(payment_id):
         payment = Payment.query.get_or_404(payment_id)
 
         if _is_admin():
-            pass  # admin edita siempre
+            pass
         elif role == "lawyer":
-            # lawyer: sólo si está vinculado y status pending
             linked = (
                 db.session.query(PaymentCourtfile)
                 .join(LawyerCourtfile, LawyerCourtfile.courtfile_id == PaymentCourtfile.courtfile_id)
@@ -2299,7 +2299,9 @@ def update_payment(payment_id):
             )
             if not linked:
                 return jsonify({'error': 'forbidden'}), 403
-            if payment.status != "pending":
+
+            # 👇 comparación correcta con Enum
+            if payment.status != PaymentStatus.pending:
                 return jsonify({'error': 'Only pending payments can be edited by lawyer'}), 403
         else:
             return jsonify({'error': 'forbidden'}), 403
@@ -2310,12 +2312,19 @@ def update_payment(payment_id):
             payment.amount = data['amount']
         if 'currency' in data:
             payment.currency = data['currency']
-        if 'status' in data:
-            payment.status = data['status']
-            if data['status'] == "approved":
-                payment.paid_at = datetime.now(UTC)
         if 'means' in data:
             payment.means = data['means']
+
+        # Solo admin puede cambiar status y siempre mapeando a Enum
+        if _is_admin() and 'status' in data:
+            try:
+                # acepta "pending"/"approved"/etc. sin importar mayúsculas
+                new_status = PaymentStatus(data['status'].lower())
+            except Exception:
+                return jsonify({'error': 'invalid status'}), 400
+            payment.status = new_status
+            if new_status == PaymentStatus.approved:
+                payment.paid_at = datetime.now(UTC)
 
         db.session.commit()
         return jsonify(payment.serialize()), 200
