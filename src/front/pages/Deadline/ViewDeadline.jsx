@@ -11,19 +11,29 @@ export const ViewDeadline = () => {
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
+  // ---------- AUTH + ME ----------
+  const token = store?.auth?.token || null;
+  const me    = store?.me || null;
+  const role  = (me?.role || "").toLowerCase();
+
+  // ---------- Guards ----------
+      const allowed =
+          role === "admin_user" ||
+          role === "lawyer";
+  
+      if (!allowed) return <Navigate to="/403" replace />;
+
   const [deadline, setDeadline] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Si vino por state desde un expediente
   const prelinked = location.state?.courtfileId
-    ? {
-      id: location.state.courtfileId,
-      number: location.state.courtfileNumber,
-      title: location.state.courtfileTitle
-    }
+    ? { id: location.state.courtfileId, number: location.state.courtfileNumber, title: location.state.courtfileTitle }
     : null;
 
   const [linkedCourtfile, setLinkedCourtfile] = useState(prelinked);
+
 
   useEffect(() => {
     const fetchDeadline = async () => {

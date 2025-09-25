@@ -16,6 +16,13 @@ export const AddDeadline = () => {
   const token = store?.auth?.token;
   const role = (store?.me?.role || "").toLowerCase();
 
+  // ---------- Guards ----------
+      const allowed =
+          role === "admin_user" ||
+          role === "lawyer";
+  
+      if (!allowed) return <Navigate to="/403" replace />;
+
   const Deadline_Categories = ["Contestación de demanda", "Traslado / Vista", "Ofrecimiento de prueba", "Producción de prueba", "Audiencia",
     "Recurso / Apelación", "Ejecución / Cumplimiento", "Caducidad de instancia", "Plazo penal (excarcelación, preventiva, etc.)",
     "Mediación obligatoria", "Vencimiento de contrato", "Pago de tasa de justicia / aportes", "Vencimiento administrativo (AFIP, IGJ, etc.)",

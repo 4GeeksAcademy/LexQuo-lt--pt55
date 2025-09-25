@@ -15,9 +15,17 @@ export const EditPayment = () => {
   }
 
   const token = store?.auth?.token;
-  const role = (store?.me?.role || "").toLowerCase();
+  const role = (me?.role || "").toLowerCase();
 
   const API = import.meta.env.VITE_BACKEND_URL;
+
+  // ---------- Guards ----------
+  const allowed =
+    role === "admin_user" ||
+    role === "lawyer";
+
+  if (!allowed) return <Navigate to="/403" replace />;
+
 
   // Opciones para los desplegables
   const currencyOptions = [

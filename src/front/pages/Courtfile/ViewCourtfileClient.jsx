@@ -41,7 +41,7 @@ export const ViewCourtfileClient = () => {
     try {
       setLoading(true);
       const response = await fetch(`${API}/api/courtfiles/${courtfileId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        headers: { Authorization: `Bearer ${token}`}
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
@@ -61,7 +61,7 @@ export const ViewCourtfileClient = () => {
       setAppointmentsErr("");
       const resp = await fetch(
         `${API}/api/appointments-courtfiles`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -88,7 +88,7 @@ export const ViewCourtfileClient = () => {
       const idNum = Number(courtfileId);
       const resp = await fetch(
         `${API}/api/payments-courtfile?courtfile_id=${idNum}&expand=payment`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));

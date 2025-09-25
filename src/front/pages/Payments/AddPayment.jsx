@@ -9,6 +9,15 @@ export const AddPayment = () => {
   const API = import.meta.env.VITE_BACKEND_URL;
 
   const token = store?.auth?.token;
+  const role = (me?.role || "").toLowerCase();
+
+  // ---------- Guards ----------
+    const allowed =
+        role === "admin_user" ||
+        role === "lawyer";
+
+    if (!allowed) return <Navigate to="/403" replace />;
+
 
   // Vienen desde ViewCourtfileLawyer (si abrís desde el caso)
   const preselectedCourtfileId = location.state?.courtfileId || null;

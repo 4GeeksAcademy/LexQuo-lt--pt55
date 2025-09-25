@@ -3,46 +3,41 @@ import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
 export const ViewClient = () => {
-  const { dispatch } = useGlobalReducer();
+  const { store, dispatch } = useGlobalReducer();
   const { clientId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const returnTo = location.state?.returnTo || "/clients";
-
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  // Contexto (opcional, si venís desde un expediente)
+  // -------------------- AUTH + ME (alineado con DashboardClient) --------------------
+  const token = store?.auth?.token || null;
+  const me = store?.me || null;
+  const role = (me?.role || "").toLowerCase();
+
+  // returnTo (igual que antes)
+  const returnTo = location.state?.returnTo || "/clients";
+
+  // Contexto opcional (si venís desde un expediente)
   const courtfileId = location.state?.courtfileId || null;
   const [relationId, setRelationId] = useState(location.state?.relationId || null);
 
   // Badge rápido si vino por state
   const [linkedCourtfile, setLinkedCourtfile] = useState(
     location.state?.courtfileId
-      ? {
-        id: location.state.courtfileId,
-        number: location.state.courtfileNumber,
-        title: location.state.courtfileTitle,
-      }
+      ? { id: location.state.courtfileId, number: location.state.courtfileNumber, title: location.state.courtfileTitle }
       : null
   );
 
-  // Todas las relaciones del cliente
+  const allowed =
+    role === "admin_user" ||
+    role === "lawyer" ||
+    (role === "client" && String(me?.id) === String(clientId));
+
+  if (!allowed) return <Navigate to="/403" replace />;
+
+  // -------------------- State local --------------------
   const [linkedRelations, setLinkedRelations] = useState([]);
-
-  // Auth
-  const ssAuth = JSON.parse(sessionStorage.getItem("auth") || "null");
-  const token = ssAuth?.token || null;
-  const { store } = useGlobalReducer();
-  const role = (store?.me?.role || "").toLowerCase();
-
-  if (!token) {
-    return (
-      <Navigate to="/login" replace state={{ returnTo: location.pathname + location.search }} />
-    );
-  }
-
-  // Datos del cliente
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -97,7 +92,7 @@ export const ViewClient = () => {
   useEffect(() => {
     const fetchAllRelations = async () => {
       try {
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const headers = { Authorization: `Bearer ${token}` }
         const resp = await fetch(`${API}/api/clients-courtfiles`, { headers });
         if (!resp.ok) return;
 
@@ -142,9 +137,9 @@ export const ViewClient = () => {
     if (role === "lawyer") return;
     if (!window.confirm("Are you sure you want to delete this client?")) return;
     try {
-      const response = await fetch(`${API}/api/clients/${clientId}`, { 
+      const response = await fetch(`${API}/api/clients/${clientId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` } 
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
         dispatch({ type: "DELETE_CLIENT", payload: Number(clientId) || clientId });
@@ -172,7 +167,7 @@ export const ViewClient = () => {
       setUnlinking(true);
       const resp = await fetch(`${API}/api/clients-courtfiles/${relationId}`, {
         method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { Authorization: `Bearer ${token}` } 
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -195,7 +190,7 @@ export const ViewClient = () => {
     try {
       const resp = await fetch(`${API}/api/clients-courtfiles/${relId}`, {
         method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -357,19 +352,7 @@ export const ViewClient = () => {
             <div className="card-footer bg-light">
               <div className="d-flex gap-2 justify-content-end">
                 {role === "lawyer" ? (
-                  <button
-                    className="btn btn-danger"
-                    disabled={unlinking}
-                    onClick={handleUnlink}
-                    title={relationId ? "Unlink from case" : "Open from a case to unlink"}
-                  >
-                    {unlinking ? (
-                      <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    ) : (
-                      <i className="bi bi-link-45deg"></i>
-                    )}{" "}
-                    Unlink from case
-                  </button>
+                  <div></div>
                 ) : (
                   <>
                     <Link

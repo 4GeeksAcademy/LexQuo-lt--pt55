@@ -2556,11 +2556,6 @@ def send_linked_email():
     <h2>Hello {firstname} {lastname} 👋</h2>
     <p>You have been linked to a new case in <b>LexQuo</b>.</p>
     {"<p>Courtfile: <b>#"+str(courtfile_number)+"</b></p>" if courtfile_number else ""}
-    <p>You can log in with:</p>
-    <ul>
-      <li><b>Username:</b> {email}</li>
-      <li><b>Password:</b> <code>{default_pwd}</code></li>
-    </ul>
     <p><a href="{case_url}">Go to your case</a></p>
     <hr/>
     <small>If you were not expecting this email, you can ignore it.</small>
@@ -2569,10 +2564,9 @@ def send_linked_email():
         f"Hello {firstname} {lastname}.\n"
         "You have been linked to a new case in LexQuo.\n"
         + (f"Case file: #{courtfile_number}\n" if courtfile_number else "")
-        + f"Username: {email}\nPassword: {default_pwd}\n"
-        f"Go to your case: {case_url}\n"
+        + f"Go to your case: {case_url}\n"
     )
-
+    
     try:
         send_email(email, subject, html, text)
         return jsonify({"ok": True, "sent_to": email})

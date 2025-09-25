@@ -19,8 +19,7 @@ export const EditCourtfile = () => {
             : "/courtfiles";
     const returnTo = location.state?.returnTo || defaultReturn;
 
-    if (!token) return <Navigate to="/Login" replace />;
-    if (!["lawyer", "admin"].includes(role)) return <Navigate to="/403" replace />;
+    if (!["lawyer", "admin_user"].includes(role)) return <Navigate to="/403" replace />;
 
     const JURISDICCIONES_PJN = [
         'CSJ - Corte Suprema de Justicia de la Nación', 'CIV - Cámara Nacional de Apelaciones en lo Civil', 'CAF - Cámara Nacional de Apelaciones en lo Contencioso Administrativo Federal',

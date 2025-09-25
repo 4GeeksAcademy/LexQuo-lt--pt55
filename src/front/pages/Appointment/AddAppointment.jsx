@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import MapComponent from "../../components/Map/MapComponent";
 import LocationAutocomplete from "../../components/Map/LocationAutocomplete";
 
-
 export const AddAppointment = () => {
   const { store, dispatch } = useGlobalReducer();
   const navigate = useNavigate();
@@ -16,23 +15,15 @@ export const AddAppointment = () => {
   const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
   const returnTo = location.state?.returnTo || "/appointments";
 
-  const token = store?.auth?.token || JSON.parse(sessionStorage.getItem("auth") || "null")?.token || null;
+  const token = store?.auth?.token;
   const role = (store?.me?.role || "").toLowerCase();
-  const ALLOWED_ROLES = ["lawyer", "admin_user"];
 
-  if (!token) {
-    return <Navigate to="/login" replace state={{ returnTo: location.pathname + location.search }} />;
-  }
-  if (!role) {
-    return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 180 }}>
-        <div className="spinner-border" role="status" aria-label="Verificando permisos..." />
-      </div>
-    );
-  }
-  if (!ALLOWED_ROLES.includes(role)) {
-    return <Navigate to="/403" replace />;
-  }
+  // ---------- Guards ----------
+  const allowed =
+    role === "admin_user" ||
+    role === "lawyer";
+
+  if (!allowed) return <Navigate to="/403" replace />;
 
   const [formData, setFormData] = useState({
     title: "",
@@ -145,7 +136,7 @@ export const AddAppointment = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          Authorization: `Bearer ${token}` 
         },
         body: JSON.stringify({
           title: formData.title,
@@ -172,7 +163,7 @@ export const AddAppointment = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           appointment_id: newAppointment.id,

@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -12,6 +12,15 @@ export const EditDeadline = () => {
   const API = import.meta.env.VITE_BACKEND_URL;
 
   const token = store?.auth?.token;
+  const me    = store?.me || null;
+  const role  = (me?.role || "").toLowerCase();
+
+  // ---------- Guards ----------
+      const allowed =
+          role === "admin_user" ||
+          role === "lawyer";
+  
+      if (!allowed) return <Navigate to="/403" replace />;
 
   const [formData, setFormData] = useState({
     deadline_type: "",

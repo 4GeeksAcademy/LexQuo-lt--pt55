@@ -6,40 +6,36 @@ export const EditLawyer = () => {
     const { store, dispatch } = useGlobalReducer();
     const { lawyerId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const API = import.meta.env.VITE_BACKEND_URL;
+
+    // ---------- AUTH + ME ----------
+    const token = store?.auth?.token || null;
+    const me = store?.me || null;
+    const role = (me?.role || "").toLowerCase();
+
+    // ---------- Guards ----------
+    const allowed =
+        role === "admin_user" ||
+        role === "lawyer";
+
+    if (!allowed) return <Navigate to="/403" replace />;
+
+    // ---------- Estado local ----------
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
     const [error, setError] = useState(null);
 
-    const API = import.meta.env.VITE_BACKEND_URL;
 
-    const location = useLocation();
-    const ssAuth = JSON.parse(sessionStorage.getItem("auth") || "null");
-    const token = ssAuth?.token || null;
-    const role = (store?.me?.role || "").toLowerCase();
     const ALLOWED_ROLES = ["lawyer", "admin_user"];
-
-    if (!token) {
-        return (
-            <Navigate
-                to="/login"
-                replace
-                state={{ returnTo: location.pathname + location.search }}
-            />
-        );
-    }
-
-    if (!role) {
-        return (
-            <div className="container mt-4 text-center">
-                <div className="spinner-border" role="status"><span className="visually-hidden">Loading...</span></div>
-                <p>Verificando permisos...</p>
-            </div>
-        );
-    }
-
     if (!ALLOWED_ROLES.includes(role)) {
         return <Navigate to="/403" replace />;
     }
+
+    const isAdmin = role === "admin_user";
+    const isSelf = String(me?.id) === String(lawyerId);
+    if (!isAdmin && !isSelf) return <Navigate to="/403" replace />;
 
     const [formData, setFormData] = useState({
         firstname: '',

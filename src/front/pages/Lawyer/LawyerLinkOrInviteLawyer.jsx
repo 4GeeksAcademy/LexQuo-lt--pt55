@@ -10,8 +10,8 @@ export const LawyerLinkOrInviteLawyer = () => {
 
   const token = store?.auth?.token;
   const role = (store?.me?.role || "").toLowerCase();
-  if (!token) return <Navigate to="/Login" replace state={{ returnTo: location.pathname + location.search }} />;
-  if (role !== "lawyer" || role !== "admin_user") return <Navigate to="/403" replace />;
+  
+  if (role !== "lawyer") return <Navigate to="/403" replace />;
 
   const preselectedCourtfileId = location.state?.courtfileId || null;
   const preselectedCourtfileNumber = location.state?.courtfileNumber || null;
@@ -153,7 +153,7 @@ export const LawyerLinkOrInviteLawyer = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          Authorization: `Bearer ${token}` 
         },
         body: JSON.stringify({
           firstname,
@@ -175,7 +175,7 @@ export const LawyerLinkOrInviteLawyer = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          Authorization: `Bearer ${token}` 
         },
         body: JSON.stringify({
           role: "lawyer",
@@ -208,7 +208,7 @@ export const LawyerLinkOrInviteLawyer = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
+        Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({
         role: "lawyer",

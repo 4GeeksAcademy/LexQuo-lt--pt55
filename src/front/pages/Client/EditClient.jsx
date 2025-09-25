@@ -7,38 +7,31 @@ export const EditClient = () => {
   const { clientId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const ssAuth = JSON.parse(sessionStorage.getItem("auth") || "null");
-  const token = ssAuth?.token || null;
-  const role = (store?.me?.role || "").toLowerCase();
-  const ALLOWED_ROLES = ["client", "admin_user"];
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  if (!token) {
-    return (
-      <Navigate to="/login" replace state={{ returnTo: location.pathname + location.search }} />
-    );
-  }
-  if (!role) {
-    return (
-      <div className="container mt-4 text-center">
-        <div className="spinner-border" role="status"><span className="visually-hidden">Loading...</span></div>
-        <p>Verificando permisos...</p>
-      </div>
-    );
-  }
-  if (!ALLOWED_ROLES.includes(role)) {
-    return <Navigate to="/403" replace />;
-  }
+  // ---------- AUTH + ME (fuente única) ----------
+  const token = store?.auth?.token || null;
+  const me = store?.me || null;
+  const role = (me?.role || "").toLowerCase();
 
+  // ---------- Guards (un solo Private por componente) ----------
+  const ALLOWED_ROLES = ["client", "admin_user"];
+  if (!ALLOWED_ROLES.includes(role)) return <Navigate to="/403" replace />;
+
+  const isAdmin = role === "admin_user";
+  const isSelf = String(me?.id) === String(clientId);
+  if (!isAdmin && !isSelf) return <Navigate to="/403" replace />;
+
+  // ---------- Estado local ----------
   const [formData, setFormData] = useState({
-    firstname: '',
-    lastname: '',
-    email: '',
-    phone: '',
-    password: '',
+    firstname: "",
+    lastname: "",
+    email: "",
+    phone: "",
+    password: "",
     file: null,
-    is_active: true
+    is_active: true,
   });
 
   const [loading, setLoading] = useState(false);

@@ -68,7 +68,7 @@ export const ViewCourtfileLawyer = () => {
     try {
       setLoading(true);
       const response = await fetch(`${API}/api/courtfiles/${courtfileId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
@@ -88,7 +88,7 @@ export const ViewCourtfileLawyer = () => {
       setDeadlinesErr("");
       const resp = await fetch(
         `${API}/api/deadlines-courtfiles`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -114,7 +114,7 @@ export const ViewCourtfileLawyer = () => {
       setAppointmentsErr("");
       const resp = await fetch(
         `${API}/api/appointments-courtfiles`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -140,7 +140,8 @@ export const ViewCourtfileLawyer = () => {
       setDocumentsErr("");
       const resp = await fetch(
         `${API}/api/courtfile-document?courtfile_id=${Number(courtfileId)}`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        { headers: 
+          { Authorization: `Bearer ${token}` } }
       );
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -172,7 +173,8 @@ export const ViewCourtfileLawyer = () => {
       setClientsErr("");
       const resp = await fetch(
         `${API}/api/clients-courtfiles?courtfile_id=${Number(courtfileId)}`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        { headers: 
+          { Authorization: `Bearer ${token}` }}
       );
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -203,7 +205,7 @@ export const ViewCourtfileLawyer = () => {
       setLawyersErr("");
       const resp = await fetch(
         `${API}/api/lawyers-courtfiles?courtfile_id=${Number(courtfileId)}`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await resp.json();
       if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
@@ -237,7 +239,7 @@ export const ViewCourtfileLawyer = () => {
 
       const resp = await fetch(
         `${API}/api/payments-courtfile?courtfile_id=${idNum}&expand=payment`,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (!resp.ok) {
@@ -267,7 +269,7 @@ export const ViewCourtfileLawyer = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           description: desc || "",
@@ -327,7 +329,7 @@ export const ViewCourtfileLawyer = () => {
     try {
       const response = await fetch(`${API}/api/courtfiles/${courtfileId}`, {
         method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
         dispatch({ type: "DELETE_COURTFILE", payload: courtfileId });
@@ -410,7 +412,7 @@ export const ViewCourtfileLawyer = () => {
       setDeletingClientRelId(relationId);
       const resp = await fetch(`${API}/api/clients-courtfiles/${relationId}`, {
         method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { Authorization: `Bearer ${token}` } ,
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -449,7 +451,7 @@ export const ViewCourtfileLawyer = () => {
       setDeletingPaymentRelId(relationId);
       const resp = await fetch(`${API}/api/payments-courtfile/${relationId}`, {
         method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+        headers: { Authorization: `Bearer ${token}` } 
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -538,7 +540,7 @@ export const ViewCourtfileLawyer = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           document_url: documentUrl,

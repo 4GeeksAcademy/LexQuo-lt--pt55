@@ -7,28 +7,18 @@ export const ViewLawyer = () => {
   const { lawyerId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const returnTo = location.state?.returnTo || "/lawyers";
-
-
-  const API = import.meta.env.VITE_BACKEND_URL;
-
-  const [lawyer, setLawyer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [lawyer, setLawyer] = useState(null);
 
-  const ssAuth = JSON.parse(sessionStorage.getItem("auth") || "null");
-  const token = ssAuth?.token || null;
-  const role = (store?.me?.role || "").toLowerCase();
+  const API = import.meta.env.VITE_BACKEND_URL;
+  const returnTo = location.state?.returnTo || "/lawyers";
 
-  if (!token) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-        state={{ returnTo: location.pathname + location.search }}
-      />
-    );
-  }
+  // ---------- AUTH + ME ----------
+  const token = store?.auth?.token || null;
+  const me    = store?.me || null;
+  const role  = (me?.role || "").toLowerCase();
+
 
   useEffect(() => {
     const fetchLawyer = async () => {

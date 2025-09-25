@@ -1,17 +1,28 @@
-import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 import MapComponent from "../../components/Map/MapComponent";
 import LocationAutocomplete from "../../components/Map/LocationAutocomplete";
 
 export const ViewAppointment = () => {
-  const { dispatch } = useGlobalReducer();
+  const { store, dispatch } = useGlobalReducer();
   const { appointmentId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const returnTo = location.state?.returnTo || "/appointments";
 
   const API = import.meta.env.VITE_BACKEND_URL;
+
+  const token = store?.auth?.token;
+  const role = (store?.me?.role || "").toLowerCase();
+
+  // ---------- Guards ----------
+  const allowed =
+    role === "admin_user" ||
+    role === "lawyer" ||
+    role === "client";
+    
+  if (!allowed) return <Navigate to="/403" replace />;
 
   const [appointment, setAppointment] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,7 +39,9 @@ export const ViewAppointment = () => {
     const fetchAppointment = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API}/api/appointments/${appointmentId}`); // singular
+        const response = await fetch(`${API}/api/appointments/${appointmentId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
         setAppointment(data);
@@ -41,15 +54,16 @@ export const ViewAppointment = () => {
       }
     };
 
-    if (appointmentId) fetchAppointment();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appointmentId]);
+    if (appointmentId && token) fetchAppointment();
+  }, [API, appointmentId, token]);
 
   useEffect(() => {
     const loadCf = async () => {
       try {
         if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
-          const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`);
+          const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
           if (resp.ok) {
             const d = await resp.json();
             setLinkedCourtfile(cf => ({ ...(cf || {}), number: d.case_number, title: d.title }));
@@ -60,16 +74,14 @@ export const ViewAppointment = () => {
       }
     };
     loadCf();
-  }, [API, linkedCourtfile?.id]);
+  }, [API, linkedCourtfile?.id, token]);
 
   useEffect(() => {
     const fetchLinked = async () => {
       try {
         if (linkedCourtfile || !appointmentId) return;
-        const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
-        const token = auth?.token;
         const resp = await fetch(`${API}/api/appointments-courtfiles`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
+          headers: { Authorization: `Bearer ${token}` }
         });
         if (!resp.ok) return;
         const rows = await resp.json();
@@ -86,12 +98,15 @@ export const ViewAppointment = () => {
       }
     };
     fetchLinked();
-  }, [API, appointmentId, linkedCourtfile]);
+  }, [API, appointmentId, linkedCourtfile, token]);
 
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this appointment?")) return;
     try {
-      const response = await fetch(`${API}/api/appointments/${appointmentId}`, { method: "DELETE" });
+      const response = await fetch(`${API}/api/appointments/${appointmentId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
       if (response.ok) {
         dispatch({ type: "DELETE_APPOINTMENT", payload: Number(appointmentId) || appointmentId });
         navigate(returnTo, { replace: true });
@@ -204,18 +219,20 @@ export const ViewAppointment = () => {
               </div>
             )}
             <div className="card-footer bg-light">
-              <div className="d-flex gap-2 justify-content-end">
-                <Link
-                  to={`/appointments/${appointment.id}`}
-                  state={{ returnTo }}
-                  className="btn btn-warning"
-                >
-                  <i className="bi bi-pencil"></i> Edit
-                </Link>
-                <button className="btn btn-danger" onClick={handleDelete}>
-                  <i className="bi bi-trash"></i> Delete
-                </button>
-              </div>
+              {["lawyer", "admin_user"].includes(role) && (
+                <div className="d-flex gap-2 justify-content-end">
+                  <Link
+                    to={`/appointments/${appointment.id}`}
+                    state={{ returnTo }}
+                    className="btn btn-warning"
+                  >
+                    <i className="bi bi-pencil"></i> Edit
+                  </Link>
+                  <button className="btn btn-danger" onClick={handleDelete}>
+                    <i className="bi bi-trash"></i> Delete
+                  </button>
+                </div>
+              )}
             </div>
 
           </div>

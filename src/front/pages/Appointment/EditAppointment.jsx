@@ -13,13 +13,15 @@ export const EditAppointment = () => {
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  // Auth & Role (desde private/store, con fallback a sessionStorage para token)
-  const token =
-    store?.auth?.token ||
-    JSON.parse(sessionStorage.getItem("auth") || "null")?.token ||
-    null;
+  const token = store?.auth?.token;
   const role = (store?.me?.role || "").toLowerCase();
-  const ALLOWED_ROLES = ["lawyer", "admin_user"];
+
+  // ---------- Guards ----------
+  const allowed =
+    role === "admin_user" ||
+    role === "lawyer";
+
+  if (!allowed) return <Navigate to="/403" replace />;
 
   if (!token) {
     return (
@@ -206,7 +208,10 @@ export const EditAppointment = () => {
 
       const response = await fetch(`${API}/api/appointments/${appointmentId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(payload)
       });
 
