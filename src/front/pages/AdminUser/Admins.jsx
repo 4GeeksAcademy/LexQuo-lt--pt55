@@ -6,9 +6,13 @@ export const Admins = () => {
   const { store, dispatch } = useGlobalReducer();
   const API = import.meta.env.VITE_BACKEND_URL;
 
+  const token = store?.auth?.token;
+
   const fetchAdmins = async () => {
     try {
-      const response = await fetch(`${API}/api/admins`);
+      const response = await fetch(`${API}/api/admins`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
       if (response.ok) {
         const data = await response.json();
         dispatch({ type: "SET_ADMINS", payload: data });
@@ -30,10 +34,7 @@ export const Admins = () => {
     try {
       const response = await fetch(`${API}/api/admins/${id}`, {
         method: "DELETE",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       });
 
       if (response.ok) {

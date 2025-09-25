@@ -7,6 +7,8 @@ export const AddLawyersClients = () => {
   const navigate = useNavigate();
   const API = import.meta.env.VITE_BACKEND_URL;
 
+  const token = store?.auth?.token;
+
   const [formData, setFormData] = useState({
     lawyer_id: "",
     client_id: "",
@@ -30,7 +32,10 @@ export const AddLawyersClients = () => {
     const loadData = async () => {
       try {
         if (lawyers.length === 0) {
-          const response = await fetch(`${API}/api/lawyers`);
+          const response = await fetch(`${API}/api/lawyers`, {
+            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+          });
+
           if (response.ok) {
             const data = await response.json();
             if (alive) dispatch({ type: "SET_LAWYERS", payload: data });
@@ -38,7 +43,10 @@ export const AddLawyersClients = () => {
         }
 
         if (clients.length === 0) {
-          const response = await fetch(`${API}/api/clients`);
+          const response = await fetch(`${API}/api/clients`, {
+            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+          });
+
           if (response.ok) {
             const data = await response.json();
             if (alive) dispatch({ type: "SET_CLIENTS", payload: data });
@@ -73,7 +81,7 @@ export const AddLawyersClients = () => {
 
       const res = await fetch(`${API}/api/lawyer-client`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
         body: JSON.stringify(payload),
       });
 
@@ -82,7 +90,10 @@ export const AddLawyersClients = () => {
         throw new Error(errData.error || "Failed to create relationship");
       }
 
-      const relationsResponse = await fetch(`${API}/api/lawyer-client`);
+      const relationsResponse = await fetch(`${API}/api/lawyer-client`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+
       if (relationsResponse.ok) {
         const allRelations = await relationsResponse.json();
         dispatch({ type: "SET_LAWYER_CLIENT", payload: allRelations });

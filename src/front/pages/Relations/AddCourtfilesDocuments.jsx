@@ -7,6 +7,8 @@ export const AddCourtfilesDocuments = () => {
   const navigate = useNavigate();
   const API = import.meta.env.VITE_BACKEND_URL;
 
+  const token = store?.auth?.token;
+
   const [formData, setFormData] = useState({
     courtfile_id: "",
     document_id: "",
@@ -30,7 +32,9 @@ export const AddCourtfilesDocuments = () => {
     const loadData = async () => {
       try {
         if (courtfiles.length === 0) {
-          const response = await fetch(`${API}/api/courtfiles`);
+          const response = await fetch(`${API}/api/courtfiles`, {
+            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+          });
           if (response.ok) {
             const data = await response.json();
             if (alive) dispatch({ type: "SET_COURTFILES", payload: data });
@@ -38,7 +42,9 @@ export const AddCourtfilesDocuments = () => {
         }
 
         if (documents.length === 0) {
-          const response = await fetch(`${API}/api/documents`);
+          const response = await fetch(`${API}/api/documents`, {
+            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+          });
           if (response.ok) {
             const data = await response.json();
             if (alive) dispatch({ type: "SET_DOCUMENTS", payload: data });
@@ -73,7 +79,7 @@ export const AddCourtfilesDocuments = () => {
 
       const res = await fetch(`${API}/api/courtfile-document`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
         body: JSON.stringify(payload),
       });
 
@@ -82,7 +88,9 @@ export const AddCourtfilesDocuments = () => {
         throw new Error(errData.error || "Failed to create relationship");
       }
 
-      const relationsResponse = await fetch(`${API}/api/courtfile-document`);
+      const relationsResponse = await fetch(`${API}/api/courtfile-document`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
       if (relationsResponse.ok) {
         const allRelations = await relationsResponse.json();
         dispatch({ type: "SET_COURTFILE_DOCUMENT", payload: allRelations });

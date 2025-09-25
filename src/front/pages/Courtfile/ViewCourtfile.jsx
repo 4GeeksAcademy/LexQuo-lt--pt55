@@ -9,17 +9,24 @@ export const ViewCourtfile = () => {
 
     const API = import.meta.env.VITE_BACKEND_URL;
 
+    const token = store?.auth?.token;
+
     const [courtfile, setCourtfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    
+
 
     useEffect(() => {
         const fetchCourtfile = async () => {
             try {
                 setLoading(true);
 
-                const response = await fetch(`${API}/api/courtfiles/${courtfileId}`);
+                const response = await fetch(`${API}/api/courtfiles/${courtfileId}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        Accept: "application/json",
+                    },
+                });
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -49,7 +56,8 @@ export const ViewCourtfile = () => {
         try {
 
             const response = await fetch(`${API}/api/courtfiles/${courtfileId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
             });
 
             if (response.ok) {

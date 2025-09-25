@@ -106,34 +106,32 @@ import SignUpForAll from "./pages/SignUpForAll.jsx";
 
 export const router = createBrowserRouter(
   createRoutesFromElements(
-    // CreateRoutesFromElements function allows you to build route elements declaratively.
-    // Create your routes here, if you want to keep the Navbar and Footer in all views, add your new routes inside the containing Route.
-    // Root, on the contrary, create a sister Route, if you have doubts, try it!
-    // Note: keep in mind that errorElement will be the default page when you don't get a route, customize that page to make your project more attractive.
-    // Note: The child paths of the Layout element replace the Outlet component with the elements contained in the "element" attribute of these child paths.
+    // !!!!!!!!!!!!===================CONGIGURACIONES DE LAS RUTAS=========================!!!!!!!!!!!!!!!
+    // Rutas abiertas no requieren rol ni token
+    // Rutas Privadas Admin: El token y el rol se controlan en el componente de protección
+    // Rutas Privadas Generals: OJO! El componente de protección sólo controla el token y hace fetch de la data, 
+    //                          luego cada componente, establece los permisos de rol. También se establecen en el back. 
 
     // Root Route: All navigation will start from here.
     <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
 
       {/* Nested Routes: Defines sub-routes within the BaseHome component. */}
       <Route path="/" element={<Home />} />
-      
-      {/* ==========RUTAS QUE SOLO ESTARIA USANDO EL ADMIN POR AHORA========== */}
-      
-      
+
+      {/* ==========RUTAS PROTEGIDAS PARA EL ADMIN========== */}
+
+      <Route element={<PrivateAdminRoute />}>
 
         <Route path="/admins" element={<Admins />} />
-        <Route path="/admins/addAdmin" element={<AddAdmin />} />
         <Route path="/admins/view/:adminId" element={<ViewAdmin />} />
         <Route path="/admins/:adminId" element={<EditAdmin />} />
         <Route path="/admins/dashboard" element={<DashboardAdminUser />} />
 
+        <Route path="/lawyers" element={<Lawyers />} />
+        <Route path="/lawyers/addLawyer" element={<AddLawyer />} />
 
         <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} />
         <Route path="/courtfiles" element={<Courtfiles />} />
-
-        <Route path="/lawyers" element={<Lawyers />} />
-        <Route path="/lawyers/addLawyer" element={<AddLawyer />} />
 
         <Route path="/clients" element={<Clients />} />
         <Route path="/clients/addClient" element={<AddClient />} />
@@ -164,7 +162,7 @@ export const router = createBrowserRouter(
         <Route path="/PaymentCourtfiles" element={<PaymentCourtfiles />} />
         <Route path="/AddPaymentCourtfile" element={<AddPaymentCourtfile />} />
 
-   
+      </Route>
 
       {/* ==========RUTAS QUE YA SERIAN INNECESARIAS========== */}
 
@@ -184,7 +182,7 @@ export const router = createBrowserRouter(
       <Route path="/signUp" element={<SignUpForAll />} />
 
       <Route path="/SignUpAdminUser" element={<SignUpAdminUser />} />
-
+      <Route path="/admins/addAdmin" element={<AddAdmin />} />
 
       {/* ==========RUTAS PROTEGIDAS========== */}
 

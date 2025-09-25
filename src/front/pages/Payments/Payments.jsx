@@ -6,6 +6,8 @@ export const Payments = () => {
   const { store, dispatch } = useGlobalReducer();
   const API = import.meta.env.VITE_BACKEND_URL;
 
+  const token = store?.auth?.token;
+
   // Función para capitalizar la primera letra
   const capitalizeFirstLetter = (str) => {
     if (!str) return "";
@@ -33,7 +35,10 @@ export const Payments = () => {
 
   const fetchPayments = async () => {
     try {
-      const response = await fetch(`${API}/api/payments`);
+      const response = await fetch(`${API}/api/payments`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+
       if (response.ok) {
         const data = await response.json();
         dispatch({ type: "SET_PAYMENTS", payload: data });
@@ -51,7 +56,8 @@ export const Payments = () => {
     try {
       const response = await fetch(`${API}/api/payments/${id}`, {
         method: "DELETE",
-        headers: { Accept: "application/json", "Content-Type": "application/json" }
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+
       });
 
       if (response.ok) {

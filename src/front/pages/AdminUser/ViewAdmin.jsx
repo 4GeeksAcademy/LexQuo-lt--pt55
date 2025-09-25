@@ -3,11 +3,12 @@ import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
 export const ViewAdmin = () => {
-  const { dispatch } = useGlobalReducer();
+  const { store, dispatch } = useGlobalReducer();
   const { adminId } = useParams();
   const navigate = useNavigate();
 
   const API = import.meta.env.VITE_BACKEND_URL;
+  const token = store?.auth?.token;
 
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,7 +18,17 @@ export const ViewAdmin = () => {
     const fetchAdmin = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API}/api/admins/${adminId}`);
+        const response = await fetch(`${API}/api/admins/${adminId}`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        });
+        if (response.status === 401) {
+          navigate("/login", { replace: true, state: { returnTo: location.pathname } });
+          return;
+        }
+        if (response.status === 403) {
+          navigate("/403", { replace: true });
+          return;
+        }
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
         setAdmin(data);
@@ -37,7 +48,22 @@ export const ViewAdmin = () => {
     if (!window.confirm("Are you sure you want to delete this admin?")) return;
 
     try {
-      const response = await fetch(`${API}/api/admins/${adminId}`, { method: "DELETE" }); // plural
+      const response = await fetch(`${API}/api/admins/${adminId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (response.status === 401) {
+        navigate("/login", { replace: true, state: { returnTo: location.pathname } });
+        return;
+      }
+      if (response.status === 403) {
+        navigate("/403", { replace: true });
+        return;
+      }
       if (response.ok) {
         dispatch({ type: "DELETE_ADMIN", payload: Number(adminId) || adminId });
         navigate("/admins");

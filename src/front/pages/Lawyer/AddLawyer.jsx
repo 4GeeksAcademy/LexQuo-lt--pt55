@@ -63,7 +63,8 @@ export const AddLawyer = () => {
             const response = await fetch(`${API}/api/lawyers`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`, 
+                    Accept: "application/json" 
                 },
                 body: JSON.stringify(payload), 
             });

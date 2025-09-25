@@ -3,11 +3,13 @@ import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
 export const EditAdmin = () => {
-  const { dispatch } = useGlobalReducer();
+  const { store, dispatch } = useGlobalReducer();
   const { adminId } = useParams();
   const navigate = useNavigate();
 
   const API = import.meta.env.VITE_BACKEND_URL;
+
+  const token = store?.auth?.token;
 
   const [formData, setFormData] = useState({
     firstname: "",
@@ -25,7 +27,9 @@ export const EditAdmin = () => {
     try {
       setFetching(true);
 
-      const response = await fetch(`${API}/api/admins/${adminId}`); // singular
+      const response = await fetch(`${API}/api/admins/${adminId}`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
@@ -66,7 +70,7 @@ export const EditAdmin = () => {
 
       const response = await fetch(`${API}/api/admins/${adminId}`, { // plural
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
         body: JSON.stringify(payload),
       });
 
