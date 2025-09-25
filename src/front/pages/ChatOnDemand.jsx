@@ -77,7 +77,7 @@ export default function ChatOnDemand(props) {
   const saveCache = useCallback((msgs, lastTs) => {
     if (!cacheKey) return;
     try {
-      sessionStorage.setItem(cacheKey, JSON.stringify({ msgs, lastTs }));
+      localStorage.setItem(cacheKey, JSON.stringify({ msgs, lastTs }));
     } catch (error) {
       console.warn("Error guardando en cache:", error);
     }
@@ -86,7 +86,7 @@ export default function ChatOnDemand(props) {
   const loadCache = useCallback(() => {
     if (!cacheKey) return null;
     try {
-      const raw = sessionStorage.getItem(cacheKey);
+      const raw = localStorage.getItem(cacheKey);
       return raw ? JSON.parse(raw) : null;
     } catch (error) {
       console.warn("Error leyendo cache:", error);
@@ -418,7 +418,7 @@ export default function ChatOnDemand(props) {
 
           {!isValidRole && (
             <div className="alert alert-warning my-2">
-              No pude detectar tu rol. Asegurate de tener <code>auth.role</code> en sessionStorage
+              No pude detectar tu rol. Asegurate de tener <code>auth.role</code> en localStorage
               o de pasar <code>senderRole</code> por props/state.
             </div>
           )}

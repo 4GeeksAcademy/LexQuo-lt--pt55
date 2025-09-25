@@ -93,7 +93,7 @@ export const Home = () => {
 					<Link to="/SignUpAdminUser">
 						<button className="btn btn-light me-2">Sign Up Admin</button>
 					</Link>
-					<Link to="/DashboardAdminUser">
+					<Link to="admins/dashboard">
 						<button className="btn btn-light me-2">Dashboard Admin</button>
 					</Link>
 				</div>

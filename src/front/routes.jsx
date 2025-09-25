@@ -95,6 +95,7 @@ import ChatsOverview from "./pages/ChatsOverview.jsx";
 import ChangePassword from "./pages/ChangePassword";
 
 import PrivateRoute from "./components/PrivateRoute.jsx";
+import PrivateAdminRoute from "./components/PrivateAdminRoute";
 
 import LoginForAll from "./pages/LoginForAll.jsx";
 import SignUpForAll from "./pages/SignUpForAll.jsx";
@@ -121,53 +122,55 @@ export const router = createBrowserRouter(
       <Route path="/demo" element={<Demo />} />
 
       {/* ==========RUTAS QUE SOLO ESTARIA USANDO EL ADMIN POR AHORA========== */}
+      
+      <Route element={<PrivateAdminRoute />}>
 
-      <Route path="/admins" element={<Admins />} />
-      <Route path="/admins/addAdmin" element={<AddAdmin />} />
-      <Route path="/admins/view/:adminId" element={<ViewAdmin />} />
-      <Route path="/admins/:adminId" element={<EditAdmin />} />
-      <Route path="/admins/dashboard" element={<DashboardAdminUser />} />
-      <Route path="/SignUpAdminUser" element={<SignUpAdminUser />} />
+        <Route path="/admins" element={<Admins />} />
+        <Route path="/admins/addAdmin" element={<AddAdmin />} />
+        <Route path="/admins/view/:adminId" element={<ViewAdmin />} />
+        <Route path="/admins/:adminId" element={<EditAdmin />} />
+        <Route path="/admins/dashboard" element={<DashboardAdminUser />} />
+        <Route path="/SignUpAdminUser" element={<SignUpAdminUser />} />
 
-      <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} />
-      <Route path="/courtfiles" element={<Courtfiles />} />
+        <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} />
+        <Route path="/courtfiles" element={<Courtfiles />} />
 
-      <Route path="/lawyers" element={<Lawyers />} />
-      <Route path="/lawyers/addLawyer" element={<AddLawyer />} />
+        <Route path="/lawyers" element={<Lawyers />} />
+        <Route path="/lawyers/addLawyer" element={<AddLawyer />} />
 
-      <Route path="/clients" element={<Clients />} />
-      <Route path="/clients/addClient" element={<AddClient />} />
+        <Route path="/clients" element={<Clients />} />
+        <Route path="/clients/addClient" element={<AddClient />} />
 
-      <Route path="/payments" element={<Payments />} />
-      <Route path="/deadlines" element={<Deadlines />} />
-      <Route path="/appointments" element={<Appointments />} />
-      <Route path="/documents" element={<Documents />} />
+        <Route path="/payments" element={<Payments />} />
+        <Route path="/deadlines" element={<Deadlines />} />
+        <Route path="/appointments" element={<Appointments />} />
+        <Route path="/documents" element={<Documents />} />
 
-      <Route path="/ClientsCourtfiles" element={<ClientsCourtfiles />} />
-      <Route path="/AddClientsCourtfiles" element={<AddClientsCourtfiles />} />
+        <Route path="/ClientsCourtfiles" element={<ClientsCourtfiles />} />
+        <Route path="/AddClientsCourtfiles" element={<AddClientsCourtfiles />} />
 
-      <Route path="/DeadlinesCourtfiles" element={<DeadlinesCourtfiles />} />
-      <Route path="/AddDeadlinesCourtfiles" element={<AddDeadlinesCourtfiles />} />
+        <Route path="/DeadlinesCourtfiles" element={<DeadlinesCourtfiles />} />
+        <Route path="/AddDeadlinesCourtfiles" element={<AddDeadlinesCourtfiles />} />
 
-      <Route path="/LawyersCourtfiles" element={<LawyersCourtfiles />} />
-      <Route path="/AddLawyersCourtfiles" element={<AddLawyersCourtfiles />} />
+        <Route path="/LawyersCourtfiles" element={<LawyersCourtfiles />} />
+        <Route path="/AddLawyersCourtfiles" element={<AddLawyersCourtfiles />} />
 
-      <Route path="/AppointmentsCourtfiles" element={<AppointmentsCourtfiles />} />
-      <Route path="/AddAppointmentsCourtfiles" element={<AddAppointmentsCourtfiles />} />
+        <Route path="/AppointmentsCourtfiles" element={<AppointmentsCourtfiles />} />
+        <Route path="/AddAppointmentsCourtfiles" element={<AddAppointmentsCourtfiles />} />
 
-      <Route path="/LawyersClients" element={<LawyersClients />} />
-      <Route path="/AddLawyersClients" element={<AddLawyersClients />} />
+        <Route path="/LawyersClients" element={<LawyersClients />} />
+        <Route path="/AddLawyersClients" element={<AddLawyersClients />} />
 
-      <Route path="/CourtfilesDocuments" element={<CourtfilesDocuments />} />
-      <Route path="/AddCourtfilesDocuments" element={<AddCourtfilesDocuments />} />
+        <Route path="/CourtfilesDocuments" element={<CourtfilesDocuments />} />
+        <Route path="/AddCourtfilesDocuments" element={<AddCourtfilesDocuments />} />
 
-      <Route path="/PaymentCourtfiles" element={<PaymentCourtfiles />} />
-      <Route path="/AddPaymentCourtfile" element={<AddPaymentCourtfile />} />
+        <Route path="/PaymentCourtfiles" element={<PaymentCourtfiles />} />
+        <Route path="/AddPaymentCourtfile" element={<AddPaymentCourtfile />} />
 
-
+      </Route>
 
       {/* ==========RUTAS QUE YA SERIAN INNECESARIAS========== */}
-      
+
       <Route path="/SignUpLawyer" element={<SignUpLawyer />} />
       <Route path="/LoginLawyer" element={<LoginLawyer />} />
 
@@ -177,7 +180,7 @@ export const router = createBrowserRouter(
       <Route path="/loginAdmin" element={<LoginAdminUser />} />
 
       {/* ==========RUTAS ABIERTAS========== */}
-      
+
       <Route path="/403" element={<Forbidden />} />
 
       <Route path="/login" element={<LoginForAll />} />

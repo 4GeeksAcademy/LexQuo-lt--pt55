@@ -79,8 +79,6 @@ export const ViewDocument = () => {
     const fetchLinked = async () => {
       try {
         if (linkedCourtfile || !documentId) return;
-        const auth = JSON.parse(sessionStorage.getItem("auth") || "null");
-        const token = auth?.token;
         const resp = await fetch(`${API}/api/courtfile-document`, {
           headers: { Authorization: `Bearer ${token}` }
         });

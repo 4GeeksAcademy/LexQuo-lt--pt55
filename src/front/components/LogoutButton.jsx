@@ -7,8 +7,8 @@ export const LogoutButton = ({ className = "btn btn-outline-danger", onLogout })
   const { dispatch } = useGlobalReducer();
 
   const handleLogout = () => {
-    sessionStorage.removeItem("auth");
-    sessionStorage.removeItem("user_name");
+    localStorage.removeItem("auth");
+    localStorage.removeItem("user_name");
 
     dispatch({ type: "CLEAR_AUTH" });
 

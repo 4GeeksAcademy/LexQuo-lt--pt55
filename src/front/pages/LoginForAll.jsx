@@ -48,7 +48,7 @@ export default function Login() {
       const byRole =
         role === "lawyer" ? "/DashboardLawyer" :
           role === "client" ? "/DashboardClient" :
-            role === "admin_user" ? "/DashboardAdmin" : "/";
+            role === "admin_user" ? "/admins/dashboard" : "/";
 
       const returnTo = location.state?.returnTo || byRole;
       navigate(returnTo, { replace: true });

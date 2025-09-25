@@ -138,7 +138,7 @@ export const EditDocument = () => {
         data.append("file", file);
       }
 
-      const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
+      const auth = store?.auth || JSON.parse(localStorage.getItem("auth") || "null");
       const token = auth?.token;
 
       const response = await fetch(`${API}/api/documents/${documentId}`, {

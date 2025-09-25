@@ -8,7 +8,7 @@ export const AddClient = () => {
   const location = useLocation();
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  const auth = store?.auth || JSON.parse(sessionStorage.getItem("auth") || "null");
+  const auth = store?.auth || JSON.parse(localStorage.getItem("auth") || "null");
   const token = auth?.token;
 
   const preselectedCourtfileId = location.state?.courtfileId || null;

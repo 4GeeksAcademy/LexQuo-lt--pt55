@@ -738,13 +738,13 @@ def admin_login():
 
         token = create_access_token(
             identity=str(admin.id),
-            additional_claims={"role": "admin"}
+            additional_claims={"role": "admin_user"}
         )
 
         return jsonify({
             'message': 'Login successful',
             'token': token,
-            'role': 'admin',
+            'role': 'admin_user',
             'admin': admin.serialize()
         }), 200
 

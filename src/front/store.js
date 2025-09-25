@@ -1,7 +1,7 @@
 export const initialStore = () => {
   const persistedAuth = (() => {
     try {
-      return JSON.parse(sessionStorage.getItem("auth") || "null");
+      return JSON.parse(localStorage.getItem("auth") || "null");
     } catch {
       return null;
     }
@@ -60,9 +60,8 @@ export default function storeReducer(store, action = {}) {
     }
 
     case "CLEAR_AUTH": {
-      // limpiar sessionStorage y memoria
       try {
-        sessionStorage.removeItem("auth");
+        localStorage.removeItem("auth");
       } catch {}
       return { ...store, auth: null, me: null };
     }

@@ -47,14 +47,14 @@ export const LoginAdminUser = () => {
                 const token = data?.token;
                 const auth = { role, token, user };
 
-                sessionStorage.setItem("auth", JSON.stringify(auth));
+                localStorage.setItem("auth", JSON.stringify(auth));
 
                 const name = `${user?.firstname ?? ""} ${user?.lastname ?? ""}`.trim();
-                sessionStorage.setItem("user_name", name);
+                localStorage.setItem("user_name", name);
 
-                sessionStorage.removeItem("token");
-                sessionStorage.removeItem("user_id");
-                sessionStorage.removeItem("lawyer");
+                localStorage.removeItem("token");
+                localStorage.removeItem("user_id");
+                localStorage.removeItem("lawyer");
 
                 dispatch({ type: "SET_AUTH", payload: auth });
 

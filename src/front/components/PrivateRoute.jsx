@@ -7,7 +7,7 @@ export default function PrivateRoute() {
   const { dispatch } = useGlobalReducer();
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  // ✅ Solo token desde sessionStorage (nunca datos de usuario)
+  // ✅ Solo token desde localstorage (nunca datos de usuario)
   const token = JSON.parse(localStorage.getItem("auth") || "null")?.token || null;
 
   // 1) Si no hay token -> a Login con returnTo
