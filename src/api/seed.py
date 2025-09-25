@@ -4,9 +4,8 @@
 # Idempotente por campos únicos (email, case_number, name+url_route).
 # -----------------------------------------------------------------------------
 from datetime import date, time, datetime, timedelta
-from app import app
+# from app import app
 from api.models import (
-    db,
     Lawyer, Client, Courtfile,
     Appointment, Deadlines, Document,
     Payment, PaymentStatus
@@ -270,28 +269,28 @@ def seed_payments(session):
 # ----------------------------- runner ----------------------------- #
 
 
-def run():
-    with app.app_context():
-        session = db.session
-        print(">> Seed base: insertando sin borrar ni relacionar…")
-        seed_lawyers(session)
-        seed_clients(session)
-        seed_courtfiles(session)
-        seed_appointments(session)
-        seed_deadlines(session)
-        seed_documents(session)
-        seed_payments(session)
+def run(session):
+    # with app.app_context():
+    # session = db.session
+    print(">> Seed base: insertando sin borrar ni relacionar…")
+    seed_lawyers(session)
+    seed_clients(session)
+    seed_courtfiles(session)
+    seed_appointments(session)
+    seed_deadlines(session)
+    seed_documents(session)
+    seed_payments(session)
 
-        # Resumen actual
-        print("\n== Totales actuales ==")
-        print(f"Lawyers:     {session.query(Lawyer).count()}")
-        print(f"Clients:     {session.query(Client).count()}")
-        print(f"Courtfiles:  {session.query(Courtfile).count()}")
-        print(f"Appointments:{session.query(Appointment).count()}")
-        print(f"Deadlines:   {session.query(Deadlines).count()}")
-        print(f"Documents:   {session.query(Document).count()}")
-        print(f"Payments:    {session.query(Payment).count()}")
+    # Resumen actual
+    print("\n== Totales actuales ==")
+    print(f"Lawyers:     {session.query(Lawyer).count()}")
+    print(f"Clients:     {session.query(Client).count()}")
+    print(f"Courtfiles:  {session.query(Courtfile).count()}")
+    print(f"Appointments:{session.query(Appointment).count()}")
+    print(f"Deadlines:   {session.query(Deadlines).count()}")
+    print(f"Documents:   {session.query(Document).count()}")
+    print(f"Payments:    {session.query(Payment).count()}")
 
 
-if __name__ == "__main__":
-    run()
+# if __name__ == "__main__":
+# run()
