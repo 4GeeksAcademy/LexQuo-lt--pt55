@@ -9,6 +9,7 @@ export const AddPayment = () => {
   const API = import.meta.env.VITE_BACKEND_URL;
 
   const token = store?.auth?.token;
+  const me = store?.me || null;
   const role = (me?.role || "").toLowerCase();
 
   // ---------- Guards ----------

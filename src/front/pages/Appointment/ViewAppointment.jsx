@@ -9,7 +9,13 @@ export const ViewAppointment = () => {
   const { appointmentId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const returnTo = location.state?.returnTo || "/appointments";
+  const rawReturnTo = location.state?.returnTo;
+  const returnTo =
+    typeof rawReturnTo === "string"
+      ? rawReturnTo
+      : (rawReturnTo && typeof rawReturnTo === "object" && "pathname" in rawReturnTo)
+        ? rawReturnTo
+        : fallbackByRole;
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
@@ -21,7 +27,7 @@ export const ViewAppointment = () => {
     role === "admin_user" ||
     role === "lawyer" ||
     role === "client";
-    
+
   if (!allowed) return <Navigate to="/403" replace />;
 
   const [appointment, setAppointment] = useState(null);

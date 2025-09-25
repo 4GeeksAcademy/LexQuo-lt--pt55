@@ -2170,7 +2170,11 @@ def unread_counts():
       user_id=<int>
       courtfile_ids=1,2,3
     Respuesta:
-      { "1": {"hasUnread": true, "count": 3}, "2": {"hasUnread": false, "count": 0}, ... }
+      {
+        "1": {"hasUnread": true, "count": 3, "last_message_at": "2025-09-23T12:34:56+00:00"},
+        "2": {"hasUnread": false, "count": 0, "last_message_at": null},
+        ...
+      }
     """
     role = (request.args.get("role") or "").strip().lower()
     user_id = request.args.get("user_id", type=int)
@@ -2213,17 +2217,34 @@ def unread_counts():
         )
         .group_by(Message.id_courtfile)
     )
-
     rows = db.session.execute(msgs).all()
     counts_by_cfid = {cfid: 0 for cfid in cfids}
     for cfid, cnt in rows:
         counts_by_cfid[int(cfid)] = int(cnt)
 
-    # respuesta shape ideal para tu hook
+    # ⬇️ NUEVO (mínimo): última actividad por expediente
+    last_msg_sq = (
+        select(
+            Message.id_courtfile.label("cfid"),
+            func.max(Message.created_at).label("last_message_at")
+        )
+        .where(Message.id_courtfile.in_(cfids))
+        .group_by(Message.id_courtfile)
+    )
+    last_rows = db.session.execute(last_msg_sq).all()
+    last_by_cfid = {int(cfid): ts for cfid, ts in last_rows}
+
+    # respuesta
     resp = {}
     for cfid in cfids:
         c = counts_by_cfid.get(cfid, 0)
-        resp[str(cfid)] = {"hasUnread": c > 0, "count": min(c, 99)}
+        ts = last_by_cfid.get(cfid)
+        resp[str(cfid)] = {
+            "hasUnread": c > 0,
+            "count": min(c, 99),
+            "last_message_at": (ts.isoformat() if ts else None),
+        }
+
     return jsonify(resp)
 
 

@@ -15,7 +15,7 @@ export const ViewCourtfileClient = () => {
 
   // tomar todo del store (PrivateRoute ya rehidrata)
   const token = auth?.token;
-  const role = auth?.role
+  const role = String(auth?.role || "").toLowerCase();
   const authed = !!token;
 
   // guards
@@ -157,7 +157,7 @@ export const ViewCourtfileClient = () => {
           courtfileId: cfid,
           courtfileNumber: courtfile?.case_number,
           courtfileTitle: courtfile?.title,
-          senderRole: "lawyer",
+          senderRole: "client",
           returnTo: `/courtfiles/ViewCourtfileLawyer/${cfid}`,
         },
       });
@@ -338,6 +338,21 @@ export const ViewCourtfileClient = () => {
                         <td>{ap.appointment_date}</td>
                         <td>{ap.starts_at} - {ap.ends_at}</td>
                         <td>{ap.appointment_location || 'Not specified'}</td>
+                        <td className="text-end">
+                          <Link
+                            to={`/appointments/view/${ap.appointment_id}`}
+                            state={{
+                              returnTo: `/courtfiles/ViewCourtfileClient/${courtfile.id}`,
+                              courtfileId: courtfile.id,
+                              courtfileNumber: courtfile.case_number,
+                              courtfileTitle: courtfile.title
+                            }}
+                            className="btn btn-sm btn-info me-1"
+                            title="View"
+                          >
+                            <i className="bi bi-eye"></i>
+                          </Link>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
