@@ -50,6 +50,9 @@ export const Home = () => {
 					<Link to="/signUp">
 						<button className="btn btn-light me-2">SignUp</button>
 					</Link>
+					<Link to="/SignUpAdminUser">
+						<button className="btn btn-light me-2">Sign Up Admin</button>
+					</Link>
 				</div>
 			</div>
 

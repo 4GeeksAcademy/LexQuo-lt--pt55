@@ -319,7 +319,6 @@ def lookup_lawyer_by_email():
 
 
 @api.route('/lawyers', methods=['POST'])
-@jwt_required()
 def create_lawyer():
     try:
         data = request.get_json()
@@ -3042,7 +3041,7 @@ def send_linked_email():
 
     case_url = f"{FRONTEND_BASE_URL}/courtfiles/{courtfile_id}" if courtfile_id else FRONTEND_BASE_URL
 
-    subject = "Nuevo acceso a tu expediente en LexQuo"
+    subject = f"Acceso habilitado en LexQuo{f' – Expediente #{courtfile_number}' if courtfile_number else ''}"
     html = f"""
     <h2>Hello {firstname} {lastname} 👋</h2>
     <p>You have been linked to a new case in <b>LexQuo</b>.</p>

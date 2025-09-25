@@ -120,14 +120,14 @@ export const router = createBrowserRouter(
       
       {/* ==========RUTAS QUE SOLO ESTARIA USANDO EL ADMIN POR AHORA========== */}
       
-      <Route element={<PrivateAdminRoute />}>
+      
 
         <Route path="/admins" element={<Admins />} />
         <Route path="/admins/addAdmin" element={<AddAdmin />} />
         <Route path="/admins/view/:adminId" element={<ViewAdmin />} />
         <Route path="/admins/:adminId" element={<EditAdmin />} />
         <Route path="/admins/dashboard" element={<DashboardAdminUser />} />
-        <Route path="/SignUpAdminUser" element={<SignUpAdminUser />} />
+
 
         <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} />
         <Route path="/courtfiles" element={<Courtfiles />} />
@@ -164,7 +164,7 @@ export const router = createBrowserRouter(
         <Route path="/PaymentCourtfiles" element={<PaymentCourtfiles />} />
         <Route path="/AddPaymentCourtfile" element={<AddPaymentCourtfile />} />
 
-      </Route>
+   
 
       {/* ==========RUTAS QUE YA SERIAN INNECESARIAS========== */}
 
@@ -182,6 +182,8 @@ export const router = createBrowserRouter(
 
       <Route path="/login" element={<LoginForAll />} />
       <Route path="/signUp" element={<SignUpForAll />} />
+
+      <Route path="/SignUpAdminUser" element={<SignUpAdminUser />} />
 
 
       {/* ==========RUTAS PROTEGIDAS========== */}
