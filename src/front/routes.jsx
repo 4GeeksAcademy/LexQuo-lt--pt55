@@ -140,7 +140,7 @@ export const router = createBrowserRouter(
       <Route path="/admins/:adminId" element={<EditAdmin />} />
       <Route path="/loginAdmin" element={<LoginAdminUser />} />
       <Route path="/admins/dashboard" element={<DashboardAdminUser />} />
-      <Route path="/signup/admin" element={<SignUpAdminUser />} />
+      <Route path="/SignUpAdminUser" element={<SignUpAdminUser />} />
 
       <Route path="/payments" element={<Payments />} />
       <Route path="/payments/view/:paymentId" element={<ViewPayment />} />

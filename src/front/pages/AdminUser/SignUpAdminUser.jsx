@@ -47,7 +47,7 @@ export const SignUpAdminUser = () => {
 
         setLoading(true);
 
-        fetch(`${API}/api/admin-users`, {
+        fetch(`${API}/api/admins`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -70,7 +70,7 @@ export const SignUpAdminUser = () => {
                 }
                 setOkMsg("User created successfully. You can now log in.");
                 setForm((f) => ({ ...f, password: "", confirm: "" }));
-                setTimeout(() => navigate("/LoginClient"), 1200);
+                setTimeout(() => navigate("/loginAdmin"), 1200);
             })
             .catch((err) => setErrMsg(err.message || "Error inesperado"))
             .finally(() => setLoading(false));
