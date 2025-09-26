@@ -271,8 +271,27 @@ export const ViewCourtfileLawyer = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [aiSuggestions, setAiSuggestions] = useState([]);
+  
+  const loadSavedSuggestions = async () => {
+    try {
+      const resp = await fetch(`${API}/api/ai/suggestions?courtfile_id=${courtfile.id}`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+      if (resp.ok) {
+        const saved = await resp.json();
+        // mezclá: primero las guardadas, luego las de cache si querés
+        if (Array.isArray(saved) && saved.length > 0) {
+          setAiSuggestions(saved);
+          dispatch({ type: "SET_AI_SUGGESTIONS_CACHE", payload: { courtfileId: courtfile.id, suggestions: saved } });
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
-  const fetchAISuggestions = async (desc, jur, crt) => {
+  // Generar nuevas sugerencias y reemplazar en DB
+  const handleGenerateSuggestions = async () => {
     try {
       setAiLoading(true);
       setAiError("");
@@ -280,25 +299,62 @@ export const ViewCourtfileLawyer = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          description: desc || "",
-          jurisdiction: jur || "",
-          court: crt || ""
-        })
+          description: courtfile?.description,
+          jurisdiction: courtfile?.jurisdiction,
+          court: courtfile?.court,
+        }),
       });
+
       const data = await resp.json();
-      if (!resp.ok) {
-        throw new Error(data?.error || `HTTP ${resp.status}`);
-      }
-      setAiSuggestions(Array.isArray(data?.suggestions) ? data.suggestions : []);
+      if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
+
+      // ahora persistimos en backend reemplazando
+      const saveResp = await fetch(`${API}/api/ai/suggestions/replace`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          courtfile_id: courtfile.id,
+          suggestions: data.suggestions,
+          source_description: courtfile?.description,
+          source_jurisdiction: courtfile?.jurisdiction,
+          source_court: courtfile?.court,
+        }),
+      });
+
+      const saveData = await saveResp.json();
+      if (!saveResp.ok) throw new Error(saveData?.error || `HTTP ${saveResp.status}`);
+
+      await loadSavedSuggestions(); // refrescar lista en UI
     } catch (e) {
-      setAiError(e.message || "Error getting AI suggestions");
+      setAiError(e.message || "Error generando sugerencias");
     } finally {
       setAiLoading(false);
     }
   };
+
+  // Archivar una sugerencia
+  const handleArchiveSuggestion = async (sugId) => {
+    try {
+      const r = await fetch(`${API}/api/ai/suggestions/${sugId}/archive`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!r.ok) throw new Error("No se pudo archivar");
+      await loadSavedSuggestions();
+    } catch (e) {
+      setAiError(e.message);
+    }
+  };
+
+  useEffect(() => {
+    if (courtfile?.id && token) loadSavedSuggestions();
+  }, [courtfile?.id, token]);
   // ===== END AI SUGGESTIONS =====
 
 
@@ -773,37 +829,16 @@ export const ViewCourtfileLawyer = () => {
                 </h5>
                 <button
                   className="btn btn-sm btn-light"
-                  onClick={() =>
-                    fetchAISuggestions(
-                      courtfile?.description,
-                      courtfile?.jurisdiction,
-                      courtfile?.court
-                    )
-                  }
+                  onClick={handleGenerateSuggestions}
                   disabled={aiLoading}
                 >
                   {aiLoading ? (
-                    <span
-                      className="spinner-border spinner-border-sm"
-                      role="status"
-                      aria-hidden="true"
-                    ></span>
+                    <span className="spinner-border spinner-border-sm" role="status"></span>
                   ) : (
-                    "Generar sugerencias"
+                    "Generar/Refrescar"
                   )}
                 </button>
-                <button
-                  className="btn btn-sm btn-light"
-                  onClick={() => fetchAISuggestions(courtfile.description, courtfile.jurisdiction, courtfile.court)}
-                  disabled={aiLoading}
-                  title="Refrescar sugerencias"
-                >
-                  {aiLoading ? (
-                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                  ) : (
-                    <i className="bi bi-arrow-clockwise"></i>
-                  )}
-                </button>
+
               </div>
 
               <div className="card-body">
@@ -857,6 +892,7 @@ export const ViewCourtfileLawyer = () => {
                                 courtfileNumber: courtfile.case_number,
                                 courtfileTitle: courtfile.title,
                                 prefill: { type: "Other", description: sug.title || "" },
+                                suggestion: sug, 
                                 returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
                               }}
                               className="btn btn-sm btn-outline-primary"
@@ -873,6 +909,7 @@ export const ViewCourtfileLawyer = () => {
                                 courtfileNumber: courtfile.case_number,
                                 courtfileTitle: courtfile.title,
                                 prefill: { title: sug.title || "" },
+                                suggestion: sug,
                                 returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
                               }}
                               className="btn btn-sm btn-outline-secondary"
@@ -888,6 +925,7 @@ export const ViewCourtfileLawyer = () => {
                                 courtfileNumber: courtfile.case_number,
                                 courtfileTitle: courtfile.title,
                                 prefill: { title: sug.title || "", content: sug.reasoning || "" },
+                                suggestion: sug,
                                 returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`
                               }}
                               className="btn btn-sm btn-outline-success"
@@ -895,6 +933,15 @@ export const ViewCourtfileLawyer = () => {
                             >
                               <i className="bi bi-file-earmark-plus"></i> Doc
                             </Link>
+
+                            {sug.id && (
+                              <button
+                                className="btn btn-sm btn-outline-danger"
+                                onClick={() => handleArchiveSuggestion(sug.id)}
+                              >
+                                <i className="bi bi-archive"></i>
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>

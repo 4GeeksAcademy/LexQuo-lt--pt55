@@ -14,6 +14,7 @@ export const AddAppointment = () => {
   const preselectedCourtfileNumber = location.state?.courtfileNumber || null;
   const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
   const returnTo = location.state?.returnTo || "/appointments";
+  const suggestion = location.state?.suggestion || null;
 
   const token = store?.auth?.token;
   const role = (store?.me?.role || "").toLowerCase();
@@ -53,7 +54,7 @@ export const AddAppointment = () => {
 
   useEffect(() => {
     const fetchCases = async () => {
-      if (!role) return; 
+      if (!role) return;
       try {
         setLoadingCases(true);
 
@@ -136,7 +137,7 @@ export const AddAppointment = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}` 
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           title: formData.title,
@@ -251,6 +252,25 @@ export const AddAppointment = () => {
 
           {/* Card */}
           <div className="card">
+            {suggestion && (
+              <div className="alert alert-info">
+                <h5 className="mb-1">
+                  <i className="bi bi-lightbulb"></i> Sugerencia IA
+                </h5>
+                <strong>{suggestion.title}</strong>
+                {suggestion.reasoning && <p className="mb-1">{suggestion.reasoning}</p>}
+                {Array.isArray(suggestion.next_steps) && suggestion.next_steps.length > 0 && (
+                  <ul className="mb-1">
+                    {suggestion.next_steps.map((step, i) => (
+                      <li key={i}>{step}</li>
+                    ))}
+                  </ul>
+                )}
+                {suggestion.legal_basis && (
+                  <small className="text-muted">Fundamento: {suggestion.legal_basis}</small>
+                )}
+              </div>
+            )}
             <div className="card-body">
               {error && (
                 <div className="alert alert-danger" role="alert">

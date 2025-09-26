@@ -6,6 +6,12 @@ from flask import Blueprint, request, jsonify
 from openai import OpenAI
 from google import genai
 from google.genai import types
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
+from api.models import Courtfile, PaymentCourtfile, PaymentStatus, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, Message, ChatRead, AISuggestion
+# api_ai_routes.py (o en tu mismo bp_ai)
+from hashlib import sha256
+from flask_jwt_extended import jwt_required
+from sqlalchemy import and_
 
 bp_ai = Blueprint("ai", __name__, url_prefix="/api/ai")
 
@@ -39,7 +45,19 @@ def build_user_prompt(description: str, jurisdiction: str, court: str | None):
 
 Tarea: sugiere hasta 5 medidas útiles y realistas para el próximo paso procesal, adecuadas a esa jurisdicción.
 """
+def _get_role_and_identity():
+    try:
+        claims = get_jwt()
+        return claims.get("role"), get_jwt_identity()
+    except Exception:
+        return None, None
 
+def _role():
+    claims = get_jwt() or {}
+    return (claims.get("role") or "").lower()
+
+def _is_admin():
+    return _role() == "admin_user"
 
 @bp_ai.route("/suggest-actions", methods=["POST"])
 def suggest_actions():
@@ -203,3 +221,116 @@ Sé conciso y enfocado en aspectos prácticos. Máximo 5 puntos principales.
             "urgency": "medium",
             "actions": "Intentar nuevamente más tarde"
         }]
+
+
+
+
+def _hash_source(description, jurisdiction, court):
+    base = f"{(description or '').strip()}|{(jurisdiction or '').strip()}|{(court or '').strip()}".lower()
+    return sha256(base.encode("utf-8")).hexdigest()
+
+@bp_ai.route("/suggestions", methods=["GET"])
+@jwt_required()
+def list_saved_suggestions():
+    role, current_id = _get_role_and_identity()
+    courtfile_id = int(request.args.get("courtfile_id") or 0)
+    if courtfile_id <= 0:
+        return jsonify({"error": "courtfile_id is required"}), 400
+
+    # permiso: admin o lawyer vinculado
+    if not _is_admin():
+        if role != "lawyer":
+            return jsonify({"error": "forbidden"}), 403
+        linked = LawyerCourtfile.query.filter_by(lawyer_id=int(current_id), courtfile_id=courtfile_id).first()
+        if not linked:
+            return jsonify({"error": "forbidden"}), 403
+
+    rows = AISuggestion.query.filter_by(courtfile_id=courtfile_id, is_archived=False)\
+            .order_by(AISuggestion.created_at.desc()).all()
+
+    return jsonify([{
+        "id": r.id,
+        "courtfile_id": r.courtfile_id,
+        "title": r.title,
+        "reasoning": r.reasoning,
+        "urgency": getattr(r.urgency, "value", r.urgency) or "medium",
+        "next_steps": r.next_steps or [],
+        "legal_basis": r.legal_basis,
+        "confidence": r.confidence,
+        "created_at": r.created_at.isoformat(),
+        "model": r.model
+    } for r in rows])
+
+
+@bp_ai.route("/suggestions/<int:sug_id>/archive", methods=["POST"])
+@jwt_required()
+def archive_suggestion(sug_id):
+    role, current_id = _get_role_and_identity()
+    row = AISuggestion.query.get_or_404(sug_id)
+
+    # permiso
+    if not _is_admin():
+        if role != "lawyer":
+            return jsonify({"error": "forbidden"}), 403
+        linked = LawyerCourtfile.query.filter_by(lawyer_id=int(current_id), courtfile_id=row.courtfile_id).first()
+        if not linked:
+            return jsonify({"error": "forbidden"}), 403
+
+    row.is_archived = True
+    db.session.commit()
+    return jsonify({"ok": True})
+
+@bp_ai.route("/suggestions/replace", methods=["POST"])
+@jwt_required()
+def replace_suggestions():
+    role, current_id = _get_role_and_identity()
+    data = request.get_json() or {}
+    courtfile_id = int(data.get("courtfile_id") or 0)
+    suggestions = data.get("suggestions") or []
+    description = (data.get("source_description") or "")
+    jurisdiction = (data.get("source_jurisdiction") or "")
+    court = (data.get("source_court") or "")
+
+    if courtfile_id <= 0 or not isinstance(suggestions, list):
+        return jsonify({"error": "courtfile_id and suggestions[] are required"}), 400
+
+    # permiso
+    if not _is_admin():
+        if role != "lawyer":
+            return jsonify({"error": "forbidden"}), 403
+        linked = LawyerCourtfile.query.filter_by(
+            lawyer_id=int(current_id), courtfile_id=courtfile_id
+        ).first()
+        if not linked:
+            return jsonify({"error": "forbidden"}), 403
+
+    # Archivar todas las anteriores
+    AISuggestion.query.filter_by(courtfile_id=courtfile_id, is_archived=False).update(
+        {"is_archived": True}
+    )
+
+    shash = _hash_source(description, jurisdiction, court) if description else None
+    created = []
+    for s in suggestions[:5]:
+        row = AISuggestion(
+            courtfile_id=courtfile_id,
+            created_by_id=int(current_id) if role == "lawyer" else None,
+            title=(s.get("title") or "Sugerencia").strip()[:255],
+            reasoning=s.get("reasoning") or None,
+            urgency=(s.get("urgency") or "medium"),
+            next_steps=s.get("next_steps") if isinstance(s.get("next_steps"), list) else None,
+            legal_basis=s.get("legal_basis") or None,
+            confidence=float(s.get("confidence")) if s.get("confidence") is not None else None,
+            model=os.getenv("OPENAI_MODEL", "gpt-4.1-mini"),
+            raw=s,
+            source_hash=shash,
+        )
+        db.session.add(row)
+        created.append(row)
+
+    db.session.commit()
+
+    return jsonify({
+        "saved": [c.id for c in created],
+        "count": len(created)
+    }), 201

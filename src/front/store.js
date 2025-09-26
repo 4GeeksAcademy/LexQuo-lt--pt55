@@ -7,6 +7,14 @@ export const initialStore = () => {
     }
   })();
 
+  const persistedAISuggestions = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("aiSuggestionsByCase") || "{}");
+    } catch {
+      return {};
+    }
+  })();
+
   return {
     message: null,
     todos: [],
@@ -27,6 +35,7 @@ export const initialStore = () => {
     paymentCourtfiles: [],
     auth: persistedAuth || null,
     me: null,
+    aiSuggestionsByCase: persistedAISuggestions,
   };
 };
 
@@ -50,7 +59,6 @@ export default function storeReducer(store, action = {}) {
 
     /* AUTH (nuevo) */
     case "SET_AUTH": {
-
       return { ...store, auth: action.payload };
     }
 
@@ -305,25 +313,6 @@ export default function storeReducer(store, action = {}) {
         ),
       };
 
-    /* LAWYER–CLIENT */
-
-    case "SET_LAWYER_CLIENT":
-      return { ...store, lawyerClient: action.payload };
-
-    case "ADD_LAWYER_CLIENT":
-      return {
-        ...store,
-        lawyerClient: [...store.lawyerClient, action.payload],
-      };
-
-    case "DELETE_LAWYER_CLIENT":
-      return {
-        ...store,
-        lawyerClient: store.lawyerClient.filter(
-          (lc) => lc.id !== action.payload
-        ),
-      };
-
     /* COURTFILE-DOCUMENT */
 
     case "SET_COURTFILE_DOCUMENT":
@@ -361,6 +350,38 @@ export default function storeReducer(store, action = {}) {
           (pc) => pc.id !== action.payload
         ),
       };
+
+    /* AI_SUGGESTIONS_CACHE */
+
+    case "SET_AI_SUGGESTIONS_CACHE": {
+      const { courtfileId, suggestions } = action.payload || {};
+      if (!courtfileId) return store;
+
+      const next = {
+        ...(store.aiSuggestionsByCase || {}),
+        [courtfileId]: suggestions || [],
+      };
+
+      try {
+        localStorage.setItem("aiSuggestionsByCase", JSON.stringify(next));
+      } catch {}
+
+      return { ...store, aiSuggestionsByCase: next };
+    }
+
+    case "CLEAR_AI_SUGGESTIONS_CACHE": {
+      const { courtfileId } = action.payload || {};
+      if (!courtfileId) return store;
+
+      const next = { ...(store.aiSuggestionsByCase || {}) };
+      delete next[courtfileId];
+
+      try {
+        localStorage.setItem("aiSuggestionsByCase", JSON.stringify(next));
+      } catch {}
+
+      return { ...store, aiSuggestionsByCase: next };
+    }
 
     default:
       throw Error("Unknown action.");
