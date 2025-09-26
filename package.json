@@ -11,7 +11,9 @@
 		"start": "vite",
 		"build": "vite build",
 		"lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-		"preview": "vite preview"
+		"preview": "vite preview",
+		"mjml:build": "mjml \"src/api/email_templates/*.mjml\" -o src/api/email_templates",
+        "mjml:watch": "mjml -w \"src/api/email_templates/*.mjml\" -o src/api/email_templates"
 	},
 	"author": {
 		"name": "Alejandro Sanchez",

@@ -1,0 +1,100 @@
+<mjml>
+  <mj-head>
+    <mj-preview>Invitación a LexQuo — Accedé a tu expediente</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Helvetica, Arial, sans-serif" />
+      <mj-text color="#1a1a1a" font-size="15px" line-height="1.7" />
+      <mj-button background-color="#0b3a6a" color="#ffffff" font-size="16px" border-radius="8px" padding="14px 22px" />
+    </mj-attributes>
+  </mj-head>
+
+  <mj-body background-color="#f4f6f9">
+    <!-- Brand -->
+    <mj-section padding="24px 0 0">
+      <mj-column>
+        <mj-image width="80px" alt="LexQuo" src="https://dummyimage.com/160x160/0b3a6a/ffffff.png&text=LQ" />
+      </mj-column>
+    </mj-section>
+
+    <!-- Header -->
+    <mj-section background-color="#ffffff" padding="10px 24px 0" border-radius="14px 14px 0 0">
+      <mj-column>
+        <mj-text align="center" font-size="22px" color="#0b3a6a" font-weight="700" padding="6px 0 0">
+          Te invitamos a LexQuo
+        </mj-text>
+        <mj-text align="center" color="#51607a" font-size="14px" font-style="italic" padding="2px 0 10px" line-height="1.8">
+          Tech for Lawyers. Law for People.
+        </mj-text>
+        <mj-divider border-color="#e6e9ef" padding="0 0 14px" />
+      </mj-column>
+    </mj-section>
+
+    <!-- Body -->
+    <mj-section background-color="#ffffff" padding="0 24px 10px">
+      <mj-column>
+        <mj-text>Hola <strong>{{firstname}} {{lastname}}</strong>, 👋</mj-text>
+        <mj-text>
+          Tenés acceso a <strong>LexQuo</strong>: consultá tu expediente, fechas clave y comunicaciones en un solo lugar.
+        </mj-text>
+
+        <mj-text padding="10px 0 0" font-weight="700" color="#0b3a6a">Datos de acceso</mj-text>
+        <mj-text padding="4px 0 0" line-height="1.8">
+          Usuario:
+          <code style="background:#f2f4f8;padding:3px 7px;border-radius:6px;">{{email}}</code><br/>
+          Contraseña inicial:
+          <code style="background:#f2f4f8;padding:3px 7px;border-radius:6px;">{{default_pwd}}</code>
+        </mj-text>
+        <mj-text color="#6b7380" font-size="13px" padding="2px 0 16px" line-height="1.75">
+          Te recomendamos cambiar la contraseña en tu primer inicio de sesión.
+        </mj-text>
+
+        <mj-button href="{{invite_url}}" align="center" padding-top="4px">Aceptar invitación</mj-button>
+      </mj-column>
+    </mj-section>
+
+    <!-- Qué podés hacer -->
+    <mj-section background-color="#ffffff" padding="8px 24px 8px">
+      <mj-column>
+        <mj-text font-weight="700" color="#0b3a6a">¿Qué podés hacer en LexQuo?</mj-text>
+        <mj-text padding-left="12px" line-height="1.8">
+          &bull; Seguir el estado de tu expediente y próximos pasos.<br/>
+          &bull; Recibir avisos de vencimientos y novedades.<br/>
+          &bull; Subir documentación de forma segura.<br/>
+          &bull; Chatear y coordinar reuniones con tu abogado/a.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Seguridad -->
+    <mj-section background-color="#ffffff" padding="0 24px 18px">
+      <mj-column>
+        <mj-text padding="12px 14px" background-color="#eef2f8" color="#0b3a6a" line-height="1.75">
+          🔒 <strong>Privacidad y seguridad</strong><br/>
+          Tus datos viajan cifrados (TLS) y sólo son visibles según permisos del estudio. Podés revocar el acceso cuando quieras.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Footers -->
+    <mj-section background-color="#ffffff" padding="0 24px 20px" border-radius="0 0 14px 14px">
+      <mj-column>
+        <mj-divider border-color="#e6e9ef" padding="6px 0 0" />
+        <mj-text color="#555" font-size="13px" line-height="1.65">🧭
+          Si este correo no era para vos, podés ignorarlo.
+        </mj-text>
+        <mj-text color="#6f7785" font-size="12px" line-height="1.65" padding="6px 0 0">
+          ⚖️ Este correo puede contener información confidencial y/o privilegiada. Si usted no es el destinatario,
+          notifíquelo inmediatamente y elimínelo de su sistema. El uso o difusión no autorizados está prohibido por la ley.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="10px 0 30px">
+      <mj-column>
+        <mj-text align="center" color="#99a1b3" font-size="12px" line-height="1.7">
+          © LexQuo — Plataforma para gestión de causas y colaboración segura.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

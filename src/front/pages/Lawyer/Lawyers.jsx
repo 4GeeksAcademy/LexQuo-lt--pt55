@@ -8,6 +8,10 @@ export const Lawyers = () => {
     const API = import.meta.env.VITE_BACKEND_URL;
     const navigate = useNavigate();
 
+    const token = store?.auth?.token || null;
+    const me = store?.me || null;
+    const role = (me?.role || "").toLowerCase();
+
     const fetchLawyers = async () => {
         try {
             const token = JSON.parse(localStorage.getItem("auth") || "null")?.token || "";
