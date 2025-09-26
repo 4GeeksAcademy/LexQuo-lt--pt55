@@ -12,16 +12,17 @@ export const AddDeadline = () => {
   const preselectedCourtfileNumber = location.state?.courtfileNumber || null;
   const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
   const returnTo = location.state?.returnTo || "/deadlines";
+  const suggestion = location.state?.suggestion || null;
 
   const token = store?.auth?.token;
   const role = (store?.me?.role || "").toLowerCase();
 
   // ---------- Guards ----------
-      const allowed =
-          role === "admin_user" ||
-          role === "lawyer";
-  
-      if (!allowed) return <Navigate to="/403" replace />;
+  const allowed =
+    role === "admin_user" ||
+    role === "lawyer";
+
+  if (!allowed) return <Navigate to="/403" replace />;
 
   const Deadline_Categories = ["Contestación de demanda", "Traslado / Vista", "Ofrecimiento de prueba", "Producción de prueba", "Audiencia",
     "Recurso / Apelación", "Ejecución / Cumplimiento", "Caducidad de instancia", "Plazo penal (excarcelación, preventiva, etc.)",
@@ -130,7 +131,7 @@ export const AddDeadline = () => {
           deadline_date: formData.deadline_date,
           deadline_hour: formData.deadline_hour,
           priority: String(formData.priority).toUpperCase(),
-          courtfile_id: Number(formData.courtfile_id) 
+          courtfile_id: Number(formData.courtfile_id)
         })
       });
 
@@ -227,6 +228,25 @@ export const AddDeadline = () => {
 
           {/* Card */}
           <div className="card">
+            {suggestion && (
+              <div className="alert alert-info">
+                <h5 className="mb-1">
+                  <i className="bi bi-lightbulb"></i> Sugerencia IA
+                </h5>
+                <strong>{suggestion.title}</strong>
+                {suggestion.reasoning && <p className="mb-1">{suggestion.reasoning}</p>}
+                {Array.isArray(suggestion.next_steps) && suggestion.next_steps.length > 0 && (
+                  <ul className="mb-1">
+                    {suggestion.next_steps.map((step, i) => (
+                      <li key={i}>{step}</li>
+                    ))}
+                  </ul>
+                )}
+                {suggestion.legal_basis && (
+                  <small className="text-muted">Fundamento: {suggestion.legal_basis}</small>
+                )}
+              </div>
+            )}
             <div className="card-body">
               {error && (
                 <div className="alert alert-danger" role="alert">

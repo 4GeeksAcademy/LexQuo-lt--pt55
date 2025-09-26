@@ -1,0 +1,76 @@
+<mjml>
+  <mj-head>
+    <mj-title>LexQuo — Nuevo expediente</mj-title>
+    <mj-preview>Te vincularon a un nuevo expediente en LexQuo</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Helvetica, Arial, sans-serif" />
+      <mj-text font-size="15px" color="#1f2937" line-height="1.7" />
+      <mj-button background-color="#0b3a6a" color="#ffffff" border-radius="8px" padding="14px 22px" />
+    </mj-attributes>
+  </mj-head>
+
+  <mj-body background-color="#f4f6f9">
+    <!-- Brand -->
+    <mj-section padding="24px 0 0">
+      <mj-column>
+        <mj-image width="80px" alt="LexQuo" src="https://dummyimage.com/160x160/0b3a6a/ffffff.png&text=LQ" />
+      </mj-column>
+    </mj-section>
+
+    <!-- Header -->
+    <mj-section background-color="#ffffff" padding="10px 24px 0" border-radius="14px 14px 0 0">
+      <mj-column>
+        <mj-text align="center" font-size="22px" color="#0b3a6a" font-weight="700" padding="6px 0 0">
+          Nuevo expediente en LexQuo
+        </mj-text>
+        <mj-text align="center" color="#51607a" font-size="14px" font-style="italic" padding="2px 0 10px" line-height="1.8">
+          Tech for Lawyers. Law for People.
+        </mj-text>
+        <mj-divider border-color="#e6e9ef" padding="0 0 14px" />
+      </mj-column>
+    </mj-section>
+
+    <!-- Body -->
+    <mj-section background-color="#ffffff" padding="0 24px 14px">
+      <mj-column>
+        <mj-text>Hola <strong>{{firstname}} {{lastname}}</strong>, 👋</mj-text>
+        <mj-text>Te han vinculado a un nuevo expediente en <strong>LexQuo</strong>.</mj-text>
+        <mj-text color="#0b3a6a"><strong>Número de expediente:</strong> #{{courtfile_number}}</mj-text>
+
+        <mj-button href="{{case_url}}" align="center" padding-top="6px">Ver expediente</mj-button>
+      </mj-column>
+    </mj-section>
+
+    <!-- Info breve -->
+    <mj-section background-color="#ffffff" padding="6px 24px 8px">
+      <mj-column>
+        <mj-text font-size="13px" color="#4b5563" line-height="1.7" padding-bottom="0">
+          🧑‍⚖️ Accedé a tu caso en cualquier momento desde la plataforma <strong>LexQuo</strong>.
+        </mj-text>
+        <mj-text font-size="13px" color="#4b5563" line-height="1.7" padding-top="6px">
+          Si no esperabas este correo, podés ignorarlo sin problemas.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Legal -->
+    <mj-section background-color="#ffffff" padding="0 24px 22px" border-radius="0 0 14px 14px">
+      <mj-column>
+        <mj-divider border-color="#e6e9ef" padding="8px 0 12px" />
+        <mj-text font-size="12px" color="#6b7280" line-height="1.65">
+          ⚖️ Este correo puede contener información confidencial y/o privilegiada. Si usted no es el destinatario,
+          notifíquelo inmediatamente y elimínelo de su sistema. Cualquier difusión, copia o uso indebido está prohibido por la ley.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Mini Footer -->
+    <mj-section padding="10px 0 30px">
+      <mj-column>
+        <mj-text align="center" color="#99a1b3" font-size="12px" line-height="1.7">
+          © LexQuo — Plataforma para gestión de causas y colaboración segura.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

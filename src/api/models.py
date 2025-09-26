@@ -1,10 +1,12 @@
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import String, Boolean, Text, Date, Time, DateTime, ForeignKey, Time, Float, Enum, func, UniqueConstraint, Integer
+from sqlalchemy import JSON, String, Boolean, Text, Date, Time, DateTime, ForeignKey, Time, Float, Enum, func, UniqueConstraint, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from typing import List
 from werkzeug.security import generate_password_hash
 from datetime import date, time, datetime
 import enum
+from sqlalchemy import CheckConstraint
+
 
 
 db = SQLAlchemy()
@@ -475,3 +477,36 @@ class PaymentCourtfile(db.Model):
             "payment_id": self.payment_id,
             "courtfile_id": self.courtfile_id
         }
+
+class AISuggestionUrgency(str, Enum):
+    low = "low"
+    medium = "medium"
+    high = "high"
+    urgent = "urgent"
+
+class AISuggestion(db.Model):
+    __tablename__ = "ai_suggestions"
+    id = db.Column(db.Integer, primary_key=True)
+    courtfile_id = db.Column(db.Integer, db.ForeignKey('courtfile.id'), nullable=False)
+    created_by_id = db.Column(db.Integer, db.ForeignKey('lawyer.id'), nullable=True)  # o admin_user
+    title = db.Column(db.String(255), nullable=False)
+    reasoning = db.Column(db.Text, nullable=True)
+    urgency = db.Column(db.String(16), nullable=False, default="medium")
+    __table_args__ = (
+        CheckConstraint(
+            "urgency in ('low','medium','high','urgent')",
+            name="ck_ai_suggestions_urgency"
+        ),
+    )
+    next_steps = db.Column(JSON, nullable=True)        # array de strings
+    legal_basis = db.Column(db.Text, nullable=True)
+    confidence = db.Column(db.Float, nullable=True)
+    model = db.Column(db.String(64), nullable=True)     # ej: gpt-4.1-mini
+    raw = db.Column(JSON, nullable=True)               # JSON completo por auditoría
+    source_hash = db.Column(db.String(64), nullable=True, index=True)  # p/ dedupe por (desc+jur+court)
+    is_archived = db.Column(db.Boolean, default=False, nullable=False)
+
+    created_at = db.Column(db.DateTime, server_default=func.now(), nullable=False)
+    updated_at = db.Column(db.DateTime, onupdate=func.now())
+
+    courtfile = db.relationship('Courtfile', backref='ai_suggestions')

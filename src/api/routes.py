@@ -16,8 +16,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from sqlalchemy.orm import joinedload
-from api.mails_utils import send_email
-
+from api.mails_utils import render_email_template, send_email
 
 from api.validators import parse_iso_date, parse_24h_time, is_valid_24h_time, validate_required_fields, validate_time_order, create_error_response
 
@@ -3035,17 +3034,18 @@ def webhook():
 
 
 # =====================RUTAS PARA MAILS======================
+def _cap(s: str) -> str:
+    return s[:1].upper() + s[1:] if s else s
 
 @api.route("/emails/invite", methods=["POST"])
 @jwt_required()
 def send_invite_email():
     data = request.get_json() or {}
-    email = (data.get("email") or "").strip().lower()
-    firstname = (data.get("firstname") or "").strip()
-    lastname = (data.get("lastname") or "").strip()
-    # opcional, solo para el copy
-    courtfile_number = data.get("courtfile_number")
-    courtfile_id = data.get("courtfile_id")          # opcional, p/ link
+    email      = (data.get("email") or "").strip().lower()
+    firstname  = (data.get("firstname") or "").strip()
+    lastname   = (data.get("lastname") or "").strip()
+    cf_number  = data.get("courtfile_number")  # opcional
+    cf_id      = data.get("courtfile_id")      # opcional
 
     if not email or not firstname or not lastname:
         return jsonify({"error": "email, firstname y lastname son obligatorios"}), 400
@@ -3055,46 +3055,39 @@ def send_invite_email():
     if not _is_admin():
         if role != "lawyer":
             return jsonify({"error": "forbidden"}), 403
-        if courtfile_id:
+        if cf_id:
             linked = LawyerCourtfile.query.filter_by(
-                lawyer_id=int(current_id), courtfile_id=int(courtfile_id)
+                lawyer_id=int(current_id), courtfile_id=int(cf_id)
             ).first()
             if not linked:
                 return jsonify({"error": "forbidden"}), 403
 
-    def cap(s): return s[:1].upper() + s[1:] if s else s
-    default_pwd = f"LexQuo{cap(firstname)}{cap(lastname)}"
+    default_pwd = f"LexQuo{_cap(firstname)}{_cap(lastname)}"
 
     invite_url = f"{FRONTEND_BASE_URL}/accept-invite?email={email}"
-    if courtfile_id:
-        invite_url += f"&courtfile_id={courtfile_id}"
+    if cf_id:
+        invite_url += f"&courtfile_id={cf_id}"
 
     subject = "Invitación a LexQuo"
-    html = f"""
-    <h2>Hello {firstname} {lastname} 👋</h2>
-    <p>You have been invited to access your case in <b>LexQuo</b>.</p>
-    {"<p>Courtfile: <b>#"+str(courtfile_number)+"</b></p>" if courtfile_number else ""}
-    <p>You can log in with:</p>
-    <ul>
-      <li><b>Username:</b> {email}</li>
-      <li><b>Initial password:</b> <code>{default_pwd}</code></li>
-    </ul>
-    <p>We recommend changing your password on your first login.</p>
-    <p><a href="{invite_url}">Accept invitation</a></p>
-    <hr/>
-    <small>If you were not expecting this email, you can ignore it.</small>
-    """
-    text = (
-        f"Hello {firstname} {lastname}.\n"
-        "You have been invited to LexQuo.\n"
-        + (f"Case file: #{courtfile_number}\n" if courtfile_number else "")
-        + f"Username: {email}\nInitial password: {default_pwd}\n"
-        f"Accept invitation: {invite_url}\n"
-        "We recommend changing your password on your first login."
+
+    # Render desde la plantilla HTML ya compilada (MJML→HTML)
+    html = render_email_template(
+        "invite_template.html",
+        firstname=firstname,
+        lastname=lastname,
+        email=email,
+        default_pwd=default_pwd,
+        invite_url=invite_url,
+        courtfile_number=cf_number or ""
     )
 
+    # El util genera texto plano de fallback si no lo pasás
     try:
-        send_email(email, subject, html, text)
+        send_email(
+            to_email=email,
+            subject=subject,
+            html_body=html
+        )
         return jsonify({"ok": True, "sent_to": email})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -3104,11 +3097,11 @@ def send_invite_email():
 @jwt_required()
 def send_linked_email():
     data = request.get_json() or {}
-    email = (data.get("email") or "").strip().lower()
-    firstname = (data.get("firstname") or "").strip()
-    lastname = (data.get("lastname") or "").strip()
-    courtfile_number = data.get("courtfile_number")  # opcional
-    courtfile_id = data.get("courtfile_id")          # opcional
+    email      = (data.get("email") or "").strip().lower()
+    firstname  = (data.get("firstname") or "").strip()
+    lastname   = (data.get("lastname") or "").strip()
+    cf_number  = data.get("courtfile_number")  # opcional
+    cf_id      = data.get("courtfile_id")      # opcional
 
     if not email or not firstname or not lastname:
         return jsonify({"error": "email, firstname y lastname son obligatorios"}), 400
@@ -3118,33 +3111,30 @@ def send_linked_email():
     if not _is_admin():
         if role != "lawyer":
             return jsonify({"error": "forbidden"}), 403
-        if courtfile_id:
+        if cf_id:
             linked = LawyerCourtfile.query.filter_by(
-                lawyer_id=int(current_id), courtfile_id=int(courtfile_id)
+                lawyer_id=int(current_id), courtfile_id=int(cf_id)
             ).first()
             if not linked:
                 return jsonify({"error": "forbidden"}), 403
 
-    case_url = f"{FRONTEND_BASE_URL}/courtfiles/{courtfile_id}" if courtfile_id else FRONTEND_BASE_URL
+    case_url = f"{FRONTEND_BASE_URL}/courtfiles/{cf_id}" if cf_id else FRONTEND_BASE_URL
+    subject = f"Acceso habilitado en LexQuo{f' – Expediente #{cf_number}' if cf_number else ''}"
 
-    subject = f"Acceso habilitado en LexQuo{f' – Expediente #{courtfile_number}' if courtfile_number else ''}"
-    html = f"""
-    <h2>Hello {firstname} {lastname} 👋</h2>
-    <p>You have been linked to a new case in <b>LexQuo</b>.</p>
-    {"<p>Courtfile: <b>#"+str(courtfile_number)+"</b></p>" if courtfile_number else ""}
-    <p><a href="{case_url}">Go to your case</a></p>
-    <hr/>
-    <small>If you were not expecting this email, you can ignore it.</small>
-    """
-    text = (
-        f"Hello {firstname} {lastname}.\n"
-        "You have been linked to a new case in LexQuo.\n"
-        + (f"Case file: #{courtfile_number}\n" if courtfile_number else "")
-        + f"Go to your case: {case_url}\n"
+    html = render_email_template(
+        "linked_template.html",
+        firstname=firstname,
+        lastname=lastname,
+        courtfile_number=cf_number or "",
+        case_url=case_url
     )
 
     try:
-        send_email(email, subject, html, text)
+        send_email(
+            to_email=email,
+            subject=subject,
+            html_body=html
+        )
         return jsonify({"ok": True, "sent_to": email})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

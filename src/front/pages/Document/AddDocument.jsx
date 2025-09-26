@@ -22,6 +22,7 @@ export const AddDocument = () => {
   const preselectedCourtfileNumber = location.state?.courtfileNumber || null;
   const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
   const returnTo = location.state?.returnTo || "/documents";
+  const suggestion = location.state?.suggestion || null;
 
   const [formData, setFormData] = useState({
     name: "",
@@ -61,8 +62,8 @@ export const AddDocument = () => {
           return;
         }
 
-        const endpoint = `${API}/api/lawyers-courtfiles` 
-        const headers = { Authorization: `Bearer ${token}` } 
+        const endpoint = `${API}/api/lawyers-courtfiles`
+        const headers = { Authorization: `Bearer ${token}` }
         const resp = await fetch(endpoint, { headers });
 
         if (!resp.ok) {
@@ -170,7 +171,7 @@ export const AddDocument = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}` 
+            Authorization: `Bearer ${token}`
           },
           body: JSON.stringify({
             document_id: newDocument.id,
@@ -218,6 +219,25 @@ export const AddDocument = () => {
 
           {/* Card */}
           <div className="card">
+            {suggestion && (
+              <div className="alert alert-info">
+                <h5 className="mb-1">
+                  <i className="bi bi-lightbulb"></i> Sugerencia IA
+                </h5>
+                <strong>{suggestion.title}</strong>
+                {suggestion.reasoning && <p className="mb-1">{suggestion.reasoning}</p>}
+                {Array.isArray(suggestion.next_steps) && suggestion.next_steps.length > 0 && (
+                  <ul className="mb-1">
+                    {suggestion.next_steps.map((step, i) => (
+                      <li key={i}>{step}</li>
+                    ))}
+                  </ul>
+                )}
+                {suggestion.legal_basis && (
+                  <small className="text-muted">Fundamento: {suggestion.legal_basis}</small>
+                )}
+              </div>
+            )}
             <div className="card-body">
               {error && (
                 <div className="alert alert-danger" role="alert">

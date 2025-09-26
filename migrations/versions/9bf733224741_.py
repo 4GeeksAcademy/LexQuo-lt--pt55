@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 3883f5b2f61a
+Revision ID: 9bf733224741
 Revises: 
-Create Date: 2025-09-25 15:29:33.772904
+Create Date: 2025-09-26 01:10:46.112185
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '3883f5b2f61a'
+revision = '9bf733224741'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -107,6 +107,30 @@ def upgrade():
     sa.Column('stripe_payment_intent_id', sa.String(length=100), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_table('ai_suggestions',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('courtfile_id', sa.Integer(), nullable=False),
+    sa.Column('created_by_id', sa.Integer(), nullable=True),
+    sa.Column('title', sa.String(length=255), nullable=False),
+    sa.Column('reasoning', sa.Text(), nullable=True),
+    sa.Column('urgency', sa.String(length=16), nullable=False),
+    sa.Column('next_steps', sa.JSON(), nullable=True),
+    sa.Column('legal_basis', sa.Text(), nullable=True),
+    sa.Column('confidence', sa.Float(), nullable=True),
+    sa.Column('model', sa.String(length=64), nullable=True),
+    sa.Column('raw', sa.JSON(), nullable=True),
+    sa.Column('source_hash', sa.String(length=64), nullable=True),
+    sa.Column('is_archived', sa.Boolean(), nullable=False),
+    sa.Column('created_at', sa.DateTime(), server_default=sa.text('now()'), nullable=False),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.CheckConstraint("urgency in ('low','medium','high','urgent')", name='ck_ai_suggestions_urgency'),
+    sa.ForeignKeyConstraint(['courtfile_id'], ['courtfile.id'], ),
+    sa.ForeignKeyConstraint(['created_by_id'], ['lawyer.id'], ),
+    sa.PrimaryKeyConstraint('id')
+    )
+    with op.batch_alter_table('ai_suggestions', schema=None) as batch_op:
+        batch_op.create_index(batch_op.f('ix_ai_suggestions_source_hash'), ['source_hash'], unique=False)
+
     op.create_table('appointment_courtfile',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('appointment_id', sa.Integer(), nullable=False),
@@ -274,6 +298,10 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_appointment_courtfile_appointment_id'))
 
     op.drop_table('appointment_courtfile')
+    with op.batch_alter_table('ai_suggestions', schema=None) as batch_op:
+        batch_op.drop_index(batch_op.f('ix_ai_suggestions_source_hash'))
+
+    op.drop_table('ai_suggestions')
     op.drop_table('payment')
     op.drop_table('lawyer')
     op.drop_table('document')

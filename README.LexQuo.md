@@ -100,7 +100,14 @@ pipenv run insert-seed
 Por ejemplo, si Lawyer empieza a requerir url_img, hay que agregarlo al seed.
 (Salvo que el campo sea opcional).
 
+## 📧 Comandos para actualización de plantillas de correo
+(Ya están instalados en package.json)
 
+```sh
+npm run mjml:build ---> Una sola vez
+
+npm run mjml:watch ---> Luego, abrir nueva terminal y dejar corriendo el watch
+```  
 # ...............................................................................................................................................................
 
 # 🏛 LexQuo: Plataforma Legal para Abogados y Clientes
