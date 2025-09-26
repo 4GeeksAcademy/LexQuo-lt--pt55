@@ -167,6 +167,8 @@ export const router = createBrowserRouter(
       <Route path="/LoginClient" element={<LoginClient />} />
 
       <Route path="/loginAdmin" element={<LoginAdminUser />} />
+      <Route path="/SignUpAdminUser" element={<SignUpAdminUser />} />
+      <Route path="/admins/addAdmin" element={<AddAdmin />} />
 
       {/* ==========RUTAS ABIERTAS========== */}
 
@@ -175,9 +177,7 @@ export const router = createBrowserRouter(
       <Route path="/login" element={<LoginForAll />} />
       <Route path="/signUp" element={<SignUpForAll />} />
 
-      <Route path="/SignUpAdminUser" element={<SignUpAdminUser />} />
-      <Route path="/admins/addAdmin" element={<AddAdmin />} />
-
+      
       {/* ==========RUTAS PROTEGIDAS========== */}
 
       <Route element={<PrivateRoute />}>
