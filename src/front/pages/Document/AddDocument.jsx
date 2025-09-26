@@ -52,7 +52,10 @@ export const AddDocument = () => {
         if (preselectedCourtfileId) {
           // si no llegaron number/title, podemos intentar completarlos
           if (!preselectedCf) {
-            const r = await fetch(`${API}/api/courtfiles/${preselectedCourtfileId}`);
+            const r = await fetch(`${API}/api/courtfiles/${preselectedCourtfileId}`, {
+              headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+              signal: ac.signal,
+            });
             if (r.ok) {
               const d = await r.json();
               setPreselectedCf({ case_number: d.case_number, title: d.title });
@@ -72,16 +75,13 @@ export const AddDocument = () => {
         }
 
         const data = await resp.json();
-        const mapped = token
-          ? data.map(r => ({
-            id: r.courtfile.id,
-            number: r.courtfile.case_number,
-            title: r.courtfile.title
-          }))
-          : data.map(cf => ({
+        const mapped = (data || [])
+          .map(r => r?.courtfile)
+          .filter(Boolean)
+          .map(cf => ({
             id: cf.id,
             number: cf.case_number,
-            title: cf.title
+            title: cf.title,
           }));
 
         setMyCases(mapped);
