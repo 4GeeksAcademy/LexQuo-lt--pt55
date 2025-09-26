@@ -15,6 +15,8 @@ export default function DashboardCalendar({
   const navigate = useNavigate();
 
   const pad2 = (n) => String(n).padStart(2, "0");
+  const TZ = "America/Argentina/Buenos_Aires";
+
 
   function parseDateTimeLocal(dateStr, timeStr) {
     if (!dateStr) return null;
@@ -38,6 +40,44 @@ export default function DashboardCalendar({
     if (start) return cut(start);
     return "";
   }
+
+  // --- util: formatear fechas para Google Calendar ---
+  function toGoogleDates(start, end, allDay) {
+    if (allDay) {
+      // formato all-day: YYYYMMDD/YYYYMMDD (end exclusivo → sumo 1 día)
+      const ymd = (d) =>
+        `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`;
+      // end es exclusivo; ya lo calculamos como +1 día en la normalización
+      return `${ymd(start)}/${ymd(end)}`;
+    } else {
+      // con hora: usar UTC con 'Z'
+      const toUTC = (d) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+      return `${toUTC(start)}/${toUTC(end)}`;
+    }
+  }
+
+  function buildGoogleCalUrl(ev) {
+    const text = `${ev.title} — ${ev.type === "deadline" ? "Deadline" : "Appointment"}`;
+    const detailsParts = [];
+    if (ev.courtfileNumber) detailsParts.push(`Courtfile #${ev.courtfileNumber}`);
+    if (ev.courtfileTitle) detailsParts.push(ev.courtfileTitle);
+    if (ev.courtfileId) {
+      const cfUrl = `${window.location.origin}${courtfileUrl(ev.courtfileId)}`;
+      detailsParts.push(`Link: ${cfUrl}`);
+    }
+    const details = detailsParts.join(" · ");
+    const dates = toGoogleDates(ev.start, ev.end, !!ev.allDay);
+    const params = new URLSearchParams({
+      action: "TEMPLATE",
+      text,
+      details,
+      dates,
+      ctz: TZ,
+    }).toString();
+    return `https://calendar.google.com/calendar/render?${params}`;
+  }
+
+
 
   const pick = (obj, keyCandidates, fallback = undefined) => {
     for (const k of keyCandidates) {
@@ -68,12 +108,21 @@ export default function DashboardCalendar({
         const date = parseDateTimeLocal(dateStr, timeStr);
         if (!date) return null;
 
+        // si no hay hora → evento de día completo (end = +1 día)
+        const allDay = !timeStr;
+        const end = allDay
+          ? new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1)
+          : new Date(date.getTime() + 60 * 60 * 1000); // por defecto 1h
+
         return {
           id: `dead-${pick(d, ["id"], pick(rel, ["relation_id", "id"], Math.random()))}`,
           type: "deadline",
           // 🔧 usar deadline_type cuando exista
           title: pick(d, ["deadline_type", "type", "title", "name", "description"], "Deadline"),
           date,
+          start: date,     // inicio real
+          end,             // fin real
+          allDay,
           time: timeStr ? String(timeStr) : "",
           courtfileId: cfId,
           courtfileTitle: cfTitle,
@@ -97,12 +146,20 @@ export default function DashboardCalendar({
         const date = parseDateTimeLocal(apptDate, startsAt);
         if (!date) return null;
 
+        const end = endsAt
+          ? parseDateTimeLocal(apptDate, endsAt)
+          : new Date(date.getTime() + 60 * 60 * 1000); // default 1h
+        const allDay = !startsAt && !endsAt;
+
         return {
           id: `appt-${pick(a, ["id"], pick(rel, ["relation_id", "id"], Math.random()))}`,
           type: "appointment",
           // 🔧 usar appointment_title cuando exista
           title: pick(a, ["appointment_title", "title", "subject", "name", "description"], "Appointment"),
           date,
+          start: date,
+          end,
+          allDay,
           time: fmtTimeRange(startsAt, endsAt),
           courtfileId: cfId,
           courtfileTitle: cfTitle,
@@ -219,6 +276,18 @@ export default function DashboardCalendar({
                     </div>
                     <div className="text-muted mt-1" style={{ fontSize: 13 }}>
                       {ev.time ? <span><i className="bi bi-clock me-1" /> <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" }}>Time: {ev.time}</span></span> : "No defined time"}
+                    </div>
+                    <div className="mt-2">
+                      <a
+                        href={buildGoogleCalUrl(ev)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-sm btn-outline-primary"
+                        title="Agregar a Google Calendar"
+                      >
+                        <i className="bi bi-google me-1" />
+                        Add to Google Calendar
+                      </a>
                     </div>
                   </div>
 
