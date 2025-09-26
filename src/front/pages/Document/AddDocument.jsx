@@ -1,4 +1,4 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 
@@ -53,8 +53,7 @@ export const AddDocument = () => {
           // si no llegaron number/title, podemos intentar completarlos
           if (!preselectedCf) {
             const r = await fetch(`${API}/api/courtfiles/${preselectedCourtfileId}`, {
-              headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-              signal: ac.signal,
+              headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
             });
             if (r.ok) {
               const d = await r.json();
@@ -65,8 +64,10 @@ export const AddDocument = () => {
           return;
         }
 
-        const endpoint = `${API}/api/lawyers-courtfiles`
-        const headers = { Authorization: `Bearer ${token}` }
+        const endpoint = role === "admin_user"
+          ? `${API}/api/courtfiles`
+          : `${API}/api/lawyers-courtfiles`;
+        const headers = { Authorization: `Bearer ${token}`, Accept: "application/json" }
         const resp = await fetch(endpoint, { headers });
 
         if (!resp.ok) {
@@ -74,15 +75,16 @@ export const AddDocument = () => {
           throw new Error(e.error || `HTTP ${resp.status}`);
         }
 
-        const data = await resp.json();
-        const mapped = (data || [])
-          .map(r => r?.courtfile)
+        const raw = await resp.json();
+        const mapped = (raw || [])
+          .map(item => item?.courtfile ?? item) // si viene como relación usa .courtfile, si no, usa el item plano
           .filter(Boolean)
           .map(cf => ({
             id: cf.id,
             number: cf.case_number,
             title: cf.title,
-          }));
+          }))
+          .sort((a, b) => String(a.number || "").localeCompare(String(b.number || "")));
 
         setMyCases(mapped);
       } catch (err) {
