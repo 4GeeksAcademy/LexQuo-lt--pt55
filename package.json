@@ -13,7 +13,7 @@
 		"lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
 		"preview": "vite preview",
 		"mjml:build": "mjml \"src/api/email_templates/*.mjml\" -o src/api/email_templates",
-        "mjml:watch": "mjml -w \"src/api/email_templates/*.mjml\" -o src/api/email_templates"
+		"mjml:watch": "mjml -w \"src/api/email_templates/*.mjml\" -o src/api/email_templates"
 	},
 	"author": {
 		"name": "Alejandro Sanchez",
@@ -67,6 +67,7 @@
 		"multer-storage-cloudinary": "^4.0.0",
 		"prop-types": "^15.8.1",
 		"react": "^18.2.0",
+		"react-calendar": "^6.0.0",
 		"react-datepicker": "^8.7.0",
 		"react-dom": "^18.2.0",
 		"react-router-dom": "^6.18.0",

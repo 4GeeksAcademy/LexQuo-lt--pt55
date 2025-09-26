@@ -6,6 +6,8 @@ import React, { useEffect, useState, useMemo } from "react";
 import useUnreadBadges from "../../hooks/useUnreadBadges";
 import { markNow } from "../../hooks/chatUnread";
 import { useNavigate, useParams } from "react-router-dom";
+import DashboardCalendar from "../../components/DashboardCalendar";
+
 
 export const DashboardLawyer = () => {
 
@@ -433,6 +435,30 @@ export const DashboardLawyer = () => {
         return m;
     }, [cases]);
 
+    // después de definir caseById (el useMemo que ya tenés)
+    const deadlinesForCalendar = useMemo(() => {
+        return (deadlines || []).map(r => {
+            if (!r.courtfile && r.courtfile_id && caseById.has(r.courtfile_id)) {
+                const cf = caseById.get(r.courtfile_id);
+                return { ...r, courtfile: { id: cf.id, title: cf.title, case_number: cf.case_number } };
+            }
+            return r;
+        });
+    }, [deadlines, caseById]);
+
+    const appointmentsForCalendar = useMemo(() => {
+        return (appointments || []).map(r => {
+            if (!r.courtfile && r.courtfile_id && caseById.has(r.courtfile_id)) {
+                const cf = caseById.get(r.courtfile_id);
+                return { ...r, courtfile: { id: cf.id, title: cf.title, case_number: cf.case_number } };
+            }
+            return r;
+        });
+    }, [appointments, caseById]);
+
+    // Builder de URL centralizado
+    const getCourtfileUrl = (id) => `/courtfiles/ViewCourtfileLawyer/${id}`;
+
 
     useEffect(() => {
         fetchCases();
@@ -583,6 +609,15 @@ export const DashboardLawyer = () => {
                         </table>
                     </div>
                 )}
+
+                {/* CALENDAR */}
+                <div className="col-12 col-lg-6">
+                    <DashboardCalendar
+                        deadlines={deadlinesForCalendar}
+                        appointments={appointmentsForCalendar}
+                        getCourtfileUrl={getCourtfileUrl}
+                    />
+                </div>
 
                 {/* DEADLINES */}
                 <div className="mt-5 text-start">
