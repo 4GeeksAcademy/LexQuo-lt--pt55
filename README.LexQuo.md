@@ -144,8 +144,7 @@ npm run mjml:watch ---> Luego, abrir nueva terminal y dejar corriendo el watch
 - **Notificaciones por email**: invitaciones a clientes y abogados mediante notificaciones automáticas con Google SMTP (Gmail). 
 
 ### Para clientes  
-- **Acceso exclusivo a sus propios casos** con detalle del estado y avance de cada expediente.  
-- **Visualización y descarga de documentos** compartidos por su abogado.  
+- **Acceso exclusivo a sus propios casos** con detalle del estado y avance de cada expediente.   
 - **Notificaciones automáticas** sobre próximas citas (appointments).  
 - **Chat en vivo** con su abogado para una comunicación directa y segura.   
 - **Pagos en línea** de honorarios a través de la pasarela integrada.  
