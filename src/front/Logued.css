@@ -334,7 +334,13 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 
 
 /* ============================== Tabla moderna al estilo "admin" =============================== */
-/* ============================== Tabla moderna al estilo "admin" =============================== */
+
+.table-row-clickable {
+  cursor: pointer;
+}
+.table-row-clickable:hover {
+  background-color: #f8fafc; /* gris claro */
+}
 
 /* ===== Contenedor tipo card ===== */
 .table-wrap {
@@ -556,4 +562,204 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   color: #dc3545;
 }
 
+/* ==============================================================================================
+   React-Calendar — fila estable al hover
+   (normalizamos <abbr> para TODOS los estados)
+   ========================================= ======================================================*/
 
+/* Base calendario */
+.react-calendar { 
+  width: 100%; 
+  border: none; 
+}
+
+/* Navegación */
+.react-calendar__navigation button { 
+  border-radius: 8px; 
+}
+
+/* ---- Tiles (celdas de día) ---- */
+.react-calendar__tile { 
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px; 
+  transition: background 0.15s ease; 
+  line-height: 1;
+  padding: 0.5rem 0 1.1rem !important; /* espacio inferior p/ dot */ 
+}
+
+/* Número del día */
+.react-calendar__tile abbr {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  box-sizing: border-box;
+  text-decoration: none;
+  cursor: default;
+  margin: 0;
+  line-height: 1;
+}
+
+/* Hover */
+.react-calendar__tile:enabled:hover { 
+  background: transparent !important; 
+}
+.react-calendar__tile:enabled:hover abbr {
+  background: #d0d7de;
+}
+
+/* Hoy */
+.react-calendar__tile--now { background: transparent !important; font-weight: 600; }
+.react-calendar__tile--now abbr { background: #1a73e8; color: #fff; }
+
+/* Seleccionado */
+.react-calendar__tile--active { background: transparent !important; color: inherit !important; box-shadow: none !important; border-radius: 8px; }
+.react-calendar__tile--active abbr { background: transparent !important; color: inherit !important; box-shadow: 0 0 0 2px #1a73e8; }
+
+/* Hoy + Seleccionado */
+.react-calendar__tile--now.react-calendar__tile--active abbr { background: #1a73e8 !important; color: #fff !important; box-shadow: none !important; }
+
+/* Finde */
+.react-calendar__month-view__days__day--weekend { color: #6c757d !important; font-weight: 500; }
+
+/* Altura mínima */
+.react-calendar__month-view__days__day { min-height: 44px; }
+
+/* Dot */
+.react-calendar__tile .rc-dot {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px; height: 6px; border-radius: 50%; pointer-events: none;
+}
+.react-calendar__tile .rc-dot.is-appointment { background: #1a73e8; }
+.react-calendar__tile .rc-dot.is-deadline    { background: #d11a2a; }
+
+/* Weekdays header */
+.react-calendar__month-view__weekdays abbr { text-decoration: none !important; border-bottom: none !important; cursor: default; }
+
+/* Year view */
+.react-calendar__year-view .react-calendar__tile abbr { display: inline; width: auto; height: auto; border-radius: 0; background: transparent !important; box-shadow: none !important; }
+.react-calendar__year-view .react-calendar__tile:enabled:hover,
+.react-calendar__year-view .react-calendar__tile:enabled:focus { background: transparent !important; color: inherit !important; }
+.react-calendar__year-view .react-calendar__tile--now abbr,
+.react-calendar__year-view .react-calendar__tile--active,
+.react-calendar__year-view .react-calendar__tile--hasActive { background: transparent !important; color: inherit !important; box-shadow: none !important; font-weight: 600; }
+
+/* Tarjetas del listado */
+.hover-elevate { transition: box-shadow .15s ease, transform .05s ease; border: 1px solid rgba(0,0,0,.08); }
+.hover-elevate:hover { box-shadow: 0 8px 24px rgba(0,0,0,.08); transform: translateY(-1px); }
+
+
+/* ===== Pill tipo etiqueta para el tipo de evento ===== */
+.rc-pill{
+  display:inline-block;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 12px;         /* letras chicas */
+  line-height: 1.1;
+  font-weight: 600;
+  letter-spacing: .02em;
+  vertical-align: middle;
+  border: 1px solid transparent;
+  text-align: center;
+}
+
+/* Variantes */
+.rc-pill.is-appointment{
+  background: #e7f1ff;     /* azul muy claro */
+  color: #1a73e8;          /* azul Google-like */
+  border-color: #c9dcff;
+}
+.rc-pill.is-deadline{
+  background: #fde8ea;     /* rojo muy claro */
+  color: #d11a2a;
+  border-color: #f6bac1;
+}
+
+/* Afinamos jerarquía visual en la tarjeta */
+.rc-event-title{ font-weight: 600; font-size: 1.5rem; }
+.rc-event-time { font-size: 13px; color: #6c757d; }
+
+/* Agrandar el título del mes/año en la barra de navegación */
+.react-calendar__navigation__label {
+  font-size: 1.5rem !important;   /* más grande */
+  font-weight: 700 !important;    /* más grueso */
+}
+
+.react-calendar__navigation {
+  padding-top: 1rem;
+  padding-bottom: 2rem;     /* espacio interno */
+  border-top: 2px solid #dee2e6;
+  border-bottom: 2px solid #dee2e6;
+  margin-bottom: 2rem; /* espacio con el grid de días */
+}
+
+/* ========================== Bloque de items de pagos ========================================== */
+.payment-item,
+.payment-item .amount,
+.payment-item .courtfile-link,
+.payment-item .status-badge,
+.payment-item .date {
+  font-size: 13px !important;
+  line-height: 1.4;
+}
+
+/* Columna monto */
+.payment-item .amount {
+  font-weight: 600;
+  min-width: 120px;
+}
+
+/* Columna link(s) */
+.payment-item .courtfile-link {
+  color: var(--bs-primary);
+  text-decoration: none;
+}
+.payment-item .courtfile-link:hover {
+  text-decoration: underline;
+}
+
+/* Columna badge o fecha */
+.payment-item .status-badge,
+.payment-item .date {
+  padding: 0.2rem 0.55rem; /* más compacto */
+}
+
+
+/* ========================== Configuraciones de cards ========================================== */
+/* Card general */
+.card.shadow-sm {
+  background: rgba(255, 255, 255, 0.3) !important; 
+  backdrop-filter: blur(6px);                      
+  border: 1px solid rgba(0, 0, 0, 0.05);           
+  border-radius: 0.75rem;                         
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);       
+}
+
+/* Y anulamos el fondo del calendario */
+.card.shadow-sm .react-calendar {
+  background: transparent !important;
+}
+.card.shadow-sm .react-calendar__navigation,
+.card.shadow-sm .react-calendar__viewContainer {
+  background: transparent !important;
+}
+
+/* Quitar fondo del <li> y hacer líneas suaves */
+.event-list .event-item {
+  background: transparent !important;   /* pisa list-group default */
+  border: 0;                            /* el borde ya lo tiene el div interno */
+}
+
+/* Opcional: suavizar el borde del contenedor interno */
+.event-list .event-item > .border {
+  border-color: rgba(0,0,0,.2) !important;  /* o usa .border-light */
+  background: transparent !important;        /* por si queda algún bg */
+}

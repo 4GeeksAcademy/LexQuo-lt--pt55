@@ -2300,12 +2300,15 @@ def get_payments():
         if role == "admin_user":
             q = Payment.query
         elif role == "lawyer":
+            subq = db.session.query(LawyerCourtfile.courtfile_id).filter(
+                LawyerCourtfile.lawyer_id == int(uid)
+            ).subquery()
             q = (
                 db.session.query(Payment)
                 .join(PaymentCourtfile, PaymentCourtfile.payment_id == Payment.id)
-                .join(LawyerCourtfile, LawyerCourtfile.courtfile_id == PaymentCourtfile.courtfile_id)
-                .filter(LawyerCourtfile.lawyer_id == int(uid))
+                .filter(PaymentCourtfile.courtfile_id.in_(subq))
                 .distinct()
+                .order_by(Payment.created_at.desc())
             )
         elif role == "client":
             q = (
@@ -2371,8 +2374,14 @@ def update_payment(payment_id):
         role, uid = _get_role_and_identity()
         payment = Payment.query.get_or_404(payment_id)
 
-        if _is_admin():
-            pass
+        if _is_admin() and 'status' in data:
+            try:
+                new_status = PaymentStatus(data['status'].lower())
+            except Exception:
+                return jsonify({'error': 'invalid status'}), 400
+            payment.status = new_status
+            if new_status == PaymentStatus.approved:
+                payment.paid_at = datetime.now(UTC)
         elif role == "lawyer":
             linked = (
                 db.session.query(PaymentCourtfile)
@@ -2438,8 +2447,9 @@ def delete_payment(payment_id):
             )
             if not linked:
                 return jsonify({'error': 'forbidden'}), 403
-            if payment.status != "pending":
+            if payment.status != PaymentStatus.pending:
                 return jsonify({'error': 'Only pending payments can be deleted by lawyer'}), 403
+                
         else:
             return jsonify({'error': 'forbidden'}), 403
 

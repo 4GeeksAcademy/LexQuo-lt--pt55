@@ -142,57 +142,118 @@ export const DashboardLawyer = () => {
         return m;
     }, [cases]);
 
-    // ---------------- CALENDAR (solo con helpers mínimos) ----------------
-    const deadlinesForCalendar = useMemo(() => [], []); // ya no mostramos deadlines
-    const appointmentsForCalendar = useMemo(() => [], []); // ya no mostramos appointments
-    const getCourtfileUrl = (id) => `/courtfiles/ViewCourtfileLawyer/${id}`;
+    // ---------------- WIDGET DE PAGOS (simple como en Payments) ----------------
 
-    // ---------------- WIDGET DE PAGOS ----------------
+    //Helpers
+    // payment_id -> [courtfile_id, ...]
+    const [pcMap, setPcMap] = useState(new Map());
+
+    // Mapa de expedientes por id a partir de `cases` que ya cargás arriba
+    const caseMap = useMemo(() => {
+        const m = new Map();
+        for (const cf of cases) {
+            m.set(cf.id, { title: cf.title, case_number: cf.case_number });
+        }
+        return m;
+    }, [cases]);
+
+    const fetchPaymentLinks = async () => {
+        try {
+            const r = await fetch(`${API}/api/payments-courtfile`, {
+                headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+            });
+            if (!r.ok) return;
+            const data = await r.json();
+            const map = new Map();
+            data.forEach((pc) => {
+                const pid = pc?.payment_id;
+                const cid = pc?.courtfile_id;
+                if (!pid || !cid) return;
+                if (!map.has(pid)) map.set(pid, []);
+                map.get(pid).push(cid);
+            });
+            setPcMap(map);
+        } catch (e) {
+            console.error("links fetch err:", e);
+        }
+    };
+
     const [payments, setPayments] = useState([]);
     const [loadingPayments, setLoadingPayments] = useState(false);
     const [paymentsErr, setPaymentsErr] = useState("");
 
+    // fetch igual que en la vista general (pero guardo en estado local del Dashboard)
     const fetchPayments = async () => {
         try {
             setLoadingPayments(true);
             setPaymentsErr("");
-            // endpoint con control por rol (admin/lawyer/client) que ya tenés
-            const r = await fetch(`${API}/api/payments`, { headers: { Authorization: `Bearer ${token}` } });
-            if (!r.ok) {
-                const e = await r.json().catch(() => ({}));
-                throw new Error(e.error || `HTTP ${r.status}`);
+
+            const response = await fetch(`${API}/api/payments`, {
+                headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setPayments(Array.isArray(data) ? data : []);
+            } else {
+                setPayments([]);
+                setPaymentsErr("Error fetching payments");
             }
-            const data = await r.json();
-            setPayments(Array.isArray(data) ? data : []);
-        } catch (e) {
-            setPaymentsErr(e.message || "Error fetching payments");
+        } catch (error) {
+            console.error("Error:", error);
+            setPayments([]);
+            setPaymentsErr(error.message || "Error fetching payments");
         } finally {
             setLoadingPayments(false);
         }
     };
 
+    // derivados (idéntica idea: comparar contra strings planos)
     const now = new Date();
     const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-    const pending = useMemo(() => payments.filter((p) => p?.status === "pending"), [payments]);
+    const is = (v, txt) => String(v || "").toLowerCase().trim() === txt;
 
+    // solo los "pending"
+    const pending = useMemo(() => {
+        return payments.filter((p) => {
+            const st = String(p?.status || "").toLowerCase().trim();
+            return st === "pending" || st === "processing";
+        });
+    }, [payments]);
+
+    // aprobados en el mes actual
     const paidThisMonth = useMemo(() => {
         return payments.filter((p) => {
-            if (p?.status !== "approved" || !p?.paid_at) return false;
+            if (!is(p.status, "approved") || !p?.paid_at) return false;
             const d = new Date(p.paid_at);
             const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
             return key === ym;
         });
     }, [payments, ym]);
 
-    const sumPaidThisMonth = paidThisMonth.reduce((acc, p) => acc + (Number(p.amount) || 0), 0);
-    const fmtMoney = (amt, cur = "USD") =>
-        typeof amt === "number" ? amt.toLocaleString(undefined, { style: "currency", currency: cur }) : "—";
+    const sumPaidThisMonth = paidThisMonth.reduce(
+        (acc, p) => acc + (Number.parseFloat(p?.amount) || 0),
+        0
+    );
+
+    // mismo formateo sencillo
+    const fmtMoney = (amt, cur = "USD") => {
+        const n = Number.parseFloat(amt) || 0;
+        try {
+            return new Intl.NumberFormat(undefined, { style: "currency", currency: cur }).format(n);
+        } catch {
+            return n.toLocaleString();
+        }
+    };
+
 
     // ---------------- EFFECTS ----------------
     useEffect(() => {
-        fetchCases();
+        fetchCases();      // ya definida arriba
         fetchPayments();
+        fetchPaymentLinks();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [API, token, currentLawyerId]);
 
     // ----------------------- HOOK PARA ORDENAR TABLA -------------------------
@@ -220,6 +281,7 @@ export const DashboardLawyer = () => {
         return sortable;
     }, [filteredCases, sortConfig]);
 
+
     return (
         <AppNavsShell>
             <div className="container main-content">
@@ -234,7 +296,7 @@ export const DashboardLawyer = () => {
                             <h2 className="mb-0">
                                 Courtfiles{" "}
                                 <span className="text-muted fw-normal small">
-                                    ({filteredCases.length}/{cases.length})
+                                    ({filteredCases.length})
                                 </span>
                             </h2>
 
@@ -366,7 +428,9 @@ export const DashboardLawyer = () => {
                                             else if (["error", "rejected", "failed"].includes(key)) statusClass = "bg-danger text-light";
 
                                             return (
-                                                <tr key={cf.id}>
+                                                <tr key={cf.id}
+                                                    onClick={() => navigate(`/courtfiles/ViewCourtfileLawyer/${cf.id}`)}
+                                                    className="table-row-clickable">
                                                     {/* ID */}
                                                     <td className="text-center pe-3">{cf.id}</td>
 
@@ -409,6 +473,7 @@ export const DashboardLawyer = () => {
                                                                 data-bs-toggle="dropdown"
                                                                 aria-expanded="false"
                                                                 aria-label="More actions"
+                                                                onClick={(e) => e.stopPropagation()}
                                                             >
                                                                 <i className="bi bi-three-dots" />
                                                             </button>
@@ -482,79 +547,147 @@ export const DashboardLawyer = () => {
                 </div>
 
                 {/* ==== FILA 2: CALENDAR (8) + PAYMENTS (4) ==== */}
-                <div className="row g-4 mt-1">
+                <div className="row g-4 mt-5">
                     <div className="col-12 col-lg-8">
-                        <div className="card shadow-sm">
-                            <div className="card-header">
-                                <h5 className="mb-0">Your Calendar</h5>
-                            </div>
-                            <div className="card-body">
-                                <DashboardCalendar
-                                    deadlines={deadlinesForCalendar /* vacío por ahora */}
-                                    appointments={appointmentsForCalendar /* vacío por ahora */}
-                                    getCourtfileUrl={getCourtfileUrl}
-                                />
-                            </div>
-                        </div>
+                        <DashboardCalendar
+                            apiBase={import.meta.env.VITE_BACKEND_URL}
+                            authToken={token}
+                            getCourtfileUrl={(id) => `/courtfiles/ViewCourtfileLawyer/${id}`}
+                        />
                     </div>
 
                     <div className="col-12 col-lg-4">
                         <div className="card shadow-sm">
-                            <div className="card-header d-flex justify-content-between align-items-center">
-                                <h5 className="mb-0">Payments status</h5>
-                                <small className="text-muted">{new Date().toLocaleDateString()}</small>
+                            <div className="card-header pb-1">
+                                {/* Fila 1: título + fecha */}
+                                <div className="d-flex justify-content-between align-items-center">
+                                    <h5 className="mb-0 fs-5 fw-bold">Payments status</h5>
+                                    <small className="text-muted">{new Date().toLocaleDateString()}</small>
+                                </div>
+
+                                {/* Fila 2: botón, alineado a la derecha */}
+                                <div className="text-end mt-3">
+                                    <Link to="/payments" className="btn btn-sm btn-outline-primary">
+                                        View all payments
+                                    </Link>
+                                </div>
                             </div>
+
                             <div className="card-body">
-                                {loadingPayments && <p>Loading payments…</p>}
-                                {paymentsErr && <div className="alert alert-danger">{paymentsErr}</div>}
 
-                                {!loadingPayments && !paymentsErr && (
-                                    <>
-                                        <h6 className="mb-2">Upcoming / Pending</h6>
-                                        {pending.length === 0 ? (
-                                            <p className="text-muted">No pending payments.</p>
-                                        ) : (
-                                            <ul className="list-group mb-3">
-                                                {pending.slice(0, 6).map((p) => (
-                                                    <li key={`pend-${p.id}`} className="list-group-item d-flex justify-content-between">
-                                                        <span className="text-truncate">#{p.id} • {p.currency || "—"} {p.amount}</span>
-                                                        <span className="badge bg-warning text-dark">pending</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
+                                {/* Pending */}
+                                <h6 className="mb-2 fs-7 fw-semibold text-muted">Upcoming / Pending</h6>
+                                {pending.length === 0 ? (
+                                    <p className="text-muted small">No pending or processing payments.</p>
+                                ) : (
+                                    <ul className="list-unstyled mb-3">
+                                        {pending.slice(0, 6).map((p) => {
+                                            const st = String(p?.status || "").toLowerCase().trim();
+                                            let badgeClass = "bg-secondary";
+                                            let label = st;
+                                            if (st === "pending") {
+                                                badgeClass = "bg-transparent text-info border border-info d-inline-flex align-items-center gap-1";
+                                                label = (
+                                                    <>
+                                                        Pending <i className="bi bi-clock"></i>
+                                                    </>
+                                                );
+                                            } else if (st === "processing") {
+                                                badgeClass = "bg-transparent text-warning border border-warning d-inline-flex align-items-center gap-1";
+                                                label = (
+                                                    <>
+                                                        Processing <i className="bi bi-arrow-repeat"></i>
+                                                    </>
+                                                );
+                                            }
 
-                                        <div className="d-flex justify-content-between align-items-center">
-                                            <h6 className="mb-2">Paid this month</h6>
-                                            <span className="badge bg-success">
-                                                Total: {fmtMoney(sumPaidThisMonth, paidThisMonth[0]?.currency || "USD")}
-                                            </span>
-                                        </div>
-                                        {paidThisMonth.length === 0 ? (
-                                            <p className="text-muted">No approved payments this month.</p>
-                                        ) : (
-                                            <ul className="list-group">
-                                                {paidThisMonth.slice(0, 6).map((p) => (
-                                                    <li key={`paid-${p.id}`} className="list-group-item d-flex justify-content-between">
-                                                        <span className="text-truncate">#{p.id} • {p.currency || "—"} {p.amount}</span>
-                                                        <small className="text-muted">
-                                                            {p.paid_at ? new Date(p.paid_at).toLocaleDateString() : ""}
-                                                        </small>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                    </>
+                                            const cfIds = pcMap.get(p.id) || [];
+                                            const cfLinks = cfIds.map((cid, idx) => {
+                                                const meta = caseMap.get(cid);
+                                                const txt = meta?.case_number || `Courtfile #${cid}`;
+                                                return (
+                                                    <React.Fragment key={`p-${p.id}-cf-${cid}`}>
+                                                        <Link
+                                                            to={`/courtfiles/ViewCourtfileLawyer/${cid}`}
+                                                            className="courtfile-link"
+                                                        >
+                                                            {txt}
+                                                        </Link>
+                                                        {idx < cfIds.length - 1 ? ", " : ""}
+                                                    </React.Fragment>
+                                                );
+                                            });
+
+                                            return (
+                                                <li
+                                                    key={`pend-${p.id}`}
+                                                    className="d-flex align-items-center justify-content-between border-bottom py-3 payment-item"
+                                                >
+                                                    <div className="fw-semibold text-truncate" style={{ minWidth: 120 }}>
+                                                        ${fmtMoney(p.amount, p.currency || "USD")}
+                                                    </div>
+                                                    <div className="flex-grow-1 px-2 text-truncate">{cfLinks}</div>
+                                                    <span className={`badge ${badgeClass}`}>{label}</span>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                )}
+
+                                {/* Paid this month */}
+                                <div className="d-flex justify-content-between align-items-center pt-5">
+                                    <h6 className="mb-2 fs-7 fw-semibold text-muted">Paid this month</h6>
+                                    <span className="badge bg-success">
+                                        Total: {fmtMoney(sumPaidThisMonth, paidThisMonth[0]?.currency || "USD")}
+                                    </span>
+                                </div>
+
+                                {paidThisMonth.length === 0 ? (
+                                    <p className="text-muted small">No approved payments this month.</p>
+                                ) : (
+                                    <ul className="list-unstyled">
+                                        {paidThisMonth.slice(0, 6).map((p) => {
+                                            const cfIds = pcMap.get(p.id) || [];
+                                            const cfLinks = cfIds.map((cid, idx) => {
+                                                const meta = caseMap.get(cid);
+                                                const txt = meta?.case_number || `Courtfile #${cid}`;
+                                                return (
+                                                    <React.Fragment key={`paid-${p.id}-cf-${cid}`}>
+                                                        <Link
+                                                            to={`/courtfiles/ViewCourtfileLawyer/${cid}`}
+                                                            className="courtfile-link"
+                                                        >
+                                                            {txt}
+                                                        </Link>
+                                                        {idx < cfIds.length - 1 ? ", " : ""}
+                                                    </React.Fragment>
+                                                );
+                                            });
+
+                                            return (
+                                                <li
+                                                    key={`paid-${p.id}`}
+                                                    className="d-flex align-items-center justify-content-between border-bottom py-3 payment-item"
+                                                >
+                                                    <div className="fw-semibold text-truncate" style={{ minWidth: 120 }}>
+                                                        {fmtMoney(p.amount, p.currency || "USD")}
+                                                    </div>
+                                                    <div className="flex-grow-1 px-2 text-truncate">{cfLinks}</div>
+                                                    <small className="text-muted">
+                                                        {p.paid_at ? new Date(p.paid_at).toLocaleDateString() : ""}
+                                                    </small>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
                                 )}
                             </div>
                         </div>
 
-                        <div className="text-end mt-2">
-                            <Link to="/payments" className="btn btn-sm btn-outline-primary">
-                                View all payments
-                            </Link>
-                        </div>
+                        
                     </div>
+
+
                 </div>
 
                 <div className="text-end">

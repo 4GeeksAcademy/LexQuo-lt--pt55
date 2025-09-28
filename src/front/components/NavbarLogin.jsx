@@ -1,6 +1,7 @@
 // NavbarLogin.jsx
 import { Link } from "react-router-dom";
 import "../Logued.css";
+import LogoLexQuoB from "../assets/img/LogoLexQuoB.png";
 
 const NavbarLogin = () => {
   return (
@@ -17,13 +18,16 @@ const NavbarLogin = () => {
             data-bs-target="#navbarVerticalOffcanvas"
             aria-controls="navbarVerticalOffcanvas"
             aria-label="Toggle sidebar"
-            
+
           >
             <i className="bi bi-list" />
           </button>
 
-          <Link to="/" className="navbar-brand d-flex align-items-center gap-2 mb-0 text-white">
-            <span className="h5 mb-0 text-white">LexQuo</span>
+          <Link to="/DashboardLawyer" className="navbar-brand d-flex align-items-center gap-2 mb-0 text-white">
+            <img
+              src={LogoLexQuoB}
+              style={{ height: "32px" }} 
+            />
           </Link>
         </div>
 
