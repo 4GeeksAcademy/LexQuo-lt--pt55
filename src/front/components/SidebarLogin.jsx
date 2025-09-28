@@ -281,7 +281,6 @@ export default function SidebarLogin() {
 
           {/* Bloque inferior fijo */}
           <div className="mt-auto pt-3">
-            <div className="nav-label">Pages</div>
             <ul className="nav pb-3">
               <li className="nav-item">
                 <NavLink

@@ -193,9 +193,8 @@ export default function DashboardCalendar({
   return (
     <div className="card shadow-sm border-0">
       <div className="card-body">
-        <div className="d-flex align-items-center justify-content-between mb-2">
-          <h5 className="card-title mb-3">Calendar</h5>
-          <div className="d-flex gap-2">
+   
+          <div className="text-end">
             <button
               className="btn btn-sm btn-outline-secondary"
               onClick={() => setSelectedDate(new Date())}
@@ -203,7 +202,7 @@ export default function DashboardCalendar({
               Today
             </button>
           </div>
-        </div>
+        
 
         <Calendar
           value={selectedDate}

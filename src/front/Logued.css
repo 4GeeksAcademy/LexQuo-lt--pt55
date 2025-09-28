@@ -168,14 +168,7 @@ body{
   border-radius: 3px;
 }
 
-/* ======================= LAYOUT ======================= */
-.main{ display:flex; min-height:100vh; }
-@media (max-width: 991.98px){
-  .main-content,
-  .content{
-    margin-left: 0;
-  }
-}
+
 
 /* ================== CARET ROTATION ==================== */
 button[data-bs-toggle="collapse"][aria-expanded="true"] .bi-caret-right-fill {
@@ -214,7 +207,7 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 .content{
   flex: 1;
   padding: 1.5rem;
-  padding-top: 3rem;
+  padding-top: 3.5rem;
   margin-left: var(--phoenix-navbar-vertical-width);
   background-color: var(--phoenix-gray-100);
   min-height: 100vh;
@@ -224,6 +217,15 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 .container.main-content {
   margin-left: 0 !important;
   padding-top: 0px !important;
+}
+
+/* ======================= LAYOUT ======================= */
+.main{ display:flex; min-height:100vh; }
+@media (max-width: 991.98px){
+  .main-content,
+  .content{
+    margin-left: 0;
+  }
 }
 
 /* Elimina el backdrop del offcanvas ==================================================================================*/
@@ -291,7 +293,7 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   }
 }
 
-/* Sidebar: estructura para fijar Pages al fondo ===============================================*/
+/* ========================Sidebar: estructura para fijar Pages al fondo ===============================================*/
 #navbarVerticalOffcanvas .offcanvas-body{
   height: 100%;
   display: flex;
@@ -329,3 +331,229 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   padding-top: 1rem;
   border-top: 1px solid rgba(255,255,255,0.1);
 }
+
+
+/* ============================== Tabla moderna al estilo "admin" =============================== */
+/* ============================== Tabla moderna al estilo "admin" =============================== */
+
+/* ===== Contenedor tipo card ===== */
+.table-wrap {
+  overflow: hidden;
+}
+
+/* ===== Tabla moderna ===== */
+.table-modern {
+  border-collapse: separate;
+  border-spacing: 0;
+  padding: 10px 0 0 0;
+}
+
+.table-modern > :not(caption) > * > * {
+  padding-top: .9rem;
+  padding-bottom: .9rem;  /* filas altas */
+  vertical-align: middle;
+  background: transparent;
+}
+
+.table-modern tbody tr {
+  border-bottom: 1px solid #d1d7dd;
+}
+.table-modern tbody tr:hover {
+  background: #f8fafc;
+}
+.table-modern tbody tr:first-child td {
+  border-top: 0; /* sin doble borde con header */
+}
+
+/* ===== Header de tabla ===== */
+
+.table-modern thead th {
+  color: #212529;         /* gris oscuro */
+  font-weight: 900;       /* más bold */
+  font-size: 0.9rem;
+  letter-spacing: .04em;  /* tracking extra */
+  text-transform: uppercase;
+  padding-top: .65rem;
+  padding-bottom: .65rem;
+  border-bottom: 1.5px solid #b8b0b5 !important;
+  border-top: 1.5px solid #b8b0b5 !important;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* Botón/label de sort */
+.table-modern thead .th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;              /* espacio texto-icono */
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Icono de sort */
+.table-modern thead .sort-icon {
+  font-size: .9em;
+  color: #9aa0a6;           /* gris suave */
+  transform: translateY(1px);
+}
+
+/* ===== Celdas principales ===== */
+.cell-main .title {
+  font-weight: 600;
+  color: #212529;
+}
+.cell-main .subtitle {
+  font-size: .86rem;
+  color: #6c757d;
+}
+
+/* ===== Columnas angostas con elipsis ===== */
+.truncate-200 {
+  max-width: 420px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+.truncate-160 {
+  max-width: 320px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+
+/* ========================PILLS ESTADOS (con más contraste) ====================== */
+
+/* ===== Pills de estado ===== */
+.badge-status {
+  padding: .45rem .6rem;
+  font-weight: 600;
+  border-radius: 999px;
+  font-size: .75rem;
+  line-height: 1;
+}
+
+.status-pill {
+  display:inline-flex; 
+  align-items:center; 
+  gap:.25rem;
+  padding:.25rem .6rem;
+  border-radius:999px;
+  font-size:.78rem;
+  font-weight:600;
+  letter-spacing:.02em;
+  text-transform:uppercase;
+  border:1.5px solid transparent;   /* borde un poquito más fuerte */
+  line-height:1;
+}
+
+/* Variantes más intensas */
+.status-success {
+  background:#d4f8e4;    /* verde más saturado */
+  color:#0f5132;
+  border-color:#198754;
+}
+
+.status-secondary {
+  background:#e2e3e5;
+  color:#41464b;
+  border-color:#6c757d;
+}
+
+.status-warning {
+  background:#fff3cd;
+  color:#664d03;
+  border-color:#ffca2c;
+}
+
+.status-danger {
+  background:#f8d7da;
+  color:#842029;
+  border-color:#dc3545;
+}
+
+.status-info {
+  background:#cff4fc;
+  color:#055160;
+  border-color:#0dcaf0;
+}
+
+
+/*====================PUNTITOS ACTION ===========================================*/
+/* botón de tres puntos más sutil */
+.icon-btn{
+  border: 0px;
+  background: none;
+}
+.icon-btn:hover{ background: #f8f9fa; }
+
+/* menú más prolijo */
+.dropdown-menu{
+  border-radius: .75rem;
+  padding: .4rem;
+}
+.dropdown-item{
+  border-radius: .5rem;
+  padding: .5rem .75rem;
+}
+.dropdown-item:active{
+  background-color: #eef2f7;
+}
+
+/* ====== Search box estilo admin ====== */
+.search-box {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.45rem 2rem 0.45rem 2rem; /* espacio para icono a la izquierda */
+  border-radius: 8px;
+  border: 1px solid #d0d7de;
+  font-size: 0.9rem;
+  background-color: #f9fafb;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #0d6efd;
+  background-color: #fff;
+  box-shadow: 0 0 0 2px rgba(13,110,253,0.2);
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.9rem;
+  color: #6c757d;
+  pointer-events: none;
+}
+
+.clear-btn {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #6c757d;
+}
+
+.clear-btn:hover {
+  color: #dc3545;
+}
+
+
