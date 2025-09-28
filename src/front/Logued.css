@@ -1,0 +1,331 @@
+/* =========================================================
+   LexQuo x Phoenix — Sidebar + Topbar + Layout (ordenado)
+   ========================================================= */
+
+/* ===================== VARIABLES ====================== */
+:root{
+  --phoenix-navbar-vertical-width: 14rem !important;
+  --lex-topbar-h: 60px;
+}
+
+/* =================== BASE DE LAYOUT =================== */
+body{
+  padding-top: var(--lex-topbar-h);
+}
+
+/* ======================= TOPBAR ======================= */
+.navbar.fixed-top{
+  z-index: 1045 !important;
+  min-height: 5rem;
+}
+.navbar-dark{
+  background-color: var(--phoenix-gray-1100) !important;
+}
+
+/* ====================== SIDEBAR ======================= */
+.navbar-vertical{
+  position: fixed;
+  top: var(--lex-topbar-h);
+  left: 0;
+  bottom: 0;
+  width: var(--phoenix-navbar-vertical-width) !important;
+  z-index: 1035 !important;
+  background-color: var(--phoenix-gray-1100) !important;
+  border-right: 0 !important;
+  box-shadow: none !important;
+}
+.navbar-vertical .navbar-collapse{
+  height: 100% !important;
+  border: 0 !important;
+}
+.navbar-vertical .navbar-vertical-content{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ================= FLECHA / TOGGLERS ================= */
+.navbar-vertical .dropdown-indicator-icon{
+  width: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--phoenix-gray-500, #8a94a6);
+  margin-right: 0.25rem !important;
+}
+.navbar-vertical .dropdown-indicator-icon i{
+  font-size: 0.62rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+.navbar-vertical .nav-link[aria-expanded="true"] .dropdown-indicator-icon i{
+  transform: rotate(90deg);
+}
+.navbar-vertical .dropdown-indicator-icon:empty{
+  visibility: hidden;
+}
+
+/* ============== LINKs / ICONOS / TEXTO =============== */
+.navbar-vertical .nav-link{
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.375rem;
+  margin: 0 0.5rem;
+  width: auto;
+  color: var(--phoenix-gray-400, #a0aabb) !important;
+  transition: all 0.15s ease;
+  font-size: 0.90rem;
+}
+.navbar-vertical .nav-link:hover{
+  color: var(--phoenix-gray-300, #c1c9d2) !important;
+  background: rgba(255,255,255,0.035);
+}
+.navbar-vertical .nav-link.active{
+  color: var(--phoenix-gray-300, #c1c9d2) !important; /* mismo tono que normal/hover */
+  font-weight: 1000; 
+  background: rgba(102,161,255,0.08);
+}
+.navbar-vertical .nav-link > .d-flex{
+  gap: 0.1rem !important;
+  align-items: center;
+}
+.navbar-vertical .nav-link .nav-link-icon{
+  width: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--phoenix-gray-400, #a0aabb);
+  margin-right: 0.5rem !important;
+}
+.navbar-vertical .nav-link .nav-link-text{
+  margin-left: 0 !important;
+}
+.navbar-vertical .collapse .nav .nav-link{
+  padding: 0.375rem 1rem 0.375rem 2.25rem !important;
+}
+
+/* ================ LABELS (APPS/PAGES) ================ */
+.navbar-vertical .nav-label{
+  padding: 0.5rem 1rem 0.35rem 2rem !important;
+  font-size: 0.90rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  color: var(--phoenix-gray-500, #8a94a6);
+  opacity: 0.9;
+  margin-bottom: 0.5rem;
+}
+.navbar-vertical .nav-item{ margin-bottom: 0.125rem; }
+
+/* ============= BLOQUE INFERIOR (.mt-auto) ============ */
+.navbar-vertical .mt-auto{
+  margin-top: auto !important;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  font-size: 0.90rem;
+  line-height: 1;
+  font-weight: 600;
+}
+.navbar-vertical .mt-auto .nav-link{
+  color: var(--phoenix-gray-400, #a0aabb) !important;
+}
+.navbar-vertical .mt-auto .nav-link:hover{
+  color: var(--phoenix-gray-300, #c1c9d2) !important;
+}
+.navbar-vertical .mt-auto .nav-link.active{
+  color: var(--phoenix-primary, #66a1ff) !important;
+}
+.navbar-vertical .mt-auto .nav-link i{
+  margin-right: 0rem;
+  width: 16px;
+}
+.navbar-vertical .mt-auto .nav-link .d-flex{
+  gap: 0.1rem !important;
+  align-items: center;
+}
+.navbar-vertical .mt-auto .nav-link .nav-link-icon{
+  width: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--phoenix-gray-400, #a0aabb);
+  margin-right: 0.5rem !important;
+}
+.navbar-vertical .mt-auto .nav-link .nav-link-text{
+  margin-left: 0 !important;
+}
+.navbar-vertical .mt-auto ul.nav > li.nav-item > .nav-link{
+  padding-left: 1.1rem !important;
+}
+
+/* ===================== SCROLLBAR ====================== */
+.scrollbar{
+  scrollbar-width: thin;
+  scrollbar-color: var(--phoenix-gray-400) transparent;
+}
+.scrollbar::-webkit-scrollbar{ width: 6px; }
+.scrollbar::-webkit-scrollbar-thumb{
+  background-color: var(--phoenix-gray-400);
+  border-radius: 3px;
+}
+
+/* ======================= LAYOUT ======================= */
+.main{ display:flex; min-height:100vh; }
+@media (max-width: 991.98px){
+  .main-content,
+  .content{
+    margin-left: 0;
+  }
+}
+
+/* ================== CARET ROTATION ==================== */
+button[data-bs-toggle="collapse"][aria-expanded="true"] .bi-caret-right-fill {
+  transform: rotate(90deg);
+  transition: transform .2s ease;
+}
+button[data-bs-toggle="collapse"] .bi-caret-right-fill {
+  transition: transform .2s ease;
+}
+
+/* =================== HOVER ICON BUTTONS =================== */
+.navbar .nav-item button:has(.bi-brightness-high),
+.navbar .nav-item button:has(.bi-bell) {
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+.navbar .nav-item button:has(.bi-brightness-high):hover,
+.navbar .nav-item button:has(.bi-bell):hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* =================== LAYOUT OVERRIDES (FINAL) =================== */
+.main-content{
+  margin-left: var(--phoenix-navbar-vertical-width);
+  padding-top: calc(var(--lex-topbar-h) + 1rem);
+  padding-left: 1rem;
+  padding-right: 1rem;
+  min-height: 100vh;
+  background-color: var(--phoenix-gray-100);
+}
+.content{
+  flex: 1;
+  padding: 1.5rem;
+  padding-top: 3rem;
+  margin-left: var(--phoenix-navbar-vertical-width);
+  background-color: var(--phoenix-gray-100);
+  min-height: 100vh;
+}
+
+/* =========== OVERRIDE ESPECIFICO (PISA A TODO) =========== */
+.container.main-content {
+  margin-left: 0 !important;
+  padding-top: 0px !important;
+}
+
+/* Elimina el backdrop del offcanvas ==================================================================================*/
+.offcanvas-backdrop {
+  display: none !important;
+}
+
+/* === Sidebar: sólo scroll vertical, nunca horizontal ===================================================================================== */
+#navbarVerticalOffcanvas .navbar-vertical-content,
+.scrollbar {
+  overflow-y: auto !important; /* scroll vertical */
+  overflow-x: hidden !important;/* sin scroll horizontal */
+}
+
+/* Footer visual, pegado abajo, solo desktop */
+.navbar-vertical-footer{
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: .75rem 1rem;
+  background: var(--phoenix-gray-1100, #0e1624);
+}
+.navbar-vertical-footer .btn{
+  color: var(--phoenix-gray-300, #c1c9d2);
+  background: transparent;
+}
+.navbar-vertical-footer .btn:hover{
+  background: rgba(255,255,255,0.06);
+}
+
+/* Evitar scroll horizontal en la parte scrolleable ==================================================================================*/
+#navbarVerticalOffcanvas .navbar-vertical-content{
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Colapso real en escritorio ==================================================================================*/
+@media (min-width: 992px){
+  html.navbar-vertical-collapsed #navbarVerticalOffcanvas.offcanvas-lg{
+    width: 4rem !important;
+  }
+  html.navbar-vertical-collapsed .content{
+    margin-left: 4rem !important;
+  }
+
+  html.navbar-vertical-collapsed .navbar-vertical .nav-label,
+  html.navbar-vertical-collapsed .navbar-vertical .nav-link-text,
+  html.navbar-vertical-collapsed .navbar-vertical .dropdown-indicator-icon,
+  html.navbar-vertical-collapsed .navbar-vertical .collapse{
+    display: none !important;
+  }
+
+  html.navbar-vertical-collapsed .navbar-vertical .nav-link{
+    margin: .25rem .5rem;
+    padding: .5rem !important;
+    justify-content: center;
+    text-align: center;
+  }
+  html.navbar-vertical-collapsed .navbar-vertical .nav-link .nav-link-icon{
+    margin: 0 !important;
+    width: 1.25rem;
+  }
+
+  /* En colapsado, el texto del botón se oculta (dejá sólo el ícono si querés) */
+  html.navbar-vertical-collapsed .navbar-vertical-footer-text{
+    display: none !important;
+  }
+}
+
+/* Sidebar: estructura para fijar Pages al fondo ===============================================*/
+#navbarVerticalOffcanvas .offcanvas-body{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* La parte superior (tu menú) ocupa el espacio disponible y scrollea */
+#navbarVerticalOffcanvas .navbar-vertical-content{
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;          /* clave para que el scroll funcione */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* El bloque "Pages" ya tiene .mt-auto: esto lo asegura */
+#navbarVerticalOffcanvas .mt-auto{
+  margin-top: auto !important;
+}
+
+/* La flechita puede animar */
+.toggle-icon{
+  display: inline-block;
+  transition: transform .2s ease;
+}
+
+/* Cuando el NAV está colapsado, girar a la derecha */
+#navbarVerticalOffcanvas.is-collapsed .toggle-icon{
+  transform: rotate(180deg);
+}
+
+.navbar-vertical .mt-auto .navbar-vertical-toggle{
+  margin-top: auto !important;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}

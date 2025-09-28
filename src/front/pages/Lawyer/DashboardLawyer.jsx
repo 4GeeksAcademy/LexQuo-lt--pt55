@@ -7,6 +7,7 @@ import useUnreadBadges from "../../hooks/useUnreadBadges";
 import { markNow } from "../../hooks/chatUnread";
 import { useNavigate, useParams } from "react-router-dom";
 import DashboardCalendar from "../../components/DashboardCalendar";
+import AppNavsShell from "../../components/AppNavsShell";
 
 
 export const DashboardLawyer = () => {
@@ -470,9 +471,10 @@ export const DashboardLawyer = () => {
 
 
     return (
-        <div className="container text-center mt-5">
-            <h1>DASHBOARD LAWYER</h1>
-            <h1>¡HELLO {name}!</h1>
+       <AppNavsShell>
+       <div className="container main-content">
+             
+            <h1 className="text-start pb-5">Dashboard Lawyer</h1>
 
             {currentLawyerId && (
                 <Link
@@ -966,5 +968,6 @@ export const DashboardLawyer = () => {
             </div>
 
         </div >
+       </AppNavsShell>
     );
 };

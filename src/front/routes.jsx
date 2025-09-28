@@ -183,25 +183,33 @@ export const router = createBrowserRouter(
       <Route element={<PrivateRoute />}>
         <Route path="/DashboardClient" element={<DashboardClient />} />
         <Route path="/DashboardLawyer" element={<DashboardLawyer />} />
+
         <Route path="/courtfiles/addcourtfile" element={<AddCourtfile />} />
         <Route path="/courtfiles/ViewCourtfileLawyer/:courtfileId" element={<ViewCourtfileLawyer />} />
         <Route path="/courtfiles/viewclient/:courtfileId" element={<ViewCourtfileClient />} />
         <Route path="/courtfiles/:courtfileId" element={<EditCourtfile />} />
+
         <Route path="/lawyers/view/:lawyerId" element={<ViewLawyer />} />
         <Route path="/lawyers/:lawyerId" element={<EditLawyer />} />
+
         <Route path="/clients/view/:clientId" element={<ViewClient />} />
         <Route path="/clients/:clientId" element={<EditClient />} />
+
         <Route path="/clients/link-or-create" element={<LawyerLinkOrCreateClient />} />
         <Route path="/lawyers/link-or-invite" element={<LawyerLinkOrInviteLawyer />} />
-        <Route path="/payments/view/:paymentId" element={<ViewPayment />} />
+
+        <Route path="/payments/view/:paymentId" element={<ViewPayment />} />        
         <Route path="/payments/addPayment" element={<AddPayment />} />
         <Route path="/payments/:paymentId" element={<EditPayment />} />
+
         <Route path="/deadlines/addDeadline" element={<AddDeadline />} />
         <Route path="/deadlines/view/:deadlineId" element={<ViewDeadline />} />
         <Route path="/deadlines/:deadlineId" element={<EditDeadline />} />
+
         <Route path="/appointments/addAppointment" element={<AddAppointment />} />
         <Route path="/appointments/view/:appointmentId" element={<ViewAppointment />} />
         <Route path="/appointments/:appointmentId" element={<EditAppointment />} />
+        
         <Route path="/documents/addDocument" element={<AddDocument />} />
         <Route path="/documents/view/:documentId" element={<ViewDocument />} />
         <Route path="/documents/:documentId" element={<EditDocument />} />
