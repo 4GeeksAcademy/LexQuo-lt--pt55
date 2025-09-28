@@ -40,7 +40,10 @@ export const AddAppointmentsCourtfiles = () => {
       try {
         if (appointments.length === 0) {
           const response = await fetch(`${API}/api/appointments`, {
-            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+            headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`, 
+                },
           });
 
           if (response.ok) {
@@ -51,7 +54,10 @@ export const AddAppointmentsCourtfiles = () => {
 
         if (courtfiles.length === 0) {
           const response = await fetch(`${API}/api/courtfiles`, {
-            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+            headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`, 
+                },
           });
 
           if (response.ok) {
@@ -88,7 +94,10 @@ export const AddAppointmentsCourtfiles = () => {
 
       const res = await fetch(`${API}/api/appointments-courtfiles`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`, 
+                },
         body: JSON.stringify(payload),
       });
 
@@ -99,7 +108,10 @@ export const AddAppointmentsCourtfiles = () => {
 
       // Actualizar la lista de relaciones en el store
       const relationsResponse = await fetch(`${API}/api/appointments-courtfiles`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`, 
+                },
       });
 
       if (relationsResponse.ok) {
