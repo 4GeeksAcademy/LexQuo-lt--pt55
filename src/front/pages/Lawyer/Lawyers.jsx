@@ -1,4 +1,4 @@
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, Navigate } from "react-router-dom";
 import React, { useEffect, useState } from "react"
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 
@@ -7,10 +7,18 @@ export const Lawyers = () => {
     const { store, dispatch } = useGlobalReducer()
     const API = import.meta.env.VITE_BACKEND_URL;
     const navigate = useNavigate();
-
+  
     const token = store?.auth?.token || null;
     const me = store?.me || null;
     const role = (me?.role || "").toLowerCase();
+
+    // ---------- Guards ----------
+      const allowed =
+        role === "admin_user" ||
+        role === "lawyer";
+    
+      if (!allowed) return <Navigate to="/403" replace />;
+    
 
     const fetchLawyers = async () => {
         try {
@@ -61,14 +69,7 @@ export const Lawyers = () => {
             alert(`Error deleting lawyer: ${error.message}`);
         }
     };
-
-    useEffect(() => {
-        const role = String(store?.auth?.role || "").toLowerCase();
-        if (role && role !== "admin_user") {
-            navigate("/403", { replace: true });
-        }
-    }, [store?.auth?.role]);
-
+    
 
     return (
         <div className="container mt-4">

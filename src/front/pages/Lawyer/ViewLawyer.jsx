@@ -20,6 +20,14 @@ export const ViewLawyer = () => {
   const role = (me?.role || "").toLowerCase();
 
 
+  // ---------- Guards ----------
+  const allowed =
+    role === "admin_user" ||
+    role === "lawyer";
+
+  if (!allowed) return <Navigate to="/403" replace />;
+
+
   useEffect(() => {
     const fetchLawyer = async () => {
       try {

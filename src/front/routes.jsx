@@ -123,19 +123,13 @@ export const router = createBrowserRouter(
         <Route path="/admins/view/:adminId" element={<ViewAdmin />} />
         <Route path="/admins/:adminId" element={<EditAdmin />} />
         <Route path="/admins/dashboard" element={<DashboardAdminUser />} />
-
-        <Route path="/lawyers" element={<Lawyers />} />
+        
         <Route path="/lawyers/addLawyer" element={<AddLawyer />} />
 
-        <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} />
-        <Route path="/courtfiles" element={<Courtfiles />} />
-
-        <Route path="/clients" element={<Clients />} />
+        <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} /> 
+        
         <Route path="/clients/addClient" element={<AddClient />} />
-
-        <Route path="/payments" element={<Payments />} />
-        <Route path="/deadlines" element={<Deadlines />} />
-        <Route path="/appointments" element={<Appointments />} />
+        
         <Route path="/documents" element={<Documents />} />
 
         <Route path="/ClientsCourtfiles" element={<ClientsCourtfiles />} />
@@ -219,6 +213,13 @@ export const router = createBrowserRouter(
 
         <Route path="/lawyers/:id/password" element={<ChangePassword kind="lawyer" />} />
         <Route path="/clients/:id/password" element={<ChangePassword kind="client" />} />
+
+        <Route path="/lawyers" element={<Lawyers />} />
+        <Route path="/clients" element={<Clients />} />
+        <Route path="/payments" element={<Payments />} />
+        <Route path="/deadlines" element={<Deadlines />} />
+        <Route path="/appointments" element={<Appointments />} />
+        <Route path="/courtfiles" element={<Courtfiles />} />
 
       </Route>
 

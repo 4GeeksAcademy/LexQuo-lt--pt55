@@ -10,6 +10,15 @@ export const Appointments = () => {
     const API = import.meta.env.VITE_BACKEND_URL;
 
     const token = store?.auth?.token;
+    const me = store?.me || null;
+    const role = (me?.role || "").toLowerCase();
+
+    // ---------- Guards ----------
+    const allowed =
+        role === "admin_user" ||
+        role === "lawyer";
+
+    if (!allowed) return <Navigate to="/403" replace />;
 
     const fetchAppointments = async () => {
         try {
