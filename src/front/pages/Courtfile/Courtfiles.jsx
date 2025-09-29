@@ -104,19 +104,37 @@ export const Courtfiles = () => {
 
     // ---------------- BUSCADOR COURTFILES ----------------
     const [search, setSearch] = useState("");
+    // ---------------- FILTRO STATUS ----------------
+    const [status, setStatus] = useState("all"); // all | active | inactive
+
+    // ---------------- BUSCADOR + FILTRO COURTFILES ----------------
 
     const filteredCases = useMemo(() => {
-        const cases = sortedCases; // 👈 usar la lista ya ORDENADA
-        if (!search?.trim()) return cases;
+        const cases = sortedCases;
+
+        // Normaliza "activo/inactivo" desde distintas fuentes
+        const isActiveValue = (cf) => {
+            if (typeof cf?.is_active === "boolean") return cf.is_active;
+            const s = String(cf?.status ?? cf?.state ?? "").toLowerCase();
+            if (s.includes("active") || s.includes("open")) return true;
+            if (s.includes("inactive") || s.includes("closed") || s.includes("archiv")) return false;
+            return true; // si es desconocido, lo consideramos activo por defecto
+        };
+
+        const byStatus = cases.filter((cf) => {
+            if (status === "all") return true;
+            return status === "active" ? isActiveValue(cf) : !isActiveValue(cf);
+        });
+
+        if (!search?.trim()) return byStatus;
 
         const q = search.toLowerCase();
-        return cases.filter((cf) =>
-            [cf.case_number, cf.title, cf.jurisdiction, cf.court, cf.status]
+        return byStatus.filter((cf) =>
+            [cf.case_number, cf.title, cf.jurisdiction, cf.court, cf.status, cf.state]
                 .filter(Boolean)
                 .some((v) => String(v).toLowerCase().includes(q))
         );
-    }, [sortedCases, search]);
-
+    }, [sortedCases, search, status]);
 
 
     return (
@@ -124,46 +142,72 @@ export const Courtfiles = () => {
             <div className="container main-content">
                 <div className="table-responsive table-wrap">
 
-                    <div className="d-flex align-items-center gap-3 mb-3">
-                        <h2 className="mb-0">
-                            Courtfiles{" "}
-                            <span className="text-muted fw-normal small">
-                                ({filteredCases.length})
-                            </span>
-                        </h2>
+                    {/* ===== Toolbar ===== */}
+                    <div className="mb-3">
+                        {/* Fila 1: título + contador + botón (opcional puedes dejarlo abajo también) */}
+                        <div className="d-flex align-items-center gap-3 mb-2">
+                            <h2 className="mb-5">
+                                Courtfiles{" "}
+                                <span className="text-muted fw-normal small">({filteredCases.length})</span>
+                            </h2>
+                        </div>
 
-                        <Link
-                            to="/courtfiles/addcourtfile"
-                            state={{ linkToLawyer: true, returnTo: "/DashboardLawyer" }}
-                            className="btn btn-sm btn-info"
-                        >
-                            + New Courtfile
-                        </Link>
-                    </div>
+                        {/* Fila 2: izq = search + filtros | der = New Courtfile */}
+                        <div className="d-flex align-items-center justify-content-between gap-2 flex-nowrap">
+                            {/* Izquierda: search + chips (misma línea) */}
+                            <div className="d-flex align-items-center gap-2 flex-nowrap w-100" style={{ minWidth: 0 }}>
+                                {/* Search estilo custom (tu mismo de Courtfiles) */}
+                                <div className="search-box" style={{ width: "clamp(260px, 40vw, 420px)" }}>
+                                    <i className="bi bi-search search-icon"></i>
+                                    <input
+                                        type="search"
+                                        className="form-control search-input"
+                                        placeholder="Search by number, title, court..."
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                    />
+                                    {search && (
+                                        <button className="clear-btn" onClick={() => setSearch("")} title="Clear">
+                                            <i className="bi bi-x-lg"></i>
+                                        </button>
+                                    )}
+                                </div>
 
-                    {/* ====== Bloque abajo: buscador ====== */}
-                    <div className="d-flex justify-content-end">
-                        <div className="search-box">
-                            <i className="bi bi-search search-icon"></i>
-                            <input
-                                type="search"
-                                className="form-control search-input"
-                                placeholder="Search by number, title, court..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
-                            {search && (
-                                <button
-                                    className="clear-btn"
-                                    onClick={() => setSearch("")}
-                                    title="Clear"
+                                {/* Chips de estado */}
+                                <div className="d-flex align-items-center gap-2 flex-nowrap flex-shrink-0">
+                                    <button
+                                        className={`btn btn-sm ${status === "all" ? "btn-dark" : "btn-outline-secondary"}`}
+                                        onClick={() => setStatus("all")}
+                                    >
+                                        All
+                                    </button>
+                                    <button
+                                        className={`btn btn-sm ${status === "active" ? "btn-dark" : "btn-outline-secondary"}`}
+                                        onClick={() => setStatus("active")}
+                                    >
+                                        Active
+                                    </button>
+                                    <button
+                                        className={`btn btn-sm ${status === "inactive" ? "btn-dark" : "btn-outline-secondary"}`}
+                                        onClick={() => setStatus("inactive")}
+                                    >
+                                        Inactive
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Derecha: botón nuevo expediente */}
+                            <div className="ms-auto flex-shrink-0">
+                                <Link
+                                    to="/courtfiles/addcourtfile"
+                                    state={{ linkToLawyer: true, returnTo: "/DashboardLawyer" }}
+                                    className="btn btn-sm btn-info"
                                 >
-                                    <i className="bi bi-x-lg"></i>
-                                </button>
-                            )}
+                                    + New Courtfile
+                                </Link>
+                            </div>
                         </div>
                     </div>
-
 
                     <table className="table table-modern align-middle mb-0">
                         <thead>
@@ -259,12 +303,14 @@ export const Courtfiles = () => {
 
                                     {/* Jurisdiction compacta con badge suave */}
                                     <td title={courtfile.jurisdiction || "—"}>
-                                        <div className="truncate-100">{courtfile.jurisdiction || "—"}</div>
+                                        <div className="juris-clip">
+                                            {courtfile.jurisdiction || "—"}
+                                        </div>
                                     </td>
 
                                     {/* Court con elipsis */}
                                     <td title={courtfile.court || "—"}>
-                                        <div className="truncate-100">{courtfile.court || "—"}</div>
+                                        <div>{courtfile.court || "—"}</div>
                                     </td>
 
                                     {/* StatusPill (sin <td> dentro de <td>) */}

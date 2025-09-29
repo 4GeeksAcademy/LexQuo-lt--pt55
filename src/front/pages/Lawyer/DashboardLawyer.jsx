@@ -267,7 +267,7 @@ export const DashboardLawyer = () => {
         setSortConfig({ key, direction });
     };
 
-    const sortedCases = useMemo(() => {
+    const sortedCases = useMemo(() => { 
         let sortable = [...filteredCases];
         if (sortConfig.key) {
             sortable.sort((a, b) => {
@@ -281,6 +281,9 @@ export const DashboardLawyer = () => {
         return sortable;
     }, [filteredCases, sortConfig]);
 
+   
+        
+
 
     return (
         <AppNavsShell>
@@ -289,48 +292,72 @@ export const DashboardLawyer = () => {
                 {/* ==== FILA 1: COURTFILES FULL WIDTH ==== */}
                 <div className="row g-4">
                     <div className="col-12">
-                        {/* ===== Toolbar COURTFILES (compacta) ===== */}
-                        {/* ====== Bloque arriba: título + contador + botón ====== */}
-                        <div className="d-flex align-items-center gap-3 mb-2">
-                            <h2 className="mb-0">
-                                Courtfiles{" "}
-                                <span className="text-muted fw-normal small">
-                                    ({filteredCases.length})
-                                </span>
-                            </h2>
+                        {/* ===== Toolbar COURTFILES ===== */}
+                        <div>
+                            {/* Fila 1: título + contador (arriba) */}
+                            <div className="d-flex align-items-center gap-3 mb-2">
+                                <h2 className="mb-5">
+                                    Courtfiles{" "}
+                                    <span className="text-muted fw-normal small">({filteredCases.length})</span>
+                                </h2>
+                            </div>
 
-                            <Link
-                                to="/courtfiles/addcourtfile"
-                                state={{ linkToLawyer: true, returnTo: "/DashboardLawyer" }}
-                                className="btn btn-sm btn-info"
-                            >
-                                + New Courtfile
-                            </Link>
-                        </div>
+                            {/* Fila 2: izq = search + filtros | der = Add (misma línea) */}
+                            <div className="d-flex align-items-center justify-content-between gap-2 flex-nowrap">
+                                {/* Izquierda */}
+                                <div className="d-flex align-items-center gap-2 flex-nowrap w-100" style={{ minWidth: 0 }}>
+                                    {/* Search (tu mismo estilo) */}
+                                    <div className="search-box" style={{ width: "clamp(260px, 40vw, 420px)" }}>
+                                        <i className="bi bi-search search-icon"></i>
+                                        <input
+                                            type="search"
+                                            className="form-control search-input"
+                                            placeholder="Search by number, title, court..."
+                                            value={search}
+                                            onChange={(e) => setSearch(e.target.value)}
+                                        />
+                                        {search && (
+                                            <button className="clear-btn" onClick={() => setSearch("")} title="Clear">
+                                                <i className="bi bi-x-lg"></i>
+                                            </button>
+                                        )}
+                                    </div>
 
-                        {/* ====== Bloque abajo: buscador ====== */}
-                        <div className="d-flex justify-content-end">
-                            <div className="search-box">
-                                <i className="bi bi-search search-icon"></i>
-                                <input
-                                    type="search"
-                                    className="form-control search-input"
-                                    placeholder="Search by number, title, court..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                />
-                                {search && (
-                                    <button
-                                        className="clear-btn"
-                                        onClick={() => setSearch("")}
-                                        title="Clear"
+                                    {/* Botoncitos de estado */}
+                                    <div className="d-flex align-items-center gap-2 flex-nowrap flex-shrink-0">
+                                        <button
+                                            className={`btn btn-sm ${status === "all" ? "btn-dark" : "btn-outline-secondary"}`}
+                                            onClick={() => setStatus("all")}
+                                        >
+                                            All
+                                        </button>
+                                        <button
+                                            className={`btn btn-sm ${status === "active" ? "btn-dark" : "btn-outline-secondary"}`}
+                                            onClick={() => setStatus("active")}
+                                        >
+                                            Active
+                                        </button>
+                                        <button
+                                            className={`btn btn-sm ${status === "inactive" ? "btn-dark" : "btn-outline-secondary"}`}
+                                            onClick={() => setStatus("inactive")}
+                                        >
+                                            Inactive
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Derecha */}
+                                <div className="ms-auto flex-shrink-0">
+                                    <Link
+                                        to="/courtfiles/addcourtfile"
+                                        state={{ linkToLawyer: true, returnTo: "/DashboardLawyer" }}
+                                        className="btn btn-sm btn-info"
                                     >
-                                        <i className="bi bi-x-lg"></i>
-                                    </button>
-                                )}
+                                        + New Courtfile
+                                    </Link>
+                                </div>
                             </div>
                         </div>
-
 
 
                         {/* tabla */}
@@ -447,12 +474,12 @@ export const DashboardLawyer = () => {
 
                                                     {/* Jurisdiction angosta con elipsis confiable */}
                                                     <td title={cf.jurisdiction}>
-                                                        <div className="truncate-100">{cf.jurisdiction || "—"}</div>
+                                                        <div className="juris-clip">{cf.jurisdiction || "—"}</div>
                                                     </td>
 
                                                     {/* Court compacta con elipsis */}
                                                     <td title={cf.court}>
-                                                        <div className="truncate-100">{cf.court || "—"}</div>
+                                                        <div>{cf.court || "—"}</div>
                                                     </td>
 
                                                     {/* Status en pill consistente */}
@@ -683,7 +710,7 @@ export const DashboardLawyer = () => {
                             </div>
                         </div>
 
-                        
+
                     </div>
 
 

@@ -333,8 +333,6 @@ def get_lawyers():
         return jsonify({'error': str(e)}), 500
 
 
-    except Exception as e:
-        return jsonify({'error': str(e)}), 404
 
 
 @api.route('/lawyers/lookup', methods=['GET'])

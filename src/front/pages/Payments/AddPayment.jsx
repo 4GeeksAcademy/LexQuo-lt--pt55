@@ -179,7 +179,7 @@ export const AddPayment = () => {
   <AppNavsShell>
     <div className="container mt-4 add-page">
       <div className="row ">
-        <div className="col-lg-10 col-xl-10">
+        <div className="col-8">
 
           {/* Header */}
           <div className="d-flex justify-content-between mb-4">

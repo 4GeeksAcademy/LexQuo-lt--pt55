@@ -119,7 +119,7 @@ export const AddCourtfile = () => {
 
 
                 {/* Panel principal */}
-                <div className="col-lg-10 col-xl-10">
+                <div className="col-lg-8 col-xl-8">
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <h1 className="display-5 fw-bold mb-0">Add New Courtfile</h1>
                         <Link to={returnTo} className="btn btn-outline-secondary">

@@ -214,9 +214,14 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 }
 
 /* =========== OVERRIDE ESPECIFICO (PISA A TODO) =========== */
+
 .container.main-content {
+  max-width: 100% !important;   /* ocupa todo el ancho */
   margin-left: 0 !important;
-  padding-top: 0px !important;
+  margin-right: 0 !important;   /* quita el hueco */
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  padding-top: 0 !important;
 }
 
 /* ======================= LAYOUT ======================= */
@@ -419,21 +424,6 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   color: #6c757d;
 }
 
-/* ===== Columnas angostas con elipsis ===== */
-.truncate-200 {
-  max-width: 420px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-}
-.truncate-160 {
-  max-width: 320px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-}
 
 
 /* ========================PILLS ESTADOS (con más contraste) ====================== */
@@ -784,6 +774,54 @@ th.text-center {
 
 /* =============parche margenes============================= */
 .add-page {
-  margin-top: 0.5rem !important;   /* menos margen arriba */
-  margin-left: 0 !important;       /* pegado a la sidebar */
+  margin-top: 0rem !important;   /* menos margen arriba */
+  max-width: 100% !important;   /* ocupa todo el ancho */
+  margin-left: 0 !important;
+  margin-right: 0 !important;   /* quita el hueco */
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
+
+/* Clients table: fondo y hover controlados por variables BS */
+.clients-table{
+  /* fondo base y rayado transparentes */
+  --bs-table-bg: transparent;
+  --bs-table-striped-bg: transparent;
+
+  /* color de hover deseado */
+  --bs-table-hover-bg: #f8fafc;   /* gris claro */
+  --bs-table-hover-color: inherit;
+}
+
+/* =============parche tabla clients============================= */
+
+/* celdas transparentes para que se vea el hover del <tr> */
+.clients-table > :not(caption) > * > * {
+  background-color: transparent !important;
+}
+
+/* por si alguna regla vieja pinta blanco */
+.clients-table tbody tr { background-color: transparent !important; }
+.clients-table.table-hover > tbody > tr:hover,
+.clients-table.table-hover > tbody > tr:hover > *{
+  background-color: var(--bs-table-hover-bg) !important;
+}
+
+/* Letras un poco más chicas en todas las tablas */
+.table,
+.table-modern,
+.clients-table,
+.courtfiles-table {
+  font-size: 0.875rem; /* ~14px */
+}
+
+
+.juris-clip {
+  max-width: 35ch;        /* límite aprox. al largo de esa frase */
+  white-space: nowrap;    /* que no se corte en varias líneas */
+  overflow: hidden;       /* oculta el resto */
+  text-overflow: ellipsis;/* agrega … al final */
+}
+
+
+

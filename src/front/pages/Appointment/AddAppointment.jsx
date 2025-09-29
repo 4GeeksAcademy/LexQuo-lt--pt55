@@ -215,7 +215,7 @@ export const AddAppointment = () => {
    <AppNavsShell>
   <div className="container add-page">
     <div className="row">
-      <div className="col-lg-10 col-xl-10 p-0">
+      <div className="col-lg-10 col-xl-10 p-0 ps-4 ">
         {/* Header */}
         <div className="d-flex justify-content-between mb-4">
           <h1 className="display-5 fw-bold mb-0">Add New Appointment</h1>

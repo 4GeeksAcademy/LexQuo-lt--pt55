@@ -191,7 +191,7 @@ export const AddDeadline = () => {
   <AppNavsShell>
     <div className="container add-page">
       <div className="row">
-        <div className="col-10">
+        <div className="col-8">
           
           {/* Header */}
           <div className="d-flex justify-content-between mb-4">
