@@ -96,7 +96,7 @@ import PrivateAdminRoute from "./components/PrivateAdminRoute";
 import LoginForAll from "./pages/LoginForAll.jsx";
 import SignUpForAll from "./pages/SignUpForAll.jsx";
 
-
+import Calendar from "./pages/Calendar.jsx";
 
 
 
@@ -220,6 +220,8 @@ export const router = createBrowserRouter(
         <Route path="/deadlines" element={<Deadlines />} />
         <Route path="/appointments" element={<Appointments />} />
         <Route path="/courtfiles" element={<Courtfiles />} />
+
+        <Route path="/calendar" element={<Calendar />} />
 
       </Route>
 

@@ -1,10 +1,15 @@
 // SidebarLogin.jsx
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Nav, Collapse } from "react-bootstrap";
 import "../Logued.css";
 import { useState, useEffect } from "react";
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 export default function SidebarLogin() {
+
+  const { dispatch } = useGlobalReducer();
+  const navigate = useNavigate();
+
   const [collapsed, setCollapsed] = useState(false);
   const [openGroups, setOpenGroups] = useState({
     courtfiles: false,
@@ -54,10 +59,10 @@ export default function SidebarLogin() {
       {/* Header solo en < lg */}
       <div className="offcanvas-header d-lg-none">
         <h5 className="offcanvas-title" id="navbarVerticalOffcanvasLabel">Menú</h5>
-        <button 
-          type="button" 
-          className="btn-close btn-close-white text-reset" 
-          data-bs-dismiss="offcanvas" 
+        <button
+          type="button"
+          className="btn-close btn-close-white text-reset"
+          data-bs-dismiss="offcanvas"
           aria-label="Close"
         ></button>
       </div>
@@ -99,7 +104,7 @@ export default function SidebarLogin() {
                   <span className="nav-link-text">Courtfiles</span>
                 </div>
               </button>
-              
+
               <Collapse in={openGroups.courtfiles}>
                 <div>
                   <Nav as="ul" className="flex-column">
@@ -155,7 +160,7 @@ export default function SidebarLogin() {
                   <span className="nav-link-text">Calendar</span>
                 </div>
               </button>
-              
+
               <Collapse in={openGroups.calendar}>
                 <div>
                   <Nav as="ul" className="flex-column">
@@ -249,7 +254,7 @@ export default function SidebarLogin() {
                   <span className="nav-link-text">Payments</span>
                 </div>
               </button>
-              
+
               <Collapse in={openGroups.payments}>
                 <div>
                   <Nav as="ul" className="flex-column">
@@ -284,7 +289,7 @@ export default function SidebarLogin() {
             <ul className="nav pb-3">
               <li className="nav-item">
                 <NavLink
-                  to="/profile"
+                  to="/lawyers/view/:lawyerId"
                   state={returnState}
                   className={linkClass}
                   onClick={closeOffcanvas}
@@ -297,7 +302,7 @@ export default function SidebarLogin() {
               </li>
               <li className="nav-item">
                 <NavLink
-                  to="/settings"
+                  to="/"
                   state={returnState}
                   className={linkClass}
                   onClick={closeOffcanvas}
@@ -310,13 +315,21 @@ export default function SidebarLogin() {
               </li>
               <li className="nav-item">
                 <NavLink
-                  to="/logout"
-                  state={returnState}
+                  to="#"
                   className="nav-link"
-                  onClick={closeOffcanvas}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    localStorage.removeItem("auth");
+                    localStorage.removeItem("user_name");
+                    dispatch({ type: "CLEAR_AUTH" });
+                    closeOffcanvas(); // cerrar offcanvas si corresponde
+                    navigate("/login");
+                  }}
                 >
-                  <div className="d-flex">
-                    <span className="nav-link-icon"><i className="bi bi-box-arrow-right" /></span>
+                  <div className="d-flex align-items-center">
+                    <span className="nav-link-icon">
+                      <i className="bi bi-box-arrow-right" />
+                    </span>
                     <span className="nav-link-text">Logout</span>
                   </div>
                 </NavLink>

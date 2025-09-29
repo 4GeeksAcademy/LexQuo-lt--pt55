@@ -1,9 +1,13 @@
 // NavbarLogin.jsx
-import { Link } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import "../Logued.css";
 import LogoLexQuoB from "../assets/img/LogoLexQuoB.png";
+import useGlobalReducer from "../hooks/useGlobalReducer"; // ajustá la ruta si es distinta
 
 const NavbarLogin = () => {
+  const { dispatch } = useGlobalReducer();
+  const navigate = useNavigate();
+
   return (
     <nav className="navbar navbar-expand navbar-dark bg-dark fixed-top py-2">
       <div className="container-fluid">
@@ -26,7 +30,7 @@ const NavbarLogin = () => {
           <Link to="/DashboardLawyer" className="navbar-brand d-flex align-items-center gap-2 mb-0 text-white">
             <img
               src={LogoLexQuoB}
-              style={{ height: "32px" }} 
+              style={{ height: "32px" }}
             />
           </Link>
         </div>
@@ -72,10 +76,27 @@ const NavbarLogin = () => {
               />
             </a>
             <ul className="dropdown-menu dropdown-menu-start" style={{ right: 0, left: "auto" }} aria-labelledby="userDropdown">
-              <li><Link className="dropdown-item" to="/profile">Perfil</Link></li>
-              <li><Link className="dropdown-item" to="/settings">Configuración</Link></li>
+              <li><Link className="dropdown-item" to="/lawyers/view/:lawyerId">Perfil</Link></li>
+              <li><Link className="dropdown-item" to="/">Configuración</Link></li>
               <li><hr className="dropdown-divider" /></li>
-              <li><Link className="dropdown-item" to="/logout">Cerrar sesión</Link></li>
+              <li>
+                <NavLink
+                  to="#"
+                  className="dropdown-item" // en vez de nav-link, para que se vea bien en el menú
+                  onClick={(e) => {
+                    e.preventDefault();
+                    localStorage.removeItem("auth");
+                    localStorage.removeItem("user_name");
+                    dispatch({ type: "CLEAR_AUTH" });
+                    navigate("/login");
+                  }}
+                >
+                  <div className="d-flex align-items-center">
+                    <i className="bi bi-box-arrow-right me-2" />
+                    Logout
+                  </div>
+                </NavLink>
+              </li>
             </ul>
           </li>
         </ul>
