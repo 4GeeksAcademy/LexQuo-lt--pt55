@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import AppNavsShell from "../../components/AppNavsShell";
 
 export const AddPayment = () => {
   const { dispatch, store } = useGlobalReducer();
@@ -175,27 +176,28 @@ export const AddPayment = () => {
   };
 
   return (
-    <div className="container mt-4">
-      <div className="row justify-content-center">
-        <div className="col-md-8">
+  <AppNavsShell>
+    <div className="container mt-4 add-page">
+      <div className="row ">
+        <div className="col-lg-10 col-xl-10">
+
           {/* Header */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1>Add New Payment</h1>
+          <div className="d-flex justify-content-between mb-4">
+            <h1 className="display-5 fw-bold mb-0">Add New Payment</h1>
             <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back
+              <i className="bi bi-arrow-left me-1" />
+              Back
             </Link>
           </div>
 
+          {/* Courtfile context / selector */}
           {preselectedCourtfileId ? (
-            <span className="badge bg-dark mt-2 mb-2">
+            <span className="badge bg-dark mt-1 mb-3">
               Related to Courtfile {preselectedCf?.case_number || "—"}
               {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
             </span>
           ) : (
-            <div className="mb-3">
-              <label htmlFor="courtfile_id" className="form-label">
-                Link to Courtfile *
-              </label>
+            <div className="form-floating mb-3">
               <select
                 className="form-select"
                 id="courtfile_id"
@@ -205,29 +207,29 @@ export const AddPayment = () => {
                 required
                 disabled={loading || loadingCases}
               >
-                <option value="">Select a courtfile</option>
+                <option value=""></option>
                 {myCases.map(c => (
                   <option key={c.id} value={c.id}>
                     {c.number} — {c.title}
                   </option>
                 ))}
               </select>
+              <label htmlFor="courtfile_id">Link to Courtfile *</label>
             </div>
           )}
 
-          <div className="card">
-            <div className="card-body">
+          {/* Card */}
+         
               {error && (
-                <div className="alert alert-danger" role="alert">
-                  <i className="bi bi-exclamation-triangle"></i> {error}
+                <div className="alert alert-danger d-flex align-items-center" role="alert">
+                  <i className="bi bi-exclamation-triangle me-2" /> {error}
                 </div>
               )}
 
               <form onSubmit={handleSubmit}>
 
                 {/* Amount */}
-                <div className="mb-3">
-                  <label htmlFor="amount" className="form-label">Amount *</label>
+                <div className="form-floating mb-3">
                   <input
                     type="number"
                     step="0.01"
@@ -235,17 +237,17 @@ export const AddPayment = () => {
                     className="form-control"
                     id="amount"
                     name="amount"
+                    placeholder=" "
                     value={formData.amount}
                     onChange={handleInputChange}
                     required
-                    placeholder="0.00"
                     disabled={loading}
                   />
+                  <label htmlFor="amount">Amount *</label>
                 </div>
 
-                {/* Currency - Desplegable */}
-                <div className="mb-3">
-                  <label htmlFor="currency" className="form-label">Currency *</label>
+                {/* Currency */}
+                <div className="form-floating mb-3">
                   <select
                     className="form-select"
                     id="currency"
@@ -255,18 +257,18 @@ export const AddPayment = () => {
                     required
                     disabled={loading}
                   >
-                    <option value="">Select currency</option>
+                    <option value=""></option>
                     {currencyOptions.map(option => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
                     ))}
                   </select>
+                  <label htmlFor="currency">Currency *</label>
                 </div>
 
-                {/* Means - Desplegable */}
-                <div className="mb-3">
-                  <label htmlFor="means" className="form-label">Payment Method *</label>
+                {/* Payment Method */}
+                <div className="form-floating mb-3">
                   <select
                     className="form-select"
                     id="means"
@@ -276,35 +278,40 @@ export const AddPayment = () => {
                     required
                     disabled={loading}
                   >
-                    <option value="">Select payment method</option>
+                    <option value=""></option>
                     {meansOptions.map(option => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
                     ))}
                   </select>
+                  <label htmlFor="means">Payment Method *</label>
                 </div>
 
-                <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>
+                {/* Actions */}
+                <div className="d-flex gap-2 justify-content-end mt-4">
+                  <Link to={returnTo} className="btn btn-outline-secondary">Cancel</Link>
                   <button type="submit" className="btn btn-primary" disabled={loading || linking}>
                     {loading || linking ? (
                       <>
-                        <span className="spinner-border spinner-border-sm" role="status"></span>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" />
                         {linking ? " Linking..." : " Creating..."}
                       </>
                     ) : (
                       <>
-                        <i className="bi bi-plus-circle"></i> Create
+                        <i className="bi bi-plus-circle me-2" />
+                        Create
                       </>
                     )}
                   </button>
                 </div>
+
               </form>
             </div>
           </div>
+
         </div>
-      </div>
-    </div>
-  );
+
+  </AppNavsShell>
+);
 };

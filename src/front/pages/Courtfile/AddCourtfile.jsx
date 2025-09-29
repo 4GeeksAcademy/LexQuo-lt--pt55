@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import AppNavsShell from "../../components/AppNavsShell";
 
 export const AddCourtfile = () => {
     const { store, dispatch } = useGlobalReducer();
@@ -12,7 +13,7 @@ export const AddCourtfile = () => {
 
     const token = store?.auth?.token || null;
     const role = (store?.me?.role || "").toLowerCase();
-    const meId = store?.me?.id || null; 
+    const meId = store?.me?.id || null;
 
     if (!["lawyer", "admin_user"].includes(role)) return <Navigate to="/403" replace />;
 
@@ -59,7 +60,7 @@ export const AddCourtfile = () => {
                 method: 'POST',
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`, 
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify(formData)
             });
@@ -91,8 +92,8 @@ export const AddCourtfile = () => {
 
                 // Navegación por rol
                 const viewPath = role === "lawyer"
-                  ? `/courtfiles/ViewCourtfileLawyer/${newCourtfile.id}`
-                  : `/courtfiles/ViewCourtfileAdmin/${newCourtfile.id}`;
+                    ? `/courtfiles/ViewCourtfileLawyer/${newCourtfile.id}`
+                    : `/courtfiles/ViewCourtfileAdmin/${newCourtfile.id}`;
                 const backTo = role === "lawyer" ? "/DashboardLawyer" : "/DashboardAdmin";
 
                 navigate(viewPath, { replace: true, state: { returnTo: backTo } });
@@ -112,149 +113,147 @@ export const AddCourtfile = () => {
     };
 
     return (
-        <div className="container mt-4">
-            <div className="row justify-content-center">
-                <div className="col-md-8">
+        <AppNavsShell>
+            <div className="container main-content add-page">
+                {/* Header */}
+
+
+                {/* Panel principal */}
+                <div className="col-lg-10 col-xl-10">
                     <div className="d-flex justify-content-between align-items-center mb-4">
-                        <h1>Add New Courtfile</h1>
-                        <Link to={returnTo} className="btn btn-outline-secondary"> <i className="bi bi-arrow-left"></i>Back</Link>
+                        <h1 className="display-5 fw-bold mb-0">Add New Courtfile</h1>
+                        <Link to={returnTo} className="btn btn-outline-secondary">
+                            <i className="bi bi-arrow-left me-1" />
+                            Back
+                        </Link>
                     </div>
 
-                    <div className="card">
-                        <div className="card-body">
-                            {error && (
-                                <div className="alert alert-danger" role="alert">
-                                    <i className="bi bi-exclamation-triangle"></i> {error}
-                                </div>
-                            )}
+                    {error && (
+                        <div className="alert alert-danger d-flex align-items-center" role="alert">
+                            <i className="bi bi-exclamation-triangle me-2" /> {error}
+                        </div>
+                    )}
 
-                            <form onSubmit={handleSubmit}>
+                    <form onSubmit={handleSubmit}>
 
-                                <div className="mb-3">
-                                    <label htmlFor="case_number" className="form-label">
-                                        Case Number *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        id="case_number"
-                                        name="case_number"
-                                        value={formData.case_number}
-                                        onChange={handleInputChange}
-                                        required
-                                        placeholder="e.g., EXP-2024-001"
-                                    />
-                                </div>
+                        {/* CASE NUMBER */}
+                        <div className="form-floating mb-3">
+                            <input
+                                id="case_number"
+                                name="case_number"
+                                type="text"
+                                className="form-control form-control-ux"
+                                placeholder=" "               // <- necesario para floating
+                                value={formData.case_number}
+                                onChange={handleInputChange}
+                                required
+                            />
+                            <label htmlFor="case_number">Case number *</label>
+                        </div>
 
-                                <div className="mb-3">
-                                    <label htmlFor="title" className="form-label">
-                                        Title *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        id="title"
-                                        name="title"
-                                        value={formData.title}
-                                        onChange={handleInputChange}
-                                        required
-                                        placeholder="Case title"
-                                    />
-                                </div>
+                        {/* TITLE */}
+                        <div className="form-floating mb-3">
+                            <input
+                                id="title"
+                                name="title"
+                                type="text"
+                                className="form-control form-control-ux"
+                                placeholder=" "
+                                value={formData.title}
+                                onChange={handleInputChange}
+                                required
+                            />
+                            <label htmlFor="title">Title *</label>
+                        </div>
 
-                                <div className="mb-3">
-                                    <label htmlFor="description" className="form-label">
-                                        Description *
-                                    </label>
-                                    <textarea
-                                        className="form-control"
-                                        id="description"
-                                        name="description"
-                                        rows="4"
-                                        value={formData.description}
-                                        onChange={handleInputChange}
-                                        required
-                                        placeholder="Detailed description of the case"
-                                    ></textarea>
-                                </div>
+                        {/* DESCRIPTION (textarea requiere altura fija) */}
+                        <div className="form-floating mb-4">
+                            <textarea
+                                id="description"
+                                name="description"
+                                className="form-control form-control-ux"
+                                placeholder=" "
+                                style={{ height: 140 }}        // o la que quieras
+                                value={formData.description}
+                                onChange={handleInputChange}
+                                required
+                            />
+                            <label htmlFor="description">Description *</label>
+                        </div>
 
-                                <div className="mb-3">
-                                    <label htmlFor="jurisdiction" className="form-label">
-                                        Jurisdiction *
-                                    </label>
+                        {/* GRID 2 columnas */}
+                        <div className="row g-3">
+                            <div className="col-md-6">
+                                <div className="form-floating">
                                     <select
-                                        className="form-select"
                                         id="jurisdiction"
                                         name="jurisdiction"
+                                        className="form-select form-control-ux"
                                         value={formData.jurisdiction}
                                         onChange={handleInputChange}
                                         required
                                     >
-                                        <option value="">Select a jurisdiction</option>
-                                        {JURISDICCIONES_PJN.map(jurisdiction => (
-                                            <option key={jurisdiction} value={jurisdiction}>
-                                                {jurisdiction}
-                                            </option>
+                                        <option value=""></option>   {/* vacío para permitir el “placeholder” */}
+                                        {JURISDICCIONES_PJN.map(j => (
+                                            <option key={j} value={j}>{j}</option>
                                         ))}
                                     </select>
+                                    <label htmlFor="jurisdiction">Jurisdiction *</label>
                                 </div>
+                            </div>
 
-                                <div className="mb-3">
-                                    <label htmlFor="court" className="form-label">
-                                        Court *
-                                    </label>
+                            <div className="col-md-6">
+                                <div className="form-floating">
                                     <input
-                                        type="text"
-                                        className="form-control"
                                         id="court"
                                         name="court"
+                                        type="text"
+                                        className="form-control form-control-ux"
+                                        placeholder=" "
                                         value={formData.court}
                                         onChange={handleInputChange}
                                         required
-                                        placeholder="e.g., Juzgado Nacional de Primera Instancia"
                                     />
+                                    <label htmlFor="court">Court *</label>
                                 </div>
-
-                                <div className="mb-3 form-check">
-                                    <input
-                                        type="checkbox"
-                                        className="form-check-input"
-                                        id="status"
-                                        name="status"
-                                        checked={formData.status}
-                                        onChange={handleInputChange}
-                                    />
-                                    <label className="form-check-label" htmlFor="status">
-                                        Active Case
-                                    </label>
-                                </div>
-
-                                <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                                    <Link to="/courtfiles" className="btn btn-secondary me-md-2">
-                                        Cancel
-                                    </Link>
-                                    <button
-                                        type="submit"
-                                        className="btn btn-primary"
-                                        disabled={loading}
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <span className="spinner-border spinner-border-sm" role="status"></span>
-                                                Creating...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="bi bi-plus-circle"></i> Create Courtfile
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </form>
+                            </div>
                         </div>
-                    </div>
+
+
+                        {/* SWITCH Estado */}
+                        <div className="form-switch my-4">
+                            <input
+                                className="form-check-input"
+                                type="checkbox"
+                                id="status"
+                                name="status"
+                                checked={formData.status}
+                                onChange={handleInputChange}
+                            />
+                            <label className="form-check-label ms-2" htmlFor="status">Active case</label>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="d-flex gap-2 justify-content-end">
+                            <Link to="/courtfiles" className="btn btn-outline-secondary">Cancel</Link>
+                            <button type="submit" className="btn btn-primary" disabled={loading}>
+                                {loading ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-2" role="status" />
+                                        Creating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="bi bi-plus-circle me-2" />
+                                        Create Courtfile
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
+                    </form>
                 </div>
             </div>
-        </div>
+        </AppNavsShell>
     );
-};
+}

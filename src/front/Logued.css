@@ -771,7 +771,7 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   border: none !important;
 }
 
-
+/* =============parche tablas============================= */
 th {
   white-space: nowrap; /* Evita que el contenido se divida en varias líneas */
   min-width: 60px; /* Asegura un ancho mínimo suficiente */
@@ -782,3 +782,8 @@ th.text-center {
   white-space: nowrap;
 }
 
+/* =============parche margenes============================= */
+.add-page {
+  margin-top: 0.5rem !important;   /* menos margen arriba */
+  margin-left: 0 !important;       /* pegado a la sidebar */
+}

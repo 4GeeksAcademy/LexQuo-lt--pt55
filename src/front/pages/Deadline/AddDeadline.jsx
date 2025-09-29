@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import AppNavsShell from "../../components/AppNavsShell";
 
 export const AddDeadline = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -187,26 +188,28 @@ export const AddDeadline = () => {
   });
 
   return (
-    <div className="container mt-4">
-      <div className="row justify-content-center">
-        <div className="col-md-8">
+  <AppNavsShell>
+    <div className="container add-page">
+      <div className="row">
+        <div className="col-10">
+          
           {/* Header */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1>Add New Deadline</h1>
+          <div className="d-flex justify-content-between mb-4">
+            <h1 className="display-5 fw-bold mb-0">Add New Deadline</h1>
             <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back
+              <i className="bi bi-arrow-left me-1" />
+              Back
             </Link>
           </div>
 
+          {/* Courtfile context / selector */}
           {preselectedCourtfileId ? (
-            <span className="badge bg-dark mt-1 mb-2">
+            <span className="badge bg-dark mt-1 mb-3">
               Related to Courtfile {preselectedCf?.case_number || "—"}
               {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
             </span>
-
           ) : (
-            <div className="mb-3">
-              <label htmlFor="courtfile_id" className="form-label">Link to Courtfile *</label>
+            <div className="form-floating mb-3">
               <select
                 className="form-select"
                 id="courtfile_id"
@@ -216,47 +219,49 @@ export const AddDeadline = () => {
                 required
                 disabled={loading || loadingCases}
               >
-                <option value="">Select a courtfile</option>
+                <option value=""></option>
                 {myCases.map(c => (
                   <option key={c.id} value={c.id}>
                     {c.number} — {c.title}
                   </option>
                 ))}
               </select>
+              <label htmlFor="courtfile_id">Link to Courtfile *</label>
             </div>
           )}
 
-          {/* Card */}
-          <div className="card">
-            {suggestion && (
-              <div className="alert alert-info">
-                <h5 className="mb-1">
-                  <i className="bi bi-lightbulb"></i> Sugerencia IA
-                </h5>
-                <strong>{suggestion.title}</strong>
-                {suggestion.reasoning && <p className="mb-1">{suggestion.reasoning}</p>}
-                {Array.isArray(suggestion.next_steps) && suggestion.next_steps.length > 0 && (
-                  <ul className="mb-1">
-                    {suggestion.next_steps.map((step, i) => (
-                      <li key={i}>{step}</li>
-                    ))}
-                  </ul>
-                )}
-                {suggestion.legal_basis && (
-                  <small className="text-muted">Fundamento: {suggestion.legal_basis}</small>
-                )}
-              </div>
-            )}
-            <div className="card-body">
+          {/* Card contenedora */}
+          
+              
+              {suggestion && (
+                <div className="alert alert-info">
+                  <h5 className="mb-1">
+                    <i className="bi bi-lightbulb"></i> Sugerencia IA
+                  </h5>
+                  <strong>{suggestion.title}</strong>
+                  {suggestion.reasoning && <p className="mb-1">{suggestion.reasoning}</p>}
+                  {Array.isArray(suggestion.next_steps) && suggestion.next_steps.length > 0 && (
+                    <ul className="mb-1">
+                      {suggestion.next_steps.map((step, i) => (
+                        <li key={i}>{step}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {suggestion.legal_basis && (
+                    <small className="text-muted">Fundamento: {suggestion.legal_basis}</small>
+                  )}
+                </div>
+              )}
+
               {error && (
-                <div className="alert alert-danger" role="alert">
-                  <i className="bi bi-exclamation-triangle"></i> {error}
+                <div className="alert alert-danger d-flex align-items-center" role="alert">
+                  <i className="bi bi-exclamation-triangle me-2" /> {error}
                 </div>
               )}
 
               <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label htmlFor="deadline_type" className="form-label">Deadline Type *</label>
+                
+                <div className="form-floating mb-3">
                   <select
                     className="form-select"
                     id="deadline_type"
@@ -266,31 +271,32 @@ export const AddDeadline = () => {
                     required
                     disabled={loading}
                   >
-                    <option value="">Select a Type</option>
+                    <option value=""></option>
                     {Deadline_Categories.map(type => (
                       <option key={type} value={type}>
                         {type}
                       </option>
                     ))}
                   </select>
+                  <label htmlFor="deadline_type">Deadline Type *</label>
                 </div>
 
-                <div className="mb-3">
-                  <label htmlFor="deadline_date" className="form-label">Deadline Date *</label>
+                <div className="form-floating mb-3">
                   <input
                     type="date"
                     className="form-control"
                     id="deadline_date"
                     name="deadline_date"
+                    placeholder=" "
                     value={formData.deadline_date}
                     onChange={handleInputChange}
                     required
                     disabled={loading}
                   />
+                  <label htmlFor="deadline_date">Deadline Date *</label>
                 </div>
 
-                <div className="mb-3">
-                  <label htmlFor="deadline_hour" className="form-label">Deadline Time *</label>
+                <div className="form-floating mb-3">
                   <select
                     className="form-select"
                     id="deadline_hour"
@@ -300,17 +306,17 @@ export const AddDeadline = () => {
                     required
                     disabled={loading}
                   >
-                    <option value="" disabled>Select time…</option>
+                    <option value=""></option>
                     {times15.map(t => (
                       <option key={t} value={t}>
                         {t}
                       </option>
                     ))}
                   </select>
+                  <label htmlFor="deadline_hour">Deadline Time *</label>
                 </div>
 
-                <div className="mb-3">
-                  <label htmlFor="priority" className="form-label">Priority *</label>
+                <div className="form-floating mb-3">
                   <select
                     className="form-select"
                     id="priority"
@@ -325,19 +331,22 @@ export const AddDeadline = () => {
                     <option value="high">High</option>
                     <option value="urgent">Urgent</option>
                   </select>
+                  <label htmlFor="priority">Priority *</label>
                 </div>
 
-                <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>
+                {/* Actions */}
+                <div className="d-flex gap-2 justify-content-end mt-4">
+                  <Link to={returnTo} className="btn btn-outline-secondary">Cancel</Link>
                   <button type="submit" className="btn btn-primary" disabled={loading}>
                     {loading ? (
                       <>
-                        <span className="spinner-border spinner-border-sm" role="status"></span>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" />
                         Creating...
                       </>
                     ) : (
                       <>
-                        <i className="bi bi-plus-circle"></i> Create Deadline
+                        <i className="bi bi-plus-circle me-2" />
+                        Create Deadline
                       </>
                     )}
                   </button>
@@ -346,9 +355,8 @@ export const AddDeadline = () => {
               </form>
             </div>
           </div>
-
         </div>
-      </div>
-    </div>
-  );
+
+  </AppNavsShell>
+);
 };

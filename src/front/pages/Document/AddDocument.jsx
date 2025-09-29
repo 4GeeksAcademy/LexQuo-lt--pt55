@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import AppNavsShell from "../../components/AppNavsShell";
 
 export const AddDocument = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -199,13 +200,15 @@ export const AddDocument = () => {
   };
 
   return (
-    <div className="container mt-4">
-      <div className="row justify-content-center">
-        <div className="col-md-8">
+  <AppNavsShell>
+    <div className="container add-page">
+      <div className="row">
+        <div className="col-lg-10 col-xl-10">
+          
           {/* Header */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
+          <div className="d-flex justify-content-between mb-4">
             <div>
-              <h1>Add New Document</h1>
+              <h1 className="display-5 fw-bold mb-0">Add New Document</h1>
               {preselectedCourtfileId && (
                 <span className="badge bg-dark mt-2">
                   Linked to Case {preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
@@ -213,44 +216,44 @@ export const AddDocument = () => {
                 </span>
               )}
             </div>
-
             <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back
+              <i className="bi bi-arrow-left me-1" /> Back
             </Link>
           </div>
 
-          {/* Card */}
-          <div className="card">
-            {suggestion && (
-              <div className="alert alert-info">
-                <h5 className="mb-1">
-                  <i className="bi bi-lightbulb"></i> Sugerencia IA
-                </h5>
-                <strong>{suggestion.title}</strong>
-                {suggestion.reasoning && <p className="mb-1">{suggestion.reasoning}</p>}
-                {Array.isArray(suggestion.next_steps) && suggestion.next_steps.length > 0 && (
-                  <ul className="mb-1">
-                    {suggestion.next_steps.map((step, i) => (
-                      <li key={i}>{step}</li>
-                    ))}
-                  </ul>
-                )}
-                {suggestion.legal_basis && (
-                  <small className="text-muted">Fundamento: {suggestion.legal_basis}</small>
-                )}
-              </div>
-            )}
-            <div className="card-body">
+          {/* Card contenedora */}
+          
+              {suggestion && (
+                <div className="alert alert-info">
+                  <h5 className="mb-1">
+                    <i className="bi bi-lightbulb" /> Sugerencia IA
+                  </h5>
+                  <strong>{suggestion.title}</strong>
+                  {suggestion.reasoning && <p className="mb-1">{suggestion.reasoning}</p>}
+                  {Array.isArray(suggestion.next_steps) && suggestion.next_steps.length > 0 && (
+                    <ul className="mb-1">
+                      {suggestion.next_steps.map((step, i) => (
+                        <li key={i}>{step}</li>
+                      ))}
+                    </ul>
+                  )}
+                  {suggestion.legal_basis && (
+                    <small className="text-muted">Fundamento: {suggestion.legal_basis}</small>
+                  )}
+                </div>
+              )}
+
               {error && (
-                <div className="alert alert-danger" role="alert">
-                  <i className="bi bi-exclamation-triangle"></i> {error}
+                <div className="alert alert-danger d-flex align-items-center" role="alert">
+                  <i className="bi bi-exclamation-triangle me-2" /> {error}
                 </div>
               )}
 
               <form onSubmit={handleSubmit}>
+
+                {/* Courtfile selector si no está preseleccionado */}
                 {!preselectedCourtfileId && (
-                  <div className="mb-3">
-                    <label htmlFor="courtfile_id" className="form-label">Link to Courtfile *</label>
+                  <div className="form-floating mb-3">
                     <select
                       className="form-select"
                       id="courtfile_id"
@@ -260,52 +263,52 @@ export const AddDocument = () => {
                       required
                       disabled={loading || loadingCases}
                     >
-                      <option value="">Select a courtfile</option>
+                      <option value=""></option>
                       {myCases.map(c => (
                         <option key={c.id} value={c.id}>
                           {c.number} — {c.title}
                         </option>
                       ))}
                     </select>
+                    <label htmlFor="courtfile_id">Link to Courtfile *</label>
                   </div>
                 )}
 
-                <div className="mb-3">
-                  <label htmlFor="name" className="form-label">
-                    Document Name *
-                  </label>
+                {/* Document name */}
+                <div className="form-floating mb-3">
                   <input
                     type="text"
                     className="form-control"
                     id="name"
                     name="name"
+                    placeholder=" "
                     value={formData.name}
                     onChange={handleInputChange}
                     required
-                    placeholder="Enter document name"
                     disabled={loading}
                   />
+                  <label htmlFor="name">Document Name *</label>
                 </div>
 
-                {/* input fecha del documento */}
-                <div className="mb-3">
-                  <label htmlFor="document_date" className="form-label">Document Date</label>
+                {/* Document date */}
+                <div className="form-floating mb-3">
                   <input
                     type="date"
                     className="form-control"
                     id="document_date"
                     name="document_date"
+                    placeholder=" "
                     value={formData.document_date}
                     onChange={handleInputChange}
                     disabled={loading}
                   />
+                  <label htmlFor="document_date">Document Date</label>
                   <div className="form-text">Used for the case timeline</div>
                 </div>
 
+                {/* File */}
                 <div className="mb-3">
-                  <label htmlFor="file" className="form-label">
-                    File (optional)
-                  </label>
+                  <label htmlFor="file" className="form-label">File (optional)</label>
                   <input
                     type="file"
                     className="form-control"
@@ -316,10 +319,8 @@ export const AddDocument = () => {
                   />
                 </div>
 
-                <div className="mb-3">
-                  <label htmlFor="category" className="form-label">
-                    Category
-                  </label>
+                {/* Category */}
+                <div className="form-floating mb-3">
                   <select
                     className="form-select"
                     id="category"
@@ -328,42 +329,44 @@ export const AddDocument = () => {
                     onChange={handleInputChange}
                     disabled={loading}
                   >
-                    <option value="">Select category (optional)</option>
-                    {documentCategories.map((category) => (
+                    <option value=""></option>
+                    {documentCategories.map(category => (
                       <option key={category} value={category}>
                         {category}
                       </option>
                     ))}
                   </select>
+                  <label htmlFor="category">Category</label>
                 </div>
 
-                <div className="mb-3">
-                  <label htmlFor="description" className="form-label">
-                    Description
-                  </label>
+                {/* Description */}
+                <div className="form-floating mb-3">
                   <textarea
                     className="form-control"
                     id="description"
                     name="description"
+                    placeholder=" "
+                    style={{ height: 100 }}
                     value={formData.description}
                     onChange={handleInputChange}
-                    rows="3"
-                    placeholder="Enter document description (optional)"
                     disabled={loading}
                   />
+                  <label htmlFor="description">Description</label>
                 </div>
 
-                <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>
+                {/* Actions */}
+                <div className="d-flex gap-2 justify-content-end mt-4">
+                  <Link to={returnTo} className="btn btn-outline-secondary">Cancel</Link>
                   <button type="submit" className="btn btn-primary" disabled={loading || linking}>
                     {loading || linking ? (
                       <>
-                        <span className="spinner-border spinner-border-sm" role="status" />
+                        <span className="spinner-border spinner-border-sm me-2" role="status" />
                         {linking ? " Linking..." : " Creating..."}
                       </>
                     ) : (
                       <>
-                        <i className="bi bi-plus-circle"></i> Create Document
+                        <i className="bi bi-plus-circle me-2" />
+                        Create Document
                       </>
                     )}
                   </button>
@@ -372,7 +375,6 @@ export const AddDocument = () => {
             </div>
           </div>
         </div>
-      </div>
-    </div >
-  );
+  </AppNavsShell>
+);
 };
