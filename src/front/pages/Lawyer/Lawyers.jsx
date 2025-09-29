@@ -172,10 +172,22 @@ export const Lawyers = () => {
             </div>
 
             {/* Derecha */}
-            <div className="ms-auto">              
-                <Link to="/lawyers/addLawyer" className="btn btn-primary">
+            <div className="ms-auto">
+              {role === "lawyer" ? (
+                <Link
+                  to="/lawyers/link-or-invite"
+                  className="btn btn-primary"
+                >
+                  <i className="bi bi-plus-lg me-1"></i> Link or invite
+                </Link>
+              ) : (
+                <Link
+                  to="/lawyers/addLawyer"
+                  className="btn btn-primary"
+                >
                   <i className="bi bi-plus-lg me-1"></i> Add lawyer
-                </Link>          
+                </Link>
+              )}
             </div>
           </div>
         </div>

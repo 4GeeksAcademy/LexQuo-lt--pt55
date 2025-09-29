@@ -178,12 +178,23 @@ export const Clients = () => {
 
             {/* Derecha */}
             <div className="ms-auto">
-              <Link to="/clients/addClient" className="btn btn-primary">
-                <i className="bi bi-plus-lg me-1"></i> Add client
-              </Link>
+              {role === "lawyer" ? (
+                <Link
+                  to="/clients/link-or-create"
+                  className="btn btn-primary"
+                >
+                  <i className="bi bi-plus-lg me-1"></i> Link or create client
+                </Link>
+              ) : (
+                <Link
+                  to="/clients/addClient"
+                  className="btn btn-primary"
+                >
+                  <i className="bi bi-plus-lg me-1"></i> Add client
+                </Link>
+              )}
             </div>
           </div>
-
         </div>
 
         {/* ===== Tabla ===== */}
@@ -204,9 +215,9 @@ export const Clients = () => {
               </thead>
               <tbody>
                 {filtered.map((c) => (
-                  <tr key={c.id} 
-                  className="table-row-clickable"
-                  onClick={() => navigate(`/clients/view/${c.id}`)}>
+                  <tr key={c.id}
+                    className="table-row-clickable"
+                    onClick={() => navigate(`/clients/view/${c.id}`)}>
 
 
                     {/* Customer (avatar + nombre) */}

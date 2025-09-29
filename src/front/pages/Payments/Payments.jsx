@@ -117,7 +117,7 @@ export const Payments = () => {
         <div className="mb-1">
           {/* Fila 1: título + contador */}
           <div className="mb-5">
-            <div className="d-flex gap-3 align-items-end">
+            <div className="d-flex gap-3">
               <h1 className="h2 mb-2">Payments</h1>
               <span className="text-muted small">
                 {loading ? "Loading…" : `${filtered.length} of ${payments.length || 0}`}

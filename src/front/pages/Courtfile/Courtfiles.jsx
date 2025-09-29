@@ -9,6 +9,9 @@ export const Courtfiles = () => {
     const { store, dispatch } = useGlobalReducer()
     const API = import.meta.env.VITE_BACKEND_URL;
 
+
+    const [loading, setLoading] = useState(false);
+
     const token = store?.auth?.token;
     const me = store?.me || null;
     const role = (me?.role || "").toLowerCase();
@@ -145,11 +148,11 @@ export const Courtfiles = () => {
                     {/* ===== Toolbar ===== */}
                     <div>
                         {/* Fila 1: título + contador + botón (opcional puedes dejarlo abajo también) */}
-                        <div className="d-flex align-items-center gap-3 mb-2">
-                            <h2 className="mb-5">
-                                Courtfiles{" "}
-                                <span className="text-muted fw-normal small">({filteredCases.length})</span>
-                            </h2>
+                        <div className="d-flex gap-3 mb-2">
+                            <h2 className="mb-5">Courtfiles</h2>
+                            <span className="text-muted small">
+                                {loading ? "Loading…" : `${filteredCases.length} of ${baseCases.length || 0}`}
+                            </span>
                         </div>
 
                         {/* Fila 2: izq = search + filtros | der = New Courtfile */}
