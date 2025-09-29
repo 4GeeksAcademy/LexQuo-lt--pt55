@@ -319,9 +319,9 @@ export default function DashboardCalendar({
   // ---------------- Render ----------------
   return (
     <div className="card shadow-sm border-0">
-      <div className="card-body ">
+      <div className="card-body">
         <div className="d-flex align-items-center justify-content-between mb-2">
-
+          
           <div className="d-flex align-items-center w-100 mb-3">
             <div className="d-flex justify-content-start">
               <button

@@ -737,8 +737,7 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 /* Card general */
 .card.shadow-sm {
   background: rgba(255, 255, 255, 0.3) !important; 
-  backdrop-filter: blur(6px);                      
-  border: 1px solid rgba(0, 0, 0, 0.05);           
+  backdrop-filter: blur(6px);                              
   border-radius: 0.75rem;                         
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);       
 }
@@ -762,4 +761,12 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 .event-list .event-item > .border {
   border-color: rgba(0,0,0,.2) !important;  /* o usa .border-light */
   background: transparent !important;        /* por si queda algún bg */
+}
+
+/* =============parche calendario================================== */
+.react-calendar { 
+  width: 100% !important; /* O el porcentaje que prefieras */
+  max-width: 500px; /* O un ancho fijo */
+  margin: 0 auto; /* Centrar */
+  border: none !important;
 }

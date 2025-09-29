@@ -1,6 +1,4 @@
 import React, { useEffect } from "react"
-import rigoImageUrl from "../assets/img/rigo-baby.jpg";
-import justiceImage from "../assets/img/justice.gif";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import { Link } from "react-router-dom";
 import HomeButtons from "../components/HomeButtons.jsx";
