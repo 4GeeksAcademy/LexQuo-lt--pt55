@@ -143,7 +143,7 @@ export const Courtfiles = () => {
                 <div className="table-responsive table-wrap">
 
                     {/* ===== Toolbar ===== */}
-                    <div className="mb-3">
+                    <div>
                         {/* Fila 1: título + contador + botón (opcional puedes dejarlo abajo también) */}
                         <div className="d-flex align-items-center gap-3 mb-2">
                             <h2 className="mb-5">
@@ -153,7 +153,7 @@ export const Courtfiles = () => {
                         </div>
 
                         {/* Fila 2: izq = search + filtros | der = New Courtfile */}
-                        <div className="d-flex align-items-center justify-content-between gap-2 flex-nowrap">
+                        <div className="d-flex align-items-center justify-content-between gap-2 flex-nowrap ">
                             {/* Izquierda: search + chips (misma línea) */}
                             <div className="d-flex align-items-center gap-2 flex-nowrap w-100" style={{ minWidth: 0 }}>
                                 {/* Search estilo custom (tu mismo de Courtfiles) */}
@@ -209,7 +209,7 @@ export const Courtfiles = () => {
                         </div>
                     </div>
 
-                    <table className="table table-modern align-middle mb-0">
+                    <table className="table table-modern align-middle mb-0 pt-1">
                         <thead>
                             <tr>
                                 <th className="text-center" role="button" onClick={() => requestSort("id")}>
