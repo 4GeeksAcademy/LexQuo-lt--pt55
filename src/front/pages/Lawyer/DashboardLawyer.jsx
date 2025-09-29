@@ -285,10 +285,9 @@ export const DashboardLawyer = () => {
     return (
         <AppNavsShell>
             <div className="container main-content">
-                <h1 className="text-start pb-2">Dashboard Lawyer</h1>
 
                 {/* ==== FILA 1: COURTFILES FULL WIDTH ==== */}
-                <div className="row g-4 mt-3">
+                <div className="row g-4">
                     <div className="col-12">
                         {/* ===== Toolbar COURTFILES (compacta) ===== */}
                         {/* ====== Bloque arriba: título + contador + botón ====== */}
@@ -448,12 +447,12 @@ export const DashboardLawyer = () => {
 
                                                     {/* Jurisdiction angosta con elipsis confiable */}
                                                     <td title={cf.jurisdiction}>
-                                                        <div className="truncate-200">{cf.jurisdiction || "—"}</div>
+                                                        <div className="truncate-100">{cf.jurisdiction || "—"}</div>
                                                     </td>
 
                                                     {/* Court compacta con elipsis */}
                                                     <td title={cf.court}>
-                                                        <div className="truncate-160">{cf.court || "—"}</div>
+                                                        <div className="truncate-100">{cf.court || "—"}</div>
                                                     </td>
 
                                                     {/* Status en pill consistente */}

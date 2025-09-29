@@ -763,10 +763,22 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   background: transparent !important;        /* por si queda algún bg */
 }
 
-/* =============parche calendario================================== */
+/* =============parche calendario============================= */
 .react-calendar { 
   width: 100% !important; /* O el porcentaje que prefieras */
   max-width: 500px; /* O un ancho fijo */
   margin: 0 auto; /* Centrar */
   border: none !important;
 }
+
+
+th {
+  white-space: nowrap; /* Evita que el contenido se divida en varias líneas */
+  min-width: 60px; /* Asegura un ancho mínimo suficiente */
+}
+
+/* O específicamente para esa columna */
+th.text-center {
+  white-space: nowrap;
+}
+

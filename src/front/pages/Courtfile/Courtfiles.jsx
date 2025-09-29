@@ -124,7 +124,7 @@ export const Courtfiles = () => {
             <div className="container main-content">
                 <div className="table-responsive table-wrap">
 
-                    <div className="d-flex align-items-center gap-3 mb-4">
+                    <div className="d-flex align-items-center gap-3 mb-3">
                         <h2 className="mb-0">
                             Courtfiles{" "}
                             <span className="text-muted fw-normal small">
@@ -259,12 +259,12 @@ export const Courtfiles = () => {
 
                                     {/* Jurisdiction compacta con badge suave */}
                                     <td title={courtfile.jurisdiction || "—"}>
-                                        <div className="truncate-200">{courtfile.jurisdiction || "—"}</div>
+                                        <div className="truncate-100">{courtfile.jurisdiction || "—"}</div>
                                     </td>
 
                                     {/* Court con elipsis */}
                                     <td title={courtfile.court || "—"}>
-                                        <div className="truncate-240">{courtfile.court || "—"}</div>
+                                        <div className="truncate-100">{courtfile.court || "—"}</div>
                                     </td>
 
                                     {/* StatusPill (sin <td> dentro de <td>) */}
