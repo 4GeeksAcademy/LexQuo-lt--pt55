@@ -823,5 +823,23 @@ th.text-center {
   text-overflow: ellipsis;/* agrega … al final */
 }
 
+/* =============view clients/lawyers============================= */
+/* avatar tamaño Shopify-like sin romper nada más */
+.avatar-xl { width: 96px; height: 96px; }
 
+/* evita el borde interior en tablas dentro de cards para que “sangren” como en la captura */
+.card > .table-responsive .table { border-top: 0; }
+
+/* util para imágenes de perfil */
+.object-fit-cover { object-fit: cover; }
+
+.card-roomy .card-body { padding: 1.5rem; }
+@media (min-width: 992px) { .card-roomy .card-body { padding: 2rem; } }
+.avatar-xl { width: 96px; height: 96px; }
+.object-fit-cover { object-fit: cover; }
+
+/* margen interno */
+.table-edge thead th:first-child, .table-edge tbody td:first-child { padding-left: 1.5rem; }
+.table-edge thead th:last-child,  .table-edge tbody td:last-child  { padding-right: 1.5rem; }
+.table-edge th, .table-edge td { padding-top: .8rem; padding-bottom: .8rem; }
 

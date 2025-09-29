@@ -332,6 +332,53 @@ def get_lawyers():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+# imports que podrías necesitar arriba del archivo
+from sqlalchemy import and_
+from flask import jsonify, request
+from flask_jwt_extended import jwt_required
+# asumo que ya tenés: db, Lawyer, LawyerCourtfile, _get_role_and_identity, _is_admin, _role, _current_user_id
+
+@api.route('/lawyers/<int:lawyer_id>', methods=['GET'])
+@jwt_required()
+def get_lawyer_detail(lawyer_id):
+    try:
+        role, current_id = _get_role_and_identity()
+        current_id = int(current_id)
+
+        # Admin ve a cualquiera
+        if role == 'admin_user':
+            lawyer = Lawyer.query.get_or_404(lawyer_id)
+            return jsonify(lawyer.serialize()), 200
+
+        # Lawyer: puede verse a sí mismo o a otro solo si comparten courtfile
+        if role == 'lawyer':
+            # si pide su propia ficha, permitido
+            if lawyer_id == current_id:
+                lawyer = Lawyer.query.get_or_404(lawyer_id)
+                return jsonify(lawyer.serialize()), 200
+
+            # subconsulta: courtfiles donde participa el abogado logueado
+            subq = db.session.query(LawyerCourtfile.courtfile_id).filter(
+                LawyerCourtfile.lawyer_id == current_id
+            ).subquery()
+
+            # ¿el abogado solicitado comparte alguno de esos courtfiles?
+            shared = db.session.query(LawyerCourtfile).filter(
+                LawyerCourtfile.lawyer_id == lawyer_id,
+                LawyerCourtfile.courtfile_id.in_(subq)
+            ).first()
+
+            if not shared:
+                return jsonify({'error': 'forbidden'}), 403
+
+            lawyer = Lawyer.query.get_or_404(lawyer_id)
+            return jsonify(lawyer.serialize()), 200
+
+        # Otros roles: prohibido
+        return jsonify({'error': 'forbidden'}), 403
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 
@@ -1742,34 +1789,45 @@ def get_lawyers_courtfiles():
     try:
         requested_lawyer_id = request.args.get('lawyer_id', type=int)
         requested_courtfile_id = request.args.get('courtfile_id', type=int)
+        only_common = request.args.get('only_common', default='0') == '1'
 
         role, current_id = _get_role_and_identity()
-        query = LawyerCourtfile.query
+        q = LawyerCourtfile.query
 
         if role == "admin_user":
-            # admin ve todo
+            # admin ve todo; puede filtrar por lawyer_id/courtfile_id abajo
             pass
+
         elif role == "lawyer":
+            # 1) si filtran por un courtfile específico, validar que esté vinculado
             if requested_courtfile_id:
-                # solo si el lawyer actual está vinculado a ese caso
                 is_linked = LawyerCourtfile.query.filter_by(
                     lawyer_id=int(current_id), courtfile_id=requested_courtfile_id
                 ).first()
                 if not is_linked:
                     return jsonify({'error': 'You are not linked to this courtfile'}), 403
-                query = query.filter_by(courtfile_id=requested_courtfile_id)
+                q = q.filter_by(courtfile_id=requested_courtfile_id)
+
+            # 2) si piden intersección con otro lawyer
+            elif requested_lawyer_id and requested_lawyer_id != int(current_id) and only_common:
+                subq = (db.session.query(LawyerCourtfile.courtfile_id)
+                        .filter(LawyerCourtfile.lawyer_id == int(current_id))
+                        .subquery())
+                q = (db.session.query(LawyerCourtfile)
+                     .filter(LawyerCourtfile.lawyer_id == requested_lawyer_id)
+                     .filter(LawyerCourtfile.courtfile_id.in_(subq)))
             else:
-                # sin courtfile_id: limitar a ver sus propios vínculos
+                # sin courtfile_id ni only_common: limitar a ver sus propios vínculos
                 requested_lawyer_id = int(current_id)
         else:
             return jsonify({'error': 'forbidden'}), 403
 
         if requested_lawyer_id is not None:
-            query = query.filter_by(lawyer_id=requested_lawyer_id)
+            q = q.filter(LawyerCourtfile.lawyer_id == requested_lawyer_id)
         if requested_courtfile_id is not None:
-            query = query.filter_by(courtfile_id=requested_courtfile_id)
+            q = q.filter(LawyerCourtfile.courtfile_id == requested_courtfile_id)
 
-        rows = query.all()
+        rows = q.all()
         return jsonify([{
             'id': r.id,
             'lawyer_id': r.lawyer_id,
@@ -1782,6 +1840,7 @@ def get_lawyers_courtfiles():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 
 @api.route('/lawyers-courtfiles', methods=['POST'])

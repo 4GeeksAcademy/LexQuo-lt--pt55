@@ -1,6 +1,8 @@
 import { Link, useParams, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import AppNavsShell from "../../components/AppNavsShell";
+import StatusPill from "../../components/StatusPill";
 
 export const ViewClient = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -104,8 +106,9 @@ export const ViewClient = () => {
           .map((r) => ({
             relation_id: r.id,
             courtfile_id: r.courtfile_id,
-            number: r.courtfile_number,
-            title: r.courtfile_title,
+            // ← ahora priorizamos los campos del objeto courtfile
+            number: r.courtfile?.case_number ?? r.courtfile_number ?? null,
+            title: r.courtfile?.title ?? r.courtfile_title ?? null,
           }));
 
         setLinkedRelations(list);
@@ -167,7 +170,7 @@ export const ViewClient = () => {
       setUnlinking(true);
       const resp = await fetch(`${API}/api/clients-courtfiles/${relationId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` } 
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -205,6 +208,13 @@ export const ViewClient = () => {
     }
   };
 
+  const goToCourtfile = (cfId) => {
+    if (role !== "lawyer") return;              // sólo abogados navegan ahí
+    navigate(`/courtfiles/ViewCourtfileLawyer/${cfId}`, {
+      state: { returnTo },                      // volvés fácil
+    });
+  };
+
   // 5) Render
   if (loading) {
     return (
@@ -233,152 +243,157 @@ export const ViewClient = () => {
   }
 
   return (
-    <div className="container mt-4">
-      <div className="row justify-content-center">
-        <div className="col-md-8">
-          {/* Header */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h1>Client Details</h1>
-            </div>
+    <AppNavsShell>
+      <div className="page-add">
+        {/* Topbar: título + back + badge contextual */}
+        <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <div className="d-flex align-items-center gap-3">
+            <h1 className="h2 mb-2">Client details</h1>
+          </div>
+
+          <div className="d-flex align-items-center gap-2">
             <Link to={returnTo} className="btn btn-outline-secondary">
               <i className="bi bi-arrow-left"></i> Back
             </Link>
+            {role === "lawyer" && relationId && (
+              <button
+                className="btn btn-outline-danger"
+                onClick={handleUnlink}
+                disabled={unlinking}
+                title="Unlink this client from the current case"
+              >
+                <i className="bi bi-link-45deg"></i> {unlinking ? "Unlinking..." : "Unlink from case"}
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="row g-3">
+          {/* LEFT: Perfil / datos */}
+          <div className="col-12 col-lg-4">
+            <div className="card shadow-sm card-roomy">
+              <div className="card-body">
+                <div className="d-flex align-items-center gap-3 mb-4">  {/* +gap y +mb */}
+                  <div className="avatar-xl rounded-circle overflow-hidden border">
+                    {client.url_img ? (
+                      <img src={client.url_img} alt="Client Profile" className="w-100 h-100 object-fit-cover" />
+                    ) : (
+                      <i className="bi bi-person-circle text-muted d-block text-center w-100" style={{ fontSize: 72 }} />
+                    )}
+                  </div>
+                  <div className="ms-4">
+                    <h2 className="h3 mb-3">{(client.firstname || "-") + " " + (client.lastname || "")}</h2>
+                    <div className="d-flex flex-wrap gap-2">
+                      <StatusPill status={client.is_active} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contacto */}
+
+                <div className="vstack gap-2 mt-4">
+                  <div className="d-flex justify-content-between mt-4">
+                    <span className="fw-semibold">Email</span>
+                    <span className="fw-medium">
+                      {client.email ? (
+                        <a href={`mailto:${client.email}`} className="link-underline-opacity-0">
+                          {client.email}
+                        </a>
+                      ) : (
+                        "-"
+                      )}
+                    </span>
+                  </div>
+                  <div className="d-flex justify-content-between">
+                    <span className="fw-semibold">Phone</span>
+                    <span className="fw-medium">{client.phone || "-"}</span>
+                  </div>
+                </div>
+              </div>
+
+
+              {/* Footer acciones (admin) */}
+              {role !== "lawyer" && (
+                <div className="card-footer bg-light d-flex flex-wrap justify-content-end gap-2">
+                  <Link
+                    to={`/clients/${client.id}/password`}
+                    state={{ returnTo }}
+                    className="btn btn-outline-secondary btn-sm"
+                  >
+                    <i className="bi bi-key"></i> Change Password
+                  </Link>
+                  <Link
+                    to={`/clients/${client.id}`}
+                    state={{ returnTo }}
+                    className="btn btn-warning btn-sm"
+                  >
+                    <i className="bi bi-pencil"></i> Edit
+                  </Link>
+                  <button className="btn btn-danger btn-sm" onClick={handleDelete}>
+                    <i className="bi bi-trash"></i> Delete
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Tabla con TODAS las relaciones */}
-          {linkedRelations.length > 0 ? (
-            <div className="card mb-3">
-              <div className="card-header">
-                <strong>Linked Cases ({linkedRelations.length})</strong>
+          {/* RIGHT: Courtfiles */}
+          <div className="col-12 col-lg-8">
+            <div className="card shadow-sm h-100 card-roomy">   {/* <- mismo aire */}
+              <div className="card-header p-3">
+                <span className="fs-6 fw-bold">
+                  Courtfiles{" "}
+                  <small className="text-muted fs-8">({linkedRelations.length})</small>
+                </span>
               </div>
-              <div className="card-body p-0">
-                <div className="table-responsive">
-                  <table className="table table-sm mb-0">
-                    <thead>
-                      <tr>
-                        <th style={{ width: "160px" }}>Case Number</th>
-                        <th>Title</th>
-                        {role === "lawyer" && (
-                          <th className="text-end" style={{ width: "140px" }}>
-                            Actions
-                          </th>
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {linkedRelations.map((rel) => (
-                        <tr key={rel.relation_id}>
-                          <td>{rel.number || `#${rel.courtfile_id}`}</td>
-                          <td>{rel.title || "—"}</td>
-                          {role === "lawyer" && (
-                            <td className="text-end">
-                              <button
-                                className="btn btn-sm btn-outline-danger"
-                                onClick={() => handleUnlinkOne(rel.relation_id)}
-                                title="Unlink from this case"
-                              >
-                                <i className="bi bi-link-45deg"></i> Unlink
-                              </button>
-                            </td>
-                          )}
+
+              {linkedRelations.length > 0 ? (
+                <div className="card-body p-0">
+                  <div className="table-responsive">
+                    <table className="table table-sm table-hover align-middle mb-0 table-edge">
+                      <thead className="table-light">
+                        <tr>
+                          <th className="px-3" style={{ width: 180 }}>Case Number</th>
+                          <th className="px-3">Title</th>
+                          {role === "lawyer" && <th className="text-end px-3" style={{ width: 140 }}>Actions</th>}
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="alert alert-info mb-3">This client is not linked to any case.</div>
-          )}
-
-          {/* Card con datos del cliente */}
-          <div className="card">
-            <div className="card-header bg-dark text-white">
-              <h5 className="card-title mb-0">
-                <i className="bi bi-person-badge"></i> Client Information
-              </h5>
-            </div>
-
-            <div className="card-body">
-              <div className="d-flex justify-content-center mb-4">
-                {client.url_img ? (
-                  <img
-                    src={client.url_img}
-                    alt="Client Profile"
-                    className="rounded-circle border border-2 shadow-sm"
-                    style={{ width: "150px", height: "150px", objectFit: "cover" }}
-                  />
-                ) : (
-                  <i className="bi bi-person-circle text-muted" style={{ fontSize: "150px" }}></i>
-                )}
-              </div>
-              <div className="row">
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">First Name</label>
-                    <p className="fs-6">{client.firstname || "-"}</p>
-                  </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Last Name</label>
-                    <p className="fs-6">{client.lastname || "-"}</p>
+                      </thead>
+                      <tbody>
+                        {linkedRelations.map((rel) => (
+                          <tr key={rel.relation_id}
+                            onClick={() => goToCourtfile(rel.courtfile_id)}
+                            className="table-row-clickable">
+                            <td className="fw-semibold px-3">{rel.number ?? `#${rel.courtfile_id}`}</td>
+                            <td className="text-body-secondary px-3">{rel.title ?? "—"}</td>
+                            {role === "lawyer" && (
+                              <td className="text-end px-3">
+                                <button
+                                  className="btn btn-sm btn-outline-danger"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleUnlinkOne(rel.relation_id);
+                                  }}
+                                >
+                                  <i className="bi bi-link-45deg"></i> Unlink
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
-
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Email</label>
-                    <p className="fs-6">{client.email || "-"}</p>
-                  </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Phone</label>
-                    <p className="fs-6">{client.phone || "-"}</p>
-                  </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Status</label>
-                    <p className="fs-6">
-                      {client.is_active ? (
-                        <span className="badge text-bg-success">Active</span>
-                      ) : (
-                        <span className="badge text-bg-secondary">Inactive</span>
-                      )}
-                    </p>
-                  </div>
+              ) : (
+                <div className="card-body">
+                  <div className="alert alert-info mb-0">This client is not linked to any case.</div>
                 </div>
-              </div>
-            </div>
-
-            <div className="card-footer bg-light">
-              <div className="d-flex gap-2 justify-content-end">
-                {role === "lawyer" ? (
-                  <div></div>
-                ) : (
-                  <>
-                    <Link
-                      to={`/clients/${client.id}/password`}
-                      state={{ returnTo }}
-                      className="btn btn-outline-secondary"
-                    >
-                      <i className="bi bi-key"></i> Change Password
-                    </Link>
-                    <Link
-                      to={`/clients/${client.id}`}
-                      state={{ returnTo }}
-                      className="btn btn-warning"
-                    >
-                      <i className="bi bi-pencil"></i> Edit
-                    </Link>
-                    <button className="btn btn-danger" onClick={handleDelete}>
-                      <i className="bi bi-trash"></i> Delete
-                    </button>
-                  </>
-                )}
-              </div>
+              )}
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </div >
+    </AppNavsShell >
   );
+
 };

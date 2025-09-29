@@ -101,7 +101,7 @@ export const Lawyers = () => {
               </span>
             </div>
             <p className="text-muted small mt-1">
-              Showing lawyers who share at least one courtfile with you {role === "admin_user" ? "(admin sees all)" : ""}.
+              Showing lawyers who share at least one courtfile with you {role === "admin_user" ? "(admin sees all)" : ""}. Only a lawyer can unlink themselves from a courtfile.
             </p>
           </div>
 
