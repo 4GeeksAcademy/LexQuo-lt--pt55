@@ -316,16 +316,22 @@ export default function DashboardCalendar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [API, token]); // se recarga si cambia api/token
 
+  // helper opcional arriba del return
+  const eventBadgeClass = (t) =>
+    t === "deadline"
+      ? "badge badge-phoenix badge-phoenix-danger px-3 py-1 fs-10"
+      : "badge badge-phoenix badge-phoenix-primary  px-3 py-1 fs-10";
+
   // ---------------- Render ----------------
   return (
-    <div className="card shadow-sm border-0">
+    <div className="card border-0">
       <div className="card-body">
         <div className="d-flex align-items-center justify-content-between mb-2">
-          
+
           <div className="d-flex align-items-center w-100 mb-3">
             <div className="d-flex justify-content-start">
               <button
-                className="btn btn-sm btn-outline-secondary"
+                className="px-3 text-body text-decoration-none btn btn-link"
                 onClick={() => setSelectedDate(new Date())}
               >
                 Today
@@ -333,11 +339,11 @@ export default function DashboardCalendar({
             </div>
 
             <div className="ms-auto d-flex justify-content-end gap-2">
-              <Link to="/appointments/addAppointment" className="btn btn-sm btn-primary">
+              <Link to="/appointments/addAppointment" className="btn btn-phoenix-primary">
                 <i className="bi bi-plus-lg me-1" />
                 Add Appointment
               </Link>
-              <Link to="/deadlines/addDeadline" className="btn btn-sm btn-danger">
+              <Link to="/deadlines/addDeadline" className="btn btn-phoenix-primary">
                 <i className="bi bi-plus-lg me-1" />
                 Add Deadline
               </Link>
@@ -416,8 +422,8 @@ export default function DashboardCalendar({
               <li key={ev.id} className="event-item pb-0 mb-0">
                 <div className="p-3 rounded-3 border bg-white hover-elevate d-flex align-items-center justify-content-between">
                   <div className="me-3">
-                    <div className="d-flex flex-column">
-                      <span className={`rc-pill ${ev.type === "deadline" ? "is-deadline" : "is-appointment"}`} >
+                    <div className="d-flex flex-column fs-8">
+                      <span className={eventBadgeClass(ev.type)}>
                         {ev.type === "deadline" ? "Deadline" : "Appointment"}
                       </span>
                       <span className="rc-event-title mt-2">{ev.title}</span>
@@ -439,11 +445,11 @@ export default function DashboardCalendar({
                         href={buildGoogleCalUrl(ev)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn btn-sm btn-outline-primary"
+                        
                         title="Agregar a Google Calendar"
                       >
                         <i className="bi bi-google me-1" />
-                        Add to Google Calendar
+                        
                       </a>
                     </div>
                   </div>
@@ -452,7 +458,7 @@ export default function DashboardCalendar({
                     {ev.courtfileId ? (
                       <Link
                         to={courtfileUrl(ev.courtfileId)}
-                        className="btn btn-sm btn-outline-secondary d-flex flex-column align-items-center"
+                        className="btn btn-phoenix btn-phoenix-secondary d-flex flex-column align-items-center"
                         title="Ver expediente"
                         style={{ minWidth: 160 }}
                       >
@@ -474,7 +480,7 @@ export default function DashboardCalendar({
                     )}
 
                     <button
-                      className="btn btn-sm btn-outline-danger mt-5"
+                      className="btn btn-phoenix btn-phoenix-danger mt-5"
                       onClick={() => handleDeleteRelation(ev)}
                       disabled={
                         (ev.type === "deadline" && deletingDeadlineRelId === ev.relationId) ||

@@ -30,7 +30,7 @@ const NavbarLogin = () => {
           <Link to="/DashboardLawyer" className="navbar-brand d-flex align-items-center gap-2 mb-0 text-white">
             <img
               src={LogoLexQuoB}
-              style={{ height: "32px" }}
+              style={{ height: "30px" }}
             />
           </Link>
         </div>

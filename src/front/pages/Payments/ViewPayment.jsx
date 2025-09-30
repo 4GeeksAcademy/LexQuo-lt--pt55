@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, useParams, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
+import AppNavsShell from "../../components/AppNavsShell";
+import PaymentBadge from "../../components/PaymentBadge";
 
 export const ViewPayment = () => {
   const { paymentId } = useParams();
@@ -17,11 +19,7 @@ export const ViewPayment = () => {
   const role = (me?.role || "").toLowerCase();
 
   // ---------- Guards ----------
-  // admin_user, lawyer y client pueden VER
-  const allowed =
-    role === "admin_user" ||
-    role === "lawyer" ||
-    role === "client";
+  const allowed = role === "admin_user" || role === "lawyer" || role === "client";
   if (!allowed) return <Navigate to="/403" replace />;
 
   const [payment, setPayment] = useState(null);
@@ -29,46 +27,41 @@ export const ViewPayment = () => {
   const [error, setError] = useState(null);
   const [isProcessingStripe, setIsProcessingStripe] = useState(false);
 
-
   const isPending = payment?.status === "pending";
   const isAdminOrLawyer = ["admin_user", "lawyer"].includes(role);
   const isClient = role === "client";
-  const canShowButtons = isPending; // Sólo con 'pending' se habilitan acciones
+  const canShowButtons = isPending;
 
-  // Función para capitalizar la primera letra
   const capitalizeFirstLetter = (str) => {
     if (!str) return "-";
     return str.charAt(0).toUpperCase() + str.slice(1);
   };
 
-  // Función para formatear la fecha
   const formatDateTime = (dateString) => {
     if (!dateString) return "-";
-
     try {
       const date = new Date(dateString);
-
-      // Formato: yyyy-mm-dd hh:mm
       const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      const hours = String(date.getHours()).padStart(2, "0");
+      const minutes = String(date.getMinutes()).padStart(2, "0");
       return `${year}-${month}-${day} ${hours}:${minutes}`;
     } catch (error) {
       console.error("Error formatting date:", error);
-      return dateString; // Retorna el original si hay error
+      return dateString;
     }
   };
 
-  // Función para copiar al portapapeles
   const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text).then(() => {
-      alert("Reference copied to clipboard!");
-    }).catch(err => {
-      console.error('Failed to copy: ', err);
-    });
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        alert("Reference copied to clipboard!");
+      })
+      .catch((err) => {
+        console.error("Failed to copy: ", err);
+      });
   };
 
   useEffect(() => {
@@ -76,7 +69,7 @@ export const ViewPayment = () => {
       try {
         setLoading(true);
         const response = await fetch(`${API}/api/payments/${paymentId}`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
@@ -99,7 +92,7 @@ export const ViewPayment = () => {
     try {
       const response = await fetch(`${API}/api/payments/${paymentId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
         navigate(returnTo, { replace: true });
@@ -120,10 +113,8 @@ export const ViewPayment = () => {
     try {
       const response = await fetch(`${API}/api/payments/${paymentId}/create-checkout-session`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payment)
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payment),
       });
 
       if (!response.ok) {
@@ -140,166 +131,172 @@ export const ViewPayment = () => {
     }
   };
 
+  // ---------- UI states ----------
   if (loading) {
     return (
-      <div className="container mt-4">
-        <div className="text-center">
-          <div className="spinner-border" role="status"><span className="visually-hidden">Loading...</span></div>
-          <p>Loading payment...</p>
+      <AppNavsShell>
+        <div className="container mt-4 text-center">
+          <div className="spinner-border" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <p className="mt-2">Loading payment...</p>
         </div>
-      </div>
+      </AppNavsShell>
     );
   }
 
   if (error || !payment) {
     return (
-      <div className="container mt-4">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle"></i> {error || "Payment not found"}
+      <AppNavsShell>
+        <div className="container mt-4">
+          <div className="alert alert-danger">
+            <i className="bi bi-exclamation-triangle"></i> {error || "Payment not found"}
+          </div>
+          <Link to={returnTo} className="btn btn-outline-secondary">
+            <i className="bi bi-arrow-left"></i> Back
+          </Link>
         </div>
-        <Link to={returnTo} className="btn btn-primary">
-          <i className="bi bi-arrow-left"></i> Back to Payments
-        </Link>
-      </div>
+      </AppNavsShell>
     );
   }
 
   return (
-    <div className="container mt-4">
-      <div className="row justify-content-center">
-        <div className="col-md-8">
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h1>Payment Details</h1>
-              <p className="text-muted">ID #{payment.id}</p>
-            </div>
+    <AppNavsShell>
+      <div className="page-add col-8">
+        {/* Topbar */}
+        <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <div className="d-flex align-items-center gap-3">
+            <h1 className="h2 mb-2">Payment details</h1>
+            <span className="text-muted small">ID #{payment.id}</span>
+          </div>
+          <div className="d-flex align-items-center gap-2">
             <Link to={returnTo} className="btn btn-outline-secondary">
               <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
+        </div>
 
-          <div className="card">
-            <div className="card-header bg-dark text-white">
-              <h5 className="card-title mb-0">
-                <i className="bi bi-person-badge"></i> Payment Information
-              </h5>
-            </div>
+        {/* Card */}
+        <div className="card shadow-sm card-roomy">
+          <div className="card-body">
+            {/* Título principal dentro de la card */}
+            <h2 className="h1 mb-4">Payment</h2>
 
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Amount</label>
-                    <p className="fs-6">{payment.amount || "-"}</p>
-                  </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Currency</label>
-                    <p className="fs-6">{payment.currency || "-"}</p>
-                  </div>
-
-                  {/* Fecha de creación - SIEMPRE visible */}
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Created At</label>
-                    <p className="fs-6">{formatDateTime(payment.created_at)}</p>
-                  </div>
-
-                  {payment.status == "approved" && payment.stripe_payment_intent_id != null && (
-                    <div className="mb-3">
-                      <label className="fw-bold text-muted">Paid At</label>
-                      <p className="fs-6">{formatDateTime(payment.paid_at)}</p>
-                    </div>
-                  )}
-                  {payment.status === "processing" && payment.stripe_payment_intent_id != null && (
-                    <div className="mb-3">
-                      <label className="fw-bold text-muted">Processing Since</label>
-                      <p className="fs-6">{formatDateTime(payment.updated_at || payment.created_at)}</p>
-                    </div>
-                  )}
+            {/* Grid 2x2 alineada */}
+            <div className="row g-4">
+              {/* Col izquierda */}
+              <div className="col-12 col-lg-6">
+                <div className="mb-3">
+                  <span className="fw-semibold text-muted d-block mb-1">Amount</span>
+                  <span className="fs-8 d-block mt-1">{payment.amount || "-"}</span>
+                </div>
+                <div className="mb-3">
+                  <span className="fw-semibold text-muted d-block mb-1">Currency</span>
+                  <span className="fs-8 d-block mt-1">{payment.currency || "-"}</span>
+                </div>
+                <div className="mb-0">
+                  <span className="fw-semibold text-muted d-block mb-1">Created At</span>
+                  <span className="fs-8 d-block mt-1">{formatDateTime(payment.created_at)}</span>
                 </div>
 
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Status</label>
-                    <p className="fs-6">{capitalizeFirstLetter(payment.status)}</p>
+                {payment.status == "approved" && payment.stripe_payment_intent_id != null && (
+                  <div className="mt-3">
+                    <span className="fw-semibold text-muted d-block mb-1">Paid At</span>
+                    <span className="fs-8 d-block mt-1">{formatDateTime(payment.paid_at)}</span>
                   </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Means</label>
-                    <p className="fs-6">{capitalizeFirstLetter(payment.means)}</p>
-                  </div>
-
-                  {/* Fecha de última actualización - SIEMPRE visible */}
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Last Updated</label>
-                    <p className="fs-6">{formatDateTime(payment.updated_at || payment.created_at)}</p>
-                  </div>
-
-                  {payment.status == "approved" && payment.stripe_payment_intent_id != null && (
-                    <div className="mb-3">
-                      <label className="fw-bold text-muted">Payment ID</label>
-                      <p className="fs-6 font-monospace">{payment.stripe_payment_intent_id}</p>
-                    </div>
-                  )}
-                  {payment.status == "processing" && payment.stripe_payment_intent_id != null && (
-                    <div className="mb-3">
-                      <label className="fw-bold text-muted">Payment ID</label>
-                      <p className="fs-6 font-monospace">{payment.stripe_payment_intent_id}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="card-footer bg-light">
-              <div className="d-flex gap-2 justify-content-end">
-                {canShowButtons && (
-                  <>
-                    {/* CLIENTE: sólo puede pagar */}
-                    {isClient && (
-                      <button
-                        className="btn btn-success"
-                        onClick={handleStripeCheckout}
-                        disabled={isProcessingStripe}
-                      >
-                        {isProcessingStripe ? (
-                          <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                        ) : (
-                          <i className="bi bi-credit-card"></i>
-                        )}{" "}
-                        Pay
-                      </button>
-                    )}
-
-                    {/* ADMIN/LAWYER: pueden hacer cualquier acción mientras esté 'pending' */}
-                    {isAdminOrLawyer && (
-                      <>
-                        <button
-                          className="btn btn-success"
-                          onClick={handleStripeCheckout}
-                          disabled={isProcessingStripe}
-                        >
-                          {isProcessingStripe ? (
-                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                          ) : (
-                            <i className="bi bi-credit-card"></i>
-                          )}{" "}
-                          Pay
-                        </button>
-                        <Link to={`/payments/${payment.id}`} state={{ returnTo }} className="btn btn-warning">
-                          <i className="bi bi-pencil"></i> Edit
-                        </Link>
-                        <button className="btn btn-danger" onClick={handleDelete}>
-                          <i className="bi bi-trash"></i> Delete
-                        </button>
-                      </>
-                    )}
-                  </>
                 )}
-                {/* Si NO está 'pending': no se muestran botones (solo lectura) */}
+
+                {payment.status === "processing" && payment.stripe_payment_intent_id != null && (
+                  <div className="mt-3">
+                    <span className="fw-semibold text-muted d-block mb-1">Processing Since</span>
+                    <span className="fs-8 d-block mt-1">
+                      {formatDateTime(payment.updated_at || payment.created_at)}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Col derecha */}
+              <div className="col-12 col-lg-6">
+                <div className="mb-3">
+                  <span className="fw-semibold text-muted d-block mb-1">Status</span>
+                  <PaymentBadge status={payment.status} outline />
+                </div>
+                <div className="mb-3">
+                  <span className="fw-semibold text-muted d-block mb-1">Means</span>
+                  <span className="fs-8 d-block mt-1">{capitalizeFirstLetter(payment.means)}</span>
+                </div>
+                <div className="mb-0">
+                  <span className="fw-semibold text-muted d-block mb-1">Last Updated</span>
+                  <span className="fs-8 d-block mt-1">{formatDateTime(payment.updated_at || payment.created_at)}</span>
+                </div>
+
+                {payment.status == "approved" && payment.stripe_payment_intent_id != null && (
+                  <div className="mt-3">
+                    <span className="fw-semibold text-muted d-block mb-1">Payment ID</span>
+                    <span className="fs-8 d-block mt-1 font-monospace">
+                      {payment.stripe_payment_intent_id}
+                    </span>
+                  </div>
+                )}
+                {payment.status == "processing" && payment.stripe_payment_intent_id != null && (
+                  <div className="mt-3">
+                    <span className="fw-semibold text-muted d-block mb-1">Payment ID</span>
+                    <span className="fs-8 d-block mt-1 font-monospace">
+                      {payment.stripe_payment_intent_id}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
+
+          {/* Footer con acciones */}
+          <div className="card-footer bg-light d-flex justify-content-end gap-2">
+            {canShowButtons && (
+              <>
+                {isClient && (
+                  <button
+                    className="btn btn-success"
+                    onClick={handleStripeCheckout}
+                    disabled={isProcessingStripe}
+                  >
+                    {isProcessingStripe ? (
+                      <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    ) : (
+                      <i className="bi bi-credit-card"></i>
+                    )}{" "}
+                    Pay
+                  </button>
+                )}
+
+                {isAdminOrLawyer && (
+                  <>
+                    <button
+                      className="btn btn-success"
+                      onClick={handleStripeCheckout}
+                      disabled={isProcessingStripe}
+                    >
+                      {isProcessingStripe ? (
+                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                      ) : (
+                        <i className="bi bi-credit-card"></i>
+                      )}{" "}
+                      Pay
+                    </button>
+                    <Link to={`/payments/${payment.id}`} state={{ returnTo }} className="btn btn-warning">
+                      <i className="bi bi-pencil"></i> Edit
+                    </Link>
+                    <button className="btn btn-danger" onClick={handleDelete}>
+                      <i className="bi bi-trash"></i> Delete
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </AppNavsShell>
   );
 };

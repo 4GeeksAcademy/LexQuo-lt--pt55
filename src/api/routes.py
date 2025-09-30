@@ -2182,6 +2182,8 @@ def delete_appointment_courtfile(id):
 
 # -----------------ROUTES PARA COURTFILE-DOCUMENT--------------------------------------------
 
+from sqlalchemy.orm import selectinload
+
 @api.route('/courtfile-document', methods=['GET'])
 @jwt_required()
 def get_courtfile_document():
@@ -2189,34 +2191,61 @@ def get_courtfile_document():
         requested_courtfile_id = request.args.get('courtfile_id', type=int)
 
         role, current_id = _get_role_and_identity()
-        query = CourtfileDocument.query
+
+        q = (CourtfileDocument.query
+             .options(
+                 selectinload(CourtfileDocument.courtfile),
+                 selectinload(CourtfileDocument.document)
+             ))
 
         if role == "admin_user":
-            pass  # Admin ve todo
+            pass  # ve todo
         elif role == "lawyer":
             subq = select(LawyerCourtfile.courtfile_id).where(
                 LawyerCourtfile.lawyer_id == int(current_id)
             )
-            query = query.filter(CourtfileDocument.courtfile_id.in_(subq))
+            q = q.filter(CourtfileDocument.courtfile_id.in_(subq))
         else:
-            return jsonify({'error': 'forbidden'}), 403  # client u otro rol
+            return jsonify({'error': 'forbidden'}), 403
 
         if requested_courtfile_id is not None:
-            query = query.filter_by(courtfile_id=requested_courtfile_id)
+            q = q.filter(CourtfileDocument.courtfile_id == requested_courtfile_id)
 
-        courtfile_document = query.all()
-        return jsonify([{
-            'id': cd.id,
-            'courtfile_id': cd.courtfile_id,
-            'document_id': cd.document_id,
-            'courtfile_number': cd.courtfile.case_number if cd.courtfile else None,
-            'courtfile_title': cd.courtfile.title if cd.courtfile else None,
-            'document_name': cd.document.name if cd.document else None,
-            'document_type': cd.document.type if cd.document else None,
-            'document_url': cd.document.url_route if cd.document else None,
-            'document_date': cd.document.document_date.isoformat() if (cd.document and cd.document.document_date) else None,
-            'create_at': cd.document.create_at.isoformat() if (cd.document and cd.document.create_at) else None
-        } for cd in courtfile_document]), 200
+        rows = q.all()
+
+        def iso_or_none(dt):
+            return dt.isoformat() if dt else None
+
+        out = []
+        for cd in rows:
+            d = cd.document
+            cf = cd.courtfile
+            # tolerar create_at vs created_at
+            created = getattr(d, "created_at", None) or getattr(d, "create_at", None)
+
+            out.append({
+                "id": cd.id,
+                "courtfile_id": cd.courtfile_id,
+                "document_id": cd.document_id,
+
+                "courtfile_number": getattr(cf, "case_number", None),
+                "courtfile_title": getattr(cf, "title", None),
+
+                "document_name": getattr(d, "name", None),
+                "document_url": getattr(d, "url_route", None),
+
+                # fechas
+                "document_date": iso_or_none(getattr(d, "document_date", None)),
+                "created_at": iso_or_none(created),
+
+                # tipo / categoría / metadata
+                "document_type": getattr(d, "type", None),            # ej: 'application/pdf' o 'pdf'
+                "mime_type": getattr(d, "mime_type", None),           # si lo guardás aparte
+                "original_filename": getattr(d, "original_filename", None),
+                "category": getattr(d, "category", None),             # <---- ¡LO NUEVO!
+            })
+        return jsonify(out), 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

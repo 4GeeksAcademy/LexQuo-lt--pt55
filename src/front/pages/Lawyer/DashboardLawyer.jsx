@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import DashboardCalendar from "../../components/DashboardCalendar";
 import AppNavsShell from "../../components/AppNavsShell";
 import StatusPill from "../../components/StatusPill";
+import PaymentBadge from "../../components/PaymentBadge";
 
 
 export const DashboardLawyer = () => {
@@ -124,16 +125,36 @@ export const DashboardLawyer = () => {
     };
 
     // ---------------- BUSCADOR COURTFILES ----------------
+    // ---------------- BUSCADOR COURTFILES ----------------
     const [search, setSearch] = useState("");
+    const [status, setStatus] = useState("all"); // all | active | inactive
+
+    // normaliza “activo/inactivo”
+    const isActiveValue = (cf) => {
+        if (typeof cf?.is_active === "boolean") return cf.is_active;
+        const s = String(cf?.status ?? cf?.state ?? "").toLowerCase();
+        if (s.includes("active") || s.includes("open")) return true;
+        if (s.includes("inactive") || s.includes("closed") || s.includes("archiv")) return false;
+        return true; // default: activo
+    };
+
     const filteredCases = useMemo(() => {
-        if (!search?.trim()) return cases;
+        // 1) filtro por status
+        const byStatus = cases.filter((cf) => {
+            if (status === "all") return true;
+            return status === "active" ? isActiveValue(cf) : !isActiveValue(cf);
+        });
+
+        // 2) buscador
+        if (!search?.trim()) return byStatus;
         const q = search.toLowerCase();
-        return cases.filter((cf) =>
-            [cf.case_number, cf.title, cf.jurisdiction, cf.court, cf.status]
+
+        return byStatus.filter((cf) =>
+            [cf.case_number, cf.title, cf.jurisdiction, cf.court, cf.status, cf.state]
                 .filter(Boolean)
                 .some((v) => String(v).toLowerCase().includes(q))
         );
-    }, [cases, search]);
+    }, [cases, search, status]);
 
     // ---------------- MAPA POR ID (para tooltips/títulos) ----------------
     const caseById = useMemo(() => {
@@ -267,7 +288,7 @@ export const DashboardLawyer = () => {
         setSortConfig({ key, direction });
     };
 
-    const sortedCases = useMemo(() => { 
+    const sortedCases = useMemo(() => {
         let sortable = [...filteredCases];
         if (sortConfig.key) {
             sortable.sort((a, b) => {
@@ -281,8 +302,18 @@ export const DashboardLawyer = () => {
         return sortable;
     }, [filteredCases, sortConfig]);
 
-   
-        
+    const normalizeStatus = (raw) => {
+        if (raw === true) return "active";
+        if (raw === false) return "inactive";
+        if (raw == null) return "inactive";
+        const s = String(raw).trim().toLowerCase();
+        if (["1", "true", "active", "open"].includes(s)) return "active";
+        if (["0", "false", "inactive", "closed", "archiv"].includes(s)) return "inactive";
+        return "inactive"; // default fallback
+    };
+
+
+
 
 
     return (
@@ -298,7 +329,6 @@ export const DashboardLawyer = () => {
                             <div className="d-flex align-items-center gap-3 mb-2">
                                 <h2 className="mb-5">
                                     Courtfiles{" "}
-                                    <span className="text-muted fw-normal small">({filteredCases.length})</span>
                                 </h2>
                             </div>
 
@@ -326,19 +356,21 @@ export const DashboardLawyer = () => {
                                     {/* Botoncitos de estado */}
                                     <div className="d-flex align-items-center gap-2 flex-nowrap flex-shrink-0">
                                         <button
-                                            className={`btn btn-sm ${status === "all" ? "btn-dark" : "btn-outline-secondary"}`}
+                                            className={`btn btn-sm ${status === "all" ? "btn-dark" : "px-3 text-body text-decoration-none btn btn-link"}`}
                                             onClick={() => setStatus("all")}
                                         >
                                             All
                                         </button>
+
                                         <button
-                                            className={`btn btn-sm ${status === "active" ? "btn-dark" : "btn-outline-secondary"}`}
+                                            className={`btn btn-sm ${status === "active" ? "btn-dark" : "px-3 text-body text-decoration-none btn btn-link"}`}
                                             onClick={() => setStatus("active")}
                                         >
                                             Active
                                         </button>
+
                                         <button
-                                            className={`btn btn-sm ${status === "inactive" ? "btn-dark" : "btn-outline-secondary"}`}
+                                            className={`btn btn-sm ${status === "inactive" ? "btn-dark" : "px-3 text-body text-decoration-none btn btn-link"}`}
                                             onClick={() => setStatus("inactive")}
                                         >
                                             Inactive
@@ -351,7 +383,7 @@ export const DashboardLawyer = () => {
                                     <Link
                                         to="/courtfiles/addcourtfile"
                                         state={{ linkToLawyer: true, returnTo: "/DashboardLawyer" }}
-                                        className="btn btn-sm btn-info"
+                                        className="btn btn-phoenix btn-phoenix-primary"
                                     >
                                         + New Courtfile
                                     </Link>
@@ -435,23 +467,6 @@ export const DashboardLawyer = () => {
 
                                     <tbody>
                                         {sortedCases.map((cf) => {
-                                            // === status robusto: acepta booleano o string ===
-                                            const raw =
-                                                typeof cf.status === "boolean"
-                                                    ? cf.status
-                                                        ? "Active"
-                                                        : "Inactive"
-                                                    : String(cf.status || "").trim();
-
-                                            const statusLabel = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
-                                            const key = statusLabel.toLowerCase();
-
-                                            let statusClass = "bg-secondary text-light";
-                                            if (["active", "approved", "open"].includes(key)) statusClass = "bg-success text-light";
-                                            else if (["inactive", "disabled", "closed"].includes(key)) statusClass = "bg-secondary text-light";
-                                            else if (["pending", "waiting"].includes(key)) statusClass = "bg-warning text-dark";
-                                            else if (["in progress", "sent", "review"].includes(key)) statusClass = "bg-info text-dark";
-                                            else if (["error", "rejected", "failed"].includes(key)) statusClass = "bg-danger text-light";
 
                                             return (
                                                 <tr key={cf.id}
@@ -484,9 +499,14 @@ export const DashboardLawyer = () => {
 
                                                     {/* Status en pill consistente */}
 
-                                                    <td className="col-status">
-                                                        <StatusPill status={cf?.status ?? cf?.is_active ?? cf?.state} />
+                                                    <td className="col-status text-center">
+                                                        {normalizeStatus(cf?.status ?? cf?.is_active ?? cf?.state) === "active" ? (
+                                                            <span className="fs-10 badge-phoenix badge badge-phoenix-success">Active</span>
+                                                        ) : (
+                                                            <span className="fs-10 badge-phoenix badge badge-phoenix-secondary">Inactive</span>
+                                                        )}
                                                     </td>
+
 
 
                                                     {/* Actions compactas a la derecha (tus mismos botones) */}
@@ -583,17 +603,17 @@ export const DashboardLawyer = () => {
                     </div>
 
                     <div className="col-12 col-lg-4">
-                        <div className="card shadow-sm">
+                        <div className="card">
                             <div className="card-header pb-1">
                                 {/* Fila 1: título + fecha */}
                                 <div className="d-flex justify-content-between align-items-center">
-                                    <h5 className="mb-0 fs-5 fw-bold">Payments status</h5>
+                                    <h3 className="mb-0 fw-bold">Payments status</h3>
                                     <small className="text-muted">{new Date().toLocaleDateString()}</small>
                                 </div>
 
                                 {/* Fila 2: botón, alineado a la derecha */}
                                 <div className="text-end mt-3">
-                                    <Link to="/payments" className="btn btn-sm btn-outline-primary">
+                                    <Link to="/payments" className="btn btn-phoenix-primary">
                                         View all payments
                                     </Link>
                                 </div>
@@ -602,30 +622,13 @@ export const DashboardLawyer = () => {
                             <div className="card-body">
 
                                 {/* Pending */}
-                                <h6 className="mb-2 fs-7 fw-semibold text-muted">Upcoming / Pending</h6>
+                                <h6 className="mb-2 fs-8 fw-bold text-muted">Upcoming / Pending</h6>
                                 {pending.length === 0 ? (
                                     <p className="text-muted small">No pending or processing payments.</p>
                                 ) : (
-                                    <ul className="list-unstyled mb-3">
+                                    <ul className="list-unstyled mb-3 fs-8">
                                         {pending.slice(0, 6).map((p) => {
                                             const st = String(p?.status || "").toLowerCase().trim();
-                                            let badgeClass = "bg-secondary";
-                                            let label = st;
-                                            if (st === "pending") {
-                                                badgeClass = "bg-transparent text-info border border-info d-inline-flex align-items-center gap-1";
-                                                label = (
-                                                    <>
-                                                        Pending <i className="bi bi-clock"></i>
-                                                    </>
-                                                );
-                                            } else if (st === "processing") {
-                                                badgeClass = "bg-transparent text-warning border border-warning d-inline-flex align-items-center gap-1";
-                                                label = (
-                                                    <>
-                                                        Processing <i className="bi bi-arrow-repeat"></i>
-                                                    </>
-                                                );
-                                            }
 
                                             const cfIds = pcMap.get(p.id) || [];
                                             const cfLinks = cfIds.map((cid, idx) => {
@@ -633,10 +636,7 @@ export const DashboardLawyer = () => {
                                                 const txt = meta?.case_number || `Courtfile #${cid}`;
                                                 return (
                                                     <React.Fragment key={`p-${p.id}-cf-${cid}`}>
-                                                        <Link
-                                                            to={`/courtfiles/ViewCourtfileLawyer/${cid}`}
-                                                            className="courtfile-link"
-                                                        >
+                                                        <Link to={`/courtfiles/ViewCourtfileLawyer/${cid}`} className="courtfile-link">
                                                             {txt}
                                                         </Link>
                                                         {idx < cfIds.length - 1 ? ", " : ""}
@@ -653,25 +653,28 @@ export const DashboardLawyer = () => {
                                                         ${fmtMoney(p.amount, p.currency || "USD")}
                                                     </div>
                                                     <div className="flex-grow-1 px-2 text-truncate">{cfLinks}</div>
-                                                    <span className={`badge ${badgeClass}`}>{label}</span>
+
+                                                    {/* Badge con texto 10px */}
+                                                    <PaymentBadge status={st} outline className="fs-10" />
                                                 </li>
                                             );
                                         })}
                                     </ul>
                                 )}
+                                
 
                                 {/* Paid this month */}
                                 <div className="d-flex justify-content-between align-items-center pt-5">
-                                    <h6 className="mb-2 fs-7 fw-semibold text-muted">Paid this month</h6>
+                                    <h6 className="mb-2 fs-8 fw-bold text-muted">Paid this month</h6>
                                     <span className="badge bg-success">
-                                        Total: {fmtMoney(sumPaidThisMonth, paidThisMonth[0]?.currency || "USD")}
+                                        Total: $ {fmtMoney(sumPaidThisMonth, paidThisMonth[0]?.currency || "USD")}
                                     </span>
                                 </div>
 
                                 {paidThisMonth.length === 0 ? (
                                     <p className="text-muted small">No approved payments this month.</p>
                                 ) : (
-                                    <ul className="list-unstyled">
+                                    <ul className="list-unstyled fs-10">
                                         {paidThisMonth.slice(0, 6).map((p) => {
                                             const cfIds = pcMap.get(p.id) || [];
                                             const cfLinks = cfIds.map((cid, idx) => {
@@ -693,10 +696,10 @@ export const DashboardLawyer = () => {
                                             return (
                                                 <li
                                                     key={`paid-${p.id}`}
-                                                    className="d-flex align-items-center justify-content-between border-bottom py-3 payment-item"
+                                                    className="d-flex align-items-center justify-content-between border-bottom py-3 payment-item fs-10"
                                                 >
                                                     <div className="fw-semibold text-truncate" style={{ minWidth: 120 }}>
-                                                        {fmtMoney(p.amount, p.currency || "USD")}
+                                                        ${fmtMoney(p.amount, p.currency || "USD")}
                                                     </div>
                                                     <div className="flex-grow-1 px-2 text-truncate">{cfLinks}</div>
                                                     <small className="text-muted">

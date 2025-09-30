@@ -16,10 +16,10 @@ body{
 /* ======================= TOPBAR ======================= */
 .navbar.fixed-top{
   z-index: 1045 !important;
-  min-height: 5rem;
+  min-height: 3.75rem;
 }
 .navbar-dark{
-  background-color: var(--phoenix-gray-1100) !important;
+  background-color: #222834 !important;
 }
 
 /* ====================== SIDEBAR ======================= */
@@ -30,7 +30,7 @@ body{
   bottom: 0;
   width: var(--phoenix-navbar-vertical-width) !important;
   z-index: 1035 !important;
-  background-color: var(--phoenix-gray-1100) !important;
+  background-color: #222834 !important;
   border-right: 0 !important;
   box-shadow: none !important;
 }
@@ -73,7 +73,7 @@ body{
   width: auto;
   color: var(--phoenix-gray-400, #a0aabb) !important;
   transition: all 0.15s ease;
-  font-size: 0.90rem;
+  font-size: 13px !important;
 }
 .navbar-vertical .nav-link:hover{
   color: var(--phoenix-gray-300, #c1c9d2) !important;
@@ -381,7 +381,7 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 .table-modern thead th {
   color: #212529;         /* gris oscuro */
   font-weight: 900;       /* más bold */
-  font-size: 0.9rem;
+  font-size: 12px;
   letter-spacing: .04em;  /* tracking extra */
   text-transform: uppercase;
   padding-top: .65rem;
@@ -812,7 +812,7 @@ th.text-center {
 .table-modern,
 .clients-table,
 .courtfiles-table {
-  font-size: 0.875rem; /* ~14px */
+  font-size: 12px; /* ~14px */
 }
 
 
@@ -843,3 +843,20 @@ th.text-center {
 .table-edge thead th:last-child,  .table-edge tbody td:last-child  { padding-right: 1.5rem; }
 .table-edge th, .table-edge td { padding-top: .8rem; padding-bottom: .8rem; }
 
+
+
+/* ========================botones add================== */
+.btn-phoenix-primary-outline {
+  --phoenix-btn-color: #3874ff;             /* texto azul */
+  --phoenix-btn-bg: transparent;            /* fondo transparente */
+  --phoenix-btn-border-color: #3874ff;      /* borde azul */
+  --phoenix-btn-hover-color: #fff;          /* texto blanco en hover */
+  --phoenix-btn-hover-bg: #3874ff;          /* fondo azul en hover */
+  --phoenix-btn-hover-border-color: #3874ff;
+  --phoenix-btn-active-color: #fff;
+  --phoenix-btn-active-bg: #2f5ecc;         /* azul más oscuro en active */
+  --phoenix-btn-active-border-color: #2f5ecc;
+  --phoenix-btn-disabled-color: #a0aabb;
+  --phoenix-btn-disabled-bg: transparent;
+  --phoenix-btn-disabled-border-color: #a0aabb;
+}

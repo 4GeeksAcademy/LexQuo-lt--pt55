@@ -286,60 +286,10 @@ export default function SidebarLogin() {
 
           {/* Bloque inferior fijo */}
           <div className="mt-auto pt-3">
-            <ul className="nav pb-3">
-              <li className="nav-item">
-                <NavLink
-                  to="/lawyers/view/:lawyerId"
-                  state={returnState}
-                  className={linkClass}
-                  onClick={closeOffcanvas}
-                >
-                  <div className="d-flex align-items-center">
-                    <span className="nav-link-icon"><i className="bi bi-person" /></span>
-                    <span className="nav-link-text">Perfil</span>
-                  </div>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink
-                  to="/"
-                  state={returnState}
-                  className={linkClass}
-                  onClick={closeOffcanvas}
-                >
-                  <div className="d-flex">
-                    <span className="nav-link-icon"><i className="bi bi-gear" /></span>
-                    <span className="nav-link-text">Settings</span>
-                  </div>
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <NavLink
-                  to="#"
-                  className="nav-link"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    localStorage.removeItem("auth");
-                    localStorage.removeItem("user_name");
-                    dispatch({ type: "CLEAR_AUTH" });
-                    closeOffcanvas(); // cerrar offcanvas si corresponde
-                    navigate("/login");
-                  }}
-                >
-                  <div className="d-flex align-items-center">
-                    <span className="nav-link-icon">
-                      <i className="bi bi-box-arrow-right" />
-                    </span>
-                    <span className="nav-link-text">Logout</span>
-                  </div>
-                </NavLink>
-              </li>
-            </ul>
-
             {/* Botón colapsar */}
             <button
               type="button"
-              className="btn navbar-vertical-toggle fw-semibold w-100 white-space-nowrap d-flex justify-content-center"
+              className="btn border-0 navbar-vertical-toggle fw-semibold w-100 white-space-nowrap d-flex justify-content-center"
               onClick={() => {
                 const c = document.documentElement.classList;
                 c.toggle("navbar-vertical-collapsed");

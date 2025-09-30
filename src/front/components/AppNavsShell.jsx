@@ -1,5 +1,6 @@
 import NavbarLogin from "./NavbarLogin";
 import SidebarLogin from "./SidebarLogin";
+import "../index.css";
 import "../Logued.css";
 import React, { useEffect, useState, useMemo } from "react";
 

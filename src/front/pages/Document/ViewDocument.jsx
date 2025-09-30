@@ -1,6 +1,7 @@
 import { Link, useParams, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import AppNavsShell from "../../components/AppNavsShell";
 
 export const ViewDocument = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -11,38 +12,71 @@ export const ViewDocument = () => {
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  const token = store?.auth?.token;
+  const token = store?.auth?.token || null;
   const role = (store?.me?.role || "").toLowerCase();
 
   // ---------- Guards ----------
-  const allowed =
-    role === "admin_user" ||
-    role === "lawyer";
-
+  const allowed = role === "admin_user" || role === "lawyer";
   if (!allowed) return <Navigate to="/403" replace />;
 
+  // ---------- State ----------
   const [documentData, setDocumentData] = useState(null);
+  const [linkedCourtfile, setLinkedCourtfile] = useState(() => {
+    const s = location.state || {};
+    if (s.courtfileId) return { id: s.courtfileId, number: s.courtfileNumber, title: s.courtfileTitle };
+    if (s.preselectedCourtfileId)
+      return { id: s.preselectedCourtfileId, number: s.preselectedCourtfileNumber, title: s.preselectedCourtfileTitle };
+    return null;
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const state = location.state || {};
-  const initialLinked = state.courtfileId
-    ? { id: state.courtfileId, number: state.courtfileNumber, title: state.courtfileTitle }
-    : (state.preselectedCourtfileId
-      ? { id: state.preselectedCourtfileId, number: state.preselectedCourtfileNumber, title: state.preselectedCourtfileTitle }
-      : null);
+  // ---------- Helpers ----------
+  const safeDateTime = (v) => {
+    if (!v) return "-";
+    const d = new Date(v);
+    if (isNaN(d)) return "-";
+    return d.toLocaleDateString() + " " + d.toLocaleTimeString();
+  };
 
-  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
+  const dateYMDToDMY = (v) => {
+    if (!v) return "-";
+    const m = /^\d{4}-\d{2}-\d{2}$/.test(v);
+    if (!m) return "-";
+    const [y, mo, d] = v.split("-");
+    return `${d}/${mo}/${y}`;
+  };
 
+  const handleDownload = (doc) => {
+    try {
+      if (!doc?.url_route) return;
+      // Preferimos descarga nativa cuando tenemos nombre original o extensión clara
+      const a = document.createElement("a");
+      a.href = doc.url_route;
+      const fallbackExt = doc.type ? `.${String(doc.type).toLowerCase()}` : "";
+      a.download = doc.original_filename || `${doc.name || "document"}${fallbackExt}`;
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (e) {
+      console.error(e);
+      // Si falla, al menos abrir en pestaña nueva
+      window.open(doc.url_route, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  // ---------- Fetch document ----------
   useEffect(() => {
     const fetchDocument = async () => {
       try {
+        if (!documentId) return;
         setLoading(true);
-        const response = await fetch(`${API}/api/documents/${documentId}`, {
-          headers: { Authorization: `Bearer ${token}` } 
+        const resp = await fetch(`${API}/api/documents/${documentId}`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
         });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
         setDocumentData(data);
         setError(null);
       } catch (err) {
@@ -52,257 +86,205 @@ export const ViewDocument = () => {
         setLoading(false);
       }
     };
+    fetchDocument();
+  }, [API, token, documentId]);
 
-    if (documentId) fetchDocument();
-  }, [documentId, API]);
-
+  // ---------- If we know the CF id but lack number/title, fetch the CF ----------
   useEffect(() => {
-    const loadCf = async () => {
+    const loadCourtfileBasics = async () => {
       try {
-        if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
-          const resp = await fetch(`${API}/api/documents/${documentId}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (resp.ok) {
-            const d = await resp.json();
-            setLinkedCourtfile(cf => ({ ...(cf || {}), number: d.case_number, title: d.title }));
-          }
-        }
-      } catch (e) {
-        setError("No se pudo cargar el expediente vinculado");
+        if (!linkedCourtfile?.id) return;
+        if (linkedCourtfile.number && linkedCourtfile.title) return;
+
+        const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        });
+        if (!resp.ok) return;
+        const d = await resp.json();
+        setLinkedCourtfile((cf) => ({
+          ...(cf || {}),
+          number: d.case_number ?? cf?.number ?? null,
+          title: d.title ?? cf?.title ?? null,
+        }));
+      } catch {
+        // noop
       }
     };
-    loadCf();
-  }, [API, linkedCourtfile?.id]);
+    loadCourtfileBasics();
+  }, [API, token, linkedCourtfile?.id, linkedCourtfile?.number, linkedCourtfile?.title]);
 
+  // ---------- If nothing in state, locate the CF link from relation table ----------
   useEffect(() => {
     const fetchLinked = async () => {
       try {
         if (linkedCourtfile || !documentId) return;
         const resp = await fetch(`${API}/api/courtfile-document`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
         });
         if (!resp.ok) return;
         const rows = await resp.json();
-        const rel = (rows || []).find(r => Number(r.document_id) === Number(documentId));
+        const rel = (rows || []).find((r) => Number(r.document_id) === Number(documentId));
         if (rel) {
           setLinkedCourtfile({
             id: rel.courtfile_id,
-            number: rel.courtfile_number,
-            title: rel.courtfile_title
+            number: rel.courtfile_number ?? null,
+            title: rel.courtfile_title ?? null,
           });
         }
-      } catch { /* noop */ }
+      } catch {
+        // noop
+      }
     };
     fetchLinked();
-  }, [API, documentId, linkedCourtfile]);
+  }, [API, token, documentId, linkedCourtfile]);
 
+  // ---------- Delete ----------
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this document?")) return;
-
     try {
-      const response = await fetch(`${API}/api/documents/${documentId}`, {
+      const resp = await fetch(`${API}/api/documents/${documentId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       });
-
-      if (response.ok) {
-        dispatch({ type: "DELETE_DOCUMENT", payload: Number(documentId) || documentId });
-        navigate(returnTo, { replace: true });
-        alert("Document deleted successfully!");
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to delete document");
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error(e.error || `HTTP ${resp.status}`);
       }
+      dispatch({ type: "DELETE_DOCUMENT", payload: Number(documentId) || documentId });
+      navigate(returnTo, { replace: true });
+      alert("Document deleted successfully!");
     } catch (err) {
-      console.error("Error deleting document:", err);
+      console.error(err);
       alert(`Error deleting document: ${err.message}`);
     }
   };
 
-  const handleDownload = (docItem) => {
-    try {
-      const officeExtensions = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'];
-      const isOfficeFile = officeExtensions.includes((docItem.type || "").toLowerCase());
-
-      if (isOfficeFile) {
-        const downloadLink = document.createElement('a');
-        downloadLink.href = docItem.url_route;
-        const downloadName = docItem.original_filename || `${docItem.name}.${docItem.type}`;
-        downloadLink.setAttribute('download', downloadName);
-        downloadLink.style.display = 'none';
-
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-
-        document.body.removeChild(downloadLink);
-      } else {
-        window.open(docItem.url_route, '_blank', 'noopener,noreferrer');
-      }
-    } catch (error) {
-      console.error('Error handling file:', error);
-      alert('Error al manejar el archivo');
-    }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "-";
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-  };
-
-  function dateWithoutHours(fechaStr) {
-    if (!fechaStr) return "-";
-    const regex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!regex.test(fechaStr)) {
-      return "Invalid date format";
-    }
-
-    const partes = fechaStr.split('-');
-    return `${partes[2]}/${partes[1]}/${partes[0]}`;
-  }
-
+  // ---------- UI states ----------
   if (loading) {
     return (
-      <div className="container mt-4">
-        <div className="text-center">
-          <div className="spinner-border" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p>Loading document...</p>
+      <AppNavsShell>
+        <div className="container mt-4 text-center">
+          <div className="spinner-border" role="status"><span className="visually-hidden">Loading…</span></div>
+          <p className="mt-2">Loading document…</p>
         </div>
-      </div>
+      </AppNavsShell>
     );
   }
 
   if (error || !documentData) {
     return (
-      <div className="container mt-4">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle"></i> {error || "Document not found"}
+      <AppNavsShell>
+        <div className="container mt-4">
+          <div className="alert alert-danger">
+            <i className="bi bi-exclamation-triangle"></i> {error || "Document not found"}
+          </div>
+          <Link to={returnTo} className="btn btn-outline-secondary">
+            <i className="bi bi-arrow-left"></i> Back
+          </Link>
         </div>
-        <Link to={returnTo} className="btn btn-primary">
-          <i className="bi bi-arrow-left"></i> Back
-        </Link>
-      </div>
+      </AppNavsShell>
     );
   }
 
+  // prefer created_at but keep backward compat with create_at
+  const createdAt = documentData.created_at || documentData.create_at;
+
   return (
-    <div className="container mt-4">
-      <div className="row justify-content-center">
-        <div className="col-md-8">
-          {/* Header */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h1>Document Details</h1>
-            </div>
+    <AppNavsShell>
+      <div className="page-add col-8">
+
+        {/* Topbar */}
+        <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <div className="d-flex align-items-center gap-3">
+            <h1 className="h2 mb-2">Document details</h1>
+
+            {linkedCourtfile && (
+              <span className="badge bg-dark">
+                {`Linked to Case ${linkedCourtfile.number || `#${linkedCourtfile.id}`}${linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""
+                  }`}
+              </span>
+            )}
+          </div>
+
+          <div className="d-flex align-items-center gap-2">
             <Link to={returnTo} className="btn btn-outline-secondary">
               <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
+        </div>
 
-          {linkedCourtfile && (
-            <span className="badge bg-dark mt-1 mb-2">
-              Linked to Case {linkedCourtfile.number || `#${linkedCourtfile.id}`}
-              {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
-            </span>
-          )}
+        {/* Card */}
+        <div className="card shadow-sm card-roomy">
+          <div className="card-body">
+            {/* Título principal = NAME */}
+            <h2 className="h1 mb-4">{documentData.name || "-"}</h2>
 
-          {/* Card */}
-          <div className="card">
-            <div className="card-header bg-dark text-white">
-              <h5 className="card-title mb-0">
-                <i className="bi bi-file-earmark"></i> Document Information
-              </h5>
-            </div>
-
-            <div className="card-body">
-              <div className="row">
-                {/* Columna izquierda */}
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Document Name</label>
-                    <p className="fs-6">{documentData.name || "-"}</p>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Download</label>
-                    <p className="fs-6">
-                      <button
-                        onClick={() => handleDownload(documentData)}
-                        className="btn btn-success btn-sm"
-                        title={`Download ${documentData.name}`}
-                      >
-                        <i className="bi bi-download"></i> {documentData.name}
-                      </button>
-                    </p>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Created At</label>
-                    <p className="fs-6">{formatDate(documentData.create_at) || "-"}</p>
-                  </div>
+            {/* Grid 2x2 alineada */}
+            <div className="row g-4">
+              {/* Col izquierda */}
+              <div className="col-12 col-lg-6">
+                <div className="mb-3">
+                  <span className="fw-semibold text-muted d-block mb-1">Download</span>
+                  <button
+                    onClick={() => handleDownload(documentData)}
+                    className="btn btn-success btn-sm mt-1"
+                    title={`Download ${documentData.name}`}
+                  >
+                    <i className="bi bi-download"></i>{" "}
+                    {documentData.original_filename || documentData.name || "File"}
+                  </button>
                 </div>
 
-                {/* Columna derecha */}
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Category</label>
-                    <p className="fs-6">
-                      {documentData.category ? (
-                        <span className="badge bg-secondary">
-                          {documentData.category}
-                        </span>
-                      ) : (
-                        "-"
-                      )}
-                    </p>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Document Date</label>
-                    <p className="fs-6">{dateWithoutHours(documentData.document_date) || "-"}</p>
-                  </div>
+                <div className="mb-0">
+                  <span className="fw-semibold text-muted d-block mb-1">Created At</span>
+                  <span className="fs-8">{safeDateTime(createdAt)}</span>
                 </div>
               </div>
 
-              <div className="row">
-                <div className="col-12">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Description</label>
-                    <div className="border p-3 bg-light rounded">
-                      {documentData.description ? (
-                        <p className="mb-0">{documentData.description}</p>
-                      ) : (
-                        <p className="text-muted mb-0">No description provided</p>
-                      )}
-                    </div>
-                  </div>
+              {/* Col derecha */}
+              <div className="col-12 col-lg-6">
+                <div className="mb-3">
+                  <span className="fw-semibold text-muted d-block mb-1">Category</span>
+                  {documentData.category ? (
+                    <span className="badge bg-secondary mt-1">{documentData.category}</span>
+                  ) : (
+                    <span className="fs-6">—</span>
+                  )}
+                </div>
+
+                <div className="mb-0">
+                  <span className="fw-semibold text-muted d-block mb-1">Document Date</span>
+                  <span className="fs-8">{dateYMDToDMY(documentData.document_date)}</span>
                 </div>
               </div>
             </div>
 
-            <div className="card-footer bg-light">
-              <div className="d-flex gap-2 justify-content-end">
-
-                <Link
-                  to={`/documents/${documentData.id}`}
-                  state={{ returnTo }}
-                  className="btn btn-warning"
-                >
-                  <i className="bi bi-pencil"></i> Edit
-                </Link>
-
-                <button className="btn btn-danger" onClick={handleDelete}>
-                  <i className="bi bi-trash"></i> Delete
-                </button>
+            {/* Descripción */}
+            <div className="row mt-4">
+              <div className="col-12">
+                <span className="fw-semibold text-muted d-block mb-2">Description</span>
+                <div className="border p-3 bg-light rounded">
+                  {documentData.description ? (
+                    <p className="mb-0">{documentData.description}</p>
+                  ) : (
+                    <p className="text-muted mb-0">No description provided</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
+          <div className="card-footer bg-light d-flex justify-content-end gap-2">
+            <Link to={`/documents/${documentData.id}`} state={{ returnTo }} className="btn btn-warning btn-sm">
+              <i className="bi bi-pencil"></i> Edit
+            </Link>
+            <button className="btn btn-danger btn-sm" onClick={handleDelete}>
+              <i className="bi bi-trash"></i> Delete
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </AppNavsShell>
   );
+
 };

@@ -2,8 +2,23 @@
 import PropTypes from "prop-types";
 
 export default function DeadlineBadge({ priority, outline = false }) {
-  const norm = (priority || "").toLowerCase();
+  // Normalizar prioridades en español a inglés
+  const normalizePriority = (p) => {
+    const norm = (p || "").toLowerCase();
+    
+    // Mapeo de español a inglés
+    const spanishMap = {
+      'baja': 'low',
+      'media': 'medium', 
+      'alta': 'high',
+      'urgente': 'urgent'
+    };
+    
+    return spanishMap[norm] || norm;
+  };
 
+  const normalizedPriority = normalizePriority(priority);
+  
   const map = {
     low:    { text: "Low",    color: "secondary", icon: "bi-dash-circle" },
     medium: { text: "Medium", color: "info",      icon: "bi-circle" },
@@ -11,7 +26,12 @@ export default function DeadlineBadge({ priority, outline = false }) {
     urgent: { text: "Urgent", color: "danger",    icon: "bi-exclamation-octagon" },
   };
 
-  const cfg = map[norm] || { text: priority, color: "secondary", icon: "bi-flag" };
+  const cfg = map[normalizedPriority] || { 
+    text: priority, 
+    color: "secondary", 
+    icon: "bi-flag" 
+  };
+  
   const base = outline ? `badge border border-${cfg.color} text-${cfg.color}` : `badge bg-${cfg.color}`;
 
   return (

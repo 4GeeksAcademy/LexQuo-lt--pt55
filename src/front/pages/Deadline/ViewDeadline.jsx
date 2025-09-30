@@ -1,6 +1,8 @@
-import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import AppNavsShell from "../../components/AppNavsShell";
+import DeadlineBadge from "../../components/DeadlineBadge";
 
 export const ViewDeadline = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -17,11 +19,8 @@ export const ViewDeadline = () => {
   const role  = (me?.role || "").toLowerCase();
 
   // ---------- Guards ----------
-      const allowed =
-          role === "admin_user" ||
-          role === "lawyer";
-  
-      if (!allowed) return <Navigate to="/403" replace />;
+  const allowed = role === "admin_user" || role === "lawyer";
+  if (!allowed) return <Navigate to="/403" replace />;
 
   const [deadline, setDeadline] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,7 +33,29 @@ export const ViewDeadline = () => {
 
   const [linkedCourtfile, setLinkedCourtfile] = useState(prelinked);
 
+  // ---------- Helpers ----------
+  const dateYMDToDMY = (v) => {
+    if (!v) return "-";
+    // admite "YYYY-MM-DD" o ISO con tiempo
+    const isYMD = /^\d{4}-\d{2}-\d{2}$/.test(v);
+    const d = isYMD ? v.split("-") : (new Date(v).toISOString().slice(0,10).split("-"));
+    if (!d || d.length !== 3) return "-";
+    const [yy, mm, dd] = d;
+    return `${dd}/${mm}/${yy}`;
+  };
+  const safeTime = (v) => (v ? String(v).slice(0,5) : "—"); // "HH:MM"
 
+  const getPriorityBadgeClass = (priority = "") => {
+    switch (String(priority).toLowerCase()) {
+      case "low": return "bg-secondary";
+      case "medium": return "bg-info";
+      case "high": return "bg-warning";
+      case "urgent": return "bg-danger";
+      default: return "bg-secondary";
+    }
+  };
+
+  // ---------- Fetch ----------
   useEffect(() => {
     const fetchDeadline = async () => {
       try {
@@ -42,7 +63,7 @@ export const ViewDeadline = () => {
         const response = await fetch(`${API}/api/deadlines/${deadlineId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
         setDeadline(data);
         setError(null);
@@ -53,16 +74,13 @@ export const ViewDeadline = () => {
         setLoading(false);
       }
     };
-
     if (deadlineId) fetchDeadline();
-
-  }, [deadlineId]);
+  }, [API, token, deadlineId]);
 
   useEffect(() => {
     const fetchLinked = async () => {
       try {
         if (linkedCourtfile || !deadlineId) return;
-        
         const resp = await fetch(`${API}/api/deadlines-courtfiles`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -76,145 +94,131 @@ export const ViewDeadline = () => {
             title: rel.courtfile_title
           });
         }
-      } catch (e) {
-        // silencioso
+      } catch {
+        // noop
       }
     };
     fetchLinked();
-  }, [API, deadlineId, linkedCourtfile, token]);
+  }, [API, token, deadlineId, linkedCourtfile]);
 
+  // ---------- Actions ----------
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this deadline?")) return;
     try {
-      const response = await fetch(`${API}/api/deadlines/${deadlineId}`, { 
+      const response = await fetch(`${API}/api/deadlines/${deadlineId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (response.ok) {
-        dispatch({ type: "DELETE_DEADLINE", payload: Number(deadlineId) || deadlineId });
-        navigate(returnTo, { replace: true });
-        alert("Deadline deleted successfully!");
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to delete deadline");
+      if (!response.ok) {
+        const e = await response.json().catch(() => ({}));
+        throw new Error(e.error || `HTTP ${response.status}`);
       }
+      dispatch({ type: "DELETE_DEADLINE", payload: Number(deadlineId) || deadlineId });
+      navigate(returnTo, { replace: true });
+      alert("Deadline deleted successfully!");
     } catch (err) {
       console.error("Error deleting deadline:", err);
       alert(`Error deleting deadline: ${err.message}`);
     }
   };
 
-  const getPriorityBadgeClass = (priority) => {
-    switch (priority) {
-      case "low": return "bg-secondary";
-      case "medium": return "bg-info";
-      case "high": return "bg-warning";
-      case "urgent": return "bg-danger";
-      default: return "bg-secondary";
-    }
-  };
-
+  // ---------- UI states ----------
   if (loading) {
     return (
-      <div className="container mt-4">
-        <div className="text-center">
-          <div className="spinner-border" role="status"><span className="visually-hidden">Loading...</span></div>
-          <p>Loading deadline...</p>
+      <AppNavsShell>
+        <div className="container mt-4 text-center">
+          <div className="spinner-border" role="status"><span className="visually-hidden">Loading…</span></div>
+          <p className="mt-2">Loading deadline…</p>
         </div>
-      </div>
+      </AppNavsShell>
     );
   }
 
   if (error || !deadline) {
     return (
-      <div className="container mt-4">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle"></i> {error || "Deadline not found"}
+      <AppNavsShell>
+        <div className="container mt-4">
+          <div className="alert alert-danger">
+            <i className="bi bi-exclamation-triangle"></i> {error || "Deadline not found"}
+          </div>
+          <Link to={returnTo} className="btn btn-outline-secondary">
+            <i className="bi bi-arrow-left"></i> Back
+          </Link>
         </div>
-        <Link to={returnTo} className="btn btn-outline-secondary">
-          <i className="bi bi-arrow-left"></i> Back
-        </Link>
-      </div>
+      </AppNavsShell>
     );
   }
 
   return (
-    <div className="container mt-4">
-      <div className="row justify-content-center">
-        <div className="col-md-8">
-
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h1>Deadline Details</h1>
-            </div>
+    <AppNavsShell>
+      <div className="page-add col-8">
+        {/* Topbar */}
+        <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <div className="d-flex align-items-center gap-3">
+            <h1 className="h2 mb-2">Deadline details</h1>
+            {linkedCourtfile && (
+              <span className="badge bg-dark">
+                {`Linked to Case ${linkedCourtfile.number || `#${linkedCourtfile.id}`}${
+                  linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""
+                }`}
+              </span>
+            )}
+          </div>
+          <div className="d-flex align-items-center gap-2">
             <Link to={returnTo} className="btn btn-outline-secondary">
               <i className="bi bi-arrow-left"></i> Back
             </Link>
           </div>
+        </div>
 
-          {linkedCourtfile && (
-            <span className="badge bg-dark mt-1 mb-3">
-              Related to Courtfile {linkedCourtfile.number || "—"}
-              {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
-            </span>
-          )}
+        {/* Card */}
+        <div className="card shadow-sm card-roomy">
+          <div className="card-body">
+            {/* Título principal = tipo de deadline */}
+            <h2 className="h1 mb-4">{deadline.deadline_type || "-"}</h2>
 
-          <div className="card">
-            <div className="card-header bg-dark text-white">
-              <h5 className="card-title mb-0">
-                <i className="bi bi-calendar-event"></i> Deadline Information
-              </h5>
-            </div>
-
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Deadline Type</label>
-                    <p className="fs-6">{deadline.deadline_type || "-"}</p>
-                  </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Deadline Date</label>
-                    <p className="fs-6">{deadline.deadline_date || "-"}</p>
-                  </div>
+            {/* Grid 2x2 alineada */}
+            <div className="row g-4">
+              {/* Col izquierda */}
+              <div className="col-12 col-lg-6">
+                <div className="mb-3">
+                  <span className="fw-semibold text-muted d-block mb-1">Deadline Date</span>
+                  <span className="fs-8">{dateYMDToDMY(deadline.deadline_date)}</span>
                 </div>
+                <div className="mb-0">
+                  <span className="fw-semibold text-muted d-block mb-1">Deadline Time</span>
+                  <span className="fs-8">{safeTime(deadline.deadline_hour)}</span>
+                </div>
+              </div>
 
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Deadline Time</label>
-                    <p className="fs-6">{deadline.deadline_hour || "-"}</p>
-                  </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Priority</label>
-                    <p className="fs-6">
-                      <span className={`badge ${getPriorityBadgeClass(deadline.priority)}`}>
-                        {deadline.priority ? deadline.priority.charAt(0).toUpperCase() + deadline.priority.slice(1) : "-"}
-                      </span>
-                    </p>
-                  </div>
+              {/* Col derecha */}
+              <div className="col-12 col-lg-6">
+                <div className="mb-3">
+                  <span className="fw-semibold text-muted d-block mb-1">Priority</span>
+                  <DeadlineBadge priority={deadline.priority} outline />
+                </div>
+                <div className="mb-0">
+                  <span className="fw-semibold text-muted d-block mb-1">Created At</span>
+                  <span className="fs-8">
+                    {deadline.created_at
+                      ? new Date(deadline.created_at).toLocaleString()
+                      : "—"}
+                  </span>
                 </div>
               </div>
             </div>
-
-            <div className="card-footer bg-light">
-              <div className="d-flex gap-2 justify-content-end">
-                <Link
-                  to={`/deadlines/${deadline.id}`}
-                  state={{ returnTo }}
-                  className="btn btn-warning"
-                >
-                  <i className="bi bi-pencil"></i> Edit
-                </Link>
-                <button className="btn btn-danger" onClick={handleDelete}>
-                  <i className="bi bi-trash"></i> Delete
-                </button>
-              </div>
-            </div>
-
           </div>
 
+          <div className="card-footer bg-light d-flex justify-content-end gap-2">
+            <Link to={`/deadlines/${deadline.id}`} state={{ returnTo }} className="btn btn-warning btn-sm">
+              <i className="bi bi-pencil"></i> Edit
+            </Link>
+            <button className="btn btn-danger btn-sm" onClick={handleDelete}>
+              <i className="bi bi-trash"></i> Delete
+            </button>
+          </div>
         </div>
       </div>
-    </div >
+    </AppNavsShell>
   );
 };
