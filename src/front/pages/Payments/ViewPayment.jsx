@@ -86,26 +86,37 @@ export const ViewPayment = () => {
     if (paymentId) fetchPayment();
   }, [paymentId, API, token]);
 
-  const handleDelete = async () => {
-    if (!(isPending && isAdminOrLawyer)) return;
+  const handleDelete = async (payment) => {
     if (!window.confirm("Are you sure you want to delete this payment?")) return;
     try {
-      const response = await fetch(`${API}/api/payments/${paymentId}`, {
+      // ✅ Admin borra el payment (id); Lawyer/Client borran la relación (relation_id)
+      const endpoint =
+        role === "admin_user"
+          ? `${API}/api/payments/${payment.id}`
+          : `${API}/api/payments-courtfile/${payment.relation_id}`;
+
+      const resp = await fetch(endpoint, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       });
-      if (response.ok) {
-        navigate(returnTo, { replace: true });
-        alert("Payment deleted successfully!");
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to delete payment");
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${resp.status}`);
       }
+
+      // ✅ El payload del reducer debe usar el id que corresponda
+      dispatch({
+        type: "DELETE_PAYMENT",
+        payload: role === "admin_user" ? payment.id : payment.relation_id
+      });
+
+      alert("Payment deleted successfully!");
     } catch (err) {
       console.error("Error deleting payment:", err);
       alert(`Error deleting payment: ${err.message}`);
     }
   };
+  
 
   const handleStripeCheckout = async () => {
     if (!isPending) return;
@@ -130,6 +141,67 @@ export const ViewPayment = () => {
       setIsProcessingStripe(false);
     }
   };
+
+  //---------------Lógica para traer expedientes linkeados-------------
+  // Intento inicial desde location.state (si venís desde un listado con info del expediente)
+  const state = location.state || {};
+  const initialLinked = state.courtfileId
+    ? { id: state.courtfileId, number: state.courtfileNumber, title: state.courtfileTitle }
+    : null;
+
+  // estado local del expediente vinculado
+  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
+
+  useEffect(() => {
+    const loadCf = async () => {
+      try {
+        if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
+          const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (resp.ok) {
+            const d = await resp.json();
+            setLinkedCourtfile(cf => ({ ...(cf || {}), number: d.case_number, title: d.title }));
+          }
+        }
+      } catch {
+        /* noop */
+      }
+    };
+    loadCf();
+  }, [API, linkedCourtfile?.id, token]);
+
+  useEffect(() => {
+    const fetchLinked = async () => {
+      try {
+        if (linkedCourtfile || !paymentId || !token) return;
+
+        // endpoint de relaciones Payment<->Courtfile
+        const resp = await fetch(`${API}/api/payments-courtfile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!resp.ok) return;
+
+        const rows = await resp.json();
+        // buscá por payment_id
+        const rel =
+          (rows || []).find(r => Number(r.payment_id) === Number(paymentId)) ||
+          (rows || []).find(r => Number(r.paymentId) === Number(paymentId)); // por si la API usa camelCase
+
+        if (rel) {
+          setLinkedCourtfile({
+            id: rel.courtfile_id ?? rel.courtfileId,
+            number: rel.courtfile_number ?? rel.courtfileNumber,
+            title: rel.courtfile_title ?? rel.courtfileTitle
+          });
+        }
+      } catch {
+        /* noop */
+      }
+    };
+    fetchLinked();
+  }, [API, paymentId, linkedCourtfile, token]);
+
 
   // ---------- UI states ----------
   if (loading) {
@@ -162,141 +234,217 @@ export const ViewPayment = () => {
 
   return (
     <AppNavsShell>
-      <div className="page-add col-8">
-        {/* Topbar */}
-        <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-          <div className="d-flex align-items-center gap-3">
-            <h1 className="h2 mb-2">Payment details</h1>
-            <span className="text-muted small">ID #{payment.id}</span>
-          </div>
-          <div className="d-flex align-items-center gap-2">
-            <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back
-            </Link>
-          </div>
-        </div>
+      <div className="container main-content">
+        {/* Breadcrumbs */}
+        <nav aria-label="breadcrumb" className="mb-3">
+          <ol className="breadcrumb">
+            <li className="breadcrumb-item">
+              <Link to={returnTo || "/payments"}>Payments</Link>
+            </li>
+            <li className="breadcrumb-item active" aria-current="page">
+              Details
+            </li>
+          </ol>
+        </nav>
 
-        {/* Card */}
-        <div className="card shadow-sm card-roomy">
-          <div className="card-body">
-            {/* Título principal dentro de la card */}
-            <h2 className="h1 mb-4">Payment</h2>
+        <div className="col-8">
+          {/* --- Permisos --- */}
+          {(() => {
+            // normalizo status
+            const st = (payment?.status || "").toLowerCase();
+            const isPending = st === "pending";
+            const isAdmin = (role || "").toLowerCase() === "admin_user";
+            const isLawyer = (role || "").toLowerCase() === "lawyer";
+            const isClient = (role || "").toLowerCase() === "client";
 
-            {/* Grid 2x2 alineada */}
-            <div className="row g-4">
-              {/* Col izquierda */}
-              <div className="col-12 col-lg-6">
-                <div className="mb-3">
-                  <span className="fw-semibold text-muted d-block mb-1">Amount</span>
-                  <span className="fs-8 d-block mt-1">{payment.amount || "-"}</span>
-                </div>
-                <div className="mb-3">
-                  <span className="fw-semibold text-muted d-block mb-1">Currency</span>
-                  <span className="fs-8 d-block mt-1">{payment.currency || "-"}</span>
-                </div>
-                <div className="mb-0">
-                  <span className="fw-semibold text-muted d-block mb-1">Created At</span>
-                  <span className="fs-8 d-block mt-1">{formatDateTime(payment.created_at)}</span>
-                </div>
+            // Guardo en window para usar abajo sin recalcular (opcional)
+            window.__pay_flags = {
+              showPay: isAdmin || (isLawyer && isPending) || (isClient && isPending),
+              showEditDelete: isAdmin || (isLawyer && isPending),
+            };
+            return null;
+          })()}
 
-                {payment.status == "approved" && payment.stripe_payment_intent_id != null && (
-                  <div className="mt-3">
-                    <span className="fw-semibold text-muted d-block mb-1">Paid At</span>
-                    <span className="fs-8 d-block mt-1">{formatDateTime(payment.paid_at)}</span>
-                  </div>
-                )}
+          {/* Header (title + actions) */}
+          <div className="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <h1 className="h2 fw-bolder mb-1">Payment</h1>
+            </div>
 
-                {payment.status === "processing" && payment.stripe_payment_intent_id != null && (
-                  <div className="mt-3">
-                    <span className="fw-semibold text-muted d-block mb-1">Processing Since</span>
-                    <span className="fs-8 d-block mt-1">
-                      {formatDateTime(payment.updated_at || payment.created_at)}
-                    </span>
-                  </div>
-                )}
+            {(window.__pay_flags?.showEditDelete) && (
+              <div className="d-flex gap-2">
+                <Link
+                  to={`/payments/${payment.id}`}
+                  state={{ returnTo }}
+                  className="btn btn-phoenix-secondary btn-sm"
+                >
+                  <i className="bi bi-pencil" /> Edit
+                </Link>
+                <button className="btn btn-phoenix-danger btn-sm" onClick={handleDelete}>
+                  <i className="bi bi-trash" /> Delete
+                </button>
               </div>
+            )}
+          </div>
 
-              {/* Col derecha */}
-              <div className="col-12 col-lg-6">
-                <div className="mb-3">
-                  <span className="fw-semibold text-muted d-block mb-1">Status</span>
-                  <PaymentBadge status={payment.status} outline />
-                </div>
-                <div className="mb-3">
-                  <span className="fw-semibold text-muted d-block mb-1">Means</span>
-                  <span className="fs-8 d-block mt-1">{capitalizeFirstLetter(payment.means)}</span>
-                </div>
-                <div className="mb-0">
-                  <span className="fw-semibold text-muted d-block mb-1">Last Updated</span>
-                  <span className="fs-8 d-block mt-1">{formatDateTime(payment.updated_at || payment.created_at)}</span>
+          {/* Summary strip */}
+          <div className="card mb-3 mt-4">
+            <div className="card-body">
+              <div className="row text-center g-4 justify-content-center">
+                {/* Amount */}
+                <div className="col-sm-4">
+                  <div className="d-inline-flex align-items-center">
+                    <div className="d-flex bg-success-subtle rounded flex-center me-3" style={{ width: 32, height: 32 }}>
+                      <i className="bi bi-currency-dollar text-success" />
+                    </div>
+                    <div className="text-start">
+                      <p className="fw-bold mb-1">Amount</p>
+                      <h4 className="fw-bolder mb-0">
+                        {payment.amount || "—"}
+                      </h4>
+                    </div>
+                  </div>
                 </div>
 
-                {payment.status == "approved" && payment.stripe_payment_intent_id != null && (
-                  <div className="mt-3">
-                    <span className="fw-semibold text-muted d-block mb-1">Payment ID</span>
-                    <span className="fs-8 d-block mt-1 font-monospace">
-                      {payment.stripe_payment_intent_id}
-                    </span>
+                {/* Means / Currency */}
+                <div className="col-sm-4 border-start-sm border-translucent ps-sm-5">
+                  <div className="d-inline-flex align-items-center">
+                    <div className="d-flex bg-info-subtle rounded flex-center me-3" style={{ width: 32, height: 32 }}>
+                      <i className="bi bi-credit-card text-info" />
+                    </div>
+                    <div className="text-start">
+                      <p className="fw-bold mb-1">Means</p>
+                      <h4 className="fw-bolder text-nowrap mb-0">
+                        {capitalizeFirstLetter(payment.means) || "—"}
+                        {payment.currency ? ` · ${payment.currency}` : ""}
+                      </h4>
+                    </div>
                   </div>
-                )}
-                {payment.status == "processing" && payment.stripe_payment_intent_id != null && (
-                  <div className="mt-3">
-                    <span className="fw-semibold text-muted d-block mb-1">Payment ID</span>
-                    <span className="fs-8 d-block mt-1 font-monospace">
-                      {payment.stripe_payment_intent_id}
-                    </span>
+                </div>
+
+                {/* Status */}
+                <div className="col-sm-4 border-start-sm border-translucent ps-sm-5">
+                  <div className="d-inline-flex align-items-center">
+                    <div className="d-flex bg-primary-subtle rounded flex-center me-3" style={{ width: 32, height: 32 }}>
+                      <i className="bi bi-circle-half text-primary" />
+                    </div>
+                    <div className="text-start">
+                      <p className="fw-bold mb-1">Status</p>
+                      <div className="mt-1">
+                        <PaymentBadge status={payment.status} outline />
+                      </div>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Footer con acciones */}
-          <div className="card-footer bg-light d-flex justify-content-end gap-2">
-            {canShowButtons && (
-              <>
-                {isClient && (
-                  <button
-                    className="btn btn-success"
-                    onClick={handleStripeCheckout}
-                    disabled={isProcessingStripe}
-                  >
-                    {isProcessingStripe ? (
-                      <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    ) : (
-                      <i className="bi bi-credit-card"></i>
-                    )}{" "}
-                    Pay
-                  </button>
-                )}
+          {/* Details grid */}
+          <div className="card">
+            <div className="card-body">
+              <div className="row g-4">
+                {/* Left column */}
+                <div className="col-12 col-lg-6">
+                  <div className="mb-3">
+                    <span className="fw-bold text-muted d-block mb-1">Currency</span>
+                    <span className="fs-8 d-block">{payment.currency || "—"}</span>
+                  </div>
 
-                {isAdminOrLawyer && (
-                  <>
-                    <button
-                      className="btn btn-success"
-                      onClick={handleStripeCheckout}
-                      disabled={isProcessingStripe}
-                    >
-                      {isProcessingStripe ? (
-                        <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                      ) : (
-                        <i className="bi bi-credit-card"></i>
-                      )}{" "}
-                      Pay
-                    </button>
-                    <Link to={`/payments/${payment.id}`} state={{ returnTo }} className="btn btn-warning">
-                      <i className="bi bi-pencil"></i> Edit
-                    </Link>
-                    <button className="btn btn-danger" onClick={handleDelete}>
-                      <i className="bi bi-trash"></i> Delete
-                    </button>
-                  </>
-                )}
-              </>
-            )}
+                  <div className="mb-3">
+                    <span className="fw-bold text-muted d-block mb-1">Created At</span>
+                    <span className="fs-8 d-block">{formatDateTime(payment.created_at)}</span>
+                  </div>
+
+                  {payment.status === "approved" && payment.stripe_payment_intent_id && (
+                    <div className="mb-3">
+                      <span className="fw-bold text-muted d-block mb-1">Paid At</span>
+                      <span className="fs-8 d-block">{formatDateTime(payment.paid_at)}</span>
+                    </div>
+                  )}
+
+                  {payment.status === "processing" && payment.stripe_payment_intent_id && (
+                    <div className="mb-3">
+                      <span className="fw-bold text-muted d-block mb-1">Processing Since</span>
+                      <span className="fs-8 d-block">
+                        {formatDateTime(payment.updated_at || payment.created_at)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right column */}
+                <div className="col-12 col-lg-6">
+                  <div className="mb-3">
+                    <span className="fw-bold text-muted d-block mb-1">Last Updated</span>
+                    <span className="fs-8 d-block">
+                      {formatDateTime(payment.updated_at || payment.created_at)}
+                    </span>
+                  </div>
+
+                  {(payment.status === "approved" || payment.status === "processing") &&
+                    payment.stripe_payment_intent_id && (
+                      <div className="mb-3">
+                        <span className="fw-bold text-muted d-block mb-1">Payment ID</span>
+                        <span className="fs-8 d-block font-monospace">
+                          {payment.stripe_payment_intent_id}
+                        </span>
+                      </div>
+                    )}
+
+                  {linkedCourtfile && (
+                    <div className="mb-3">
+                      <span className="fw-bold text-muted d-block mb-1">Case File</span>
+                      <Link
+                        to={`/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`}
+                        className="badge badge-phoenix badge-phoenix-secondary fs-8 mt-2"
+                        title={linkedCourtfile.title || ""}
+                      >
+                        {linkedCourtfile.number || `#${linkedCourtfile.id}`}
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer actions */}
+            <div className="card-footer bg-light d-flex justify-content-end gap-2">
+              {window.__pay_flags?.showPay && (
+                <button
+                  className="btn btn-success"
+                  onClick={handleStripeCheckout}
+                  disabled={isProcessingStripe}
+                >
+                  {isProcessingStripe ? (
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                  ) : (
+                    <i className="bi bi-credit-card" />
+                  )}{" "}
+                  Pay
+                </button>
+              )}
+
+              {window.__pay_flags?.showEditDelete && (
+                <>
+                  <Link
+                    to={`/payments/${payment.id}`}
+                    state={{ returnTo }}
+                    className="btn btn-warning"
+                  >
+                    <i className="bi bi-pencil" /> Edit
+                  </Link>
+                  <button className="btn btn-danger" onClick={handleDelete}>
+                    <i className="bi bi-trash" /> Delete
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
     </AppNavsShell>
   );
+
+
 };

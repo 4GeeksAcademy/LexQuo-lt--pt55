@@ -214,7 +214,7 @@ export const ViewDocument = () => {
         </div>
 
         {/* Card */}
-        <div className="card shadow-sm card-roomy">
+        <div className="card card-roomy">
           <div className="card-body">
             {/* Título principal = NAME */}
             <h2 className="h1 mb-4">{documentData.name || "-"}</h2>

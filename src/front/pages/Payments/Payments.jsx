@@ -24,15 +24,53 @@ export const Payments = () => {
   const [loading, setLoading] = useState(false);
 
   // ---------- Fetch ----------
+  // ---------- Fetch ----------
   const fetchPayments = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API}/api/payments`, {
+
+      // ✅ Admin ve todo; lawyer/client ven solo vinculados vía pivot
+      const endpoint =
+        role === "admin_user"
+          ? `${API}/api/payments`
+          : `${API}/api/payments-courtfile?expand=payment`; // pedimos expand para tener los datos del payment
+
+      const response = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
-      dispatch({ type: "SET_PAYMENTS", payload: data });
+
+      // ✅ Normalizamos a un shape único para la tabla
+      // - Admin: vienen de /payments (ya son payments)
+      // - Lawyer/Client: vienen de /payments-courtfile (pivot) + payment expandido
+      const paymentsData =
+        role === "admin_user"
+          ? data.map(p => ({
+            id: p.id,
+            relation_id: null,              // no aplica
+            amount: p.amount,
+            currency: p.currency,
+            status: p.status,
+            means: p.means,
+            created_at: p.created_at,
+            paid_at: p.paid_at
+          }))
+          : data.map(pc => {
+            const pay = pc.payment || {};
+            return {
+              id: pay.id,
+              relation_id: pc.id,
+              amount: pay.amount,
+              currency: pay.currency,
+              status: pay.status,
+              means: pay.means,
+              created_at: pay.created_at,
+              paid_at: pay.paid_at
+            };
+          });
+
+      dispatch({ type: "SET_PAYMENTS", payload: paymentsData });
     } catch (e) {
       console.error("Error fetching payments:", e);
     } finally {
@@ -75,10 +113,16 @@ export const Payments = () => {
     // clientes pueden pagar si pending; (backend ya filtra a vinculados)
     role === "client" && isPending(p);
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (payment) => {
     if (!window.confirm("Are you sure you want to delete this payment?")) return;
     try {
-      const resp = await fetch(`${API}/api/payments/${id}`, {
+      // ✅ Admin borra el payment (id); Lawyer/Client borran la relación (relation_id)
+      const endpoint =
+        role === "admin_user"
+          ? `${API}/api/payments/${payment.id}`
+          : `${API}/api/payments-courtfile/${payment.relation_id}`;
+
+      const resp = await fetch(endpoint, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
       });
@@ -86,14 +130,20 @@ export const Payments = () => {
         const errorData = await resp.json().catch(() => ({}));
         throw new Error(errorData.error || `HTTP ${resp.status}`);
       }
-      dispatch({ type: "DELETE_PAYMENT", payload: id });
+
+      // ✅ El payload del reducer debe usar el id que corresponda
+      dispatch({
+        type: "DELETE_PAYMENT",
+        payload: role === "admin_user" ? payment.id : payment.relation_id
+      });
+
       alert("Payment deleted successfully!");
     } catch (err) {
       console.error("Error deleting payment:", err);
       alert(`Error deleting payment: ${err.message}`);
     }
   };
-
+  
   // ---------- Derived list (search + filter) ----------
   const payments = store.payments || [];
   const filtered = useMemo(() => {
@@ -109,6 +159,7 @@ export const Payments = () => {
       return matchesQ && matchesStatus;
     });
   }, [payments, q, fStatus]);
+
 
   return (
     <AppNavsShell>
@@ -195,7 +246,7 @@ export const Payments = () => {
                   <th>Means</th>
                   <th>Created</th>
                   <th>Paid</th>
-                  <th style={{ width: 60 }}  className="text-start pe-3">
+                  <th style={{ width: 60 }} className="text-start pe-3">
                     <span className="text-muted">Actions</span>
                   </th>
                 </tr>

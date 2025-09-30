@@ -371,6 +371,7 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   position: sticky;
   top: 0;
   z-index: 1;
+  background-color: transparent !important;
 }
 
 .table-modern tbody td {
@@ -664,4 +665,35 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 .fc-event-time,
 .fc-event-main {
   cursor: pointer !important;
+}
+
+
+
+/* =============================parche scrollbars======================== */
+
+/* Para todos los scrollbars de la app */
+::-webkit-scrollbar {
+  height: 2px;   /* altura en scroll horizontal */
+  width: 2px;    /* ancho en scroll vertical */
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; /* o un gris muy claro si querés */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #adb5bd; /* color del thumb */
+  border-radius: 20px;       /* bordes redondeados */
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #868e96; /* un poquito más oscuro al hover */
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;       /* fino */
+  scrollbar-color: #adb5bd transparent; /* thumb y track */
 }

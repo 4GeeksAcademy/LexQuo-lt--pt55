@@ -827,8 +827,8 @@ export const ViewCourtfileLawyer = () => {
                       </div>
                       <span
                         className={`fs-10 badge-phoenix badge ${courtfile.status
-                            ? "badge-phoenix-success"
-                            : "badge-phoenix-secondary"
+                          ? "badge-phoenix-success"
+                          : "badge-phoenix-secondary"
                           }`}
                       >
                         {courtfile.status ? "Active" : "Inactive"}
@@ -1185,6 +1185,18 @@ export const ViewCourtfileLawyer = () => {
                         <td>{lw.lawyer_phone || "—"}</td>
                         <td className="text-center">
                           <KebabMenu>
+                            <li>
+                              <Link
+                                className="dropdown-item"
+                                to={`/lawyers/view/${lw.lawyer_id}`}
+                                state={{
+                                  returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+                                }}
+                              >
+                                <i className="bi bi-eye me-2" />
+                                View
+                              </Link>
+                            </li>
                             <li>
                               <button
                                 className="dropdown-item text-danger"

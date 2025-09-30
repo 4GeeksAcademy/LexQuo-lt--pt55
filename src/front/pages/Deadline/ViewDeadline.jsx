@@ -1,245 +1,312 @@
 import { Link, useParams, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
-import { useState, useEffect } from "react";
-import MapComponent from "../../components/Map/MapComponent";
-import LocationAutocomplete from "../../components/Map/LocationAutocomplete";
+import { useState, useEffect, useMemo } from "react";
+import AppNavsShell from "../../components/AppNavsShell";
+import DeadlineBadge from "../../components/DeadlineBadge";
+
+
+// ----------------- Helpers -----------------
+const dateYMDToDMY = (v) => {
+  if (!v) return "—";
+  const isYMD = /^\d{4}-\d{2}-\d{2}$/.test(v);
+  const parts = isYMD
+    ? v.split("-")
+    : new Date(v).toISOString().slice(0, 10).split("-");
+  if (!parts || parts.length !== 3) return "—";
+  const [yy, mm, dd] = parts;
+  return `${dd}/${mm}/${yy}`;
+};
+const safeTime = (v) => (v ? String(v).slice(0, 5) : "—");
 
 export const ViewDeadline = () => {
   const { store, dispatch } = useGlobalReducer();
-  const { appointmentId } = useParams();
+  const { deadlineId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const returnTo = location.state?.returnTo;
-  
 
   const API = import.meta.env.VITE_BACKEND_URL;
-
-  const token = store?.auth?.token;
+  const token = store?.auth?.token || null;
   const role = (store?.me?.role || "").toLowerCase();
 
-  // ---------- Guards ----------
-  const allowed =
-    role === "admin_user" ||
-    role === "lawyer" ||
-    role === "client";
-
+  // Guards
+  const allowed = role === "admin_user" || role === "lawyer" || role === "client";
   if (!allowed) return <Navigate to="/403" replace />;
 
-  const [appointment, setAppointment] = useState(null);
+  // ReturnTo: default a /deadlines si no vino por state
+  const returnTo = useMemo(
+    () => location.state?.returnTo || "/deadlines",
+    [location.state]
+  );
+
+  // Si vino por state desde un expediente, lo precargamos
+  const state = location.state || {};
+  const initialLinked =
+    state.courtfileId
+      ? { id: state.courtfileId, number: state.courtfileNumber, title: state.courtfileTitle }
+      : null;
+
+  const [deadline, setDeadline] = useState(null);
+  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const state = location.state || {};
-  const initialLinked = state.courtfileId
-    ? { id: state.courtfileId, number: state.courtfileNumber, title: state.courtfileTitle }
-    : null;
-
-  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
-
+  // Fetch principal
   useEffect(() => {
-    const fetchAppointment = async () => {
+    let abort = false;
+    const fetchDeadline = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API}/api/appointments/${appointmentId}`, {
-          headers: { Authorization: `Bearer ${token}` }
+        const resp = await fetch(`${API}/api/deadlines/${deadlineId}`, {
+          headers: { Authorization: `Bearer ${token}` },
         });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
-        setAppointment(data);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching appointment:", err);
-        setError("Failed to load appointment data");
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        if (!abort) {
+          setDeadline(data);
+          setError(null);
+        }
+      } catch (e) {
+        if (!abort) {
+          console.error("Error fetching deadline:", e);
+          setError("Failed to load deadline data");
+        }
       } finally {
-        setLoading(false);
+        if (!abort) setLoading(false);
       }
     };
+    if (deadlineId && token) fetchDeadline();
+    return () => { abort = true; };
+  }, [API, token, deadlineId]);
 
-    if (appointmentId && token) fetchAppointment();
-  }, [API, appointmentId, token]);
-
+  // Si vino solo el id del courtfile, completar number/title
   useEffect(() => {
+    let abort = false;
     const loadCf = async () => {
       try {
         if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
           const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
           });
           if (resp.ok) {
             const d = await resp.json();
-            setLinkedCourtfile(cf => ({ ...(cf || {}), number: d.case_number, title: d.title }));
+            if (!abort) {
+              setLinkedCourtfile((cf) => ({
+                ...(cf || {}),
+                number: d.case_number,
+                title: d.title,
+              }));
+            }
           }
         }
-      } catch (e) {
-        // noop
+      } catch {
+        /* noop */
       }
     };
     loadCf();
+    return () => { abort = true; };
   }, [API, linkedCourtfile?.id, token]);
 
+  // Si no vino por state, buscá el link en la tabla de relaciones
   useEffect(() => {
+    let abort = false;
     const fetchLinked = async () => {
       try {
-        if (linkedCourtfile || !appointmentId) return;
-        const resp = await fetch(`${API}/api/appointments-courtfiles`, {
-          headers: { Authorization: `Bearer ${token}` }
+        if (linkedCourtfile || !deadlineId) return;
+        const resp = await fetch(`${API}/api/deadlines-courtfiles`, {
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (!resp.ok) return;
         const rows = await resp.json();
-        const rel = (rows || []).find(r => Number(r.appointment_id) === Number(appointmentId));
-        if (rel) {
+        const rel = (rows || []).find((r) => Number(r.deadline_id) === Number(deadlineId));
+        if (rel && !abort) {
           setLinkedCourtfile({
             id: rel.courtfile_id,
             number: rel.courtfile_number,
-            title: rel.courtfile_title
+            title: rel.courtfile_title,
           });
         }
-      } catch (e) {
-        // noop
+      } catch {
+        /* noop */
       }
     };
     fetchLinked();
-  }, [API, appointmentId, linkedCourtfile, token]);
+    return () => { abort = true; };
+  }, [API, token, deadlineId, linkedCourtfile]);
 
+  // Delete
   const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this appointment?")) return;
+    if (!window.confirm("Are you sure you want to delete this deadline?")) return;
     try {
-      const response = await fetch(`${API}/api/appointments/${appointmentId}`, {
+      const resp = await fetch(`${API}/api/deadlines/${deadlineId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.ok) {
-        dispatch({ type: "DELETE_APPOINTMENT", payload: Number(appointmentId) || appointmentId });
-        navigate(returnTo, { replace: true });
-        alert("Appointment deleted successfully!");
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to delete appointment");
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error(e.error || `HTTP ${resp.status}`);
       }
+      dispatch({ type: "DELETE_DEADLINE", payload: Number(deadlineId) || deadlineId });
+      alert("Deadline deleted successfully!");
+      navigate(returnTo, { replace: true });
     } catch (err) {
-      console.error("Error deleting appointment:", err);
-      alert(`Error deleting appointment: ${err.message}`);
+      console.error("Error deleting deadline:", err);
+      alert(`Error deleting deadline: ${err.message}`);
     }
   };
 
+  // UI states
   if (loading) {
     return (
-      <div className="container mt-4">
-        <div className="text-center">
-          <div className="spinner-border" role="status"><span className="visually-hidden">Loading...</span></div>
-          <p>Loading appointment...</p>
+      <AppNavsShell>
+        <div className="container mt-4 text-center">
+          <div className="spinner-border" role="status">
+            <span className="visually-hidden">Loading…</span>
+          </div>
+          <p className="mt-2">Loading deadline…</p>
         </div>
-      </div>
+      </AppNavsShell>
     );
   }
 
-  if (error || !appointment) {
+  if (error || !deadline) {
     return (
-      <div className="container mt-4">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle"></i> {error || "Appointment not found"}
+      <AppNavsShell>
+        <div className="container mt-4">
+          <div className="alert alert-danger">
+            <i className="bi bi-exclamation-triangle"></i> {error || "Deadline not found"}
+          </div>
+          <Link to={returnTo} className="btn btn-outline-secondary">
+            <i className="bi bi-arrow-left"></i> Back
+          </Link>
         </div>
-        <Link to={returnTo} className="btn btn-outline-secondary">
-          <i className="bi bi-arrow-left"></i> Back
-        </Link>
-      </div>
+      </AppNavsShell>
     );
   }
 
   return (
-    <div className="container mt-4">
-      <div className="row justify-content-center">
-        <div className="col-md-8">
+    <AppNavsShell>
+      <div className="container main-content">
+        {/* Breadcrumbs */}
+        <nav aria-label="breadcrumb" className="mb-3">
+          <ol className="breadcrumb">
+            <li className="breadcrumb-item">
+              <Link to={returnTo || "/deadlines"}>Deadlines</Link>
+            </li>
+            <li className="breadcrumb-item active" aria-current="page">
+              Details
+            </li>
+          </ol>
+        </nav>
 
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h1>Appointment Details</h1>
-            </div>
-            <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back
-            </Link>
-          </div>
+        <div className="col-md-8 col-lg-8">
+          {/* Header (title + actions) */}
+          <div className="d-flex justify-content-between align-items-start mb-3">
+            <h1 className="h2 fw-bolder mb-0 line-clamp-1">
+              {deadline.deadline_type || "Deadline"}
+            </h1>
 
-          {linkedCourtfile && (
-            <span className="badge bg-dark mt-1 mb-2">
-              Linked to Case {linkedCourtfile.number || `#${linkedCourtfile.id}`}
-              {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
-            </span>
-          )}
-
-          <div className="card">
-            <div className="card-header bg-dark text-white">
-              <h5 className="card-title mb-0">
-                <i className="bi bi-person-badge"></i> Appointment Information
-              </h5>
-            </div>
-
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Title</label>
-                    <p className="fs-6">{appointment.title || "-"}</p>
-                  </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Location</label>
-                    <p className="fs-6">{appointment.location || "-"}</p>
-                  </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Aditional details</label>
-                    <p className="fs-6">{appointment.details || "-"}</p>
-                  </div>
-                </div>
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Date</label>
-                    <p className="fs-6">{appointment.date || "-"}</p>
-                  </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Starts At</label>
-                    <p className="fs-6">{appointment.starts_at || "-"}</p>
-                  </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Ends At</label>
-                    <p className="fs-6">{appointment.ends_at || "-"}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            {appointment.latitud && appointment.longitud && (
-              <div className="mb-3">
-                <label className="fw-bold text-muted">Ubicación en Mapa</label>
-                <MapComponent
-                  key={appointment ? `view-${appointment.latitud}-${appointment.longitud}` : 'view-null'}
-                  position={appointment ? [appointment.latitud, appointment.longitud] : null}
-                  readonly
-                />
-                <div className="form-text">
-                  Coordenadas: {appointment.latitud}, {appointment.longitud}
-                </div>
+            {["lawyer", "admin_user"].includes(role) && (
+              <div className="d-flex gap-2">
+                <Link
+                  to={`/deadlines/${deadline.id}`}
+                  state={{ returnTo }}
+                  className="btn btn-phoenix-secondary btn-sm"
+                >
+                  <i className="bi bi-pencil" /> Edit
+                </Link>
+                <button className="btn btn-phoenix-danger btn-sm" onClick={handleDelete}>
+                  <i className="bi bi-trash" /> Delete
+                </button>
               </div>
             )}
-            <div className="card-footer bg-light">
-              {["lawyer", "admin_user"].includes(role) && (
-                <div className="d-flex gap-2 justify-content-end">
+          </div>
+
+          {/* Summary strip */}
+          <div className="card mb-3 mt-5">
+            <div className="card-body">
+              <div className="row text-center g-4">
+
+                {/* Date */}
+                <div className="col-sm-4">
+                  <div className="d-inline-flex align-items-center">
+                    <div
+                      className="d-flex bg-success-subtle rounded flex-center me-3"
+                      style={{ width: 32, height: 32 }}
+                    >
+                      <i className="bi bi-calendar-event text-success" />
+                    </div>
+                    <div className="text-start">
+                      <p className="fw-bold mb-1">Date</p>
+                      <h4 className="fw-bolder text-nowrap mb-0">
+                        {deadline.deadline_date ? dateYMDToDMY(deadline.deadline_date) : "—"}
+                      </h4>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Time */}
+                <div className="col-sm-4 border-start-sm border-translucent ps-sm-5">
+                  <div className="d-inline-flex align-items-center">
+                    <div
+                      className="d-flex bg-info-subtle rounded flex-center me-3"
+                      style={{ width: 32, height: 32 }}
+                    >
+                      <i className="bi bi-clock-history text-info" />
+                    </div>
+                    <div className="text-start">
+                      <p className="fw-bold mb-1">Time</p>
+                      <h4 className="fw-bolder text-nowrap mb-0">
+                        {safeTime(deadline.deadline_hour) || "—"}
+                      </h4>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Priority */}
+                <div className="col-sm-4 border-start-sm border-translucent ps-sm-5">
+                  <div className="d-inline-flex align-items-center">
+                    <div
+                      className="d-flex bg-primary-subtle rounded flex-center me-3"
+                      style={{ width: 32, height: 32 }}
+                    >
+                      <i className="bi bi-flag text-primary" />
+                    </div>
+                    <div className="text-start">
+                      <p className="fw-bold mb-1">Priority</p>
+                      <div className="mt-1">
+                        <DeadlineBadge priority={deadline.priority} outline />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+
+          {/* Case File abajo */}
+          <div className="row g-3 mt-3">
+            <div className="col-12">
+              {linkedCourtfile && (
+                <div className="mb-4 ms-2">
+                  <h3 className="fw-bold mb-1 text-muted">Case File</h3>
                   <Link
-                    to={`/appointments/${appointment.id}`}
-                    state={{ returnTo }}
-                    className="btn btn-warning"
+                    to={`/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`}
+                    className="badge badge-phoenix badge-phoenix-secondary fs-8 mt-2"
+                    title={linkedCourtfile.title || ""}
                   >
-                    <i className="bi bi-pencil"></i> Edit
+                    {linkedCourtfile.number || `#${linkedCourtfile.id}`}
                   </Link>
-                  <button className="btn btn-danger" onClick={handleDelete}>
-                    <i className="bi bi-trash"></i> Delete
-                  </button>
                 </div>
               )}
             </div>
-
-          </div>
+        
 
         </div>
       </div>
-    </div >
+    </div>
+    </AppNavsShell >
   );
-};
+
+}

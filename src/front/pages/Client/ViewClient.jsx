@@ -244,19 +244,25 @@ export const ViewClient = () => {
 
   return (
     <AppNavsShell>
-      <div className="page-add">
-        {/* Topbar: título + back + badge contextual */}
-        <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-          <div className="d-flex align-items-center gap-3">
-            <h1 className="h2 mb-2">Client details</h1>
-          </div>
+      <div className="container-fluid px-0 px-md-3">
+        {/* Breadcrumb + Header */}
+        <nav aria-label="breadcrumb" className="mb-2">
+          <ol className="breadcrumb mb-0">
+            <li className="breadcrumb-item"><Link to="/clients">Clients</Link></li>
+            <li className="breadcrumb-item active" aria-current="page">Client details</li>
+          </ol>
+        </nav>
 
-          <div className="d-flex align-items-center gap-2">
-            <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back
-            </Link>
+        {/* Topbar: título + back + acciones de contexto */}
+        <div className="d-flex flex-wrap align-items-center justify-content-between g-3 mb-4 row">
+          <div className="col-auto">
+            <h2 className="mb-0">Client details</h2>
+          </div>
+          <div className="col-auto d-flex gap-2 flex-wrap">
+
             {role === "lawyer" && relationId && (
               <button
+                type="button"
                 className="btn btn-outline-danger"
                 onClick={handleUnlink}
                 disabled={unlinking}
@@ -268,132 +274,157 @@ export const ViewClient = () => {
           </div>
         </div>
 
-        <div className="row g-3">
+        {/* Main grid */}
+        <div className="row g-4">
           {/* LEFT: Perfil / datos */}
-          <div className="col-12 col-lg-4">
-            <div className="card shadow-sm card-roomy">
-              <div className="card-body">
-                <div className="d-flex align-items-center gap-3 mb-4">  {/* +gap y +mb */}
-                  <div className="avatar-xl rounded-circle overflow-hidden border">
-                    {client.url_img ? (
-                      <img src={client.url_img} alt="Client Profile" className="w-100 h-100 object-fit-cover" />
-                    ) : (
-                      <i className="bi bi-person-circle text-muted d-block text-center w-100" style={{ fontSize: 72 }} />
-                    )}
-                  </div>
-                  <div className="ms-4">
-                    <h2 className="h3 mb-3">{(client.firstname || "-") + " " + (client.lastname || "")}</h2>
-                    <div className="d-flex flex-wrap gap-2">
-                      <StatusPill status={client.is_active} />
+          <div className="col-7 col-xxl-4">
+            <div className="row g-4 h-100">
+              <div className="col-12">
+                <div className="card h-100">
+                  <div className="card-body pb-3 d-flex flex-column justify-content-between">
+                    <div className="row g-4 align-items-center text-center text-sm-start">
+                      <div className="row g-5 align-items-center text-center text-sm-start mb-3">
+                        {/* Avatar */}
+                        <div className="col-sm-auto col-12 mb-sm-3">
+                          <div className="d-inline-flex">
+                            <div className="avatar avatar-5xl">
+                              {client.url_img ? (
+                                <img
+                                  src={client.url_img}
+                                  alt="Client Profile"
+                                  className="rounded-circle"
+                                />
+                              ) : (
+                                <i
+                                  className="bi bi-person-circle text-muted d-block"
+                                  style={{ fontSize: 90 }}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Nombre + estado */}
+                        <div className="col-sm-auto col-12 flex-1 ps-5">
+                          <h3 className="mb-1">
+                            {(client.firstname || "-") + " " + (client.lastname || "")}
+                          </h3>
+                          <p className="text-body-secondary mb-2">
+                            {/* Podés poner info opcional, tipo “Joined X months ago” */}
+                          </p>
+                          <div className="d-inline-flex gap-2">
+                            <StatusPill status={client.is_active} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="border-top border-dashed pt-4 mt-3">
+                      <div className="d-flex justify-content-between mb-2">
+                        <span className="fw-semibold">Email</span>
+                        <span className="fw-medium">
+                          {client.email ? (
+                            <a href={`mailto:${client.email}`} className="link-underline-opacity-0">{client.email}</a>
+                          ) : (
+                            "-"
+                          )}
+                        </span>
+                      </div>
+                      <div className="d-flex justify-content-between">
+                        <span className="fw-semibold">Phone</span>
+                        <span className="fw-medium">{client.phone || "-"}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Contacto */}
-
-                <div className="vstack gap-2 mt-4">
-                  <div className="d-flex justify-content-between mt-4">
-                    <span className="fw-semibold">Email</span>
-                    <span className="fw-medium">
-                      {client.email ? (
-                        <a href={`mailto:${client.email}`} className="link-underline-opacity-0">
-                          {client.email}
-                        </a>
-                      ) : (
-                        "-"
-                      )}
-                    </span>
-                  </div>
-                  <div className="d-flex justify-content-between">
-                    <span className="fw-semibold">Phone</span>
-                    <span className="fw-medium">{client.phone || "-"}</span>
-                  </div>
+                  {/* Footer acciones (admin) */}
+                  {role !== "lawyer" && (
+                    <div className="card-footer bg-body-tertiary d-flex flex-wrap justify-content-end gap-2">
+                      <Link
+                        to={`/clients/${client.id}/password`}
+                        state={{ returnTo }}
+                        className="btn btn-outline-secondary btn-sm"
+                      >
+                        <i className="bi bi-key"></i> Change Password
+                      </Link>
+                      <Link
+                        to={`/clients/${client.id}`}
+                        state={{ returnTo }}
+                        className="btn btn-warning btn-sm"
+                      >
+                        <i className="bi bi-pencil"></i> Edit
+                      </Link>
+                      <button className="btn btn-danger btn-sm" onClick={handleDelete}>
+                        <i className="bi bi-trash"></i> Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
-
-
-              {/* Footer acciones (admin) */}
-              {role !== "lawyer" && (
-                <div className="card-footer bg-light d-flex flex-wrap justify-content-end gap-2">
-                  <Link
-                    to={`/clients/${client.id}/password`}
-                    state={{ returnTo }}
-                    className="btn btn-outline-secondary btn-sm"
-                  >
-                    <i className="bi bi-key"></i> Change Password
-                  </Link>
-                  <Link
-                    to={`/clients/${client.id}`}
-                    state={{ returnTo }}
-                    className="btn btn-warning btn-sm"
-                  >
-                    <i className="bi bi-pencil"></i> Edit
-                  </Link>
-                  <button className="btn btn-danger btn-sm" onClick={handleDelete}>
-                    <i className="bi bi-trash"></i> Delete
-                  </button>
-                </div>
-              )}
             </div>
           </div>
 
           {/* RIGHT: Courtfiles */}
-          <div className="col-12 col-lg-8">
-            <div className="card shadow-sm h-100 card-roomy">   {/* <- mismo aire */}
-              <div className="card-header p-3">
-                <span className="fs-6 fw-bold">
-                  Courtfiles{" "}
-                  <small className="text-muted fs-8">({linkedRelations.length})</small>
-                </span>
-              </div>
+          <div className="col-12 col-xxl-8 mt-5">
+            <h3 className="mb-3 fs-5 mt-5">
+              Courtfiles{" "}
+              <span className="text-body-tertiary fw-normal fs-10">
+                ({linkedRelations.length})
+              </span>
+            </h3>
 
-              {linkedRelations.length > 0 ? (
-                <div className="card-body p-0">
-                  <div className="table-responsive">
-                    <table className="table table-sm table-hover align-middle mb-0 table-edge">
-                      <thead className="table-light">
-                        <tr>
-                          <th className="px-3" style={{ width: 180 }}>Case Number</th>
-                          <th className="px-3">Title</th>
-                          {role === "lawyer" && <th className="text-end px-3" style={{ width: 140 }}>Actions</th>}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {linkedRelations.map((rel) => (
-                          <tr key={rel.relation_id}
-                            onClick={() => goToCourtfile(rel.courtfile_id)}
-                            className="table-row-clickable">
-                            <td className="fw-semibold px-3">{rel.number ?? `#${rel.courtfile_id}`}</td>
-                            <td className="text-body-secondary px-3">{rel.title ?? "—"}</td>
-                            {role === "lawyer" && (
-                              <td className="text-end px-3">
-                                <button
-                                  className="btn btn-sm btn-outline-danger"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleUnlinkOne(rel.relation_id);
-                                  }}
-                                >
-                                  <i className="bi bi-link-45deg"></i> Unlink
-                                </button>
-                              </td>
-                            )}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              ) : (
-                <div className="card-body">
-                  <div className="alert alert-info mb-0">This client is not linked to any case.</div>
-                </div>
-              )}
-            </div>
+            {linkedRelations.length > 0 ? (
+              <div className="table-responsive">
+                <table className="table table-hover align-middle table-modern mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th className="px-3" style={{ width: 200 }}>Case Number</th>
+                      <th className="px-3">Title</th>
+                      {role === "lawyer" && (
+                        <th className="text-end px-3" style={{ width: 160 }}>Actions</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {linkedRelations.map((rel) => (
+                      <tr
+                        key={rel.relation_id}
+                        onClick={() => goToCourtfile(rel.courtfile_id)}
+                        className="table-row-clickable"
+                        style={{ cursor: role === "lawyer" ? "pointer" : "default" }}
+                      >
+                        <td className="fw-semibold px-3">
+                          {rel.number ?? `#${rel.courtfile_id}`}
+                        </td>
+                        <td className="text-body-secondary px-3">
+                          {rel.title ?? "—"}
+                        </td>
+                        {role === "lawyer" && (
+                          <td className="text-end px-3">
+                            <button
+                              className="btn btn-phoenix btn-phoenix-danger"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUnlinkOne(rel.relation_id);
+                              }}
+                            >
+                              <i className="bi bi-link-45deg"></i> Unlink
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="alert alert-info mb-0">
+                This client is not linked to any case.
+              </div>
+            )}
           </div>
         </div>
-      </div >
-    </AppNavsShell >
+      </div>
+    </AppNavsShell>
   );
-
 };
