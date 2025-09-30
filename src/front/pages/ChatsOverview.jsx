@@ -1,9 +1,12 @@
 // src/views/ChatsOverview.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 import useUnreadBadges from "../hooks/useUnreadBadges.jsx";
 import AppNavsShell from "../components/AppNavsShell.jsx";
+import ChatOnDemand from "../pages/ChatOnDemand.jsx";
+import Avatar from "react-avatar";
+import conversation from "../assets/img/conversation.png";
 
 export default function ChatsOverview() {
   const API = import.meta.env.VITE_BACKEND_URL;
@@ -137,22 +140,22 @@ export default function ChatsOverview() {
       .map((p) => p[0]?.toUpperCase() || "")
       .join("") || "CF";
 
+  // --- URL param para chat activo ---
+  const { courtfileId: paramCourtfileId } = useParams();
+  const activeId = useMemo(
+    () => (paramCourtfileId ? Number(paramCourtfileId) : null),
+    [paramCourtfileId]
+  );
+
+  // expediente activo (si existe en la lista)
+  const activeCase = useMemo(
+    () => (activeId ? rows.find(r => Number(r.id) === activeId) || null : null),
+    [rows, activeId]
+  );
+
   return (
     <AppNavsShell>
-      <div className="container-fluid px-3">
-        {/* Topbar simple */}
-        <div className="d-flex align-items-center justify-content-between mb-3">
-          <div className="d-flex align-items-center gap-3">
-            <h1 className="h2 mb-0">Chats</h1>
-            {totalUnread > 0 && (
-              <span className="badge bg-danger rounded-pill">{totalUnread > 99 ? "99+" : totalUnread}</span>
-            )}
-          </div>
-          <Link to={returnTo} className="btn btn-outline-secondary">
-            <i className="bi bi-arrow-left me-1" />
-            Back
-          </Link>
-        </div>
+      <div className="container-fluid px-3">        
 
         {/* ===== Layout Phoenix: sidebar + placeholder ===== */}
 
@@ -233,20 +236,7 @@ export default function ChatsOverview() {
                     >
                       {/* Avatar */}
                       <div className="position-relative me-2 me-sm-0 me-xl-2">
-                        <div className="d-block avatar">
-                          {cf._avatar ? (
-                            <img
-                              alt="avatar"
-                              className="border border-2 border-light-subtle rounded-circle"
-                              src={cf._avatar}
-                            />
-                          ) : (
-                            <div className="border border-2 border-light-subtle rounded-circle d-flex align-items-center justify-content-center bg-body-tertiary text-body fw-semibold"
-                              style={{ width: "100%", height: "100%" }}>
-                              {initials(name)}
-                            </div>
-                          )}
-                        </div>
+                        <Avatar name={name} size="40" round={true} />
 
                         {/* puntito en mobile cuando hay unread */}
                         {unread > 0 && (
@@ -285,17 +275,32 @@ export default function ChatsOverview() {
             </div>
           </div>
 
-          {/* ===== PANEL DERECHO (placeholder) ===== */}
-          <div className="h-100 w-100 d-none d-sm-block card">
-            <div className="h-100 d-flex flex-column flex-center text-center card-body">
-              <img alt="chat" height="260" width="320" className="mb-15 d-dark-none" src="/assets/chat-_IOBP0be.webp" />
-              <img alt="chat" height="260" width="320" className="mb-15 d-light-none" src="/assets/dark_chat-Bg8B0lAX.webp" />
-              <h3 className="text-body fw-semibold mb-3 fs-7 fs-sm-6">Click to select a Conversation or,</h3>
-              <h3 className="text-primary fw-semibold fs-7 fs-sm-6">Start a New Conversation</h3>
-            </div>
+          {/* ===== PANEL DERECHO ===== */}
+          <div className="h-100 w-100 d-none d-sm-block">
+            {activeId ? (
+              <ChatOnDemand
+                key={`chat-${activeId}`}
+                embed
+                courtfileId={activeId}
+                courtfileNumber={activeCase?.case_number}
+                courtfileTitle={activeCase?.title}
+                senderRole={role}
+              // aseguramos que el botón "Volver" del header del chat te regrese a la lista
+              // (adentro de ChatOnDemand ya respeta location.state.returnTo, pero se lo reforzamos):
+              // También podrías pasar `returnTo="/chats"` si decides usarlo directamente allí
+              />
+            ) : (
+              // Placeholder si no hay chat seleccionado
+              <div className="h-100 w-100 card">
+                <div className="h-100 d-flex flex-column flex-center text-center card-body">
+                  <img alt="chat" className="d-dark-none" src={conversation}  />
+                  
+                  <h3 className="text-body fw-semibold mb-3 fs-7 fs-sm-6">Click to select a Conversation</h3>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-
       </div>
     </AppNavsShell>
   );

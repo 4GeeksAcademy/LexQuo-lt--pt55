@@ -123,13 +123,13 @@ export const router = createBrowserRouter(
         <Route path="/admins/view/:adminId" element={<ViewAdmin />} />
         <Route path="/admins/:adminId" element={<EditAdmin />} />
         <Route path="/admins/dashboard" element={<DashboardAdminUser />} />
-        
+
         <Route path="/lawyers/addLawyer" element={<AddLawyer />} />
 
-        <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} /> 
-        
+        <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} />
+
         <Route path="/clients/addClient" element={<AddClient />} />
-        
+
         <Route path="/documents" element={<Documents />} />
 
         <Route path="/ClientsCourtfiles" element={<ClientsCourtfiles />} />
@@ -171,7 +171,7 @@ export const router = createBrowserRouter(
       <Route path="/login" element={<LoginForAll />} />
       <Route path="/signUp" element={<SignUpForAll />} />
 
-      
+
       {/* ==========RUTAS PROTEGIDAS========== */}
 
       <Route element={<PrivateRoute />}>
@@ -192,7 +192,7 @@ export const router = createBrowserRouter(
         <Route path="/clients/link-or-create" element={<LawyerLinkOrCreateClient />} />
         <Route path="/lawyers/link-or-invite" element={<LawyerLinkOrInviteLawyer />} />
 
-        <Route path="/payments/view/:paymentId" element={<ViewPayment />} />        
+        <Route path="/payments/view/:paymentId" element={<ViewPayment />} />
         <Route path="/payments/addPayment" element={<AddPayment />} />
         <Route path="/payments/:paymentId" element={<EditPayment />} />
 
@@ -203,13 +203,13 @@ export const router = createBrowserRouter(
         <Route path="/appointments/addAppointment" element={<AddAppointment />} />
         <Route path="/appointments/view/:appointmentId" element={<ViewAppointment />} />
         <Route path="/appointments/:appointmentId" element={<EditAppointment />} />
-        
+
         <Route path="/documents/addDocument" element={<AddDocument />} />
         <Route path="/documents/view/:documentId" element={<ViewDocument />} />
         <Route path="/documents/:documentId" element={<EditDocument />} />
 
-        <Route path="/chats/:courtfileId" element={<ChatOnDemand />} />
         <Route path="/chats" element={<ChatsOverview />} />
+        <Route path="/chats/:courtfileId" element={<ChatsOverview />} />
 
         <Route path="/lawyers/:id/password" element={<ChangePassword kind="lawyer" />} />
         <Route path="/clients/:id/password" element={<ChangePassword kind="client" />} />

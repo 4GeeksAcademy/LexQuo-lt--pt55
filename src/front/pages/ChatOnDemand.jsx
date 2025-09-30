@@ -7,6 +7,7 @@ import { markNow } from "../hooks/chatUnread";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
 
 export default function ChatOnDemand(props) {
+  const { embed = false } = props;
   const location = useLocation();
   const API = import.meta.env.VITE_BACKEND_URL;
   const { courtfileId: paramCourtfileId } = useParams()
@@ -24,7 +25,7 @@ export default function ChatOnDemand(props) {
     props.courtfileId ??
     location.state?.courtfileId ??
     query.get("courtfileId") ??
-    paramCourtfileId; // 👈 ahora también soporta /chat/:courtfileId
+    paramCourtfileId; 
 
   const courtfileId = courtfileIdRaw ? Number(courtfileIdRaw) : null;
 
@@ -356,12 +357,14 @@ export default function ChatOnDemand(props) {
   };
 
   return (
-    <div className="container mt-4">
-      <h1 className="mb-3">
-        {`Chat for Courtfile`}
-        {courtfileNumber ? ` #${courtfileNumber}` : ""}
-        {courtfileTitle ? ` — ${courtfileTitle}` : ""}
-      </h1>
+    <div className={embed ? "" : "container mt-4"}>
+      {!embed && (
+        <h1 className="mb-3">
+          {`Chat for Courtfile`}
+          {courtfileNumber ? ` #${courtfileNumber}` : ""}
+          {courtfileTitle ? ` — ${courtfileTitle}` : ""}
+        </h1>
+      )}
 
       <div className="card">
         <div className="card-header d-flex align-items-center">

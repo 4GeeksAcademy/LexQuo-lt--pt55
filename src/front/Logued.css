@@ -602,3 +602,66 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 .payment-detail-text {
   font-size: 0.8rem; /* 12.8px */
 }
+
+/* =============================parche calendar======================== */
+/* Formato dot+texto, sin fondo/borde del pill */
+.fc .lxq-deadline {
+  --fc-event-bg-color: transparent;
+  --fc-event-border-color: transparent;     /* quita el borde del pill */
+  --fc-event-text-color: var(--phoenix-danger, #dc3545);
+}
+.fc .lxq-appointment {
+  --fc-event-bg-color: transparent;
+  --fc-event-border-color: transparent;
+  --fc-event-text-color: var(--phoenix-primary, #0d6efd);
+}
+
+/* 👇 El puntito usa BORDER-COLOR, no background */
+.fc .lxq-deadline .fc-daygrid-event-dot {
+  border-color: var(--phoenix-danger, #dc3545) !important;
+}
+.fc .lxq-appointment .fc-daygrid-event-dot {
+  border-color: var(--phoenix-primary, #0d6efd) !important;
+}
+
+/* por si bootstrap/phoenix pisa el color del texto */
+.fc .lxq-deadline .fc-event-title,
+.fc .lxq-deadline .fc-event-time {
+  color: var(--phoenix-danger, #dc3545) !important;
+}
+.fc .lxq-appointment .fc-event-title,
+.fc .lxq-appointment .fc-event-time {
+  color: var(--phoenix-primary, #0d6efd) !important;
+}
+
+/* (opcional) tamaño del puntito */
+.fc .fc-daygrid-event-dot { border-width: 4px; }
+
+
+/* Cursor de mano para eventos del calendario */
+.fc-event {
+  cursor: pointer !important;
+}
+
+/* Cursor de mano específico para tus eventos personalizados */
+.fc-event.lxq-deadline,
+.fc-event.lxq-appointment,
+.fc-daygrid-event.lxq-deadline,
+.fc-daygrid-event.lxq-appointment,
+.fc-timegrid-event.lxq-deadline,
+.fc-timegrid-event.lxq-appointment {
+  cursor: pointer !important;
+}
+
+/* También para los dots de los eventos */
+.fc-daygrid-event-dot,
+.fc-timegrid-event-dot {
+  cursor: pointer !important;
+}
+
+/* Y para los elementos internos del evento */
+.fc-event-title,
+.fc-event-time,
+.fc-event-main {
+  cursor: pointer !important;
+}

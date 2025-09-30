@@ -177,7 +177,7 @@ export const Payments = () => {
             {/* Derecha: Add */}
             <div className="ms-auto">
               {canAdd && (
-                <Link to="/payments/addPayment" className="btn btn-primary">
+                <Link to="/payments/addPayment" className="btn btn-phoenix btn-phoenix-primary">
                   <i className="bi bi-plus-lg me-1" /> Add payment
                 </Link>
               )}

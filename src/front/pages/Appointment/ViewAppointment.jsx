@@ -9,13 +9,8 @@ export const ViewAppointment = () => {
   const { appointmentId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const rawReturnTo = location.state?.returnTo;
-  const returnTo =
-    typeof rawReturnTo === "string"
-      ? rawReturnTo
-      : (rawReturnTo && typeof rawReturnTo === "object" && "pathname" in rawReturnTo)
-        ? rawReturnTo
-        : fallbackByRole;
+  const returnTo = location.state?.returnTo;
+  
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
