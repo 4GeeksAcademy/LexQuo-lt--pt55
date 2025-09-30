@@ -600,6 +600,8 @@ export const DashboardLawyer = () => {
                             apiBase={import.meta.env.VITE_BACKEND_URL}
                             authToken={token}
                             getCourtfileUrl={(id) => `/courtfiles/ViewCourtfileLawyer/${id}`}
+                            height={420}
+                            contentHeight={420}
                         />
                     </div>
 

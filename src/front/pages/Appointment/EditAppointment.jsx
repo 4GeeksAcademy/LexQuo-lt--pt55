@@ -17,7 +17,6 @@ export const EditAppointment = () => {
   const preselectedCourtfileId = location.state?.courtfileId || null;
   const preselectedCourtfileNumber = location.state?.courtfileNumber || null;
   const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
-  const suggestion = location.state?.suggestion || null;
   const preselectedDate = location.state?.date || "";
 
   const API = import.meta.env.VITE_BACKEND_URL;
@@ -429,31 +428,6 @@ export const EditAppointment = () => {
               </div>
             )}
 
-            {/* Sugerencia IA */}
-            {suggestion && (
-              <div className="alert alert-info">
-                <h5 className="mb-1">
-                  <i className="bi bi-lightbulb" /> Sugerencia IA
-                </h5>
-                <strong>{suggestion.title}</strong>
-                {suggestion.reasoning && (
-                  <p className="mb-1">{suggestion.reasoning}</p>
-                )}
-                {Array.isArray(suggestion.next_steps) &&
-                  suggestion.next_steps.length > 0 && (
-                    <ul className="mb-1">
-                      {suggestion.next_steps.map((step, i) => (
-                        <li key={i}>{step}</li>
-                      ))}
-                    </ul>
-                  )}
-                {suggestion.legal_basis && (
-                  <small className="text-muted">
-                    Fundamento: {suggestion.legal_basis}
-                  </small>
-                )}
-              </div>
-            )}
 
             {/* Error */}
             {error && (

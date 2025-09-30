@@ -277,22 +277,51 @@ export const AddDeadline = () => {
 
 
             {suggestion && (
-              <div className="alert alert-info">
-                <h5 className="mb-1">
-                  <i className="bi bi-lightbulb"></i> Sugerencia IA
-                </h5>
-                <strong>{suggestion.title}</strong>
-                {suggestion.reasoning && <p className="mb-1">{suggestion.reasoning}</p>}
-                {Array.isArray(suggestion.next_steps) && suggestion.next_steps.length > 0 && (
-                  <ul className="mb-1">
-                    {suggestion.next_steps.map((step, i) => (
-                      <li key={i}>{step}</li>
-                    ))}
-                  </ul>
-                )}
-                {suggestion.legal_basis && (
-                  <small className="text-muted">Fundamento: {suggestion.legal_basis}</small>
-                )}
+              <div className="card border-0 shadow-sm mb-4">
+                <div className="card-body p-3 p-md-4 border-start border-4 border-primary rounded-start">
+                  <div className="d-flex align-items-start">
+                    <div
+                      className="me-3 rounded-circle bg-warning-subtle text-warning d-inline-flex align-items-center justify-content-center"
+                      style={{ width: 36, height: 36 }}
+                    >
+                      <i className="bi bi-lightbulb-fill" />
+                    </div>
+
+                    <div className="flex-grow-1">
+                      <div className="d-flex justify-content-between align-items-start">
+                        <h6 className="mb-1 text-uppercase text-muted fw-bold">Sugerencia IA</h6>
+                        {suggestion.urgency && (
+                          <span className={`badge badge-phoenix ${String(suggestion.urgency).toLowerCase() === "urgent" ? "badge-phoenix-danger" :
+                              String(suggestion.urgency).toLowerCase() === "high" ? "badge-phoenix-warning" :
+                                String(suggestion.urgency).toLowerCase() === "medium" ? "badge-phoenix-info" :
+                                  "badge-phoenix-secondary"
+                            }`}>
+                            {String(suggestion.urgency).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+
+                      <h5 className="mb-1 fw-semibold">{suggestion.title}</h5>
+
+                      {suggestion.reasoning && (
+                        <p className="mb-2 text-body-secondary">{suggestion.reasoning}</p>
+                      )}
+
+                      {Array.isArray(suggestion.next_steps) && suggestion.next_steps.length > 0 && (
+                        <ul className="mb-2 small ps-3">
+                          {suggestion.next_steps.map((step, i) => <li key={i}>{step}</li>)}
+                        </ul>
+                      )}
+
+                      {(suggestion.legal_basis || typeof suggestion.confidence === "number") && (
+                        <div className="small text-body-tertiary">
+                          {suggestion.legal_basis ? `Fundamento: ${suggestion.legal_basis}` : ""}
+                          {typeof suggestion.confidence === "number" ? ` • Conf.: ${(suggestion.confidence * 100).toFixed(0)}%` : ""}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 

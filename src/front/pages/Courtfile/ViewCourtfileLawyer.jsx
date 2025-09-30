@@ -647,7 +647,18 @@ export const ViewCourtfileLawyer = () => {
         returnTo: `/courtfiles/ViewCourtfileLawyer/${cfid}`,
       },
     });
-  }; // 👈 solo una llave de cierre y punto y coma
+  };
+
+  const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
+
+  function goRow(e, path, state) {
+    // si viene con Ctrl/Cmd → nueva pestaña
+    if (e?.metaKey || e?.ctrlKey) {
+      window.open(`${FRONTEND_URL}${path.startsWith("/") ? "" : "/"}${path}`, "_blank", "noopener,noreferrer");
+      return;
+    }
+    navigate(path, { state });
+  }
 
 
 
@@ -723,19 +734,24 @@ export const ViewCourtfileLawyer = () => {
   return (
     <AppNavsShell>
       <div className="container-fluid">
-        {/* ===== Breadcrumbs + Titlebar ===== */}
+
         {/* ===== Breadcrumbs ===== */}
-        <div className="d-flex align-items-center gap-2 text-muted small mb-2">
-          <span className="opacity-50">›</span>
-          <Link to="/courtfiles" className="text-decoration-none text-muted">
-            Courtfile view
-          </Link>
-          <span className="opacity-50">›</span>
-          <span>Courtfile details</span>
-        </div>
+        <nav aria-label="breadcrumb" className="mb-2">
+          <ol className="breadcrumb mb-0">
+            <li className="breadcrumb-item">
+              <Link to="/DashboardLawyer">Dashboard</Link>
+            </li>
+            <li className="breadcrumb-item">
+              <Link to="/courtfiles">Courtfiles</Link>
+            </li>
+            <li className="breadcrumb-item active" aria-current="page">
+              {courtfile.case_number || "—"}{courtfile.title ? ` — ${courtfile.title}` : ""}
+            </li>
+          </ol>
+        </nav>
 
         {/* ===== Title + Actions ===== */}
-        <div className="d-flex justify-content-between align-items-center mb-3">
+        <div className="d-flex justify-content-between align-items-center mb-3 py-3">
           {/* Título */}
           <h2 className="mb-0 fw-bold">Courtfile details</h2>
 
@@ -869,7 +885,7 @@ export const ViewCourtfileLawyer = () => {
                 }}
                 className="btn btn-phoenix-primary ms-2"
               >
-                + Add document
+                + New document
               </Link>
             </div>
 
@@ -897,7 +913,9 @@ export const ViewCourtfileLawyer = () => {
                     {[...caseDocuments]
                       .sort((a, b) => parseDate(b) - parseDate(a))
                       .map((doc) => (
-                        <tr key={doc.relation_id}>
+                        <tr key={doc.relation_id}
+                          className="table-row-clickable"
+                          onClick={(e) => goRow(e, viewPath, viewState)}>
                           <td>{parseDate(doc).toLocaleDateString()}</td>
                           <td>{doc.name || doc.document_name || "—"}</td>
                           <td>{doc.category || doc.document_type || "—"}</td>
@@ -998,7 +1016,9 @@ export const ViewCourtfileLawyer = () => {
                   </thead>
                   <tbody>
                     {caseDeadlines.map((dl) => (
-                      <tr key={dl.relation_id}>
+                      <tr key={dl.relation_id}
+                        className="table-row-clickable"
+                        onClick={(e) => goRow(e, viewPath, viewState)}>
                         <td className="text-start ps-2">{dl.deadline_id}</td>
                         <td>{dl.deadline_type}</td>
                         <td>{dl.deadline_date}</td>
@@ -1091,7 +1111,9 @@ export const ViewCourtfileLawyer = () => {
                   </thead>
                   <tbody>
                     {caseAppointments.map((ap) => (
-                      <tr key={ap.relation_id}>
+                      <tr key={ap.relation_id}
+                        className="table-row-clickable"
+                        onClick={(e) => goRow(e, viewPath, viewState)}>
                         <td className="text-start ps-2">{ap.appointment_id}</td>
                         <td>{ap.appointment_title}</td>
                         <td>{ap.appointment_date}</td>
@@ -1178,7 +1200,9 @@ export const ViewCourtfileLawyer = () => {
                   </thead>
                   <tbody>
                     {caseLawyers.map((lw) => (
-                      <tr key={lw.relation_id}>
+                      <tr key={lw.relation_id}
+                        className="table-row-clickable"
+                        onClick={(e) => goRow(e, viewPath, viewState)}>
                         <td className="text-start ps-2">{lw.lawyer_id}</td>
                         <td>{lw.lawyer_name || "—"}</td>
                         <td>{lw.lawyer_email || "—"}</td>
@@ -1263,7 +1287,9 @@ export const ViewCourtfileLawyer = () => {
                   </thead>
                   <tbody>
                     {caseClients.map((cl) => (
-                      <tr key={cl.relation_id}>
+                      <tr key={cl.relation_id}
+                        className="table-row-clickable"
+                        onClick={(e) => goRow(e, viewPath, viewState)}>
                         <td className="text-start ps-2">{cl.client_id}</td>
                         <td>{cl.client_name || "—"}</td>
                         <td>{cl.client_email || "—"}</td>
@@ -1308,55 +1334,164 @@ export const ViewCourtfileLawyer = () => {
           {/* ASIDE */}
           <div className="col-xl-5 col-xxl-4">
             <div className="aside-sticky">
-              {/* Summary card */}
+
+              {/* === AI SUGGESTIONS === */}
+
               <div className="card">
                 <div className="card-body">
-                  <h3 className="mb-3 fw-bold">Summary</h3>
-
-                  <div className="d-flex justify-content-between align-items-center">
-                    <span className="text-muted">Status :</span>
-                    <span
-                      className={`ms-2 fs-10 badge-phoenix badge ${courtfile.status ? "badge-phoenix-success" : "badge-phoenix-secondary"
-                        }`}
+                  {/* Header igual a Payments */}
+                  <div className="d-flex align-items-center justify-content-between">
+                    <h2 className="h3 mb-0 fw-bold">AI Suggestions</h2>
+                    <button
+                      className="btn btn-phoenix-secondary ms-2"
+                      onClick={handleGenerateSuggestions}
+                      disabled={aiLoading}
                     >
-                      {courtfile.status ? "Active" : "Inactive"}
-                    </span>
-                  </div>
-                  <div className="d-flex justify-content-between py-1">
-                    <span className="text-muted">Jurisdiction :</span>
-                    <span>{courtfile.jurisdiction || "—"}</span>
-                  </div>
-                  <div className="d-flex py-1">
-                    <span className="text-muted">Court :</span>
-                    <span className="ms-auto text-end text-break">{courtfile.court || "—"}</span>
+                      {aiLoading ? (
+                        <span className="spinner-border spinner-border-sm" role="status" />
+                      ) : (
+                        <>
+                          <i className="bi bi-arrow-repeat me-1"></i> Reload
+                        </>
+                      )}
+                    </button>
                   </div>
 
                   <div className="border-top my-3"></div>
 
-                  <div className="d-flex justify-content-between py-1">
-                    <span className="text-muted">Documents</span>
-                    <strong>{caseDocuments.length}</strong>
-                  </div>
-                  <div className="d-flex justify-content-between py-1">
-                    <span className="text-muted">Deadlines</span>
-                    <strong>{caseDeadlines.length}</strong>
-                  </div>
-                  <div className="d-flex justify-content-between py-1">
-                    <span className="text-muted">Appointments</span>
-                    <strong>{caseAppointments.length}</strong>
-                  </div>
-                  <div className="d-flex justify-content-between py-1">
-                    <span className="text-muted">Clients</span>
-                    <strong>{caseClients.length}</strong>
-                  </div>
-                  <div className="d-flex justify-content-between py-1">
-                    <span className="text-muted">Payments</span>
-                    <strong>{casePayments.length}</strong>
-                  </div>
+                  {/* Contenido */}
+                  {aiError && <div className="alert alert-danger mb-0">{aiError}</div>}
+
+                  {!aiError && aiLoading && (
+                    <div className="text-muted d-flex align-items-center">
+                      <span className="spinner-border spinner-border-sm me-2" />
+                      Analizando descripción y jurisdicción…
+                    </div>
+                  )}
+
+                  {!aiLoading && !aiError && (!aiSuggestions || aiSuggestions.length === 0) && (
+                    <div className="alert alert-info mb-0">Sin sugerencias por ahora.</div>
+                  )}
+
+                  {!aiLoading && !aiError && Array.isArray(aiSuggestions) && aiSuggestions.length > 0 && (
+                    <div className="list-group list-group-flush">
+                      {aiSuggestions.map((sug, idx) => {
+                        const urg = String(sug.urgency || "medium").toLowerCase();
+                        const urgClass =
+                          urg === "urgent" ? "badge-phoenix-danger" :
+                            urg === "high" ? "badge-phoenix-warning" :
+                              urg === "medium" ? "badge-phoenix-info" :
+                                "badge-phoenix-secondary";
+
+                        return (
+                          <div key={idx} className="list-group-item">
+                            {/* Header item: título + urgencia + kebab arriba */}
+                            <div className="d-flex justify-content-between align-items-start">
+                              <div>
+                                <h5 className="mb-1 fw-semibold">{sug.title || "Sugerencia"}</h5>
+                                <span className={`fs-10 badge-phoenix badge ${urgClass}`}>
+                                  {String(sug.urgency || "MEDIUM").toUpperCase()}
+                                </span>
+                              </div>
+
+                              <div className="dropdown">
+                                <button
+                                  className="btn btn-sm btn-link text-body-tertiary p-0"
+                                  type="button"
+                                  data-bs-toggle="dropdown"
+                                  aria-expanded="false"
+                                >
+                                  <i className="bi bi-three-dots fs-8"></i>
+                                </button>
+                                <ul className="dropdown-menu dropdown-menu-end shadow-sm">
+                                  <li>
+                                    <Link
+                                      className="dropdown-item"
+                                      to="/deadlines/addDeadline"
+                                      state={{
+                                        courtfileId: courtfile.id,
+                                        courtfileNumber: courtfile.case_number,
+                                        courtfileTitle: courtfile.title,
+                                        prefill: { type: "Other", description: sug.title || "" },
+                                        suggestion: sug,
+                                        returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+                                      }}
+                                    >
+                                      <i className="bi bi-calendar2-plus me-2"></i> Deadline
+                                    </Link>
+                                  </li>
+
+                                  <li>
+                                    <Link
+                                      className="dropdown-item"
+                                      to="/appointments/addAppointment"
+                                      state={{
+                                        courtfileId: courtfile.id,
+                                        courtfileNumber: courtfile.case_number,
+                                        courtfileTitle: courtfile.title,
+                                        prefill: { title: sug.title || "", details: sug.reasoning || "" },
+                                        suggestion: sug,
+                                        returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+                                      }}
+                                    >
+                                      <i className="bi bi-clock me-2"></i> Appointment
+                                    </Link>
+                                  </li>
+
+                                  <li>
+                                    <Link
+                                      className="dropdown-item"
+                                      to="/documents/addDocument"
+                                      state={{
+                                        courtfileId: courtfile.id,
+                                        courtfileNumber: courtfile.case_number,
+                                        courtfileTitle: courtfile.title,
+                                        prefill: { title: sug.title || "", content: sug.reasoning || "" },
+                                        suggestion: sug,
+                                        returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+                                      }}
+                                    >
+                                      <i className="bi bi-file-earmark-plus me-2"></i> Document
+                                    </Link>
+                                  </li>
+
+                                  <li><hr className="dropdown-divider" /></li>
+                                  {sug.id && (
+                                    <li>
+                                      <button
+                                        className="dropdown-item text-danger"
+                                        onClick={() => handleArchiveSuggestion(sug.id)}
+                                      >
+                                        <i className="bi bi-archive me-2"></i> Archivar
+                                      </button>
+                                    </li>
+                                  )}
+                                </ul>
+                              </div>
+                            </div>
+
+                            {sug.reasoning && (
+                              <p className="mt-2 mb-2 text-body-secondary small">{sug.reasoning}</p>
+                            )}
+                            {Array.isArray(sug.next_steps) && sug.next_steps.length > 0 && (
+                              <ul className="mb-2 small ps-3">
+                                {sug.next_steps.map((step, i) => <li key={i}>{step}</li>)}
+                              </ul>
+                            )}
+                            <small className="text-body-tertiary">
+                              {sug.legal_basis ? `Fundamento: ${sug.legal_basis}` : ""}
+                              {typeof sug.confidence === "number" ? ` • Conf.: ${(sug.confidence * 100).toFixed(0)}%` : ""}
+                            </small>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Payments card (mismo contenido, movido aquí) */}
+
+              {/* Payments card (queda igual) */}
               <div className="card mt-4">
                 <div className="card-body">
                   <div className="d-flex align-items-center justify-content-between">
@@ -1376,12 +1511,11 @@ export const ViewCourtfileLawyer = () => {
                   </div>
 
                   {loadingPayments && <p className="mt-2">Loading payments…</p>}
-                  {paymentsErr && (
-                    <div className="alert alert-danger mt-2">{paymentsErr}</div>
-                  )}
+                  {paymentsErr && <div className="alert alert-danger mt-2">{paymentsErr}</div>}
                   {!loadingPayments && !paymentsErr && casePayments.length === 0 && (
                     <div className="alert alert-info mt-2">No payments linked.</div>
                   )}
+
                   {!loadingPayments && casePayments.length > 0 && (
                     <div className="table-responsive mt-2">
                       <table className="table table-hover align-middle table-modern">
@@ -1398,13 +1532,13 @@ export const ViewCourtfileLawyer = () => {
                         </thead>
                         <tbody>
                           {casePayments.map((p) => (
-                            <tr key={`${p.id}-${p.relation_id}`}>
+                            <tr key={`${p.id}-${p.relation_id}`}
+                              className="table-row-clickable"
+                              onClick={(e) => goRow(e, viewPath, viewState)}>
                               <td className="text-start ps-2">{p.id}</td>
                               <td>{p.amount}</td>
                               <td>{p.currency}</td>
-                              <td>
-                                <PaymentBadge status={p.status} outline />
-                              </td>
+                              <td><PaymentBadge className="fs-10" status={p.status} outline /></td>
                               <td>{p.means || "—"}</td>
                               <td>{p.paid_at ? new Date(p.paid_at).toLocaleString() : "—"}</td>
                               <td className="text-center">
@@ -1451,7 +1585,6 @@ export const ViewCourtfileLawyer = () => {
                                   </li>
                                 </KebabMenu>
                               </td>
-
                             </tr>
                           ))}
                         </tbody>
@@ -1461,9 +1594,10 @@ export const ViewCourtfileLawyer = () => {
                 </div>
               </div>
 
-              {/* Nota: si querés, meté aquí AI Suggestions en un accordion colapsado */}
+              {/* Si querés, después metemos acá un accordion para “AI Suggestions (historial)”. */}
             </div>
           </div>
+
         </div>
       </div>
     </AppNavsShell>

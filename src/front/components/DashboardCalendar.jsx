@@ -1,24 +1,29 @@
-// DashboardCalendar.jsx
-import Calendar from "react-calendar";
-import { useMemo, useState, useEffect } from "react";
-import { format, isSameDay } from "date-fns";
+// components/calendar/DashboardCalendarWidget.jsx
+import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import "react-calendar/dist/Calendar.css";
-import { es } from "date-fns/locale";
+import { format } from "date-fns";
+import { enUS } from "date-fns/locale";
 
-// ✅ Independiente: sin store. Props opcionales para api/token/urls.
-export default function DashboardCalendar({
+// ⬇️ Ajustá las rutas según tu árbol:
+import CalendarModal from "../pages/CalendarModal";
+import CalendarModalAdd from "../pages/CalendarModalAdd";
+
+// FullCalendar
+import FullCalendar from "@fullcalendar/react";
+import dayGridPlugin from "@fullcalendar/daygrid";
+import timeGridPlugin from "@fullcalendar/timegrid";
+import interactionPlugin from "@fullcalendar/interaction";
+
+
+export default function DashboardCalendarWidget({
   apiBase,
   authToken,
-  getCourtfileUrl
+  height = 420,
+  contentHeight = 420,
 }) {
-  const [selectedDate, setSelectedDate] = useState(new Date());
-
-  // ---------------------- Config ----------------------
+  // ---------------- Config ----------------
   const API = apiBase || import.meta.env.VITE_BACKEND_URL || "";
-  const TZ = "America/Argentina/Buenos_Aires";
 
-  // Intenta encontrar un token si no se pasa por prop
   const token =
     authToken ||
     (() => {
@@ -26,7 +31,6 @@ export default function DashboardCalendar({
         try {
           const v = localStorage.getItem(k) || sessionStorage.getItem(k);
           if (!v) return null;
-          // admite plano o JSON con {token} o {auth:{token}}
           try {
             const parsed = JSON.parse(v);
             if (parsed?.token) return parsed.token;
@@ -48,114 +52,86 @@ export default function DashboardCalendar({
       );
     })();
 
-  const pad2 = (n) => String(n).padStart(2, "0");
+  // ---------------- UI state ----------------
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewName, setViewName] = useState("dayGridMonth"); // "dayGridMonth" | "timeGridWeek"
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const calRef = useRef(null);
 
-  // ---------------- Deadlines ----------------
+  // ---------------- Data state ----------------
   const [deadlines, setDeadlines] = useState([]);
-  const [loadingDeadlines, setLoadingDeadlines] = useState(false);
-  const [deadlinesErr, setDeadlinesErr] = useState("");
-  const [deletingDeadlineRelId, setDeletingDeadlineRelId] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
 
-  const fetchDeadlines = async () => {
-    try {
-      setLoadingDeadlines(true);
-      setDeadlinesErr("");
-      const resp = await fetch(`${API}/api/deadlines-courtfiles`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!resp.ok) {
-        const e = await resp.json().catch(() => ({}));
-        throw new Error(e.error || `HTTP ${resp.status}`);
-      }
-      const data = await resp.json();
-      // ✅ guardo id de la RELACIÓN como relation_id (para DELETE /deadlines-courtfiles/:id)
-      setDeadlines(data.map(d => ({ relation_id: d.id, ...d })));
-    } catch (e) {
-      setDeadlinesErr(e.message || "Error fetching deadlines");
-    } finally {
-      setLoadingDeadlines(false);
-    }
+  // ---------------- Quick-create modal ----------------
+  const [showNewPicker, setShowNewPicker] = useState(false);
+  const [newDateISO, setNewDateISO] = useState("");
+  const toYMD = (d) => {
+    const pad2 = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  };
+  const handleDateClick = (arg) => {
+    const iso = arg.dateStr || toYMD(arg.date);
+    setNewDateISO(iso);
+    setShowNewPicker(true);
   };
 
-  // ---------------- Appointments ----------------
-  const [appointments, setAppointments] = useState([]);
-  const [loadingAppointments, setLoadingAppointments] = useState(false);
-  const [appointmentsErr, setAppointmentsErr] = useState("");
-  const [deletingApptRelId, setDeletingApptRelId] = useState(null);
+  // ---------------- Fetch ----------------
+  const fetchDeadlines = async () => {
+    const resp = await fetch(`${API}/api/deadlines-courtfiles`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!resp.ok) {
+      const e = await resp.json().catch(() => ({}));
+      throw new Error(e.error || `HTTP ${resp.status}`);
+    }
+    const data = await resp.json();
+    return data.map((d) => ({ relation_id: d.id, ...d }));
+  };
 
   const fetchAppointments = async () => {
-    try {
-      setLoadingAppointments(true);
-      setAppointmentsErr("");
-      const resp = await fetch(`${API}/api/appointments-courtfiles`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!resp.ok) {
-        const e = await resp.json().catch(() => ({}));
-        throw new Error(e.error || `HTTP ${resp.status}`);
-      }
-      const data = await resp.json();
-      // ✅ guardo id de la RELACIÓN como relation_id
-      setAppointments(data.map(a => ({ relation_id: a.id, ...a })));
-    } catch (e) {
-      setAppointmentsErr(e.message || "Error fetching appointments");
-    } finally {
-      setLoadingAppointments(false);
+    const resp = await fetch(`${API}/api/appointments-courtfiles`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!resp.ok) {
+      const e = await resp.json().catch(() => ({}));
+      throw new Error(e.error || `HTTP ${resp.status}`);
     }
+    const data = await resp.json();
+    return data.map((a) => ({ relation_id: a.id, ...a }));
   };
 
-
-  // ---------------- Delete ----------------
-  const handleDeleteRelation = async (ev) => {
-    if (!window.confirm(`¿Eliminar este vínculo de ${ev.type}?`)) return;
-
-    const baseUrl =
-      ev.type === "deadline"
-        ? `${API}/api/deadlines-courtfiles`
-        : `${API}/api/appointments-courtfiles`;
-
-    try {
-      if (ev.type === "deadline") setDeletingDeadlineRelId(ev.relationId);
-      if (ev.type === "appointment") setDeletingApptRelId(ev.relationId);
-
-      const resp = await fetch(`${baseUrl}/${ev.relationId}`, {
-        method: "DELETE",
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!resp.ok) {
-        const e = await resp.json().catch(() => ({}));
-        throw new Error(e.error || `HTTP ${resp.status}`);
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        setErr("");
+        const [dl, ap] = await Promise.all([fetchDeadlines(), fetchAppointments()]);
+        if (!mounted) return;
+        setDeadlines(dl);
+        setAppointments(ap);
+      } catch (e) {
+        if (!mounted) return;
+        setErr(e.message || "Error fetching events");
+      } finally {
+        if (!mounted) return;
+        setLoading(false);
       }
-
-      // refresco la lista correspondiente
-      if (ev.type === "deadline") await fetchDeadlines();
-      if (ev.type === "appointment") await fetchAppointments();
-    } catch (err) {
-      alert(err.message || "Error deleting relation");
-    } finally {
-      if (ev.type === "deadline") setDeletingDeadlineRelId(null);
-      if (ev.type === "appointment") setDeletingApptRelId(null);
-    }
-  };
-
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [API, token]);
 
   // ---------------- Helpers ----------------
-  const pick = (obj, keyCandidates, fallback = undefined) => {
-    for (const k of keyCandidates) {
-      const v = k
-        .split(".")
-        .reduce((acc, part) => (acc ? acc[part] : undefined), obj);
-      if (v !== undefined && v !== null) return v;
-    }
-    return fallback;
-  };
-
+  const pad2 = (n) => String(n).padStart(2, "0");
   const parseDateTimeLocal = (dateStr, timeStr) => {
     if (!dateStr) return null;
     const [y, m, d] = String(dateStr).split("-").map(Number);
-    let hh = 0,
-      mm = 0,
-      ss = 0;
+    let hh = 0, mm = 0, ss = 0;
     if (timeStr) {
       const parts = String(timeStr).split(":").map(Number);
       hh = parts[0] ?? 0;
@@ -166,336 +142,263 @@ export default function DashboardCalendar({
     return isNaN(dt) ? null : dt;
   };
 
-  const dateKeyLocal = (d) =>
-    `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-
-  const fmtTimeRange = (start, end) => {
-    const cut = (t) => (t ? String(t).slice(0, 5) : "");
-    if (start && end) return `${cut(start)}–${cut(end)}`;
-    if (start) return cut(start);
-    return "";
+  // ---------------- Modal handlers ----------------
+  const handleEventClick = (info) => {
+    info.jsEvent.preventDefault();
+    setSelectedEvent(info.event);
+    setIsModalOpen(true);
   };
 
-  const toGoogleDates = (start, end, allDay) => {
-    if (allDay) {
-      const ymd = (d) =>
-        `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`;
-      return `${ymd(start)}/${ymd(end)}`; // end exclusivo
-    } else {
-      const toUTC = (d) =>
-        d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
-      return `${toUTC(start)}/${toUTC(end)}`;
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedEvent(null);
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!selectedEvent) return;
+    const { type, relationId } = selectedEvent.extendedProps;
+    const endpoint = type === "deadline" ? "deadlines-courtfiles" : "appointments-courtfiles";
+
+    if (!window.confirm(`Are you sure you want to delete this ${type}?`)) return;
+
+    try {
+      const response = await fetch(`${API}/api/${endpoint}/${relationId}`, {
+        method: "DELETE",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+
+      if (response.ok) {
+        const [dl, ap] = await Promise.all([fetchDeadlines(), fetchAppointments()]);
+        setDeadlines(dl);
+        setAppointments(ap);
+        handleCloseModal();
+      } else {
+        throw new Error("Failed to delete event");
+      }
+    } catch (error) {
+      console.error("Error deleting event:", error);
+      alert("Error deleting event");
     }
   };
 
-  const courtfileUrl = (id) =>
-    typeof getCourtfileUrl === "function"
-      ? getCourtfileUrl(id)
-      : `/courtfiles/ViewCourtfileLawyer/${id}`;
+  // ---------------- Normalización → FullCalendar events (igual que Calendar) ----------------
+  const fcEvents = useMemo(() => {
+    const normD = (deadlines || [])
+      .map((rel) => {
+        const relationId = rel.relation_id ?? rel.id ?? null;
+        const dateStr = rel.deadline_date || rel.due_date || rel.date || null;
+        const timeStr = rel.deadline_hour || rel.due_time || rel.time || null;
 
-  const buildGoogleCalUrl = (ev) => {
-    const text = `${ev.title} — ${ev.type === "deadline" ? "Deadline" : "Appointment"}`;
-    const detailsParts = [];
-    if (ev.courtfileNumber) detailsParts.push(`Courtfile #${ev.courtfileNumber}`);
-    if (ev.courtfileTitle) detailsParts.push(ev.courtfileTitle);
-    if (ev.courtfileId) {
-      const cfUrl = `${window.location.origin}${courtfileUrl(ev.courtfileId)}`;
-      detailsParts.push(`Link: ${cfUrl}`);
-    }
-    const details = detailsParts.join(" · ");
-    const dates = toGoogleDates(ev.start, ev.end, !!ev.allDay);
-    const params = new URLSearchParams({
-      action: "TEMPLATE",
-      text,
-      details,
-      dates,
-      ctz: TZ
-    }).toString();
-    return `https://calendar.google.com/calendar/render?${params}`;
-  };
+        const date = parseDateTimeLocal(dateStr, timeStr);
+        if (!date) return null;
 
-  // ---------------- Normalización (sin store) ----------------
-  const events = useMemo(() => {
-    const normD = (deadlines || []).map((rel) => {
+        const allDay = !timeStr;
+        const end = allDay
+          ? new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1)
+          : new Date(date.getTime() + 60 * 60 * 1000);
 
-      const relationId = rel.relation_id ?? rel.id ?? null;
+        return {
+          id: `dead-${rel.deadline_id ?? relationId ?? Math.random()}`,
+          title: rel.deadline_type || rel.type || rel.title || rel.name || "Deadline",
+          start: date,
+          end,
+          allDay,
+          className: "lxq-deadline",
+          extendedProps: {
+            type: "deadline",
+            relationId,
+            recordId: rel.deadline_id ?? null,
+            time: timeStr ? String(timeStr).slice(0, 5) : "",
+            priority: rel.priority || rel.deadline_priority || "",
+            courtfileId: rel.courtfile_id ?? null,
+            courtfileTitle: rel.courtfile_title || "",
+            courtfileNumber: rel.courtfile_number || "",
+          },
+        };
+      })
+      .filter(Boolean);
 
-      const dateStr = rel.deadline_date || rel.due_date || rel.date || null;
-      const timeStr = rel.deadline_hour || rel.due_time || rel.time || null;
+    const normA = (appointments || [])
+      .map((rel) => {
+        const relationId = rel.relation_id ?? rel.id ?? null;
 
-      const date = parseDateTimeLocal(dateStr, timeStr);
-      if (!date) return null;
+        const apptDate = rel.appointment_date || rel.date || null;
+        const startsAt = rel.starts_at || rel.start_time || rel.time || null;
+        const endsAt = rel.ends_at || rel.end_time || null;
 
-      const allDay = !timeStr;
-      const end = allDay
-        ? new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1)
-        : new Date(date.getTime() + 60 * 60 * 1000);
+        const date = parseDateTimeLocal(apptDate, startsAt);
+        if (!date) return null;
 
-      return {
-        id: `dead-${rel.deadline_id ?? relationId ?? Math.random()}`,
-        relationId,
-        recordId: rel.deadline_id ?? null,
+        const end = endsAt
+          ? parseDateTimeLocal(apptDate, endsAt)
+          : new Date(date.getTime() + 60 * 60 * 1000);
+        const allDay = !startsAt && !endsAt;
 
-        type: "deadline",
-        title: rel.deadline_type || rel.type || rel.title || rel.name || "Deadline",
-
-        date,
-        start: date,
-        end,
-        allDay,
-        time: timeStr ? String(timeStr).slice(0, 5) : "", // “HH:MM” para UI
-
-        courtfileId: rel.courtfile_id ?? null,
-        courtfileTitle: rel.courtfile_title || "",
-        courtfileNumber: rel.courtfile_number || "",
-      };
-    }).filter(Boolean);
-
-
-    const normA = (appointments || []).map((rel) => {
-
-      const relationId = rel.relation_id ?? rel.id ?? null;
-
-      const apptDate = rel.appointment_date || rel.date || null;   // "2025-10-03"
-      const startsAt = rel.starts_at || rel.start_time || rel.time || null; // "03:45"
-      const endsAt = rel.ends_at || rel.end_time || null;             // "04:15"
-
-      const date = parseDateTimeLocal(apptDate, startsAt);
-      if (!date) return null;
-
-      const end = endsAt
-        ? parseDateTimeLocal(apptDate, endsAt)
-        : new Date(date.getTime() + 60 * 60 * 1000);
-      const allDay = !startsAt && !endsAt;
-
-      return {
-        id: `appt-${rel.appointment_id ?? relationId ?? Math.random()}`,
-        relationId,                // para DELETE /appointments-courtfiles/:id
-        recordId: rel.appointment_id ?? null,
-
-        type: "appointment",
-        title: rel.appointment_title || rel.title || rel.subject || "Appointment",
-
-        date,
-        start: date,
-        end,
-        allDay,
-        time: fmtTimeRange(startsAt, endsAt),
-
-        courtfileId: rel.courtfile_id ?? null,
-        courtfileTitle: rel.courtfile_title || "",
-        courtfileNumber: rel.courtfile_number || ""
-      };
-    }).filter(Boolean);
+        return {
+          id: `appt-${rel.appointment_id ?? relationId ?? Math.random()}`,
+          title: rel.appointment_title || rel.title || rel.subject || "Appointment",
+          start: date,
+          end,
+          allDay,
+          className: "lxq-appointment",
+          extendedProps: {
+            type: "appointment",
+            relationId,
+            recordId: rel.appointment_id ?? null,
+            time: (startsAt || endsAt)
+              ? `${(startsAt || "").slice(0, 5)}${endsAt ? "–" + String(endsAt).slice(0, 5) : ""}`
+              : "",
+            courtfileId: rel.courtfile_id ?? null,
+            courtfileTitle: rel.courtfile_title || "",
+            courtfileNumber: rel.courtfile_number || "",
+            location: rel.appointment_location || "",
+            details: rel.appointment_details || "",
+          },
+        };
+      })
+      .filter(Boolean);
 
     const all = [...normD, ...normA];
-    all.sort((x, y) => x.date - y.date);
+    all.sort((a, b) => a.start - b.start);
     return all;
-  }, [appointments, deadlines]);
+  }, [deadlines, appointments]);
 
-  // ---------------- Agrupar por día ----------------
-  const eventsByDay = useMemo(() => {
-    const map = new Map();
-    for (const ev of events) {
-      const key = dateKeyLocal(ev.date);
-      if (!map.has(key)) map.set(key, []);
-      map.get(key).push(ev);
-    }
-    return map;
-  }, [events]);
+  // ---------------- Derived labels ----------------
+  const dayName = useMemo(() => format(currentDate, "EEEE", { locale: enUS }), [currentDate]);
+  const dayStamp = useMemo(() => format(currentDate, "dd MMM, yyyy", { locale: enUS }), [currentDate]);
+  const monthTitle = useMemo(() => format(currentDate, "LLLL yyyy", { locale: enUS }), [currentDate]);
+  // ---------------- Calendar API helpers ----------------
+  const api = () => calRef.current?.getApi();
+  const goToday = () => {
+    api()?.today();
+    setCurrentDate(api()?.getDate() ?? new Date());
+  };
+  const goPrev = () => {
+    api()?.prev();
+    setCurrentDate(api()?.getDate() ?? new Date());
+  };
+  const goNext = () => {
+    api()?.next();
+    setCurrentDate(api()?.getDate() ?? new Date());
+  };
+  const changeView = (v) => {
+    setViewName(v);
+    api()?.changeView(v);
+    setCurrentDate(api()?.getDate() ?? new Date());
+  };
 
-  const selectedDayEvents = useMemo(() => {
-    const key = dateKeyLocal(selectedDate);
-    return eventsByDay.get(key) || [];
-  }, [selectedDate, eventsByDay]);
-
-  // ---------------- Efecto: carga inicial ----------------
-  useEffect(() => {
-    fetchDeadlines();
-    fetchAppointments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [API, token]); // se recarga si cambia api/token
-
-  // helper opcional arriba del return
-  const eventBadgeClass = (t) =>
-    t === "deadline"
-      ? "badge badge-phoenix badge-phoenix-danger px-3 py-1 fs-10"
-      : "badge badge-phoenix badge-phoenix-primary  px-3 py-1 fs-10";
-
-  // ---------------- Render ----------------
   return (
     <div className="card border-0">
       <div className="card-body">
-        <div className="d-flex align-items-center justify-content-between mb-2">
+        {/* Mini topbar (compacta para dashboard) */}
+        <div className="row g-0 align-items-center mb-3">
+          <div className="col-12 col-md-6">
+            <h4 className="mb-0 text-body-emphasis fw-bold fs-6">
+              <span className="calendar-day d-block d-md-inline mb-1">{dayName}</span>
+              <span className="px-3 fw-thin text-body-quaternary d-none d-md-inline">|</span>
+              <span className="d-inline-block">{' '}{dayStamp}</span>
+            </h4>
+          </div>
 
-          <div className="d-flex align-items-center w-100 mb-3">
-            <div className="d-flex justify-content-start">
-              <button
-                className="px-3 text-body text-decoration-none btn btn-link"
-                onClick={() => setSelectedDate(new Date())}
-              >
+          <div className="col-12 col-md-6 d-flex justify-content-end gap-2 mt-2 mt-md-0">
+            <p className="fs-9">Add appointments and deadlines in just one click</p>
+          </div>
+        </div>
+
+        {/* Sub-toolbar "phoenix-like" compacta */}
+        <div className="mx-n3 px-3 border-y border-translucent">
+          <div className="row gy-2 gx-0 justify-content-between py-2 align-items-center">
+            {/* Left: Today */}
+            <div className="col-6 col-md-auto d-flex align-items-center">
+              <button type="button" className="btn btn-phoenix-primary btn-sm px-4" onClick={goToday}>
                 Today
               </button>
             </div>
 
-            <div className="ms-auto d-flex justify-content-end gap-2">
-              <Link to="/appointments/addAppointment" className="btn btn-phoenix-primary">
-                <i className="bi bi-plus-lg me-1" />
-                Add Appointment
-              </Link>
-              <Link to="/deadlines/addDeadline" className="btn btn-phoenix-primary">
-                <i className="bi bi-plus-lg me-1" />
-                Add Deadline
-              </Link>
+            {/* Center: prev | Month YYYY | next */}
+            <div className="col-12 col-md-auto d-flex align-items-center justify-content-center">
+              <button type="button" className="btn btn-icon" onClick={goPrev} aria-label="Previous">
+                <i className="fa-solid fa-chevron-left" />
+              </button>
+
+              <h3 className="month-title mb-0 px-2 fw-bold fs-6">{monthTitle}</h3>
+
+              <button type="button" className="btn btn-icon" onClick={goNext} aria-label="Next">
+                <i className="fa-solid fa-chevron-right" />
+              </button>
+            </div>
+
+            {/* Right: Month | Week */}
+            <div className="col-6 col-md-auto d-flex justify-content-end">
+              <div className="btn-group btn-group-sm" role="group">
+                <button
+                  type="button"
+                  className={`btn btn-phoenix-secondary ${viewName === "dayGridMonth" ? "active" : ""}`}
+                  onClick={() => changeView("dayGridMonth")}
+                >
+                  Month
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-phoenix-secondary ${viewName === "timeGridWeek" ? "active" : ""}`}
+                  onClick={() => changeView("timeGridWeek")}
+                >
+                  Week
+                </button>
+              </div>
             </div>
           </div>
-
-
         </div>
 
-        {(loadingDeadlines || loadingAppointments) && (
-          <div className="small text-muted mb-2">
-            Cargando eventos…
-          </div>
-        )}
-        {(deadlinesErr || appointmentsErr) && (
-          <div className="alert alert-warning py-2">
-            {deadlinesErr || appointmentsErr}
-          </div>
-        )}
 
-        <Calendar
-          value={selectedDate}
-          onClickDay={(d) => setSelectedDate(d)}
-          formatMonthYear={(locale, date) =>
-            format(date, "MMMM yyyy", { locale: es }).replace(/^\p{Ll}/u, (c) => c.toUpperCase())
-          }
-          tileContent={({ date, view }) => {
-            if (view !== "month") return null;
-            const key = dateKeyLocal(date);
-            const dayEvents = eventsByDay.get(key) || [];
-            if (dayEvents.length === 0) return null;
+        {/* Estado */}
+        {loading && <div className="small text-muted mb-2">Cargando eventos…</div>}
+        {err && !loading && <div className="alert alert-warning py-2">{err}</div>}
 
-            const hasDeadline = dayEvents.some((ev) => ev.type === "deadline");
-            const dotColor = hasDeadline ? "#dc3545" : "#0d6efd";
-            const tooltipLabel = hasDeadline ? "Deadline" : "Appointment";
-
-            return (
-              <div style={{ marginTop: 2, display: "flex", justifyContent: "center" }}>
-                <span
-                  title={`${tooltipLabel}: ${dayEvents.length} event${dayEvents.length === 1 ? "" : "s"}`}
-                  style={{
-                    width: 7,
-                    height: 7,
-                    borderRadius: "50%",
-                    display: "inline-block",
-                    background: dotColor,
-                    boxShadow: "0 0 0 1px #fff"
-                  }}
-                />
-              </div>
-            );
+        {/* Calendar (compacto) */}
+        <FullCalendar
+          ref={calRef}
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+          initialView={viewName}
+          headerToolbar={false}
+          height={height}
+          contentHeight={contentHeight}
+          firstDay={1}
+          nowIndicator={true}
+          editable={false}
+          selectable={false}
+          navLinks={false}
+          dayHeaderFormat={{ weekday: "short" }}
+          timeZone="local"
+          events={fcEvents}
+          eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
+          datesSet={(arg) => setCurrentDate(arg.start ?? new Date())}
+          eventDisplay="list-item"
+          eventClick={handleEventClick}
+          eventClassNames={(arg) => (arg.event.className ? [arg.event.className] : [])}
+          eventDidMount={(info) => {
+            const ep = info.event.extendedProps || {};
+            const cf = ep.courtfileNumber ? ` · #${ep.courtfileNumber}` : "";
+            info.el.title = `${info.event.title} (${ep.type || "event"})${cf}`;
           }}
-          tileClassName={({ date }) =>
-            isSameDay(date, selectedDate) ? "rc-day-selected" : undefined
-          }
+          dateClick={handleDateClick}
         />
 
-        {/* Lista del día seleccionado */}
-        <div className="mt-3">
-          <div className="d-flex align-items-center justify-content-between">
-            <h6 className="mb-2">Events for {format(selectedDate, "dd/MM/yyyy")}</h6>
-            <small className="text-muted">
-              {selectedDayEvents.length} event{selectedDayEvents.length === 1 ? "" : "s"}
-            </small>
-          </div>
-
-          {selectedDayEvents.length === 0 && (
-            <div className="text-center text-muted py-4 border rounded-3">
-              <i className="bi bi-calendar2-x fs-4 d-block mb-1"></i>
-              No events on this day
-            </div>
-          )}
-
-          <ul className="list-unstyled event-list">
-            {selectedDayEvents.map((ev) => (
-              <li key={ev.id} className="event-item pb-0 mb-0">
-                <div className="p-3 rounded-3 border bg-white hover-elevate d-flex align-items-center justify-content-between">
-                  <div className="me-3">
-                    <div className="d-flex flex-column fs-8">
-                      <span className={eventBadgeClass(ev.type)}>
-                        {ev.type === "deadline" ? "Deadline" : "Appointment"}
-                      </span>
-                      <span className="rc-event-title mt-2">{ev.title}</span>
-                    </div>
-                    <div className="rc-event-time mt-1" style={{ fontSize: 13 }}>
-                      {ev.time ? (
-                        <span>
-                          <i className="bi bi-clock me-1" />{" "}
-                          <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" }}>
-                            Time: {ev.time}
-                          </span>
-                        </span>
-                      ) : (
-                        "No defined time"
-                      )}
-                    </div>
-                    <div className="mt-2">
-                      <a
-                        href={buildGoogleCalUrl(ev)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        
-                        title="Agregar a Google Calendar"
-                      >
-                        <i className="bi bi-google me-1" />
-                        
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="text-end">
-                    {ev.courtfileId ? (
-                      <Link
-                        to={courtfileUrl(ev.courtfileId)}
-                        className="btn btn-phoenix btn-phoenix-secondary d-flex flex-column align-items-center"
-                        title="Ver expediente"
-                        style={{ minWidth: 160 }}
-                      >
-                        {/* NÚMERO ARRIBA, EN NEGRITA */}
-                        <span className="fw-semibold">
-                          {ev.courtfileNumber ? `#${ev.courtfileNumber}` : "s/n"}
-                        </span>
-
-                        {/* TÍTULO ABAJO, MÁS CHICO Y TRUNCADO */}
-                        <small className="text-muted text-truncate" style={{ maxWidth: "100%" }}>
-                          {ev.courtfileTitle || "Sin título"}
-                        </small>
-                      </Link>
-                    ) : (
-                      <div className="d-flex flex-column align-items-end">
-                        <span className="fw-semibold">s/c</span>
-                        <small className="text-muted">Sin courtfile</small>
-                      </div>
-                    )}
-
-                    <button
-                      className="btn btn-phoenix btn-phoenix-danger mt-5"
-                      onClick={() => handleDeleteRelation(ev)}
-                      disabled={
-                        (ev.type === "deadline" && deletingDeadlineRelId === ev.relationId) ||
-                        (ev.type === "appointment" && deletingApptRelId === ev.relationId)
-                      }
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {/* Modal detalle */}
+        <CalendarModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          event={selectedEvent}
+          onDelete={handleDeleteEvent}
+        />
+        {/* Modal quick create */}
+        <CalendarModalAdd
+          isOpen={showNewPicker}
+          onClose={() => setShowNewPicker(false)}
+          dateISO={newDateISO}
+        />
       </div>
     </div>
   );
 }
+
