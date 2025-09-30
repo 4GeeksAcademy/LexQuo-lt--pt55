@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import MapComponent from "../../components/Map/MapComponent";
 import LocationAutocomplete from "../../components/Map/LocationAutocomplete";
 import AppNavsShell from "../../components/AppNavsShell";
@@ -16,7 +16,7 @@ export const AddAppointment = () => {
   const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
   const returnTo = location.state?.returnTo || "/appointments";
   const suggestion = location.state?.suggestion || null;
-  const preselectedDate = location.state?.date || ""; 
+  const preselectedDate = location.state?.date || "";
 
   const token = store?.auth?.token;
   const role = (store?.me?.role || "").toLowerCase();
@@ -60,10 +60,11 @@ export const AddAppointment = () => {
       try {
         setLoadingCases(true);
 
+        // Si ya viene preseleccionado, solo asegurar datos del CF
         if (preselectedCourtfileId) {
           if (!preselectedCf) {
             const r = await fetch(`${API}/api/courtfiles/${preselectedCourtfileId}`, {
-              headers: { Authorization: `Bearer ${token}` }
+              headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
             });
             if (r.ok) {
               const d = await r.json();
@@ -74,20 +75,31 @@ export const AddAppointment = () => {
           return;
         }
 
-        const endpoint = role === "lawyer"
-          ? `${API}/api/lawyers-courtfiles`
-          : `${API}/api/courtfiles`;
-        const headers = { Authorization: `Bearer ${token}` };
-        const resp = await fetch(endpoint, { headers });
+        const endpoint =
+          role === "lawyer"
+            ? `${API}/api/lawyers-courtfiles?expand=courtfile`
+            : `${API}/api/courtfiles`;
+
+        const resp = await fetch(endpoint, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" }
+        });
         if (!resp.ok) {
           const e = await resp.json().catch(() => ({}));
           throw new Error(e.error || `HTTP ${resp.status}`);
         }
         const data = await resp.json();
-        const mapped = role === "lawyer"
-          ? data.map(r => ({ id: r.courtfile.id, number: r.courtfile.case_number, title: r.courtfile.title }))
-          : data.map(cf => ({ id: cf.id, number: cf.case_number, title: cf.title }));
-        setMyCases(mapped);
+
+        // Map robusto (soporta {courtfile:{...}} o plano)
+        const mapped =
+          role === "lawyer"
+            ? data.map(r => ({
+              id: r.courtfile?.id ?? r.courtfile_id ?? r.id,
+              number: r.courtfile?.case_number ?? r.case_number,
+              title: r.courtfile?.title ?? r.title
+            }))
+            : data.map(cf => ({ id: cf.id, number: cf.case_number, title: cf.title }));
+
+        setMyCases(mapped.filter(x => x?.id));
       } catch (err) {
         setError(err.message || "Error fetching courtfiles");
       } finally {
@@ -212,50 +224,120 @@ export const AddAppointment = () => {
     : times15;
 
 
+
+  const crumbs = useMemo(() => {
+    const arr = [
+      { label: "Dashboard", to: "/dashboard" },
+      { label: "Appointments", to: "/appointments" },
+    ];
+
+    if (preselectedCourtfileId) {
+      arr.push({
+        label: `CF ${preselectedCf?.case_number || preselectedCourtfileId}`,
+        to: `/courtfiles/ViewCourtfileLawyer/${preselectedCourtfileId}`,
+      });
+    }
+
+    arr.push({ label: "Add", to: null }); // current page
+    return arr;
+  }, [preselectedCourtfileId, preselectedCf?.case_number]);
+
   return (
-   <AppNavsShell>
-  <div className="container add-page">
-    <div className="row">
-      <div className="col-lg-10 col-xl-10 p-0 ps-4 ">
-        {/* Header */}
-        <div className="d-flex justify-content-between mb-4">
-          <h1 className="display-5 fw-bold mb-0">Add New Appointment</h1>
-          <Link to={returnTo} className="px-3 text-body text-decoration-none btn btn-link">
-            <i className="bi bi-arrow-left me-1" />
-            Back
-          </Link>
-        </div>
+    <AppNavsShell>
+      <div className="container add-page">
+        <div className="row">
+          <div className="col-lg-10 col-xl-10 p-0 ps-4 ">
+            {/* Breadcrumb */}
+            <nav aria-label="breadcrumb" className="mb-4">
+              <ol className="breadcrumb small mb-0">
+                {crumbs.map((c, i) => {
+                  const isLast = i === crumbs.length - 1;
+                  return (
+                    <li
+                      key={i}
+                      className={`breadcrumb-item ${isLast ? "active" : ""}`}
+                      {...(isLast ? { "aria-current": "page" } : {})}
+                    >
+                      {isLast || !c.to ? (
+                        <span className="text-body">{c.label}</span>
+                      ) : (
+                        <Link to={c.to} state={{ returnTo }} className="text-decoration-none">
+                          {c.label}
+                        </Link>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </nav>
+            {/* Header */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h1 className="display-5 fw-bold mb-0">Add New Appointment</h1>
+              <div className="d-flex gap-2">
+                <Link
+                  to={returnTo}
+                  className="btn btn-phoenix btn-phoenix-secondary"
+                >
+                  Cancel
+                </Link>
+                <button
+                  type="submit"
+                  form="appointmentForm" // id del form
+                  className="btn btn-phoenix btn-phoenix-primary"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm me-2"
+                        role="status"
+                      />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-plus-circle me-2" />
+                      Create Appointment
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
 
-        {/* Courtfile context / selector */}
-        {preselectedCourtfileId ? (
-          <span className="badge bg-dark mt-1 mb-3">
-            Related to Courtfile {preselectedCf?.case_number || "—"}
-            {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
-          </span>
-        ) : (
-          <div className="form-floating mb-3">
-            <select
-              className="form-select form-control-ux"
-              id="courtfile_id"
-              name="courtfile_id"
-              value={formData.courtfile_id}
-              onChange={handleInputChange}
-              required
-              disabled={loading || loadingCases}
-            >
-              <option value=""></option>
-              {myCases.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.number} — {c.title}
-                </option>
-              ))}
-            </select>
-            <label htmlFor="courtfile_id">Link to Courtfile *</label>
-          </div>
-        )}
 
-        {/* Card contenedora */}
-        
+            {/* Courtfile context / selector */}
+            {preselectedCourtfileId ? (
+              <>
+                <span className="badge badge-phoenix-secondary mb-3">
+                  Related to Courtfile {preselectedCf?.case_number || preselectedCourtfileId}
+                  {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
+                </span>
+                <input type="hidden" name="courtfile_id" value={preselectedCourtfileId} />
+              </>
+            ) : (
+              <div className="form-floating mb-3">
+                <select
+                  className="form-select form-control-ux"
+                  id="courtfile_id"
+                  name="courtfile_id"
+                  value={formData.courtfile_id}
+                  onChange={handleInputChange}
+                  required
+                  disabled={loading || loadingCases}
+                >
+                  <option value=""></option>
+                  {myCases.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.number} — {c.title}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="courtfile_id">Link to Courtfile *</label>
+              </div>
+            )}
+
+            {/* Card contenedora */}
+
 
             {suggestion && (
               <div className="alert alert-info">
@@ -311,111 +393,106 @@ export const AddAppointment = () => {
                 <div className="form-text">Search for a location or drag the marker on the map</div>
               </div>
 
-              {/* DETAILS */}
-              <div className="form-floating mb-4">
-                <textarea
-                  className="form-control form-control-ux"
-                  id="details"
-                  name="details"
-                  placeholder=" "
-                  style={{ height: 120 }}
-                  value={formData.details}
-                  onChange={handleInputChange}
-                  disabled={loading}
-                />
-                <label htmlFor="details">Add details</label>
-              </div>
+              {/* Fecha/Horas (izq) + Mapa (der) */}
+              <div className="row g-4 align-items-start">
+                {/* IZQUIERDA: Fecha + Horas */}
+                <div className="col-md-6 order-2 order-md-1">
+                  <div className="row g-3">
+                    <div className="col-12">
+                      <div className="form-floating">
+                        <input
+                          type="date"
+                          className="form-control form-control-ux"
+                          id="date"
+                          name="date"
+                          placeholder=" "
+                          value={formData.date}
+                          onChange={handleInputChange}
+                          required
+                          disabled={loading}
+                        />
+                        <label htmlFor="date">Date *</label>
+                      </div>
+                    </div>
 
-              {/* MAPA */}
-              <div className="mb-4">
-                <label className="form-label form-label-ux">Map</label>
-                <MapComponent
-                  position={mapPosition}
-                  onPositionChange={handleMapPositionChange}
-                  readonly={false}
-                />
-                {formData.latitud && formData.longitud && (
-                  <div className="form-text">
-                    Coordenadas: {formData.latitud?.toFixed(6)}, {formData.longitud?.toFixed(6)}
-                  </div>
-                )}
-              </div>
+                    <div className="col-6">
+                      <div className="form-floating">
+                        <select
+                          className="form-select form-control-ux"
+                          id="starts_at"
+                          value={formData.starts_at || ""}
+                          onChange={handleStartSelect}
+                          required
+                          disabled={loading}
+                        >
+                          <option value=""></option>
+                          {times15.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                        <label htmlFor="starts_at">Starts at *</label>
+                      </div>
+                    </div>
 
-              {/* FECHA + HORAS (grid como el ejemplo) */}
-              <div className="row g-3">
-                <div className="col-md-4">
-                  <div className="form-floating">
-                    <input
-                      type="date"
-                      className="form-control form-control-ux"
-                      id="date"
-                      name="date"
-                      placeholder=" "
-                      value={formData.date}
-                      onChange={handleInputChange}
-                      required
-                      disabled={loading}
-                    />
-                    <label htmlFor="date">Date *</label>
+                    <div className="col-6">
+                      <div className="form-floating">
+                        <select
+                          className="form-select form-control-ux"
+                          id="ends_at"
+                          value={formData.ends_at || ""}
+                          onChange={handleEndSelect}
+                          required
+                          disabled={loading}
+                        >
+                          <option value=""></option>
+                          {endOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                        <label htmlFor="ends_at">Ends at *</label>
+                      </div>
+                    </div>
+                    {/* DETAILS */}
+                    <div className="form-floating mb-4">
+                      <textarea
+                        className="form-control form-control-ux"
+                        id="details"
+                        name="details"
+                        placeholder=" "
+                        style={{ height: 120 }}
+                        value={formData.details}
+                        onChange={handleInputChange}
+                        disabled={loading}
+                      />
+                      <label htmlFor="details">Add details</label>
+                    </div>
                   </div>
+
                 </div>
 
-                <div className="col-md-4">
-                  <div className="form-floating">
-                    <select
-                      className="form-select form-control-ux"
-                      id="starts_at"
-                      value={formData.starts_at || ""}
-                      onChange={handleStartSelect}
-                      required
-                      disabled={loading}
-                    >
-                      <option value=""></option>
-                      {times15.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                    <label htmlFor="starts_at">Starts at *</label>
+                {/* DERECHA: Mapa */}
+                <div className="col-md-6 order-1 order-md-2">
+                  <div className="ratio ratio-4x3"> {/* mantiene proporción */}
+                    <div className="w-100 h-100 rounded-3 overflow-hidden">
+                      <MapComponent
+                        position={mapPosition}
+                        onPositionChange={handleMapPositionChange}
+                        readonly={false}
+                      />
+                    </div>
                   </div>
-                </div>
-
-                <div className="col-md-4">
-                  <div className="form-floating">
-                    <select
-                      className="form-select form-control-ux"
-                      id="ends_at"
-                      value={formData.ends_at || ""}
-                      onChange={handleEndSelect}
-                      required
-                      disabled={loading}
-                    >
-                      <option value=""></option>
-                      {endOptions.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                    <label htmlFor="ends_at">Ends at *</label>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="d-flex gap-2 justify-content-end mt-4">
-                <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary">Cancel</Link>
-                <button type="submit" className="btn btn-phoenix btn-phoenix-primary" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-plus-circle me-2" />
-                      Create Appointment
-                    </>
+                  {formData.latitud && formData.longitud && (
+                    <div className="form-text mt-2">
+                      Coordenadas: {formData.latitud?.toFixed(6)}, {formData.longitud?.toFixed(6)}
+                    </div>
                   )}
-                </button>
+                </div>
+
               </div>
+
+
+
+
             </form>
           </div>
         </div>
-      </div>
- </AppNavsShell>
-);
+      </div >
+    </AppNavsShell >
+  );
 }

@@ -86,36 +86,52 @@ export const ViewPayment = () => {
     if (paymentId) fetchPayment();
   }, [paymentId, API, token]);
 
-  const handleDelete = async (payment) => {
-    if (!window.confirm("Are you sure you want to delete this payment?")) return;
-    try {
-      // ✅ Admin borra el payment (id); Lawyer/Client borran la relación (relation_id)
-      const endpoint =
-        role === "admin_user"
-          ? `${API}/api/payments/${payment.id}`
-          : `${API}/api/payments-courtfile/${payment.relation_id}`;
+  const handleDelete = async (payment, e) => {
+  e?.stopPropagation?.();
 
-      const resp = await fetch(endpoint, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-      });
-      if (!resp.ok) {
-        const errorData = await resp.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${resp.status}`);
-      }
+  // Guard: solo admin o lawyer pueden accionar
+  if (!(role === "admin_user" || role === "lawyer")) return;
 
-      // ✅ El payload del reducer debe usar el id que corresponda
-      dispatch({
-        type: "DELETE_PAYMENT",
-        payload: role === "admin_user" ? payment.id : payment.relation_id
-      });
+  const isAdmin = role === "admin_user";
+  const endpoint = isAdmin
+    ? `${API}/api/payments/${payment.id}`
+    : (payment.relation_id
+        ? `${API}/api/payments-courtfile/${payment.relation_id}`
+        : null);
 
-      alert("Payment deleted successfully!");
-    } catch (err) {
-      console.error("Error deleting payment:", err);
-      alert(`Error deleting payment: ${err.message}`);
+  if (!endpoint) {
+    alert("Missing relation id to unlink this payment.");
+    return;
+  }
+
+  const msg = isAdmin
+    ? "Are you sure you want to delete this payment?"
+    : "Are you sure you want to unlink this payment from the courtfile?";
+
+  if (!window.confirm(msg)) return;
+
+  try {
+    const resp = await fetch(endpoint, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    });
+    if (!resp.ok) {
+      const errorData = await resp.json().catch(() => ({}));
+      throw new Error(errorData.error || `HTTP ${resp.status}`);
     }
-  };
+
+    // Reducer: usa id correcto según caso
+    dispatch({
+      type: "DELETE_PAYMENT",
+      payload: isAdmin ? payment.id : payment.relation_id,
+    });
+
+    alert(isAdmin ? "Payment deleted successfully!" : "Payment unlinked successfully!");
+  } catch (err) {
+    console.error("Error deleting/unlinking payment:", err);
+    alert(`Error: ${err.message}`);
+  }
+};
   
 
   const handleStripeCheckout = async () => {
