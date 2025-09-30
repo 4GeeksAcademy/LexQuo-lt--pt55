@@ -169,10 +169,30 @@ export const Appointments = () => {
         return arr;
     }, [filtered, sortConfig]);
 
+    const homeByRole =
+        role === "admin_user"
+            ? "/DashboardAdmin"
+            : role === "client"
+                ? "/DashboardClient"
+                : "/DashboardLawyer";
+
 
     return (
         <AppNavsShell>
             <div className="container add-page">
+
+                {/* ===== Breadcrumbs ===== */}
+                <nav aria-label="breadcrumb" className="mb-3">
+                    <ol className="breadcrumb mb-0">
+                        <li className="breadcrumb-item">
+                            <Link to={homeByRole}>Dashboard</Link>
+                        </li>
+                        <li className="breadcrumb-item active" aria-current="page">
+                            Appointments
+                        </li>
+                    </ol>
+                </nav>
+                
                 {/* ===== Toolbar ===== */}
                 <div className="mb-1">
                     {/* Fila 1: título + contador */}
@@ -260,7 +280,7 @@ export const Appointments = () => {
                                         />
                                     </th>
 
-                                    <th                                        
+                                    <th
                                         role="button"
                                         onClick={() => requestSort("location")}
                                     >

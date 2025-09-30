@@ -87,16 +87,36 @@ export const Lawyers = () => {
     });
   }, [lawyers, q, status]);
 
+  const homeByRole =
+    role === "admin_user"
+      ? "/DashboardAdmin"
+      : role === "client"
+        ? "/DashboardClient"
+        : "/DashboardLawyer";
+
   return (
     <AppNavsShell>
       <div className="container add-page">
+
+        {/* ===== Breadcrumbs ===== */}
+        <nav aria-label="breadcrumb" className="mb-3">
+          <ol className="breadcrumb mb-0">
+            <li className="breadcrumb-item">
+              <Link to={homeByRole}>Dashboard</Link>
+            </li>
+            <li className="breadcrumb-item active" aria-current="page">
+              Appointments
+            </li>
+          </ol>
+        </nav>
+        
         {/* ===== Toolbar superior ===== */}
         <div className="mb-1">
           {/* Fila 1: título + contador */}
           <div className="mb-4">
             <div className="d-flex gap-3">
               <h1 className="h2 mb-2">Lawyers</h1>
-              
+
             </div>
             <p className="text-muted small mt-1">
               Showing lawyers who share at least one courtfile with you {role === "admin_user" ? "(admin sees all)" : ""}. Only a lawyer can unlink themselves from a courtfile.

@@ -143,7 +143,7 @@ export const Payments = () => {
       alert(`Error deleting payment: ${err.message}`);
     }
   };
-  
+
   // ---------- Derived list (search + filter) ----------
   const payments = store.payments || [];
   const filtered = useMemo(() => {
@@ -160,10 +160,31 @@ export const Payments = () => {
     });
   }, [payments, q, fStatus]);
 
+  const homeByRole =
+    role === "admin_user"
+      ? "/DashboardAdmin"
+      : role === "client"
+        ? "/DashboardClient"
+        : "/DashboardLawyer";
+
 
   return (
     <AppNavsShell>
       <div className="container add-page">
+
+        {/* ===== Breadcrumbs ===== */}
+        <nav aria-label="breadcrumb" className="mb-3">
+          <ol className="breadcrumb mb-0">
+            <li className="breadcrumb-item">
+              <Link to={homeByRole}>Dashboard</Link>
+            </li>
+            <li className="breadcrumb-item active" aria-current="page">
+              Appointments
+            </li>
+          </ol>
+        </nav>
+
+        
         {/* ===== Toolbar ===== */}
         <div className="mb-1">
           {/* Fila 1: título + contador */}

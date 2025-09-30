@@ -161,9 +161,30 @@ export const Deadlines = () => {
     return arr;
   }, [filtered, sortConfig]);
 
+  // arriba del return
+  const homeByRole =
+    role === "admin_user"
+      ? "/DashboardAdmin"
+      : role === "client"
+        ? "/DashboardClient"
+        : "/DashboardLawyer";
+
   return (
     <AppNavsShell>
       <div className="container add-page">
+
+        {/* ===== Breadcrumbs ===== */}
+        <nav aria-label="breadcrumb" className="mb-3">
+          <ol className="breadcrumb mb-0">
+            <li className="breadcrumb-item">
+              <Link to={homeByRole}>Dashboard</Link>
+            </li>
+            <li className="breadcrumb-item active" aria-current="page">
+              Deadlines
+            </li>
+          </ol>
+        </nav> 
+        
         {/* ===== Toolbar ===== */}
         <div className="mb-1">
           {/* Fila 1: título + contador */}
