@@ -327,9 +327,10 @@ export const DashboardLawyer = () => {
                         <div>
                             {/* Fila 1: título + contador (arriba) */}
                             <div className="d-flex align-items-center gap-3 mb-2">
-                                <h2 className="mb-5">
-                                    Courtfiles{" "}
-                                </h2>
+                                <div className="mb-4">
+                                    <h2 className="mb-1">Courtfiles</h2>
+                                    <p className="text-muted mb-0 fs-9 mt-2">Manage your entire law firm in one place</p>
+                                </div>
                             </div>
 
                             {/* Fila 2: izq = search + filtros | der = Add (misma línea) */}

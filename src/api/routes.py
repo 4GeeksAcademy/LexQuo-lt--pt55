@@ -2088,6 +2088,7 @@ def get_appointments_courtfiles():
             'appointment_title': ac.appointment.title,
             'appointment_date': ac.appointment.date.isoformat(),
             'appointment_location': ac.appointment.location,
+            'appointment_details': ac.appointment.details,
             'starts_at': ac.appointment.starts_at.strftime('%H:%M'),
             'ends_at': ac.appointment.ends_at.strftime('%H:%M'),
             'courtfile_number': ac.courtfile.case_number,

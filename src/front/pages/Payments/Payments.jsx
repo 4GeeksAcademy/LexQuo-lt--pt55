@@ -119,9 +119,6 @@ export const Payments = () => {
           <div className="mb-5">
             <div className="d-flex gap-3">
               <h1 className="h2 mb-2">Payments</h1>
-              <span className="text-muted small">
-                {loading ? "Loading…" : `${filtered.length} of ${payments.length || 0}`}
-              </span>
             </div>
             <p className="text-muted small mt-1">
               {role === "admin_user" && "Admins can create, edit, delete and change status."}

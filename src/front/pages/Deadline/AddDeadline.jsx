@@ -14,6 +14,7 @@ export const AddDeadline = () => {
   const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
   const returnTo = location.state?.returnTo || "/deadlines";
   const suggestion = location.state?.suggestion || null;
+  const preselectedDate = location.state?.date || ""; 
 
   const token = store?.auth?.token;
   const role = (store?.me?.role || "").toLowerCase();
@@ -33,7 +34,7 @@ export const AddDeadline = () => {
 
   const [formData, setFormData] = useState({
     deadline_type: "",
-    deadline_date: "",
+    deadline_date: preselectedDate,
     deadline_hour: "",
     priority: "medium",
     courtfile_id: preselectedCourtfileId ? String(preselectedCourtfileId) : "",

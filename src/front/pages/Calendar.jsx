@@ -1,17 +1,19 @@
 // views/Calendar/CalendarDashboard.jsx
 import React, { useMemo, useRef, useState, useEffect } from "react";
-import { Navigate, Link } from "react-router-dom";
+import { Navigate, Link, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import AppNavsShell from "../components/AppNavsShell";
 import { format } from "date-fns";
 import { enUS } from "date-fns/locale";
+import CalendarModal from './CalendarModal';
+import CalendarModalAdd from "./CalendarModalAdd";
 
 // FullCalendar
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
-import CalendarModal from './CalendarModal';
+
 
 
 export default function Calendar() {
@@ -20,6 +22,23 @@ export default function Calendar() {
   const role = (store?.me?.role || "").toLowerCase();
   const allowed = role === "admin_user" || role === "lawyer";
   if (!allowed) return <Navigate to="/403" replace />;
+
+  const navigate = useNavigate();
+
+  // Modal de creación rápida
+  const [showNewPicker, setShowNewPicker] = useState(false);
+  const [newDateISO, setNewDateISO] = useState("");
+
+  const toYMD = (d) => {
+    const pad2 = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  };
+
+  const handleDateClick = (arg) => {
+    const iso = arg.dateStr || toYMD(arg.date);
+    setNewDateISO(iso);
+    setShowNewPicker(true);
+  };
 
   // ---------------- Config ----------------
   const API = import.meta.env.VITE_BACKEND_URL || "";
@@ -199,6 +218,7 @@ export default function Calendar() {
           relationId,
           recordId: rel.deadline_id ?? null,
           time: timeStr ? String(timeStr).slice(0, 5) : "",
+          priority: rel.priority || rel.deadline_priority || "",
           courtfileId: rel.courtfile_id ?? null,
           courtfileTitle: rel.courtfile_title || "",
           courtfileNumber: rel.courtfile_number || ""
@@ -242,7 +262,9 @@ export default function Calendar() {
             : "",
           courtfileId: rel.courtfile_id ?? null,
           courtfileTitle: rel.courtfile_title || "",
-          courtfileNumber: rel.courtfile_number || ""
+          courtfileNumber: rel.courtfile_number || "",
+          location: rel.appointment_location || "",
+          details: rel.appointment_details || "",
         }
       };
 
@@ -387,23 +409,31 @@ export default function Calendar() {
             datesSet={(arg) => setCurrentDate(arg.start ?? new Date())}
             eventDisplay="list-item"
             eventClick={handleEventClick}
-            eventClassNames={(arg) => arg.event.className ? [arg.event.className] : []}
+            eventClassNames={(arg) => (arg.event.className ? [arg.event.className] : [])}
             eventDidMount={(info) => {
               const ep = info.event.extendedProps || {};
               const cf = ep.courtfileNumber ? ` · #${ep.courtfileNumber}` : '';
               info.el.title = `${info.event.title} (${ep.type || 'event'})${cf}`;
             }}
+            /** 👇 habilita click en día */
+            dateClick={handleDateClick}
+          />
+
+          {/* Modal */}
+          <CalendarModal
+            isOpen={isModalOpen}
+            onClose={handleCloseModal}
+            event={selectedEvent}
+            onDelete={handleDeleteEvent}
+          />
+          {/* Modal de quick create */}
+          <CalendarModalAdd
+            isOpen={showNewPicker}
+            onClose={() => setShowNewPicker(false)}
+            dateISO={newDateISO}
           />
         </div>
-
-        {/* Modal */}
-        <CalendarModal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        event={selectedEvent}
-        onDelete={handleDeleteEvent}
-      />
-      </div>
+         </div>
     </AppNavsShell>
   );
 }

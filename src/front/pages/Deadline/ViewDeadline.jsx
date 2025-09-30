@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import MapComponent from "../../components/Map/MapComponent";
 import LocationAutocomplete from "../../components/Map/LocationAutocomplete";
 
-export const ViewAppointment = () => {
+export const ViewDeadline = () => {
   const { store, dispatch } = useGlobalReducer();
   const { appointmentId } = useParams();
   const navigate = useNavigate();

@@ -1,7 +1,60 @@
-// components/EventDetailsModal.jsx
+/// components/CalendarModal.jsx
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
+import DeadlineBadge from "../components/DeadlineBadge"; // 🔁 ajustá la ruta si hace falta
 
+// ===== Helpers embebidos =====
+const TZ = "America/Argentina/Buenos_Aires";
+const pad2 = (n) => String(n).padStart(2, "0");
+
+const toGoogleDates = (start, end, allDay) => {
+  if (!start) return "";
+  // Si no hay end, generamos uno (1h después o día siguiente si allDay)
+  const safeEnd =
+    end ||
+    (allDay
+      ? new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1)
+      : new Date(start.getTime() + 60 * 60 * 1000));
+
+  if (allDay) {
+    const ymd = (d) =>
+      `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}`;
+    // En Google, end es exclusivo
+    return `${ymd(start)}/${ymd(safeEnd)}`;
+  } else {
+    const toUTC = (d) =>
+      d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+    return `${toUTC(start)}/${toUTC(safeEnd)}`;
+  }
+};
+
+const defaultCourtfileUrl = (id) =>
+  `/courtfiles/ViewCourtfileLawyer/${id}`;
+
+const buildGoogleCalUrl = (ev, courtfileUrlFn = defaultCourtfileUrl) => {
+  const text = `${ev.title} — ${ev.type === "deadline" ? "Deadline" : "Appointment"}`;
+  const detailsParts = [];
+  if (ev.courtfileNumber) detailsParts.push(`Courtfile #${ev.courtfileNumber}`);
+  if (ev.courtfileTitle) detailsParts.push(ev.courtfileTitle);
+  if (ev.courtfileId) {
+    const cfUrl = `${window.location.origin}${courtfileUrlFn(ev.courtfileId)}`;
+    detailsParts.push(`Link: ${cfUrl}`);
+  }
+  const details = detailsParts.join(" · ");
+  const dates = toGoogleDates(ev.start, ev.end, !!ev.allDay);
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text,
+    details,
+    dates,
+    ctz: TZ,
+  }).toString();
+
+  return `https://calendar.google.com/calendar/render?${params}`;
+};
+
+// ===== Componente =====
 const CalendarModal = ({ isOpen, onClose, event, onDelete }) => {
   if (!isOpen || !event) return null;
 
@@ -9,12 +62,13 @@ const CalendarModal = ({ isOpen, onClose, event, onDelete }) => {
   const {
     type,               // "deadline" | "appointment"
     recordId,
+    courtfileId,
     courtfileTitle,
     courtfileNumber,
     details,
     location,
-    createdAt,          // opcional: ISO
-    description         // opcional
+    priority,           // solo deadlines
+    time                // hora (deadline) o rango/string (appointment)
   } = extendedProps;
 
   const isDeadline = String(type).toLowerCase() === "deadline";
@@ -22,36 +76,70 @@ const CalendarModal = ({ isOpen, onClose, event, onDelete }) => {
 
   const editPath =
     isDeadline ? `/deadlines/${recordId}` :
-    isAppointment ? `/appointments/${recordId}` :
-    "#";
+      isAppointment ? `/appointments/${recordId}` : "#";
 
-  const detailsPath = editPath; // ajustá si tenés ruta específica de "ver"
+  const detailsPath = editPath;
 
-  const fmtDateTime = (d) => {
-    if (!d) return "";
+  const fmtDate = (d) => {
     try {
       const dt = d instanceof Date ? d : new Date(d);
-      const date = dt.toLocaleDateString("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
+      return dt.toLocaleDateString("en-US", {
+        weekday: "long", year: "numeric", month: "long", day: "numeric",
       });
-      const time = event.allDay
-        ? "All Day"
-        : dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      return `${date}${event.allDay ? "" : `, ${time}`}`;
-    } catch {
-      return "";
-    }
+    } catch { return ""; }
   };
 
-  // Accesibilidad: cerrar con Esc
+  const fmtTime = (d) => {
+    try {
+      const dt = d instanceof Date ? d : new Date(d);
+      return dt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    } catch { return ""; }
+  };
+
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && onClose?.();
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  const renderDateTime = () => {
+    const dayStr = fmtDate(event.start);
+    if (event.allDay) return <p className="mb-1 mt-2">{dayStr} — All Day</p>;
+
+    if (isDeadline) {
+      const oneTime = time || fmtTime(event.start);
+      return <p className="mb-1 mt-2">{dayStr}, {oneTime}</p>;
+    }
+
+    if (isAppointment) {
+      if (time) return <p className="mb-1 mt-2">{dayStr}, {time}</p>;
+      const from = fmtTime(event.start);
+      const to = event.end ? fmtTime(event.end) : "";
+      return <p className="mb-1 mt-2">{dayStr}{from ? `, ${from}` : ""}{to ? ` — ${to}` : ""}</p>;
+    }
+
+    const from = fmtTime(event.start);
+    const to = event.end ? fmtTime(event.end) : "";
+    return <p className="mb-1 mt-2">{dayStr}{from ? `, ${from}` : ""}{to ? ` — ${to}` : ""}</p>;
+  };
+
+  const descText = (isAppointment && details) ? details : "";
+
+  const courtfilePath = courtfileId
+    ? defaultCourtfileUrl(courtfileId)
+    : null;
+
+  // 🔗 URL para Google Calendar
+  const googleUrl = buildGoogleCalUrl(
+    {
+      ...extendedProps,
+      title: title || (isDeadline ? "Deadline" : "Appointment"),
+      start: event.start,
+      end: event.end,
+      allDay: event.allDay,
+    },
+    defaultCourtfileUrl
+  );
 
   return (
     <div
@@ -60,80 +148,95 @@ const CalendarModal = ({ isOpen, onClose, event, onDelete }) => {
       aria-modal="true"
       tabIndex={-1}
       style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+      onClick={onClose}                      // click fuera => cierra
     >
-      <div className="modal-dialog modal-dialog-centered modal-lg">
+      <div
+        className="modal-dialog modal-dialog-centered modal-md"
+        style={{ maxWidth: "500px" }}
+        onClick={(e) => e.stopPropagation()} // clicks dentro => no cierra
+      >
         <div className="modal-content border">
-          {/* Header Phoenix */}
+          {/* Header */}
           <div className="ps-card border-bottom border-translucent modal-header">
-            <div>
-              <div className="modal-title text-body-highlight mb-0 h4">
+            <div className="w-100">
+              <div className="modal-title text-body-highlight mb-1 h4">
                 {title || (isDeadline ? "Deadline" : "Appointment")}
+              </div>
+
+              {/* Badges debajo del título */}
+              <div className="d-flex flex-wrap gap-2 fs-10">
+                <span className={`badge ${isDeadline ? "badge-phoenix badge-phoenix-danger" : "badge-phoenix badge-phoenix-primary"}`}>
+                  {isDeadline ? "DEADLINE" : "APPOINTMENT"}
+                </span>
+
+                {isDeadline && (
+                  <DeadlineBadge priority={priority} outline />
+                )}
               </div>
             </div>
 
-            {/* Botón cerrar estilo Phoenix (icono inline) */}
-            <button type="button" className="p-1 ms-auto btn" onClick={onClose} aria-label="Close">
-              {/* fa-xmark inline para no depender de assets */}
+            <button type="button" className="p-1 ms-2 btn" onClick={onClose} aria-label="Close">
               <i className="bi bi-x-lg"></i>
             </button>
           </div>
 
-          {/* Body Phoenix */}
-          <div className="px-card pb-card pt-1 fs-9 modal-body">
-            {/* Badges arriba */}
-            <div className="mb-3 d-flex flex-wrap gap-2">
-              <span className={`badge ${isDeadline ? "bg-danger" : "bg-primary"}`}>
-                {isDeadline ? "Deadline" : "Appointment"}
-              </span>
-              {courtfileNumber && (
-                <span className="badge bg-dark">
-                  Case #{courtfileNumber}{courtfileTitle ? ` — ${courtfileTitle}` : ""}
-                </span>
-              )}
-            </div>
-
-            {/* Sección: Description */}
-            <div className="mt-3 border-bottom border-translucent pb-3">
-              <h5 className="mb-0 text-body-secondary">Description</h5>
-              <p className="mb-0 mt-2">
-                {description || details || (isDeadline
-                  ? "No additional description for this deadline."
-                  : "No additional details for this appointment.")}
-              </p>
-            </div>
-
-            {/* Sección: Date and Time (estilo exacto del ejemplo) */}
-            <div className="mt-4">
+          {/* Body */}
+          <div className="px-card pt-2 pb-3 fs-9 modal-body">
+            {/* Date and Time (sin borde arriba) */}
+            <div className="pb-3">
               <h5 className="mb-0 text-body-secondary">Date and Time</h5>
-              <p className="mb-1 mt-2">
-                {fmtDateTime(event.start)}
-                {(!event.allDay && event.end) ? (
-                  <> — {event.end.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</>
-                ) : null}
-              </p>
+              {renderDateTime()}
             </div>
 
-            {/* Para appointment, mostramos Location si existe */}
-            {isAppointment && (location || details) && (
-              <div className="mt-3">
+            {/* Location */}
+            {isAppointment && !!location && (
+              <div className="pt-3 pb-3 border-top border-translucent">
                 <h5 className="mb-0 text-body-secondary">Location</h5>
-                <p className="mb-1 mt-2">{location || "No location specified"}</p>
+                <p className="mb-0 mt-2">{location}</p>
               </div>
             )}
 
-            {/* Created At opcional */}
-            {(createdAt) && (
-              <div className="mt-3">
-                <h5 className="mb-0 text-body-secondary">Created</h5>
-                <p className="mb-1 mt-2">
-                  {fmtDateTime(createdAt)}
+            {/* Details */}
+            {descText && (
+              <div className="pt-3 pb-3 border-top border-translucent">
+                <h5 className="mb-0 text-body-secondary">Details</h5>
+                <p className="mb-0 mt-2">{descText}</p>
+              </div>
+            )}
+
+            {/* Courtfile */}
+            {(courtfileNumber || courtfileTitle) && (
+              <div className="pt-3 pb-1 border-top border-translucent">
+                <h5 className="mb-0 text-body-secondary">Courtfile</h5>
+                <p className="mb-0 mt-2 text-truncate" title={`${courtfileNumber || ""} ${courtfileTitle || ""}`}>
+                  {courtfilePath ? (
+                    <Link
+                      to={courtfilePath}
+                      className="text-decoration-none link-body-emphasis"
+                      onClick={onClose}
+                    >
+                      Case #{courtfileNumber}{courtfileTitle ? ` — ${courtfileTitle}` : ""}
+                    </Link>
+                  ) : (
+                    <>Case #{courtfileNumber}{courtfileTitle ? ` — ${courtfileTitle}` : ""}</>
+                  )}
                 </p>
               </div>
             )}
           </div>
 
-          {/* Footer Phoenix */}
-          <div className="d-flex justify-content-end px-card pt-0 border-top-0 modal-footer">
+          {/* Footer */}
+          <div className="d-flex px-card pt-0 border-top-0 modal-footer">
+            {/* ✅ Add to Google a la izquierda */}
+            <a
+              href={googleUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="me-auto"
+            >
+              <i className="bi bi-google me-1" /> 
+            </a>
+
             <Link
               role="button"
               tabIndex={0}
@@ -141,7 +244,6 @@ const CalendarModal = ({ isOpen, onClose, event, onDelete }) => {
               className="btn btn-phoenix-secondary btn-sm"
               onClick={onClose}
             >
-              {/* lápiz: Bootstrap Icons */}
               <i className="bi bi-pencil me-1" /> Edit
             </Link>
 

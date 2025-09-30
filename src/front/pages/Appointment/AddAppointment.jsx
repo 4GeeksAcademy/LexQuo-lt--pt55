@@ -16,6 +16,7 @@ export const AddAppointment = () => {
   const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
   const returnTo = location.state?.returnTo || "/appointments";
   const suggestion = location.state?.suggestion || null;
+  const preselectedDate = location.state?.date || ""; 
 
   const token = store?.auth?.token;
   const role = (store?.me?.role || "").toLowerCase();
@@ -31,7 +32,7 @@ export const AddAppointment = () => {
     title: "",
     location: "",
     details: "",
-    date: "",
+    date: preselectedDate,
     starts_at: "",
     ends_at: "",
     courtfile_id: preselectedCourtfileId ? String(preselectedCourtfileId) : "",
