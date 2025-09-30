@@ -229,7 +229,7 @@ export const Payments = () => {
                           aria-expanded="false"
                           aria-label="Row actions"
                         >
-                          <i className="bi bi-three-dots fs-7"></i>
+                          <i className="bi bi-three-dots icon-btn"></i>
                         </button>
                         <ul className="dropdown-menu dropdown-menu-end">
                           <li>

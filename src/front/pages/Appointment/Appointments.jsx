@@ -179,9 +179,6 @@ export const Appointments = () => {
                     <div className="mb-5">
                         <div className="d-flex gap-3">
                             <h1 className="h2 mb-2">Appointments</h1>
-                            <span className="text-muted small">
-                                {loading ? "Loading…" : `${filtered.length} of ${appointments.length || 0}`}
-                            </span>
                         </div>
                         <p className="text-muted small mt-1">
                             {role === "admin_user" && "Admins can create, edit and delete appointments."}
@@ -226,7 +223,7 @@ export const Appointments = () => {
 
                         {/* Derecha: Add */}
                         <div className="ms-auto">
-                            <Link to="/appointments/addAppointment" className="btn btn-primary">
+                            <Link to="/appointments/addAppointment" className="btn btn-phoenix btn-phoenix-primary">
                                 <i className="bi bi-plus-lg me-1" /> Add appointment
                             </Link>
                         </div>
@@ -347,7 +344,7 @@ export const Appointments = () => {
                                                     aria-expanded="false"
                                                     aria-label="Row actions"
                                                 >
-                                                    <i className="bi bi-three-dots fs-7"></i>
+                                                    <i className="bi bi-three-dots icon-btn"></i>
                                                 </button>
                                                 <ul className="dropdown-menu dropdown-menu-end">
                                                     <li>

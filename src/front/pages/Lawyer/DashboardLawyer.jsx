@@ -511,7 +511,7 @@ export const DashboardLawyer = () => {
 
                                                     {/* Actions compactas a la derecha (tus mismos botones) */}
                                                     <td className="col-actions">
-                                                        <div className="dropdown">
+                                                        <div className="dropdown position-static">
                                                             {/* Botón kebab */}
                                                             <button
                                                                 className="btn btn-sm btn-light icon-btn"
@@ -521,7 +521,7 @@ export const DashboardLawyer = () => {
                                                                 aria-label="More actions"
                                                                 onClick={(e) => e.stopPropagation()}
                                                             >
-                                                                <i className="bi bi-three-dots" />
+                                                                <i className="bi bi-three-dots icon-btn" />
                                                             </button>
 
                                                             {/* Menú */}
@@ -626,7 +626,7 @@ export const DashboardLawyer = () => {
                                 {pending.length === 0 ? (
                                     <p className="text-muted small">No pending or processing payments.</p>
                                 ) : (
-                                    <ul className="list-unstyled mb-3 fs-8">
+                                    <ul className="list-unstyled payment-detail-text">
                                         {pending.slice(0, 6).map((p) => {
                                             const st = String(p?.status || "").toLowerCase().trim();
 
@@ -661,7 +661,7 @@ export const DashboardLawyer = () => {
                                         })}
                                     </ul>
                                 )}
-                                
+
 
                                 {/* Paid this month */}
                                 <div className="d-flex justify-content-between align-items-center pt-5">
@@ -674,7 +674,7 @@ export const DashboardLawyer = () => {
                                 {paidThisMonth.length === 0 ? (
                                     <p className="text-muted small">No approved payments this month.</p>
                                 ) : (
-                                    <ul className="list-unstyled fs-10">
+                                    <ul className="list-unstyled payment-detail-text">
                                         {paidThisMonth.slice(0, 6).map((p) => {
                                             const cfIds = pcMap.get(p.id) || [];
                                             const cfLinks = cfIds.map((cid, idx) => {
@@ -696,7 +696,7 @@ export const DashboardLawyer = () => {
                                             return (
                                                 <li
                                                     key={`paid-${p.id}`}
-                                                    className="d-flex align-items-center justify-content-between border-bottom py-3 payment-item fs-10"
+                                                    className="d-flex align-items-center justify-content-between border-bottom py-3 payment-item payment-detail-text"
                                                 >
                                                     <div className="fw-semibold text-truncate" style={{ minWidth: 120 }}>
                                                         ${fmtMoney(p.amount, p.currency || "USD")}
@@ -719,9 +719,7 @@ export const DashboardLawyer = () => {
 
                 </div>
 
-                <div className="text-end">
-                    <LogoutButton className="btn btn-sm btn-outline-danger mt-5" />
-                </div>
+
             </div>
         </AppNavsShell>
     );

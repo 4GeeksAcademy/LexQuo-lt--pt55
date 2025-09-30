@@ -139,6 +139,17 @@ export const Courtfiles = () => {
         );
     }, [sortedCases, search, status]);
 
+    const normalizeStatus = (raw) => {
+        if (raw === true) return "active";
+        if (raw === false) return "inactive";
+        if (raw == null) return "inactive";
+        const s = String(raw).trim().toLowerCase();
+        if (["1", "true", "active", "open"].includes(s)) return "active";
+        if (["0", "false", "inactive", "closed", "archiv"].includes(s)) return "inactive";
+        return "inactive"; // default fallback
+    };
+
+
 
     return (
         <AppNavsShell>
@@ -150,9 +161,7 @@ export const Courtfiles = () => {
                         {/* Fila 1: título + contador + botón (opcional puedes dejarlo abajo también) */}
                         <div className="d-flex gap-3 mb-2">
                             <h2 className="mb-5">Courtfiles</h2>
-                            <span className="text-muted small">
-                                {loading ? "Loading…" : `${filteredCases.length} of ${baseCases.length || 0}`}
-                            </span>
+                            
                         </div>
 
                         {/* Fila 2: izq = search + filtros | der = New Courtfile */}
@@ -203,8 +212,8 @@ export const Courtfiles = () => {
                             <div className="ms-auto flex-shrink-0">
                                 <Link
                                     to="/courtfiles/addcourtfile"
-                                    state={{ linkToLawyer: true, returnTo: "/DashboardLawyer" }}
-                                    className="btn btn-sm btn-info"
+                                    state={{ linkToLawyer: true, returnTo: "/courtfiles" }}
+                                    className="btn btn-phoenix-primary"
                                 >
                                     + New Courtfile
                                 </Link>
@@ -318,9 +327,12 @@ export const Courtfiles = () => {
 
                                     {/* StatusPill (sin <td> dentro de <td>) */}
                                     <td className="col-status text-center">
-                                        <StatusPill status={courtfile?.status ?? courtfile?.is_active ?? courtfile?.state} />
+                                        {normalizeStatus(courtfile?.status ?? courtfile?.is_active ?? courtfile?.state) === "active" ? (
+                                            <span className="fs-10 badge-phoenix badge badge-phoenix-success">Active</span>
+                                        ) : (
+                                            <span className="fs-10 badge-phoenix badge badge-phoenix-secondary">Inactive</span>
+                                        )}
                                     </td>
-
                                     {/* Actions: tus mismos botones */}
                                     <td className="col-actions">
                                         <div className="dropdown">
@@ -333,7 +345,7 @@ export const Courtfiles = () => {
                                                 aria-label="More actions"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
-                                                <i className="bi bi-three-dots" />
+                                                <i className="bi bi-three-dots icon-btn" />
                                             </button>
 
                                             {/* Menú */}

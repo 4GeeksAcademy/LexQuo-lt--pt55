@@ -122,7 +122,7 @@ export const AddCourtfile = () => {
                 <div className="col-lg-8 col-xl-8">
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <h1 className="display-5 fw-bold mb-0">Add New Courtfile</h1>
-                        <Link to={returnTo} className="btn btn-outline-secondary">
+                        <Link to={returnTo} className="px-3 text-body text-decoration-none btn btn-link">
                             <i className="bi bi-arrow-left me-1" />
                             Back
                         </Link>
@@ -235,8 +235,8 @@ export const AddCourtfile = () => {
 
                         {/* Actions */}
                         <div className="d-flex gap-2 justify-content-end">
-                            <Link to="/courtfiles" className="btn btn-outline-secondary">Cancel</Link>
-                            <button type="submit" className="btn btn-primary" disabled={loading}>
+                            <Link to="/courtfiles" className="btn btn-phoenix btn-phoenix-secondary">Cancel</Link>
+                            <button type="submit" className="btn btn-phoenix btn-phoenix-primary" disabled={loading}>
                                 {loading ? (
                                     <>
                                         <span className="spinner-border spinner-border-sm me-2" role="status" />

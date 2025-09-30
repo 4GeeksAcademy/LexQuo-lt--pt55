@@ -170,9 +170,6 @@ export const Deadlines = () => {
           <div className="mb-5">
             <div className="d-flex gap-3">
               <h1 className="h2 mb-2">Deadlines</h1>
-              <span className="text-muted small">
-                {loading ? "Loading…" : `${filtered.length} of ${deadlines.length || 0}`}
-              </span>
             </div>
             <p className="text-muted small mt-1">
               {role === "admin_user" && "Admins can create, edit and delete deadlines."}
@@ -226,7 +223,7 @@ export const Deadlines = () => {
 
             {/* Derecha: Add */}
             <div className="ms-auto">
-              <Link to="/deadlines/addDeadline" className="btn btn-primary">
+              <Link to="/deadlines/addDeadline" className="btn btn-phoenix btn-phoenix-primary">
                 <i className="bi bi-plus-lg me-1" /> Add deadline
               </Link>
             </div>
@@ -239,7 +236,7 @@ export const Deadlines = () => {
             <table className="table table-modern align-middle mb-0 pt-0">
               <thead className="table-light">
                 <tr>
-                  <th className="text-start" role="button" onClick={() => requestSort("id")} style={{ width: "20px" }}>
+                  <th className="text-start" role="button" onClick={() => requestSort("id")} style={{ width: "50px" }}>
                     ID{" "}
                     <i
                       className={`bi ${sortConfig.key === "id"
@@ -327,7 +324,7 @@ export const Deadlines = () => {
                           aria-expanded="false"
                           aria-label="Row actions"
                         >
-                          <i className="bi bi-three-dots fs-7"></i>
+                          <i className="bi bi-three-dots icon-btn"></i>
                         </button>
                         <ul className="dropdown-menu dropdown-menu-end">
                           <li>

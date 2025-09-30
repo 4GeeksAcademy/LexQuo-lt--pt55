@@ -89,7 +89,7 @@ export default function SidebarLogin() {
 
             {/* Courtfiles (grupo) */}
             <li className="nav-item mt-2">
-              <div className="nav-label">Apps</div>
+              <div className="nav-label">Pages</div>
 
               <button
                 className="nav-link dropdown-indicator w-100 text-start border-0 bg-transparent"

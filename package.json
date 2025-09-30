@@ -57,6 +57,10 @@
 		]
 	},
 	"dependencies": {
+		"@fullcalendar/daygrid": "^6.1.19",
+		"@fullcalendar/interaction": "^6.1.19",
+		"@fullcalendar/react": "^6.1.19",
+		"@fullcalendar/timegrid": "^6.1.19",
 		"@googlemaps/js-api-loader": "^1.16.10",
 		"@vis.gl/react-google-maps": "^1.5.5",
 		"bootstrap": "^5.3.8",

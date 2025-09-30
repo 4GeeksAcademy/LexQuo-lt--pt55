@@ -20,7 +20,7 @@ function KebabMenu({ children }) {
         aria-label="Row actions"
         onMouseDown={stop}
       >
-        <i className="bi bi-three-dots fs-7" />
+        <i className="bi bi-three-dots icon-btn" />
       </button>
       <ul className="dropdown-menu dropdown-menu-end" onMouseDown={stop}>
         {children}

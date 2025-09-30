@@ -98,9 +98,7 @@ export const Clients = () => {
           <div className="mb-4">
             <div className="d-flex gap-3">
               <h1 className="h2 mb-2">Clients</h1>
-              <span className="text-muted small">
-                {loading ? "Loading…" : `${filtered.length} of ${clients.length || 0}`}
-              </span>
+              
             </div>
             <p className="text-muted small mt-1">
               To unlink a client, you can do it either from the client’s view or directly from the related courtfile.
@@ -181,14 +179,14 @@ export const Clients = () => {
               {role === "lawyer" ? (
                 <Link
                   to="/clients/link-or-create"
-                  className="btn btn-primary"
+                  className="btn btn-phoenix btn-phoenix-primary"
                 >
                   <i className="bi bi-plus-lg me-1"></i> Link or create client
                 </Link>
               ) : (
                 <Link
                   to="/clients/addClient"
-                  className="btn btn-primary"
+                  className="btn btn-phoenix btn-phoenix-primary"
                 >
                   <i className="bi bi-plus-lg me-1"></i> Add client
                 </Link>
@@ -277,7 +275,7 @@ export const Clients = () => {
                           aria-label="Row actions"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <i className="bi bi-three-dots fs-7"></i>
+                          <i className="bi bi-three-dots icon-btn"></i>
                         </button>
                         <ul className="dropdown-menu dropdown-menu-end">
                           <li>

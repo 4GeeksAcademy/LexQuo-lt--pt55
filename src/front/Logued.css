@@ -80,7 +80,7 @@ body{
   background: rgba(255,255,255,0.035);
 }
 .navbar-vertical .nav-link.active{
-  color: var(--phoenix-gray-300, #c1c9d2) !important; /* mismo tono que normal/hover */
+  color: var(--phoenix-gray-300, #c1c9d2) !important; 
   font-weight: 1000; 
   background: rgba(102,161,255,0.08);
 }
@@ -106,7 +106,7 @@ body{
 /* ================ LABELS (APPS/PAGES) ================ */
 .navbar-vertical .nav-label{
   padding: 0.5rem 1rem 0.35rem 2rem !important;
-  font-size: 0.90rem;
+  font-size: 0.625rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: 600;
@@ -198,16 +198,13 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 /* =================== LAYOUT OVERRIDES (FINAL) =================== */
 .main-content{
   margin-left: var(--phoenix-navbar-vertical-width);
-  padding-top: calc(var(--lex-topbar-h) + 1rem);
-  padding-left: 1rem;
-  padding-right: 1rem;
+  padding-top: var(--lex-topbar-h);
   min-height: 100vh;
   background-color: var(--phoenix-gray-100);
 }
 .content{
   flex: 1;
-  padding: 1.5rem;
-  padding-top: 3.5rem;
+  padding: 1.5rem;  
   margin-left: var(--phoenix-navbar-vertical-width);
   background-color: var(--phoenix-gray-100);
   min-height: 100vh;
@@ -216,9 +213,9 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 /* =========== OVERRIDE ESPECIFICO (PISA A TODO) =========== */
 
 .container.main-content {
-  max-width: 100% !important;   /* ocupa todo el ancho */
+  max-width: 100% !important;   
   margin-left: 0 !important;
-  margin-right: 0 !important;   /* quita el hueco */
+  margin-right: 0 !important;   
   padding-left: 0 !important;
   padding-right: 0 !important;
   padding-top: 0 !important;
@@ -344,7 +341,7 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   cursor: pointer;
 }
 .table-row-clickable:hover {
-  background-color: #f8fafc; /* gris claro */
+  background-color: #f8fafc; 
 }
 
 /* ===== Contenedor tipo card ===== */
@@ -359,30 +356,13 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   padding: 10px 0 0 0;
 }
 
-.table-modern > :not(caption) > * > * {
-  padding-top: .9rem;
-  padding-bottom: .9rem;  /* filas altas */
-  vertical-align: middle;
-  background: transparent;
-}
-
-.table-modern tbody tr {
-  border-bottom: 1px solid #d1d7dd;
-}
-.table-modern tbody tr:hover {
-  background: #f8fafc;
-}
-.table-modern tbody tr:first-child td {
-  border-top: 0; /* sin doble borde con header */
-}
-
 /* ===== Header de tabla ===== */
 
 .table-modern thead th {
-  color: #212529;         /* gris oscuro */
-  font-weight: 900;       /* más bold */
+  color: #31374A;      
+  font-weight: 800;       
   font-size: 12px;
-  letter-spacing: .04em;  /* tracking extra */
+  letter-spacing: .04em;  
   text-transform: uppercase;
   padding-top: .65rem;
   padding-bottom: .65rem;
@@ -393,93 +373,12 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   z-index: 1;
 }
 
-/* Botón/label de sort */
-.table-modern thead .th-sort {
-  display: inline-flex;
-  align-items: center;
-  gap: .35rem;              /* espacio texto-icono */
-  padding: 0;
-  background: none;
-  border: 0;
-  font: inherit;
-  color: inherit;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-/* Icono de sort */
-.table-modern thead .sort-icon {
-  font-size: .9em;
-  color: #9aa0a6;           /* gris suave */
-  transform: translateY(1px);
-}
-
-/* ===== Celdas principales ===== */
-.cell-main .title {
-  font-weight: 600;
+.table-modern tbody td {
   color: #212529;
-}
-.cell-main .subtitle {
-  font-size: .86rem;
-  color: #6c757d;
-}
-
-
-
-/* ========================PILLS ESTADOS (con más contraste) ====================== */
-
-/* ===== Pills de estado ===== */
-.badge-status {
-  padding: .45rem .6rem;
-  font-weight: 600;
-  border-radius: 999px;
-  font-size: .75rem;
-  line-height: 1;
-}
-
-.status-pill {
-  display:inline-flex; 
-  align-items:center; 
-  gap:.25rem;
-  padding:.25rem .6rem;
-  border-radius:999px;
-  font-size:.78rem;
-  font-weight:600;
-  letter-spacing:.02em;
-  text-transform:uppercase;
-  border:1.5px solid transparent;   /* borde un poquito más fuerte */
-  line-height:1;
-}
-
-/* Variantes más intensas */
-.status-success {
-  background:#d4f8e4;    /* verde más saturado */
-  color:#0f5132;
-  border-color:#198754;
-}
-
-.status-secondary {
-  background:#e2e3e5;
-  color:#41464b;
-  border-color:#6c757d;
-}
-
-.status-warning {
-  background:#fff3cd;
-  color:#664d03;
-  border-color:#ffca2c;
-}
-
-.status-danger {
-  background:#f8d7da;
-  color:#842029;
-  border-color:#dc3545;
-}
-
-.status-info {
-  background:#cff4fc;
-  color:#055160;
-  border-color:#0dcaf0;
+  font-size: 12.8px;      
+  font-weight: 600;       
+  border-bottom: 1px solid #e5e5e5; 
+  vertical-align: middle;  
 }
 
 
@@ -489,20 +388,7 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   border: 0px;
   background: none;
 }
-.icon-btn:hover{ background: #f8f9fa; }
-
-/* menú más prolijo */
-.dropdown-menu{
-  border-radius: .75rem;
-  padding: .4rem;
-}
-.dropdown-item{
-  border-radius: .5rem;
-  padding: .5rem .75rem;
-}
-.dropdown-item:active{
-  background-color: #eef2f7;
-}
+.icon-btn:hover{ background: #f1f3f5; }
 
 /* ====== Search box estilo admin ====== */
 .search-box {
@@ -516,7 +402,7 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   padding: 0.45rem 2rem 0.45rem 2rem; /* espacio para icono a la izquierda */
   border-radius: 8px;
   border: 1px solid #d0d7de;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   background-color: #f9fafb;
 }
 
@@ -532,7 +418,7 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   left: 0.65rem;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 0.9rem;
+  font-size: 0.7rem;
   color: #6c757d;
   pointer-events: none;
 }
@@ -549,7 +435,7 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 }
 
 .clear-btn:hover {
-  color: #dc3545;
+  color: #020202;
 }
 
 /* ==============================================================================================
@@ -628,8 +514,8 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   transform: translateX(-50%);
   width: 6px; height: 6px; border-radius: 50%; pointer-events: none;
 }
-.react-calendar__tile .rc-dot.is-appointment { background: #1a73e8; }
-.react-calendar__tile .rc-dot.is-deadline    { background: #d11a2a; }
+.react-calendar__tile .rc-dot.is-appointment { background: var(--phoenix-primary);   }
+.react-calendar__tile .rc-dot.is-deadline    { background: var(--phoenix-danger);   }
 
 /* Weekdays header */
 .react-calendar__month-view__weekdays abbr { text-decoration: none !important; border-bottom: none !important; cursor: default; }
@@ -648,30 +534,6 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 
 
 /* ===== Pill tipo etiqueta para el tipo de evento ===== */
-.rc-pill{
-  display:inline-block;
-  padding: 2px 8px;
-  border-radius: 9999px;
-  font-size: 12px;         /* letras chicas */
-  line-height: 1.1;
-  font-weight: 600;
-  letter-spacing: .02em;
-  vertical-align: middle;
-  border: 1px solid transparent;
-  text-align: center;
-}
-
-/* Variantes */
-.rc-pill.is-appointment{
-  background: #e7f1ff;     /* azul muy claro */
-  color: #1a73e8;          /* azul Google-like */
-  border-color: #c9dcff;
-}
-.rc-pill.is-deadline{
-  background: #fde8ea;     /* rojo muy claro */
-  color: #d11a2a;
-  border-color: #f6bac1;
-}
 
 /* Afinamos jerarquía visual en la tarjeta */
 .rc-event-title{ font-weight: 600; font-size: 1.5rem; }
@@ -691,67 +553,6 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   margin-bottom: 2rem; /* espacio con el grid de días */
 }
 
-/* ========================== Bloque de items de pagos ========================================== */
-.payment-item,
-.payment-item .amount,
-.payment-item .courtfile-link,
-.payment-item .status-badge,
-.payment-item .date {
-  font-size: 13px !important;
-  line-height: 1.4;
-}
-
-/* Columna monto */
-.payment-item .amount {
-  font-weight: 600;
-  min-width: 120px;
-}
-
-/* Columna link(s) */
-.payment-item .courtfile-link {
-  color: var(--bs-primary);
-  text-decoration: none;
-}
-.payment-item .courtfile-link:hover {
-  text-decoration: underline;
-}
-
-/* Columna badge o fecha */
-.payment-item .status-badge,
-.payment-item .date {
-  padding: 0.2rem 0.55rem; /* más compacto */
-}
-
-
-/* ========================== Configuraciones de cards ========================================== */
-/* Card general */
-.card.shadow-sm {
-  background: rgba(255, 255, 255, 0.3) !important; 
-  backdrop-filter: blur(6px);                              
-  border-radius: 0.75rem;                         
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);       
-}
-
-/* Y anulamos el fondo del calendario */
-.card.shadow-sm .react-calendar {
-  background: transparent !important;
-}
-.card.shadow-sm .react-calendar__navigation,
-.card.shadow-sm .react-calendar__viewContainer {
-  background: transparent !important;
-}
-
-/* Quitar fondo del <li> y hacer líneas suaves */
-.event-list .event-item {
-  background: transparent !important;   /* pisa list-group default */
-  border: 0;                            /* el borde ya lo tiene el div interno */
-}
-
-/* Opcional: suavizar el borde del contenedor interno */
-.event-list .event-item > .border {
-  border-color: rgba(0,0,0,.2) !important;  /* o usa .border-light */
-  background: transparent !important;        /* por si queda algún bg */
-}
 
 /* =============parche calendario============================= */
 .react-calendar { 
@@ -761,61 +562,18 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   border: none !important;
 }
 
-/* =============parche tablas============================= */
-th {
-  white-space: nowrap; /* Evita que el contenido se divida en varias líneas */
-  min-width: 60px; /* Asegura un ancho mínimo suficiente */
-}
-
-/* O específicamente para esa columna */
-th.text-center {
-  white-space: nowrap;
-}
-
 /* =============parche margenes============================= */
 .add-page {
-  margin-top: 0rem !important;   /* menos margen arriba */
-  max-width: 100% !important;   /* ocupa todo el ancho */
+  margin-top: 0rem !important;   
+  max-width: 100% !important;   
   margin-left: 0 !important;
-  margin-right: 0 !important;   /* quita el hueco */
+  margin-right: 0 !important;   
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
 
-/* Clients table: fondo y hover controlados por variables BS */
-.clients-table{
-  /* fondo base y rayado transparentes */
-  --bs-table-bg: transparent;
-  --bs-table-striped-bg: transparent;
 
-  /* color de hover deseado */
-  --bs-table-hover-bg: #f8fafc;   /* gris claro */
-  --bs-table-hover-color: inherit;
-}
-
-/* =============parche tabla clients============================= */
-
-/* celdas transparentes para que se vea el hover del <tr> */
-.clients-table > :not(caption) > * > * {
-  background-color: transparent !important;
-}
-
-/* por si alguna regla vieja pinta blanco */
-.clients-table tbody tr { background-color: transparent !important; }
-.clients-table.table-hover > tbody > tr:hover,
-.clients-table.table-hover > tbody > tr:hover > *{
-  background-color: var(--bs-table-hover-bg) !important;
-}
-
-/* Letras un poco más chicas en todas las tablas */
-.table,
-.table-modern,
-.clients-table,
-.courtfiles-table {
-  font-size: 12px; /* ~14px */
-}
-
-
+/* =============parche tabla============================= */
 .juris-clip {
   max-width: 35ch;        /* límite aprox. al largo de esa frase */
   white-space: nowrap;    /* que no se corte en varias líneas */
@@ -826,9 +584,6 @@ th.text-center {
 /* =============view clients/lawyers============================= */
 /* avatar tamaño Shopify-like sin romper nada más */
 .avatar-xl { width: 96px; height: 96px; }
-
-/* evita el borde interior en tablas dentro de cards para que “sangren” como en la captura */
-.card > .table-responsive .table { border-top: 0; }
 
 /* util para imágenes de perfil */
 .object-fit-cover { object-fit: cover; }
@@ -843,20 +598,7 @@ th.text-center {
 .table-edge thead th:last-child,  .table-edge tbody td:last-child  { padding-right: 1.5rem; }
 .table-edge th, .table-edge td { padding-top: .8rem; padding-bottom: .8rem; }
 
-
-
-/* ========================botones add================== */
-.btn-phoenix-primary-outline {
-  --phoenix-btn-color: #3874ff;             /* texto azul */
-  --phoenix-btn-bg: transparent;            /* fondo transparente */
-  --phoenix-btn-border-color: #3874ff;      /* borde azul */
-  --phoenix-btn-hover-color: #fff;          /* texto blanco en hover */
-  --phoenix-btn-hover-bg: #3874ff;          /* fondo azul en hover */
-  --phoenix-btn-hover-border-color: #3874ff;
-  --phoenix-btn-active-color: #fff;
-  --phoenix-btn-active-bg: #2f5ecc;         /* azul más oscuro en active */
-  --phoenix-btn-active-border-color: #2f5ecc;
-  --phoenix-btn-disabled-color: #a0aabb;
-  --phoenix-btn-disabled-bg: transparent;
-  --phoenix-btn-disabled-border-color: #a0aabb;
+/* =============================parche tabla dashboard lawyer payment======================== */
+.payment-detail-text {
+  font-size: 0.8rem; /* 12.8px */
 }

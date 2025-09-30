@@ -96,9 +96,7 @@ export const Lawyers = () => {
           <div className="mb-4">
             <div className="d-flex gap-3">
               <h1 className="h2 mb-2">Lawyers</h1>
-              <span className="text-muted small">
-                {loading ? "Loading…" : `${filtered.length} of ${lawyers.length || 0}`}
-              </span>
+              
             </div>
             <p className="text-muted small mt-1">
               Showing lawyers who share at least one courtfile with you {role === "admin_user" ? "(admin sees all)" : ""}. Only a lawyer can unlink themselves from a courtfile.
@@ -176,14 +174,14 @@ export const Lawyers = () => {
               {role === "lawyer" ? (
                 <Link
                   to="/lawyers/link-or-invite"
-                  className="btn btn-primary"
+                  className="btn btn-phoenix btn-phoenix-primary"
                 >
                   <i className="bi bi-plus-lg me-1"></i> Link or invite
                 </Link>
               ) : (
                 <Link
                   to="/lawyers/addLawyer"
-                  className="btn btn-primary"
+                  className="btn btn-phoenix btn-phoenix-primary"
                 >
                   <i className="bi bi-plus-lg me-1"></i> Add lawyer
                 </Link>
@@ -271,7 +269,7 @@ export const Lawyers = () => {
                           aria-expanded="false"
                           aria-label="Row actions"
                         >
-                          <i className="bi bi-three-dots fs-7"></i>
+                          <i className="bi bi-three-dots icon-btn"></i>
                         </button>
                         <ul className="dropdown-menu dropdown-menu-end">
                           <li>
