@@ -6,7 +6,7 @@ import PaymentBadge from "../../components/PaymentBadge";
 
 export const ViewPayment = () => {
   const { paymentId } = useParams();
-  const { store } = useGlobalReducer();
+  const { store, dispatch } = useGlobalReducer(); // <-- agregado dispatch
   const navigate = useNavigate();
   const location = useLocation();
   const returnTo = location.state?.returnTo || "/payments";
@@ -27,16 +27,8 @@ export const ViewPayment = () => {
   const [error, setError] = useState(null);
   const [isProcessingStripe, setIsProcessingStripe] = useState(false);
 
-  const isPending = payment?.status === "pending";
-  const isAdminOrLawyer = ["admin_user", "lawyer"].includes(role);
-  const isClient = role === "client";
-  const canShowButtons = isPending;
-
-  const capitalizeFirstLetter = (str) => {
-    if (!str) return "-";
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  };
-
+  // helpers
+  const capitalizeFirstLetter = (str) => (!str ? "-" : str.charAt(0).toUpperCase() + str.slice(1));
   const formatDateTime = (dateString) => {
     if (!dateString) return "-";
     try {
@@ -47,23 +39,12 @@ export const ViewPayment = () => {
       const hours = String(date.getHours()).padStart(2, "0");
       const minutes = String(date.getMinutes()).padStart(2, "0");
       return `${year}-${month}-${day} ${hours}:${minutes}`;
-    } catch (error) {
-      console.error("Error formatting date:", error);
+    } catch {
       return dateString;
     }
   };
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard
-      .writeText(text)
-      .then(() => {
-        alert("Reference copied to clipboard!");
-      })
-      .catch((err) => {
-        console.error("Failed to copy: ", err);
-      });
-  };
-
+  // ------- fetch pago -------
   useEffect(() => {
     const fetchPayment = async () => {
       try {
@@ -86,61 +67,175 @@ export const ViewPayment = () => {
     if (paymentId) fetchPayment();
   }, [paymentId, API, token]);
 
-  const handleDelete = async (payment, e) => {
-  e?.stopPropagation?.();
+  //--------------- Lógica de courtfile vinculado -------------
+  const state = location.state || {};
+  const initialLinked = state.courtfileId
+    ? { id: state.courtfileId, number: state.courtfileNumber, title: state.courtfileTitle }
+    : null;
 
-  // Guard: solo admin o lawyer pueden accionar
-  if (!(role === "admin_user" || role === "lawyer")) return;
+  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
+  const [relationId, setRelationId] = useState(null); // <- para unlink (lawyer)
+  const cameFromCourtfile = Boolean(state.courtfileId);
+  const [hasCourtfileAccess, setHasCourtfileAccess] = useState(cameFromCourtfile || role === "admin_user");
 
-  const isAdmin = role === "admin_user";
-  const endpoint = isAdmin
-    ? `${API}/api/payments/${payment.id}`
-    : (payment.relation_id
-        ? `${API}/api/payments-courtfile/${payment.relation_id}`
-        : null);
+  // Completar número/título si falta
+  useEffect(() => {
+    const loadCf = async () => {
+      try {
+        if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
+          const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (resp.ok) {
+            const d = await resp.json();
+            setLinkedCourtfile((cf) => ({ ...(cf || {}), number: d.case_number, title: d.title }));
+          }
+        }
+      } catch {/* noop */}
+    };
+    loadCf();
+  }, [API, linkedCourtfile?.id, token]);
 
-  if (!endpoint) {
-    alert("Missing relation id to unlink this payment.");
-    return;
-  }
+  // Descubrir relación Payment<->Courtfile y guardar relationId
+  useEffect(() => {
+    const fetchLinked = async () => {
+      try {
+        if ((!paymentId || !token) || (linkedCourtfile && relationId)) return;
 
-  const msg = isAdmin
-    ? "Are you sure you want to delete this payment?"
-    : "Are you sure you want to unlink this payment from the courtfile?";
+        const resp = await fetch(`${API}/api/payments-courtfile`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!resp.ok) return;
 
-  if (!window.confirm(msg)) return;
+        const rows = await resp.json();
+        const rel =
+          (rows || []).find(r => Number(r.payment_id ?? r.paymentId) === Number(paymentId));
 
-  try {
-    const resp = await fetch(endpoint, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-    });
-    if (!resp.ok) {
-      const errorData = await resp.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP ${resp.status}`);
+        if (rel) {
+          setLinkedCourtfile((prev) => prev || {
+            id: rel.courtfile_id ?? rel.courtfileId,
+            number: rel.courtfile_number ?? rel.courtfileNumber,
+            title: rel.courtfile_title ?? rel.courtfileTitle
+          });
+          setRelationId(rel.id ?? rel.relation_id ?? rel.relationId ?? null);
+        }
+      } catch {/* noop */}
+    };
+    fetchLinked();
+  }, [API, paymentId, token, linkedCourtfile, relationId]);
+
+  // Chequear acceso del usuario (lawyer/client) al courtfile
+  useEffect(() => {
+    const checkAccess = async () => {
+      if (!linkedCourtfile?.id) return;
+
+      if (role === "admin_user") { setHasCourtfileAccess(true); return; }
+      if (cameFromCourtfile) { setHasCourtfileAccess(true); return; }
+
+      // 1) intento endpoint am-i-linked
+      try {
+        const r = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}/am-i-linked`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (r.ok) {
+          const d = await r.json();
+          if (typeof d?.linked === "boolean") {
+            setHasCourtfileAccess(d.linked);
+            return;
+          }
+        }
+      } catch {/* noop */}
+
+      // 2) fallback: listar mis expedientes y comparar
+      try {
+        const listEndpoint =
+          role === "lawyer"
+            ? `${API}/api/lawyers-courtfiles`
+            : `${API}/api/clients-courtfiles`;
+
+        const r2 = await fetch(listEndpoint, { headers: { Authorization: `Bearer ${token}` } });
+        if (r2.ok) {
+          const rows = await r2.json();
+          const myCfIds = (rows || []).map(x => x.courtfile?.id ?? x.courtfile_id ?? x.id);
+          const ok = myCfIds.some(id => Number(id) === Number(linkedCourtfile.id));
+          setHasCourtfileAccess(ok);
+          return;
+        }
+      } catch {/* noop */}
+
+      setHasCourtfileAccess(false);
+    };
+
+    checkAccess();
+  }, [API, token, role, linkedCourtfile?.id, cameFromCourtfile]);
+
+  // ---------- Acciones ----------
+  const handleDelete = async (e) => {
+    e?.stopPropagation?.();
+
+    const st = (payment?.status || "").toLowerCase();
+    const isAdmin = role === "admin_user";
+    const isLawyer = role === "lawyer";
+
+    if (!isAdmin) {
+      // lawyer: solo pending + acceso al courtfile
+      if (!isLawyer) return;
+      if (st !== "pending" || !hasCourtfileAccess) return;
     }
 
-    // Reducer: usa id correcto según caso
-    dispatch({
-      type: "DELETE_PAYMENT",
-      payload: isAdmin ? payment.id : payment.relation_id,
-    });
+    const endpoint = isAdmin
+      ? `${API}/api/payments/${payment.id}`
+      : (relationId ? `${API}/api/payments-courtfile/${relationId}` : null);
 
-    alert(isAdmin ? "Payment deleted successfully!" : "Payment unlinked successfully!");
-  } catch (err) {
-    console.error("Error deleting/unlinking payment:", err);
-    alert(`Error: ${err.message}`);
-  }
-};
-  
+    if (!endpoint) {
+      alert("Missing relation id to unlink this payment.");
+      return;
+    }
+
+    const msg = isAdmin
+      ? "Are you sure you want to delete this payment?"
+      : "Are you sure you want to unlink this payment from the courtfile?";
+
+    if (!window.confirm(msg)) return;
+
+    try {
+      const resp = await fetch(endpoint, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+      if (!resp.ok) {
+        const errorData = await resp.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${resp.status}`);
+      }
+
+      dispatch({ type: "DELETE_PAYMENT", payload: isAdmin ? payment.id : relationId });
+
+      alert(isAdmin ? "Payment deleted successfully!" : "Payment unlinked successfully!");
+      navigate(returnTo, { replace: true });
+    } catch (err) {
+      console.error("Error deleting/unlinking payment:", err);
+      alert(`Error: ${err.message}`);
+    }
+  };
 
   const handleStripeCheckout = async () => {
-    if (!isPending) return;
+    const st = (payment?.status || "").toLowerCase();
+    const isAdmin = role === "admin_user";
+    const isClient = role === "client";
+
+    const canAdminPay = isAdmin && st === "pending";
+    const canClientPay = isClient && st === "pending" && hasCourtfileAccess;
+
+    if (!canAdminPay && !canClientPay) return;
+
     setIsProcessingStripe(true);
     try {
       const response = await fetch(`${API}/api/payments/${paymentId}/create-checkout-session`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
         body: JSON.stringify(payment),
       });
 
@@ -157,67 +252,6 @@ export const ViewPayment = () => {
       setIsProcessingStripe(false);
     }
   };
-
-  //---------------Lógica para traer expedientes linkeados-------------
-  // Intento inicial desde location.state (si venís desde un listado con info del expediente)
-  const state = location.state || {};
-  const initialLinked = state.courtfileId
-    ? { id: state.courtfileId, number: state.courtfileNumber, title: state.courtfileTitle }
-    : null;
-
-  // estado local del expediente vinculado
-  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
-
-  useEffect(() => {
-    const loadCf = async () => {
-      try {
-        if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
-          const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (resp.ok) {
-            const d = await resp.json();
-            setLinkedCourtfile(cf => ({ ...(cf || {}), number: d.case_number, title: d.title }));
-          }
-        }
-      } catch {
-        /* noop */
-      }
-    };
-    loadCf();
-  }, [API, linkedCourtfile?.id, token]);
-
-  useEffect(() => {
-    const fetchLinked = async () => {
-      try {
-        if (linkedCourtfile || !paymentId || !token) return;
-
-        // endpoint de relaciones Payment<->Courtfile
-        const resp = await fetch(`${API}/api/payments-courtfile`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!resp.ok) return;
-
-        const rows = await resp.json();
-        // buscá por payment_id
-        const rel =
-          (rows || []).find(r => Number(r.payment_id) === Number(paymentId)) ||
-          (rows || []).find(r => Number(r.paymentId) === Number(paymentId)); // por si la API usa camelCase
-
-        if (rel) {
-          setLinkedCourtfile({
-            id: rel.courtfile_id ?? rel.courtfileId,
-            number: rel.courtfile_number ?? rel.courtfileNumber,
-            title: rel.courtfile_title ?? rel.courtfileTitle
-          });
-        }
-      } catch {
-        /* noop */
-      }
-    };
-    fetchLinked();
-  }, [API, paymentId, linkedCourtfile, token]);
-
 
   // ---------- UI states ----------
   if (loading) {
@@ -248,6 +282,19 @@ export const ViewPayment = () => {
     );
   }
 
+  // ---- flags UI ----
+  const st = (payment?.status || "").toLowerCase();
+  const isPending = st === "pending";
+  const isAdmin = role === "admin_user";
+  const isLawyer = role === "lawyer";
+  const isClient = role === "client";
+
+  const canEditDelete =
+    isAdmin || (isLawyer && isPending && hasCourtfileAccess);
+
+  const canPay =
+    (isAdmin && isPending) || (isClient && isPending && hasCourtfileAccess);
+
   return (
     <AppNavsShell>
       <div className="container main-content">
@@ -263,44 +310,49 @@ export const ViewPayment = () => {
           </ol>
         </nav>
 
-        <div className="col-8">
-          {/* --- Permisos --- */}
-          {(() => {
-            // normalizo status
-            const st = (payment?.status || "").toLowerCase();
-            const isPending = st === "pending";
-            const isAdmin = (role || "").toLowerCase() === "admin_user";
-            const isLawyer = (role || "").toLowerCase() === "lawyer";
-            const isClient = (role || "").toLowerCase() === "client";
-
-            // Guardo en window para usar abajo sin recalcular (opcional)
-            window.__pay_flags = {
-              showPay: isAdmin || (isLawyer && isPending) || (isClient && isPending),
-              showEditDelete: isAdmin || (isLawyer && isPending),
-            };
-            return null;
-          })()}
-
+        <div className="col-12 col-lg-8">
           {/* Header (title + actions) */}
           <div className="d-flex justify-content-between align-items-start mb-3">
             <div>
               <h1 className="h2 fw-bolder mb-1">Payment</h1>
+              {!hasCourtfileAccess && (isLawyer || isClient) && linkedCourtfile?.id && (
+                <p className="text-danger small mb-0">
+                  You’re not linked to this case file, so you can’t act on this payment.
+                </p>
+              )}
             </div>
 
-            {(window.__pay_flags?.showEditDelete) && (
-              <div className="d-flex gap-2">
-                <Link
-                  to={`/payments/${payment.id}`}
-                  state={{ returnTo }}
-                  className="btn btn-phoenix-secondary btn-sm"
+            <div className="d-flex gap-2">
+              {canPay && (
+                <button
+                  className="btn btn-phoenix-success btn-sm"
+                  onClick={handleStripeCheckout}
+                  disabled={isProcessingStripe}
                 >
-                  <i className="bi bi-pencil" /> Edit
-                </Link>
-                <button className="btn btn-phoenix-danger btn-sm" onClick={handleDelete}>
-                  <i className="bi bi-trash" /> Delete
+                  {isProcessingStripe ? (
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                  ) : (
+                    <i className="bi bi-credit-card" />
+                  )}{" "}
+                  Pay
                 </button>
-              </div>
-            )}
+              )}
+
+              {canEditDelete && (
+                <>
+                  <Link
+                    to={`/payments/${payment.id}`}
+                    state={{ returnTo }}
+                    className="btn btn-phoenix-secondary btn-sm"
+                  >
+                    <i className="bi bi-pencil" /> Edit
+                  </Link>
+                  <button className="btn btn-phoenix-danger btn-sm" onClick={handleDelete}>
+                    <i className="bi bi-trash" /> Delete
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Summary strip */}
@@ -315,9 +367,7 @@ export const ViewPayment = () => {
                     </div>
                     <div className="text-start">
                       <p className="fw-bold mb-1">Amount</p>
-                      <h4 className="fw-bolder mb-0">
-                        {payment.amount || "—"}
-                      </h4>
+                      <h4 className="fw-bolder mb-0">{payment.amount || "—"}</h4>
                     </div>
                   </div>
                 </div>
@@ -423,44 +473,10 @@ export const ViewPayment = () => {
                 </div>
               </div>
             </div>
-
-            {/* Footer actions */}
-            <div className="card-footer bg-light d-flex justify-content-end gap-2">
-              {window.__pay_flags?.showPay && (
-                <button
-                  className="btn btn-success"
-                  onClick={handleStripeCheckout}
-                  disabled={isProcessingStripe}
-                >
-                  {isProcessingStripe ? (
-                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
-                  ) : (
-                    <i className="bi bi-credit-card" />
-                  )}{" "}
-                  Pay
-                </button>
-              )}
-
-              {window.__pay_flags?.showEditDelete && (
-                <>
-                  <Link
-                    to={`/payments/${payment.id}`}
-                    state={{ returnTo }}
-                    className="btn btn-warning"
-                  >
-                    <i className="bi bi-pencil" /> Edit
-                  </Link>
-                  <button className="btn btn-danger" onClick={handleDelete}>
-                    <i className="bi bi-trash" /> Delete
-                  </button>
-                </>
-              )}
-            </div>
+            {/* Footer removido (botones ahora están en el header) */}
           </div>
         </div>
       </div>
     </AppNavsShell>
   );
-
-
 };

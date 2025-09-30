@@ -199,182 +199,208 @@ export const AddDocument = () => {
     }
   };
 
+  const caseLabel =
+    preselectedCourtfileNumber ||
+    preselectedCourtfileTitle ||
+    (preselectedCourtfileId ? `#${preselectedCourtfileId}` : null);
+
   return (
-  <AppNavsShell>
-    <div className="container add-page">
-      <div className="row">
-        <div className="col-8">
-          
-          {/* Header */}
-          <div className="d-flex justify-content-between mb-4">
-            <div>
-              <h1 className="display-5 fw-bold mb-0">Add New Document</h1>
-              {preselectedCourtfileId && (
-                <span className="badge bg-dark mt-2">
-                  Linked to Case {preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
-                  {preselectedCourtfileTitle ? ` — ${preselectedCourtfileTitle}` : ""}
-                </span>
-              )}
-            </div>
-            <Link to={returnTo} className="px-3 text-body text-decoration-none btn btn-link">
-              <i className="bi bi-arrow-left me-1" /> Back
-            </Link>
-          </div>
+    <AppNavsShell>
+      <div className="container add-page">
+        <div className="row">
+          <div className="col-8">
 
-          {/* Card contenedora */}
-          
-              {suggestion && (
-                <div className="alert alert-info">
-                  <h5 className="mb-1">
-                    <i className="bi bi-lightbulb" /> Sugerencia IA
-                  </h5>
-                  <strong>{suggestion.title}</strong>
-                  {suggestion.reasoning && <p className="mb-1">{suggestion.reasoning}</p>}
-                  {Array.isArray(suggestion.next_steps) && suggestion.next_steps.length > 0 && (
-                    <ul className="mb-1">
-                      {suggestion.next_steps.map((step, i) => (
-                        <li key={i}>{step}</li>
-                      ))}
-                    </ul>
-                  )}
-                  {suggestion.legal_basis && (
-                    <small className="text-muted">Fundamento: {suggestion.legal_basis}</small>
-                  )}
-                </div>
-              )}
-
-              {error && (
-                <div className="alert alert-danger d-flex align-items-center" role="alert">
-                  <i className="bi bi-exclamation-triangle me-2" /> {error}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit}>
-
-                {/* Courtfile selector si no está preseleccionado */}
-                {!preselectedCourtfileId && (
-                  <div className="form-floating mb-3">
-                    <select
-                      className="form-select"
-                      id="courtfile_id"
-                      name="courtfile_id"
-                      value={formData.courtfile_id}
-                      onChange={handleInputChange}
-                      required
-                      disabled={loading || loadingCases}
-                    >
-                      <option value=""></option>
-                      {myCases.map(c => (
-                        <option key={c.id} value={c.id}>
-                          {c.number} — {c.title}
-                        </option>
-                      ))}
-                    </select>
-                    <label htmlFor="courtfile_id">Link to Courtfile *</label>
-                  </div>
+            <nav aria-label="breadcrumb" className="mb-3">
+              <ol className="breadcrumb">
+                {caseLabel && (
+                  <li className="breadcrumb-item">
+                    <Link to={`/courtfiles/ViewCourtfileLawyer/${preselectedCourtfileId}`}>
+                      {caseLabel}
+                    </Link>
+                  </li>
                 )}
+                <li className="breadcrumb-item">
+                  <Link to={returnTo || "/documents"}>Documents</Link>
+                </li>
+                <li className="breadcrumb-item active" aria-current="page">
+                  Add
+                </li>
+              </ol>
+            </nav>
 
-                {/* Document name */}
-                <div className="form-floating mb-3">
-                  <input
-                    type="text"
-                    className="form-control"
-                    id="name"
-                    name="name"
-                    placeholder=" "
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                  />
-                  <label htmlFor="name">Document Name *</label>
-                </div>
+            {/* Header */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h1 className="display-5 fw-bold mb-0">Add New Document</h1>
+                {preselectedCourtfileId && (
+                  <span className="badge badge-phoenix-secondary mt-2">
+                    Linked to Case {preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
+                    {preselectedCourtfileTitle ? ` — ${preselectedCourtfileTitle}` : ""}
+                  </span>
+                )}
+              </div>
 
-                {/* Document date */}
-                <div className="form-floating mb-3">
-                  <input
-                    type="date"
-                    className="form-control"
-                    id="document_date"
-                    name="document_date"
-                    placeholder=" "
-                    value={formData.document_date}
-                    onChange={handleInputChange}
-                    disabled={loading}
-                  />
-                  <label htmlFor="document_date">Document Date</label>
-                  <div className="form-text">Used for the case timeline</div>
-                </div>
+              <div className="d-flex gap-2">
+                <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary">
+                  Cancel
+                </Link>
+                <button
+                  type="submit"
+                  form="addDocumentForm"
+                  className="btn btn-phoenix btn-phoenix-primary"
+                  disabled={loading || linking}
+                >
+                  {loading || linking ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" />
+                      {linking ? " Linking..." : " Creating..."}
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-plus-circle me-2" />
+                      Create Document
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
 
-                {/* File */}
-                <div className="mb-3">
-                  <label htmlFor="file" className="form-label">File (optional)</label>
-                  <input
-                    type="file"
-                    className="form-control"
-                    id="file"
-                    name="file"
-                    onChange={handleFileChange}
-                    disabled={loading}
-                  />
-                </div>
+            {/* Card contenedora */}
 
-                {/* Category */}
+            {suggestion && (
+              <div className="alert alert-info">
+                <h5 className="mb-1">
+                  <i className="bi bi-lightbulb" /> Sugerencia IA
+                </h5>
+                <strong>{suggestion.title}</strong>
+                {suggestion.reasoning && <p className="mb-1">{suggestion.reasoning}</p>}
+                {Array.isArray(suggestion.next_steps) && suggestion.next_steps.length > 0 && (
+                  <ul className="mb-1">
+                    {suggestion.next_steps.map((step, i) => (
+                      <li key={i}>{step}</li>
+                    ))}
+                  </ul>
+                )}
+                {suggestion.legal_basis && (
+                  <small className="text-muted">Fundamento: {suggestion.legal_basis}</small>
+                )}
+              </div>
+            )}
+
+            {error && (
+              <div className="alert alert-danger d-flex align-items-center" role="alert">
+                <i className="bi bi-exclamation-triangle me-2" /> {error}
+              </div>
+            )}
+
+            <form id="addDocumentForm" onSubmit={handleSubmit}>
+
+              {/* Courtfile selector si no está preseleccionado */}
+              {!preselectedCourtfileId && (
                 <div className="form-floating mb-3">
                   <select
                     className="form-select"
-                    id="category"
-                    name="category"
-                    value={formData.category}
+                    id="courtfile_id"
+                    name="courtfile_id"
+                    value={formData.courtfile_id}
                     onChange={handleInputChange}
-                    disabled={loading}
+                    required
+                    disabled={loading || loadingCases}
                   >
                     <option value=""></option>
-                    {documentCategories.map(category => (
-                      <option key={category} value={category}>
-                        {category}
+                    {myCases.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.number} — {c.title}
                       </option>
                     ))}
                   </select>
-                  <label htmlFor="category">Category</label>
+                  <label htmlFor="courtfile_id">Link to Courtfile *</label>
                 </div>
+              )}
 
-                {/* Description */}
-                <div className="form-floating mb-3">
-                  <textarea
-                    className="form-control"
-                    id="description"
-                    name="description"
-                    placeholder=" "
-                    style={{ height: 100 }}
-                    value={formData.description}
-                    onChange={handleInputChange}
-                    disabled={loading}
-                  />
-                  <label htmlFor="description">Description</label>
-                </div>
+              {/* Document name */}
+              <div className="form-floating mb-3">
+                <input
+                  type="text"
+                  className="form-control"
+                  id="name"
+                  name="name"
+                  placeholder=" "
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  required
+                  disabled={loading}
+                />
+                <label htmlFor="name">Document Name *</label>
+              </div>
 
-                {/* Actions */}
-                <div className="d-flex gap-2 justify-content-end mt-4">
-                  <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary">Cancel</Link>
-                  <button type="submit" className="btn btn-phoenix btn-phoenix-primary" disabled={loading || linking}>
-                    {loading || linking ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm me-2" role="status" />
-                        {linking ? " Linking..." : " Creating..."}
-                      </>
-                    ) : (
-                      <>
-                        <i className="bi bi-plus-circle me-2" />
-                        Create Document
-                      </>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
+              {/* Document date */}
+              <div className="form-floating mb-3">
+                <input
+                  type="date"
+                  className="form-control"
+                  id="document_date"
+                  name="document_date"
+                  placeholder=" "
+                  value={formData.document_date}
+                  onChange={handleInputChange}
+                  disabled={loading}
+                />
+                <label htmlFor="document_date">Document Date</label>
+                <div className="form-text">Used for the case timeline</div>
+              </div>
+
+              {/* File */}
+              <div className="mb-3">
+                <label htmlFor="file" className="form-label">File (optional)</label>
+                <input
+                  type="file"
+                  className="form-control"
+                  id="file"
+                  name="file"
+                  onChange={handleFileChange}
+                  disabled={loading}
+                />
+              </div>
+
+              {/* Category */}
+              <div className="form-floating mb-3">
+                <select
+                  className="form-select"
+                  id="category"
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  disabled={loading}
+                >
+                  <option value=""></option>
+                  {documentCategories.map(category => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="category">Category</label>
+              </div>
+
+              {/* Description */}
+              <div className="form-floating mb-3">
+                <textarea
+                  className="form-control"
+                  id="description"
+                  name="description"
+                  placeholder=" "
+                  style={{ height: 100 }}
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  disabled={loading}
+                />
+                <label htmlFor="description">Description</label>
+              </div>              
+            </form>
           </div>
         </div>
-  </AppNavsShell>
-);
+      </div>
+    </AppNavsShell>
+  );
 };

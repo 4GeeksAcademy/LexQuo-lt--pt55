@@ -2,19 +2,36 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import "../Logued.css";
 import LogoLexQuoB from "../assets/img/LogoLexQuoB.png";
-import useGlobalReducer from "../hooks/useGlobalReducer"; // ajustá la ruta si es distinta
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 const NavbarLogin = () => {
-  const { dispatch } = useGlobalReducer();
+  const { store, dispatch } = useGlobalReducer();
   const navigate = useNavigate();
+
+  const me   = store?.me || null;
+  const role = (me?.role || "").toLowerCase();
+  const id   = me?.id;
+
+  // Rutas según rol
+  const profilePath =
+    role === "lawyer"
+      ? (id ? `/lawyers/view/${id}` : "/lawyers/view")
+      : role === "client"
+      ? (id ? `/clients/view/${id}` : "/clients/view")
+      : "/login";
+
+  const passwordPath =
+    role === "lawyer"
+      ? (id ? `/lawyers/${id}/password` : "/lawyers/password")
+      : role === "client"
+      ? (id ? `/clients/${id}/password` : "/clients/password")
+      : "/login";
 
   return (
     <nav className="navbar navbar-expand navbar-dark bg-dark fixed-top py-2">
       <div className="container-fluid">
-
         {/* Izquierda: toggler + brand */}
         <div className="d-flex align-items-center">
-          {/* 🔔 Toggler: abre/cierra la sidebar como offcanvas en < lg */}
           <button
             className="btn btn-sm btn-outline-light border-0 d-lg-none me-2"
             type="button"
@@ -22,16 +39,12 @@ const NavbarLogin = () => {
             data-bs-target="#navbarVerticalOffcanvas"
             aria-controls="navbarVerticalOffcanvas"
             aria-label="Toggle sidebar"
-
           >
             <i className="bi bi-list" />
           </button>
 
           <Link to="/DashboardLawyer" className="navbar-brand d-flex align-items-center gap-2 mb-0 text-white">
-            <img
-              src={LogoLexQuoB}
-              style={{ height: "30px" }}
-            />
+            <img src={LogoLexQuoB} style={{ height: "30px" }} />
           </Link>
         </div>
 
@@ -76,13 +89,29 @@ const NavbarLogin = () => {
               />
             </a>
             <ul className="dropdown-menu dropdown-menu-start" style={{ right: 0, left: "auto" }} aria-labelledby="userDropdown">
-              <li><Link className="dropdown-item" to="/lawyers/view/:lawyerId">Perfil</Link></li>
-              <li><Link className="dropdown-item" to="/">Configuración</Link></li>
+              <li>
+                <Link
+                  className={`dropdown-item ${!id ? "disabled" : ""}`}
+                  to={id ? profilePath : "#"}
+                  onClick={(e) => { if (!id) e.preventDefault(); }}
+                >
+                  Profile
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`dropdown-item ${!id ? "disabled" : ""}`}
+                  to={id ? passwordPath : "#"}
+                  onClick={(e) => { if (!id) e.preventDefault(); }}
+                >
+                  Change Password
+                </Link>
+              </li>
               <li><hr className="dropdown-divider" /></li>
               <li>
                 <NavLink
                   to="#"
-                  className="dropdown-item" // en vez de nav-link, para que se vea bien en el menú
+                  className="dropdown-item"
                   onClick={(e) => {
                     e.preventDefault();
                     localStorage.removeItem("auth");
@@ -107,5 +136,3 @@ const NavbarLogin = () => {
 };
 
 export default NavbarLogin;
-
-

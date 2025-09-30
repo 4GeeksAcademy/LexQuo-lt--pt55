@@ -31,6 +31,11 @@ export const LawyerLinkOrInviteLawyer = () => {
       : null
   );
 
+  // URL para ver el courtfile si vino preseleccionado
+  const cfViewUrl = preselectedCourtfileId
+    ? `/courtfiles/ViewCourtfileLawyer/${preselectedCourtfileId}`
+    : null;
+
   useEffect(() => {
     const fetchPref = async () => {
       if (!preselectedCourtfileId || preselectedCf) return;
@@ -254,18 +259,45 @@ export const LawyerLinkOrInviteLawyer = () => {
       <div className="container add-page">
         <div className="row">
           <div className="col-12 col-lg-8">
-            {/* Header */}
-            {/* Header (estética alineada) */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h1 className="display-5 fw-bold mb-0">Link or Create Lawyer</h1>
-              <Link to={returnTo} className="btn btn-outline-secondary">
-                <i className="bi bi-arrow-left"></i> Back
-              </Link>
+            {/* Header con Breadcrumbs */}
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <div className="flex-grow-1">
+                <nav aria-label="breadcrumb" className="mb-2">
+                  <ol className="breadcrumb mb-0">
+                    <li className="breadcrumb-item">
+                      <Link to="/DashboardLawyer">Dashboard</Link>
+                    </li>
+
+                    {preselectedCourtfileId ? (
+                      <>
+                        <li className="breadcrumb-item">
+                          <Link to="/courtfiles">Courtfiles</Link>
+                        </li>
+                        <li className="breadcrumb-item">
+                          <Link to={cfViewUrl}>
+                            {preselectedCf?.case_number || `#${preselectedCourtfileId}`}
+                            {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
+                          </Link>
+                        </li>
+                        <li className="breadcrumb-item active" aria-current="page">
+                          Link or Create Lawyer
+                        </li>
+                      </>
+                    ) : (
+                      <li className="breadcrumb-item active" aria-current="page">
+                        Link or Create Lawyer
+                      </li>
+                    )}
+                  </ol>
+                </nav>
+
+                <h1 className="display-5 fw-bold mb-0 mt-4">Link or Create Lawyer</h1>
+              </div>
             </div>
 
             {/* Badge si vino desde un expediente */}
             {preselectedCourtfileId && (
-              <span className="badge bg-dark mt-2 mb-3">
+              <span className="badge badge-phoenix-secondary mt-2 mb-3">
                 Related to Courtfile {preselectedCf?.case_number || `#${preselectedCourtfileId}`}
                 {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
               </span>
@@ -273,226 +305,217 @@ export const LawyerLinkOrInviteLawyer = () => {
 
             {/* Desplegable de courtfiles (solo si NO hay preseleccionado) */}
             {!preselectedCourtfileId && (
-              <div className="card mb-3">
-                <div className="card-body">
-                  <div className="row g-2 align-items-end">
-                    <div className="col-md-8">
-                      <div className="form-floating">
-                        <select
-                          className="form-select"
-                          id="courtfile_id"
-                          name="courtfile_id"
-                          value={selectedCourtfileId}
-                          onChange={(e) => setSelectedCourtfileId(e.target.value)}
-                          disabled={loadingCases}
-                          required
-                        >
-                          <option value=""></option>
-                          {myCases.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.number} — {c.title}
-                            </option>
-                          ))}
-                        </select>
-                        <label htmlFor="courtfile_id">Link to Courtfile *</label>
-                      </div>
-                    </div>
-                    {casesErr && (
-                      <div className="col-12 mt-2">
-                        <div className="alert alert-danger d-flex align-items-center" role="alert">
-                          <i className="bi bi-exclamation-triangle me-2" /> {casesErr}
-                        </div>
-                      </div>
-                    )}
+              <div className="row g-2 align-items-end">
+                <div className="col-md-8">
+                  <div className="form-floating">
+                    <select
+                      className="form-select"
+                      id="courtfile_id"
+                      name="courtfile_id"
+                      value={selectedCourtfileId}
+                      onChange={(e) => setSelectedCourtfileId(e.target.value)}
+                      disabled={loadingCases}
+                      required
+                    >
+                      <option value=""></option>
+                      {myCases.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.number} — {c.title}
+                        </option>
+                      ))}
+                    </select>
+                    <label htmlFor="courtfile_id">Link to Courtfile *</label>
                   </div>
                 </div>
+                {casesErr && (
+                  <div className="col-12 mt-2">
+                    <div className="alert alert-danger d-flex align-items-center" role="alert">
+                      <i className="bi bi-exclamation-triangle me-2" /> {casesErr}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
             {/* Buscar por email */}
-            <div className="card mb-4">
-              <div className="card-body">
-                <form onSubmit={handleSearch}>
-                  <div className="row g-2 align-items-end">
-                    <div className="col-md-7">
-                      <div className="form-floating">
-                        <input
-                          type="email"
-                          className="form-control"
-                          id="lawyer_email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          placeholder="lawyer@email.com"
-                          required
-                          disabled={searching || creating}
-                        />
-                        <label htmlFor="lawyer_email">Lawyer Email</label>
-                      </div>
-                    </div>
-                    <div className="col-md-auto">
-                      <button className="btn btn-primary" type="submit" disabled={searching || creating}>
-                        {searching ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm me-2" role="status" />
-                            Searching...
-                          </>
-                        ) : (
-                          <>
-                            <i className="bi bi-search me-2" />
-                            Search
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    {searchErr && (
-                      <div className="col-12 mt-2">
-                        <div className="alert alert-danger d-flex align-items-center" role="alert">
-                          <i className="bi bi-exclamation-triangle me-2" /> {searchErr}
-                        </div>
-                      </div>
-                    )}
+
+            <form onSubmit={handleSearch}>
+              <div className="row g-2 align-items-end">
+                <div className="col-md-7">
+                  <div className="form-floating">
+                    <input
+                      type="email"
+                      className="form-control"
+                      id="lawyer_email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="lawyer@email.com"
+                      required
+                      disabled={searching || creating}
+                    />
+                    <label htmlFor="lawyer_email">Lawyer Email</label>
                   </div>
-                </form>
+                </div>
+                <div className="col-md-auto">
+                  <button className="btn btn-phoenix-primary" type="submit" disabled={searching || creating}>
+                    {searching ? (
+                      <>
+                        <span className="spinner-border spinner-border-sm me-2" role="status" />
+                        Searching...
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-search me-2" />
+                        Search
+                      </>
+                    )}
+                  </button>
+                </div>
+                {searchErr && (
+                  <div className="col-12 mt-2">
+                    <div className="alert alert-danger d-flex align-items-center" role="alert">
+                      <i className="bi bi-exclamation-triangle me-2" /> {searchErr}
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            </form>
+
 
             {/* Resultado: lawyer encontrado */}
             {foundLawyer && (
-              <div className="card mb-4 border-success">
-                <div className="card-body">
-                  <h5 className="mb-3">
-                    <i className="bi bi-check-circle me-2 text-success" />
-                    Lawyer found
-                  </h5>
-                  <p className="mb-1"><strong>Name:</strong> {foundLawyer.firstname} {foundLawyer.lastname}</p>
-                  <p className="mb-1"><strong>Email:</strong> {foundLawyer.email}</p>
-                  <p className="mb-3"><strong>Phone:</strong> {foundLawyer.phone || "—"}</p>
+              <div className="mt-5 ms-2">
+                <h4 className="mb-3">
+                  <i className="bi bi-check-circle me-2 text-success" />
+                  Lawyer found
+                </h4>
+                <p className="mb-1 fs-9"><strong>Name:</strong> {foundLawyer.firstname} {foundLawyer.lastname}</p>
+                <p className="mb-1 fs-9"><strong>Email:</strong> {foundLawyer.email}</p>
+                <p className="mb-3 fs-9"><strong>Phone:</strong> {foundLawyer.phone || "—"}</p>
 
-                  <div className="d-flex justify-content-end">
-                    <p className="form-text me-3 mb-0 d-inline-flex align-items-center">
-                      <i className="bi bi-envelope me-1"></i>
-                      The lawyer will receive an email invitation once linked to the case.
-                    </p>
-                    <button
-                      className="btn btn-success"
-                      onClick={() => linkLawyerToCase(foundLawyer)}
-                      disabled={creating || !(selectedCourtfileId || preselectedCourtfileId)}
-                      title={!(selectedCourtfileId || preselectedCourtfileId) ? "Select a courtfile first" : ""}
-                    >
-                      <i className="bi bi-link-45deg me-2" />
-                      Link to this Case
-                    </button>
-                  </div>
+                <div className="d-flex justify-content-end">
+                  <p className="form-text me-3 mb-0 d-inline-flex align-items-center">
+                    <i className="bi bi-envelope me-1"></i>
+                    The lawyer will receive an email invitation once linked to the case.
+                  </p>
+                  <button
+                    className="btn btn-phoenix-success me-auto"
+                    onClick={() => linkLawyerToCase(foundLawyer)}
+                    disabled={creating || !(selectedCourtfileId || preselectedCourtfileId)}
+                    title={!(selectedCourtfileId || preselectedCourtfileId) ? "Select a courtfile first" : ""}
+                  >
+                    <i className="bi bi-link-45deg me-2" />
+                    Link to this Case
+                  </button>
                 </div>
               </div>
             )}
 
             {/* No encontrado: Create & Link & Invite */}
             {notFound && (
-              <div className="card">
-                <div className="card-body">
-                  <h5 className="mb-3">
-                    <i className="bi bi-person-plus me-2" />
-                    Lawyer not found — Create, Link and Invite
-                  </h5>
+              <div className="mt-5">
 
-                  {/* Alerta si falta courtfile */}
-                  {!(selectedCourtfileId || preselectedCourtfileId) && (
-                    <div className="alert alert-danger d-flex align-items-center" role="alert">
-                      <i className="bi bi-exclamation-triangle me-2" />
-                      Please select a courtfile to link.
-                    </div>
-                  )}
+                <h4 className="mb-3">
+                  <i className="bi bi-person-plus me-2" />
+                  Lawyer not found — Create, Link and Invite
+                </h4>
 
-                  {createErr && (
-                    <div className="alert alert-danger d-flex align-items-center" role="alert">
-                      <i className="bi bi-exclamation-triangle me-2" /> {createErr}
-                    </div>
-                  )}
+                {/* Alerta si falta courtfile */}
+                {!(selectedCourtfileId || preselectedCourtfileId) && (
+                  <div className="alert alert-danger d-flex align-items-center" role="alert">
+                    <i className="bi bi-exclamation-triangle me-2" />
+                    Please select a courtfile to link.
+                  </div>
+                )}
 
-                  <form onSubmit={handleCreateAndLink}>
-                    <div className="row g-3">
-                      <div className="col-md-4">
-                        <div className="form-floating">
-                          <input
-                            type="text"
-                            className="form-control"
-                            id="firstname"
-                            name="firstname"
-                            value={createForm.firstname}
-                            onChange={handleCreateChange}
-                            placeholder=" "
-                            required
-                            disabled={creating}
-                          />
-                          <label htmlFor="firstname">Firstname *</label>
-                        </div>
-                      </div>
-                      <div className="col-md-4">
-                        <div className="form-floating">
-                          <input
-                            type="text"
-                            className="form-control"
-                            id="lastname"
-                            name="lastname"
-                            value={createForm.lastname}
-                            onChange={handleCreateChange}
-                            placeholder=" "
-                            required
-                            disabled={creating}
-                          />
-                          <label htmlFor="lastname">Lastname *</label>
-                        </div>
-                      </div>
-                      <div className="col-md-4">
-                        <div className="form-floating">
-                          <input
-                            type="tel"
-                            className="form-control"
-                            id="phone"
-                            name="phone"
-                            value={createForm.phone}
-                            onChange={handleCreateChange}
-                            placeholder="+54 9 11 5555-5555"
-                            disabled={creating}
-                          />
-                          <label htmlFor="phone">Phone</label>
-                        </div>
+                {createErr && (
+                  <div className="alert alert-danger d-flex align-items-center" role="alert">
+                    <i className="bi bi-exclamation-triangle me-2" /> {createErr}
+                  </div>
+                )}
+
+                <form onSubmit={handleCreateAndLink}>
+                  <div className="row g-3">
+                    <div className="col-md-4">
+                      <div className="form-floating">
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="firstname"
+                          name="firstname"
+                          value={createForm.firstname}
+                          onChange={handleCreateChange}
+                          placeholder=" "
+                          required
+                          disabled={creating}
+                        />
+                        <label htmlFor="firstname">Firstname *</label>
                       </div>
                     </div>
-
-                    <div className="form-text mt-2">
-                      Default password will be:{" "}
-                      <code>{`LexQuo${capitalize(createForm.firstname)}${capitalize(createForm.lastname)}`}</code>
+                    <div className="col-md-4">
+                      <div className="form-floating">
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="lastname"
+                          name="lastname"
+                          value={createForm.lastname}
+                          onChange={handleCreateChange}
+                          placeholder=" "
+                          required
+                          disabled={creating}
+                        />
+                        <label htmlFor="lastname">Lastname *</label>
+                      </div>
                     </div>
-
-                    <div className="d-flex gap-2 justify-content-end mt-4">
-                      <p className="form-text me-3 mb-0 d-inline-flex align-items-center">
-                        <i className="bi bi-envelope me-1"></i>
-                        The lawyer will receive an email invitation once linked to the case.
-                      </p>
-                      <Link to={returnTo} className="btn btn-outline-secondary">Cancel</Link>
-                      <button
-                        type="submit"
-                        className="btn btn-primary"
-                        disabled={creating || !(selectedCourtfileId || preselectedCourtfileId)}
-                        title={!(selectedCourtfileId || preselectedCourtfileId) ? "Select a courtfile first" : ""}
-                      >
-                        {creating ? (
-                          <>
-                            <span className="spinner-border spinner-border-sm me-2" role="status" />
-                            Creating & Linking...
-                          </>
-                        ) : (
-                          <>
-                            <i className="bi bi-plus-circle me-2" />
-                            Create & Link
-                          </>
-                        )}
-                      </button>
+                    <div className="col-md-4">
+                      <div className="form-floating">
+                        <input
+                          type="tel"
+                          className="form-control"
+                          id="phone"
+                          name="phone"
+                          value={createForm.phone}
+                          onChange={handleCreateChange}
+                          placeholder="+54 9 11 5555-5555"
+                          disabled={creating}
+                        />
+                        <label htmlFor="phone">Phone</label>
+                      </div>
                     </div>
-                  </form>
-                </div>
+                  </div>
+
+                  <div className="form-text mt-2">
+                    Default password will be:{" "}
+                    <code>{`LexQuo${capitalize(createForm.firstname)}${capitalize(createForm.lastname)}`}</code>
+                  </div>
+
+                  <div className="d-flex gap-2 justify-content-end mt-4">
+                    <p className="form-text me-3 mb-0 d-inline-flex align-items-center">
+                      <i className="bi bi-envelope me-1"></i>
+                      The lawyer will receive an email invitation once linked to the case.
+                    </p>
+                    <Link to={returnTo} className="btn btn-phoenix-secondary">Cancel</Link>
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      disabled={creating || !(selectedCourtfileId || preselectedCourtfileId)}
+                      title={!(selectedCourtfileId || preselectedCourtfileId) ? "Select a courtfile first" : ""}
+                    >
+                      {creating ? (
+                        <>
+                          <span className="spinner-border spinner-border-sm me-2" role="status" />
+                          Creating & Linking...
+                        </>
+                      ) : (
+                        <>
+                          <i className="bi bi-plus-circle me-2" />
+                          Create & Link
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
               </div>
             )}
           </div>

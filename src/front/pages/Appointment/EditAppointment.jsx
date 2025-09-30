@@ -297,12 +297,6 @@ export const EditAppointment = () => {
     const cfNum = linkedCourtfile?.number ?? preselectedCourtfileNumber;
     const cfTitle = linkedCourtfile?.title ?? preselectedCourtfileTitle;
 
-    if (cfId) {
-      arr.push({
-        label: `CF ${cfNum || cfId}${cfTitle ? ` — ${cfTitle}` : ""}`,
-        to: `/courtfiles/ViewCourtfileLawyer/${cfId}`,
-      });
-    }
 
     arr.push({ label: "Edit", to: null }); // <- era "Add"
     return arr;

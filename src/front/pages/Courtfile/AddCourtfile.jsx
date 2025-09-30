@@ -116,16 +116,46 @@ export const AddCourtfile = () => {
         <AppNavsShell>
             <div className="container main-content add-page">
                 {/* Header */}
+                <nav aria-label="breadcrumb" className="mb-3">
+                    <ol className="breadcrumb">
+                        <li className="breadcrumb-item">
+                            <Link to={returnTo || "/courtfiles"}>Cases</Link>
+                        </li>
+                        <li className="breadcrumb-item active" aria-current="page">
+                            Add
+                        </li>
+                    </ol>
+                </nav>
 
 
                 {/* Panel principal */}
                 <div className="col-lg-8 col-xl-8">
+                    {/* Header */}
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <h1 className="display-5 fw-bold mb-0">Add New Courtfile</h1>
-                        <Link to={returnTo} className="px-3 text-body text-decoration-none btn btn-link">
-                            <i className="bi bi-arrow-left me-1" />
-                            Back
-                        </Link>
+                        <div className="d-flex gap-2">
+                            <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary">
+                                Cancel
+                            </Link>
+                            <button
+                                type="submit"
+                                form="addCourtfileForm"
+                                className="btn btn-phoenix btn-phoenix-primary"
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-2" role="status" />
+                                        Creating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="bi bi-plus-circle me-2" />
+                                        Create Courtfile
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
 
                     {error && (
@@ -134,7 +164,7 @@ export const AddCourtfile = () => {
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={handleSubmit} id="addCourtfileForm">
 
                         {/* CASE NUMBER */}
                         <div className="form-floating mb-3">
@@ -233,23 +263,6 @@ export const AddCourtfile = () => {
                             <label className="form-check-label ms-2" htmlFor="status">Active case</label>
                         </div>
 
-                        {/* Actions */}
-                        <div className="d-flex gap-2 justify-content-end">
-                            <Link to="/courtfiles" className="btn btn-phoenix btn-phoenix-secondary">Cancel</Link>
-                            <button type="submit" className="btn btn-phoenix btn-phoenix-primary" disabled={loading}>
-                                {loading ? (
-                                    <>
-                                        <span className="spinner-border spinner-border-sm me-2" role="status" />
-                                        Creating...
-                                    </>
-                                ) : (
-                                    <>
-                                        <i className="bi bi-plus-circle me-2" />
-                                        Create Courtfile
-                                    </>
-                                )}
-                            </button>
-                        </div>
 
                     </form>
                 </div>
