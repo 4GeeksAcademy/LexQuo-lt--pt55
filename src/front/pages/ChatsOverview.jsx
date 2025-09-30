@@ -11,34 +11,31 @@ export default function ChatsOverview() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // PrivateRoute ya aseguró sesión
+  // ---- Auth ----
   const token = store?.auth?.token || null;
   const me = store?.me || null;
   const role = (me?.role || "").toLowerCase();
-
-  if (!["lawyer", "client", "admin_user"].includes(role)) {
-    return <Navigate to="/403" replace />;
-  }
+  if (!["lawyer", "client", "admin_user"].includes(role)) return <Navigate to="/403" replace />;
 
   const returnTo =
     location.state?.returnTo ||
-    (role === "lawyer"
-      ? "/DashboardLawyer"
-      : role === "client"
-      ? "/DashboardClient"
-      : "/DashboardAdmin");
+    (role === "lawyer" ? "/DashboardLawyer" : role === "client" ? "/DashboardClient" : "/DashboardAdmin");
 
-  // Endpoint según rol
-  const listEndpoint = useMemo(() => {
-    return role === "lawyer" ? "/api/lawyers-courtfiles" : "/api/clients-courtfiles";
-  }, [role]);
+  // ---- Endpoint según rol ----
+  const listEndpoint = useMemo(
+    () => (role === "lawyer" ? "/api/lawyers-courtfiles" : "/api/clients-courtfiles"),
+    [role]
+  );
 
+  // ---- State ----
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
+  const [q, setQ] = useState("");
+  const [tab, setTab] = useState("all"); // all | read | unread
 
+  // ---- Unread helper ----
   const caseIds = useMemo(() => rows.map((r) => Number(r.id)).filter(Boolean), [rows]);
-
   const { unreadByCase, totalUnread } = useUnreadBadges({
     API,
     token,
@@ -46,61 +43,48 @@ export default function ChatsOverview() {
     role,
     courtfileIds: caseIds,
   });
-
   const unreadCountFor = (id) => {
     const key = Number(id);
-    const u =
-      typeof unreadByCase?.get === "function" ? unreadByCase.get(key) : unreadByCase?.[key];
+    const u = typeof unreadByCase?.get === "function" ? unreadByCase.get(key) : unreadByCase?.[key];
     return u?.count ?? (u?.hasUnread ? 1 : 0);
   };
 
+  // ---- Fetch ----
   const fetchData = async () => {
     try {
       setLoading(true);
       setErr("");
 
-      // 1) Traer los expedientes visibles
-      const resp = await fetch(`${API}${listEndpoint}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const resp = await fetch(`${API}${listEndpoint}`, { headers: { Authorization: `Bearer ${token}` } });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
         throw new Error(e.error || `HTTP ${resp.status}`);
       }
       const data = await resp.json();
 
-      // 2) Normalizar
-      const normalized = data.map((r) => ({
-        relation_id: r.id,
-        ...(r.courtfile || r),
-      }));
-
+      const normalized = data.map((r) => ({ relation_id: r.id, ...(r.courtfile || r) }));
       const ids = normalized.map((cf) => cf.id).filter(Boolean);
-      if (ids.length === 0) {
-        setRows(normalized);
-        return;
+
+      let unreadMap = {};
+      if (ids.length) {
+        const unreadResp = await fetch(
+          `${API}/api/messages/unread?role=${encodeURIComponent(role)}&user_id=${me?.id}&courtfile_ids=${ids.join(",")}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        unreadMap = unreadResp.ok ? await unreadResp.json() : {};
       }
 
-      // 3) Última actividad + unread por expediente
-      const unreadResp = await fetch(
-        `${API}/api/messages/unread?role=${encodeURIComponent(role)}&user_id=${
-          me?.id
-        }&courtfile_ids=${ids.join(",")}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const unreadMap = unreadResp.ok ? await unreadResp.json() : {};
-
-      // 4) Merge
       const merged = normalized.map((cf) => {
         const u = unreadMap?.[String(cf.id)];
         return {
           ...cf,
           last_message_at: u?.last_message_at || null,
           _unreadCount: u?.count ?? (u?.hasUnread ? 1 : 0),
+          _snippet: u?.snippet || "",
+          _avatar: cf.avatar_url || null, // si algún día mandás avatar por expediente/persona
         };
       });
 
-      // 5) Orden por actividad desc, luego por unread desc
       merged.sort((a, b) => {
         const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
         const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
@@ -121,131 +105,197 @@ export default function ChatsOverview() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [API, listEndpoint, token]);
 
+  // ---- Derivados (tabs + search) ----
+  const filtered = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    return rows.filter((cf) => {
+      const unread = unreadCountFor(cf.id) > 0;
+      const passTab = tab === "all" ? true : tab === "unread" ? unread : !unread;
+      if (!passTab) return false;
+      if (!term) return true;
+      return (
+        String(cf.case_number || "").toLowerCase().includes(term) ||
+        String(cf.title || "").toLowerCase().includes(term) ||
+        String(cf.jurisdiction || "").toLowerCase().includes(term) ||
+        String(cf.court || "").toLowerCase().includes(term)
+      );
+    });
+  }, [rows, q, tab]);
+
+  // ---- UI helpers ----
+  const fmtTime = (iso) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" }); // e.g. Mon, 10:05
+  };
+  const initials = (txt) =>
+    (txt || "")
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase() || "")
+      .join("") || "CF";
+
   return (
     <AppNavsShell>
-      <div className="container add-page">
-        {/* ===== Toolbar ===== */}
-        <div className="mb-1">
-          {/* Fila 1: título + help text */}
-          <div className="mb-5">
-            <div className="d-flex gap-3 align-items-center">
-              <h1 className="h2 mb-2">Chats</h1>
-              {totalUnread > 0 && (
-                <span className="badge bg-danger rounded-pill">
-                  {totalUnread > 99 ? "99+" : totalUnread} unread
-                </span>
-              )}
-            </div>
-            <p className="text-muted small mt-1">
-              Conversaciones por expediente. Hacé click en la fila para abrir el chat.
-            </p>
+      <div className="container-fluid px-3">
+        {/* Topbar simple */}
+        <div className="d-flex align-items-center justify-content-between mb-3">
+          <div className="d-flex align-items-center gap-3">
+            <h1 className="h2 mb-0">Chats</h1>
+            {totalUnread > 0 && (
+              <span className="badge bg-danger rounded-pill">{totalUnread > 99 ? "99+" : totalUnread}</span>
+            )}
           </div>
-
-          {/* Fila 2: botón volver (alineado a la derecha como acción) */}
-          <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
-            <div className="d-flex align-items-center gap-2 flex-nowrap" />
-            <div className="ms-auto">
-              <Link to={returnTo} className="btn btn-outline-secondary">
-                <i className="bi bi-arrow-left me-1" />
-                Back
-              </Link>
-            </div>
-          </div>
+          <Link to={returnTo} className="btn btn-outline-secondary">
+            <i className="bi bi-arrow-left me-1" />
+            Back
+          </Link>
         </div>
 
-        {/* ===== Tabla ===== */}
-        {rows.length > 0 ? (
-          <div className="table-responsive pt-0">
-            <table className="table table-modern align-middle mb-0 pt-0">
-              <thead className="table-light">
-                <tr>
-                  <th className="text-start" style={{ width: "60px" }}>
-                    ID
-                  </th>
-                  <th>Case Number</th>
-                  <th>Title</th>
-                  <th>Jurisdiction</th>
-                  <th>Court</th>
-                  <th className="text-end pe-3">
-                    <span className="text-muted">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((cf) => (
-                  <tr
-                    key={cf.id}
-                    className="table-row-clickable"
-                    onClick={() => navigate(`/chats/${cf.id}`, {
-                      state: {
+        {/* ===== Layout Phoenix: sidebar + placeholder ===== */}
+
+        <div className="chat d-flex gap-3">
+          {/* ===== SIDEBAR ===== */}
+          <div className="chat-sidebar p-3 p-xl-1 card" style={{ minWidth: 320, maxWidth: 420, width: "100%" }}>
+            {/* (Botón y menú responsive del demo existen, pero no hacen falta funcionalmente) */}
+
+            {/* Search (desktop) */}
+            <div className="form-icon-container mb-4 d-sm-none d-xl-block">
+              <input
+                placeholder="People, Groups and Messages"
+                className="form-icon-input form-control"
+                type="text"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+              <i className="fa-solid fa-user text-body fs-9 form-icon" />
+            </div>
+
+            {/* Tabs All/Read/Unread */}
+            <div className="mb-5 d-sm-none d-xl-flex nav nav-phoenix-pills" role="tablist">
+              {["all", "read", "unread"].map((k) => (
+                <div className="nav-item" key={k}>
+                  <a
+                    role="tab"
+                    data-rr-ui-event-key={k}
+                    id={`react-aria-${k}-tab`}
+                    aria-controls={`react-aria-${k}-tabpane`}
+                    aria-selected={tab === k}
+                    className={`nav-link ${tab === k ? "active" : ""}`}
+                    tabIndex={tab === k ? "0" : "-1"}
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setTab(k);
+                    }}
+                  >
+                    {k[0].toUpperCase() + k.slice(1)}
+                  </a>
+                </div>
+              ))}
+            </div>
+
+            {/* Lista de conversaciones */}
+            <div className="scrollbar">
+              <div className="chat-conversation-tab flex-column nav" role="tablist">
+                {loading && <div className="px-3 py-2 text-muted small">Loading chats…</div>}
+                {err && <div className="px-3 py-2 text-danger small">{err}</div>}
+                {!loading && !err && filtered.length === 0 && (
+                  <div className="px-3 py-2 text-muted small">No results</div>
+                )}
+
+                {filtered.map((cf) => {
+                  const unread = unreadCountFor(cf.id);
+                  const lastAt = fmtTime(cf.last_message_at);
+                  const name = cf.title || `Courtfile #${cf.id}`;
+                  const snippet =
+                    cf._snippet ||
+                    (cf.court ? `${cf.jurisdiction ?? ""} ${cf.court}`.trim() : cf.jurisdiction || "");
+
+                  return (
+                    <Link
+                      key={cf.id}
+                      role="tab"
+                      className={`d-flex align-items-center justify-content-center p-2 nav-link ${unread > 0 ? "unread" : "read"
+                        }`}
+                      to={`/chats/${cf.id}`}
+                      state={{
                         courtfileId: cf.id,
                         courtfileNumber: cf.case_number,
                         courtfileTitle: cf.title,
                         senderRole: role,
                         returnTo: "/chats",
-                      },
-                    })}
-                    role="button"
-                    title="Open chat"
-                  >
-                    <td className="text-start ps-2">{cf.id}</td>
-                    <td>{cf.case_number}</td>
-                    <td
-                      className="text-truncate"
-                      style={{ maxWidth: 320 }}
-                      title={cf.title}
+                      }}
+                      data-discover="true"
+                      title="Open conversation"
                     >
-                      {cf.title}
-                    </td>
-                    <td>{cf.jurisdiction || "—"}</td>
-                    <td>{cf.court || "—"}</td>
+                      {/* Avatar */}
+                      <div className="position-relative me-2 me-sm-0 me-xl-2">
+                        <div className="d-block avatar">
+                          {cf._avatar ? (
+                            <img
+                              alt="avatar"
+                              className="border border-2 border-light-subtle rounded-circle"
+                              src={cf._avatar}
+                            />
+                          ) : (
+                            <div className="border border-2 border-light-subtle rounded-circle d-flex align-items-center justify-content-center bg-body-tertiary text-body fw-semibold"
+                              style={{ width: "100%", height: "100%" }}>
+                              {initials(name)}
+                            </div>
+                          )}
+                        </div>
 
-                    {/* Actions */}
-                    <td className="text-end pe-3" onClick={(e) => e.stopPropagation()}>
-                      <div className="d-inline-block position-relative">
-                        <Link
-                          to={`/chats/${cf.id}`}
-                          state={{
-                            courtfileId: cf.id,
-                            courtfileNumber: cf.case_number,
-                            courtfileTitle: cf.title,
-                            senderRole: role,
-                            returnTo: "/chats",
-                          }}
-                          className="btn btn-sm btn-phoenix btn-phoenix-primary"
-                        >
-                          <i className="bi bi-chat-dots me-1" />
-                          Open chat
-                        </Link>
-
-                        {unreadCountFor(cf.id) > 0 && (
+                        {/* puntito en mobile cuando hay unread */}
+                        {unread > 0 && (
                           <span
-                            className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                            style={{ pointerEvents: "none" }}
-                            title="Unread"
+                            className="bg-primary rounded-circle top-0 end-0 position-absolute text-white d-flex flex-center fs-10 fw-semibold d-none d-sm-flex d-xl-none lh-1"
+                            style={{ height: "1rem", width: "1rem" }}
                           >
-                            {unreadCountFor(cf.id) > 99 ? "99+" : unreadCountFor(cf.id)}
-                            <span className="visually-hidden">unread messages</span>
+                            {unread > 9 ? "" : unread}
                           </span>
                         )}
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+                      {/* Texto */}
+                      <div className="flex-1 d-sm-none d-xl-block">
+                        <div className="d-flex justify-content-between align-items-center">
+                          <h5 className="text-body fw-normal name text-nowrap mb-0">{name}</h5>
+                          <p className="fs-10 text-body-tertiary text-opacity-85 mb-0 text-nowrap">{lastAt}</p>
+                        </div>
+
+                        <div className="d-flex justify-content-between">
+                          <p className="fs-9 mb-0 line-clamp-1 text-body-tertiary text-opacity-85 message">
+                            {snippet || "Open chat"}
+                          </p>
+
+                          {unread > 0 && (
+                            <span className="px-1 unread-badge ms-1 badge-phoenix badge-phoenix-primary badge">
+                              {unread > 99 ? "99+" : unread}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           </div>
-        ) : loading ? (
-          <div className="alert alert-light border d-flex align-items-center" role="alert">
-            <span className="spinner-border spinner-border-sm me-2" /> Loading chats…
+
+          {/* ===== PANEL DERECHO (placeholder) ===== */}
+          <div className="h-100 w-100 d-none d-sm-block card">
+            <div className="h-100 d-flex flex-column flex-center text-center card-body">
+              <img alt="chat" height="260" width="320" className="mb-15 d-dark-none" src="/assets/chat-_IOBP0be.webp" />
+              <img alt="chat" height="260" width="320" className="mb-15 d-light-none" src="/assets/dark_chat-Bg8B0lAX.webp" />
+              <h3 className="text-body fw-semibold mb-3 fs-7 fs-sm-6">Click to select a Conversation or,</h3>
+              <h3 className="text-primary fw-semibold fs-7 fs-sm-6">Start a New Conversation</h3>
+            </div>
           </div>
-        ) : err ? (
-          <div className="alert alert-danger">{err}</div>
-        ) : (
-          <div className="alert alert-info">
-            <i className="bi bi-info-circle" /> No hay expedientes vinculados aún.
-          </div>
-        )}
+        </div>
+
       </div>
     </AppNavsShell>
   );
