@@ -397,7 +397,7 @@ export default function ChatOnDemand(props) {
           )}
         </div>
 
-        <div className="card-body" style={{ maxHeight: 200, overflowY: "auto" }} ref={chatContainerRef}>
+        <div className="card-body" style={{ maxHeight: 400, overflowY: "auto" }} ref={chatContainerRef}>
           {messages.length === 0 && !err && (
             <p className="text-muted m-0">Sin mensajes aún. Sé el primero en enviar un mensaje.</p>
           )}

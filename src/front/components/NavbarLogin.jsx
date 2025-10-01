@@ -57,6 +57,9 @@ const NavbarLogin = () => {
           </Link>
         </div>
 
+        {/* Spacer debajo de la navbar */}
+    <div className="topbar-spacer" aria-hidden="true"></div>
+
 
         {/* Derecha: iconos */}
         <ul className="navbar-nav flex-row gap-3 align-items-center ms-auto">

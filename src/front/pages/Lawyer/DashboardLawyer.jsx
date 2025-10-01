@@ -208,25 +208,38 @@ export const DashboardLawyer = () => {
             setLoadingPayments(true);
             setPaymentsErr("");
 
-            const response = await fetch(`${API}/api/payments`, {
+            const endpoint =
+                role === "admin_user"
+                    ? `${API}/api/payments`
+                    : `${API}/api/payments-courtfile?expand=payment`;
+
+            const response = await fetch(endpoint, {
                 headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                setPayments(Array.isArray(data) ? data : []);
-            } else {
+            if (!response.ok) {
                 setPayments([]);
-                setPaymentsErr("Error fetching payments");
+                setPaymentsErr(`HTTP ${response.status}`);
+                return;
             }
+
+            const data = await response.json();
+
+            const normalized =
+                role === "admin_user"
+                    ? (Array.isArray(data) ? data : [])
+                    : data.map(pc => pc.payment).filter(Boolean);
+
+            setPayments(normalized);
         } catch (error) {
-            console.error("Error:", error);
+            console.error("Error fetching payments:", error);
             setPayments([]);
             setPaymentsErr(error.message || "Error fetching payments");
         } finally {
             setLoadingPayments(false);
         }
     };
+
 
     // derivados (idéntica idea: comparar contra strings planos)
     const now = new Date();
