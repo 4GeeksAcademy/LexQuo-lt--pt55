@@ -38,6 +38,7 @@
 		"eslint-plugin-react": "^7.33.1",
 		"eslint-plugin-react-hooks": "^4.6.0",
 		"eslint-plugin-react-refresh": "^0.4.3",
+		"mjml": "^4.16.1",
 		"vite": "^4.4.8"
 	},
 	"babel": {
@@ -56,17 +57,25 @@
 		]
 	},
 	"dependencies": {
+		"@fullcalendar/daygrid": "^6.1.19",
+		"@fullcalendar/interaction": "^6.1.19",
+		"@fullcalendar/react": "^6.1.19",
+		"@fullcalendar/timegrid": "^6.1.19",
 		"@googlemaps/js-api-loader": "^1.16.10",
 		"@vis.gl/react-google-maps": "^1.5.5",
+		"bootstrap": "^5.3.8",
 		"bootstrap-icons": "^1.13.1",
 		"cloudinary": "^1.41.3",
 		"date-fns": "^4.1.0",
+		"emoji-picker-react": "^4.13.3",
 		"firebase": "^12.2.1",
 		"leaflet": "^1.9.4",
 		"multer": "^2.0.2",
 		"multer-storage-cloudinary": "^4.0.0",
 		"prop-types": "^15.8.1",
 		"react": "^18.2.0",
+		"react-avatar": "^5.0.4",
+		"react-bootstrap": "^2.10.10",
 		"react-calendar": "^6.0.0",
 		"react-datepicker": "^8.7.0",
 		"react-dom": "^18.2.0",

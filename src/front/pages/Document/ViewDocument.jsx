@@ -1,6 +1,7 @@
 import { Link, useParams, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import AppNavsShell from "../../components/AppNavsShell";
 
 export const ViewDocument = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -11,38 +12,75 @@ export const ViewDocument = () => {
 
   const API = import.meta.env.VITE_BACKEND_URL;
 
-  const token = store?.auth?.token;
+  const token = store?.auth?.token || null;
   const role = (store?.me?.role || "").toLowerCase();
 
   // ---------- Guards ----------
-  const allowed =
-    role === "admin_user" ||
-    role === "lawyer";
-
+  const allowed = role === "admin_user" || role === "lawyer";
   if (!allowed) return <Navigate to="/403" replace />;
 
+  // ---------- State ----------
   const [documentData, setDocumentData] = useState(null);
+  const [linkedCourtfile, setLinkedCourtfile] = useState(() => {
+    const s = location.state || {};
+    if (s.courtfileId) return { id: s.courtfileId, number: s.courtfileNumber, title: s.courtfileTitle };
+    if (s.preselectedCourtfileId)
+      return { id: s.preselectedCourtfileId, number: s.preselectedCourtfileNumber, title: s.preselectedCourtfileTitle };
+    return null;
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const state = location.state || {};
-  const initialLinked = state.courtfileId
-    ? { id: state.courtfileId, number: state.courtfileNumber, title: state.courtfileTitle }
-    : (state.preselectedCourtfileId
-      ? { id: state.preselectedCourtfileId, number: state.preselectedCourtfileNumber, title: state.preselectedCourtfileTitle }
-      : null);
+  // ===== AI (para este documento) =====
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [cfDetails, setCfDetails] = useState(null); // descripción / jurisdicción / court
 
-  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
+  // ---------- Helpers ----------
+  const safeDateTime = (v) => {
+    if (!v) return "-";
+    const d = new Date(v);
+    if (isNaN(d)) return "-";
+    return d.toLocaleDateString() + " " + d.toLocaleTimeString();
+  };
 
+  const dateYMDToDMY = (v) => {
+    if (!v) return "-";
+    const m = /^\d{4}-\d{2}-\d{2}$/.test(v);
+    if (!m) return "-";
+    const [y, mo, d] = v.split("-");
+    return `${d}/${mo}/${y}`;
+  };
+
+  const handleDownload = (doc) => {
+    try {
+      if (!doc?.url_route) return;
+      const a = document.createElement("a");
+      a.href = doc.url_route;
+      const fallbackExt = doc.type ? `.${String(doc.type).toLowerCase()}` : "";
+      a.download = doc.original_filename || `${doc.name || "document"}${fallbackExt}`;
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (e) {
+      console.error(e);
+      window.open(doc.url_route, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  // ---------- Fetch document ----------
   useEffect(() => {
     const fetchDocument = async () => {
       try {
+        if (!documentId) return;
         setLoading(true);
-        const response = await fetch(`${API}/api/documents/${documentId}`, {
-          headers: { Authorization: `Bearer ${token}` } 
+        const resp = await fetch(`${API}/api/documents/${documentId}`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
         });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
         setDocumentData(data);
         setError(null);
       } catch (err) {
@@ -52,257 +90,541 @@ export const ViewDocument = () => {
         setLoading(false);
       }
     };
-
-    if (documentId) fetchDocument();
-  }, [documentId, API]);
+    fetchDocument();
+  }, [API, token, documentId]);
 
   useEffect(() => {
-    const loadCf = async () => {
+    if (documentData) {
+      console.log("📋 Document Data Loaded:", {
+        id: documentData.id,
+        name: documentData.name,
+        url_route: documentData.url_route,
+        hasUrl: !!(documentData.url_route || documentData.document_url)
+      });
+    }
+  }, [documentData]);
+
+  // ---------- If we know the CF id but lack number/title, fetch the CF ----------
+  useEffect(() => {
+    const loadCourtfileBasics = async () => {
       try {
-        if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
-          const resp = await fetch(`${API}/api/documents/${documentId}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (resp.ok) {
-            const d = await resp.json();
-            setLinkedCourtfile(cf => ({ ...(cf || {}), number: d.case_number, title: d.title }));
-          }
-        }
-      } catch (e) {
-        setError("No se pudo cargar el expediente vinculado");
+        if (!linkedCourtfile?.id) return;
+        if (linkedCourtfile.number && linkedCourtfile.title && cfDetails) return;
+
+        const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`, {
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        });
+        if (!resp.ok) return;
+        const d = await resp.json();
+
+        setLinkedCourtfile((cf) => ({
+          ...(cf || {}),
+          number: d.case_number ?? cf?.number ?? null,
+          title: d.title ?? cf?.title ?? null,
+        }));
+        setCfDetails({
+          description: d.description || "",
+          jurisdiction: d.jurisdiction || "",
+          court: d.court || "",
+          case_number: d.case_number || "",
+          id: d.id,
+        });
+      } catch {
+        // noop
       }
     };
-    loadCf();
-  }, [API, linkedCourtfile?.id]);
+    loadCourtfileBasics();
+  }, [API, token, linkedCourtfile?.id]); // detalles CF se cargan si tenemos id
 
+  // ---------- If nothing in state, locate the CF link from relation table ----------
   useEffect(() => {
     const fetchLinked = async () => {
       try {
         if (linkedCourtfile || !documentId) return;
         const resp = await fetch(`${API}/api/courtfile-document`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
         });
         if (!resp.ok) return;
         const rows = await resp.json();
-        const rel = (rows || []).find(r => Number(r.document_id) === Number(documentId));
+        const rel = (rows || []).find((r) => Number(r.document_id) === Number(documentId));
         if (rel) {
           setLinkedCourtfile({
             id: rel.courtfile_id,
-            number: rel.courtfile_number,
-            title: rel.courtfile_title
+            number: rel.courtfile_number ?? null,
+            title: rel.courtfile_title ?? null,
           });
         }
-      } catch { /* noop */ }
+      } catch {
+        // noop
+      }
     };
     fetchLinked();
-  }, [API, documentId, linkedCourtfile]);
+  }, [API, token, documentId, linkedCourtfile]);
 
-  const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this document?")) return;
+  // ====== ANALIZAR DOCUMENTO (AI) ======
+  const runDocumentAnalysis = async () => {
+    console.log("🔍 runDocumentAnalysis called");
+
+    if (!documentData) {
+      console.log("❌ No documentData");
+      return;
+    }
+
+    const documentUrl = documentData.url_route || documentData.document_url || null;
+    const documentName = documentData.name || documentData.original_filename || `document-${documentId}`;
+
+    console.log("📄 Document data:", { documentUrl, documentName, documentId });
+
+    if (!documentUrl) {
+      console.log("❌ No document URL found");
+      setAiError("No document URL found to analyze.");
+      return;
+    }
 
     try {
-      const response = await fetch(`${API}/api/documents/${documentId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
+      setAiLoading(true);
+      setAiError("");
+      setAiSuggestions([]);
+
+      const body = {
+        document_url: documentUrl,
+        document_name: documentName,
+        case_description: cfDetails?.description || "",
+        case_jurisdiction: cfDetails?.jurisdiction || "",
+        case_court: cfDetails?.court || "",
+        case_number: cfDetails?.case_number || "",
+      };
+
+      console.log("📤 Sending AI request:", body);
+
+      const resp = await fetch(`${API}/api/ai/analyze-document`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
       });
 
-      if (response.ok) {
-        dispatch({ type: "DELETE_DOCUMENT", payload: Number(documentId) || documentId });
-        navigate(returnTo, { replace: true });
-        alert("Document deleted successfully!");
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to delete document");
+      console.log("📥 AI Response status:", resp.status);
+
+      const data = await resp.json().catch(() => ({}));
+      console.log("📥 AI Response data:", data);
+
+      if (!resp.ok) {
+        throw new Error(data?.error || `HTTP ${resp.status}`);
       }
+
+      // CORRECCIÓN: Mapear los campos del backend a los que espera el frontend
+      const rawSuggestions = Array.isArray(data?.analysis) ? data.analysis : [];
+      console.log("🔍 Raw suggestions from backend:", rawSuggestions);
+
+      // Mapear los campos al formato que espera el frontend
+      const sugs = rawSuggestions.map((suggestion, index) => ({
+        id: `temp-${Date.now()}-${index}`, // ID temporal para React
+        title: suggestion.title || "Sugerencia sin título",
+        reasoning: suggestion.content || "", // content → reasoning
+        urgency: suggestion.urgency || "medium",
+        next_steps: typeof suggestion.actions === 'string'
+          ? [suggestion.actions]
+          : Array.isArray(suggestion.actions)
+            ? suggestion.actions
+            : [], // actions → next_steps
+        legal_basis: suggestion.legal_basis || "",
+        confidence: suggestion.confidence || 0.8
+      }));
+
+      console.log("✅ Mapped AI Suggestions:", sugs.length);
+      if (sugs.length > 0) {
+        console.log("🔍 First mapped suggestion:", sugs[0]);
+      }
+
+      setAiSuggestions(sugs);
+
+    } catch (e) {
+      console.error("❌ AI Analysis error:", e);
+      setAiError(e.message || "Error analyzing document");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // Efecto mejorado para análisis automático
+  const [hasRunAnalysis, setHasRunAnalysis] = useState(false);
+
+  useEffect(() => {
+    console.log("🔄 Analysis effect triggered", {
+      hasDocumentData: !!documentData,
+      hasLinkedCourtfile: !!linkedCourtfile?.id,
+      hasCfDetails: !!cfDetails,
+      hasRunAnalysis
+    });
+
+    // Condiciones más estrictas + evitar ejecuciones múltiples
+    if (!documentData || hasRunAnalysis) {
+      return;
+    }
+
+    // Si hay courtfile vinculado, esperar a que carguen los detalles
+    if (linkedCourtfile?.id && !cfDetails) {
+      console.log("⏳ Waiting for courtfile details");
+      return;
+    }
+
+    console.log("🚀 Starting automatic analysis");
+    setHasRunAnalysis(true);
+    runDocumentAnalysis();
+  }, [documentData, linkedCourtfile?.id, cfDetails, hasRunAnalysis]);
+
+  // Efecto separado para debug
+  useEffect(() => {
+    console.log("📊 AI State update:", {
+      aiLoading,
+      aiError,
+      aiSuggestionsCount: aiSuggestions?.length,
+      hasCfDetails: !!cfDetails
+    });
+  }, [aiLoading, aiError, aiSuggestions, cfDetails]);
+
+
+  // ---------- Delete ----------
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this document?")) return;
+    try {
+      const resp = await fetch(`${API}/api/documents/${documentId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error(e.error || `HTTP ${resp.status}`);
+      }
+      dispatch({ type: "DELETE_DOCUMENT", payload: Number(documentId) || documentId });
+      navigate(returnTo, { replace: true });
+      alert("Document deleted successfully!");
     } catch (err) {
-      console.error("Error deleting document:", err);
+      console.error(err);
       alert(`Error deleting document: ${err.message}`);
     }
   };
 
-  const handleDownload = (docItem) => {
-    try {
-      const officeExtensions = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'];
-      const isOfficeFile = officeExtensions.includes((docItem.type || "").toLowerCase());
-
-      if (isOfficeFile) {
-        const downloadLink = document.createElement('a');
-        downloadLink.href = docItem.url_route;
-        const downloadName = docItem.original_filename || `${docItem.name}.${docItem.type}`;
-        downloadLink.setAttribute('download', downloadName);
-        downloadLink.style.display = 'none';
-
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-
-        document.body.removeChild(downloadLink);
-      } else {
-        window.open(docItem.url_route, '_blank', 'noopener,noreferrer');
-      }
-    } catch (error) {
-      console.error('Error handling file:', error);
-      alert('Error al manejar el archivo');
-    }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "-";
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-  };
-
-  function dateWithoutHours(fechaStr) {
-    if (!fechaStr) return "-";
-    const regex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!regex.test(fechaStr)) {
-      return "Invalid date format";
-    }
-
-    const partes = fechaStr.split('-');
-    return `${partes[2]}/${partes[1]}/${partes[0]}`;
-  }
-
+  // ---------- UI states ----------
   if (loading) {
     return (
-      <div className="container mt-4">
-        <div className="text-center">
-          <div className="spinner-border" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <p>Loading document...</p>
+      <AppNavsShell>
+        <div className="container mt-4 text-center">
+          <div className="spinner-border" role="status"><span className="visually-hidden">Loading…</span></div>
+          <p className="mt-2">Loading document…</p>
         </div>
-      </div>
+      </AppNavsShell>
     );
   }
 
   if (error || !documentData) {
     return (
-      <div className="container mt-4">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle"></i> {error || "Document not found"}
+      <AppNavsShell>
+        <div className="container mt-4">
+          <div className="alert alert-danger">
+            <i className="bi bi-exclamation-triangle"></i> {error || "Document not found"}
+          </div>
+          <Link to={returnTo} className="btn btn-outline-secondary">
+            <i className="bi bi-arrow-left"></i> Back
+          </Link>
         </div>
-        <Link to={returnTo} className="btn btn-primary">
-          <i className="bi bi-arrow-left"></i> Back
-        </Link>
-      </div>
+      </AppNavsShell>
     );
   }
 
+  // prefer created_at but keep backward compat with create_at
+  const createdAt = documentData.created_at || documentData.create_at;
+
   return (
-    <div className="container mt-4">
-      <div className="row justify-content-center">
-        <div className="col-md-8">
-          {/* Header */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h1>Document Details</h1>
-            </div>
-            <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back
-            </Link>
+    <AppNavsShell>
+      <div className="container add-page">
+        {/* Header */}
+        <div className="d-flex justify-content-between align-items-end mb-4">
+
+          <div>
+            <nav aria-label="breadcrumb" className="mb-2">
+              <ol className="breadcrumb">
+                <li className="breadcrumb-item">
+                  <Link to={returnTo || "/documents"}>Documents</Link>
+                </li>
+                <li className="breadcrumb-item active" aria-current="page">
+                  Details
+                </li>
+              </ol>
+            </nav>
+            <h1 className="h2 fw-bolder mb-0 line-clamp-1">
+              {documentData.name || "Document"}
+            </h1>
           </div>
 
-          {linkedCourtfile && (
-            <span className="badge bg-dark mt-1 mb-2">
-              Linked to Case {linkedCourtfile.number || `#${linkedCourtfile.id}`}
-              {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
-            </span>
+          
+          {["lawyer", "admin_user"].includes((store?.me?.role || "").toLowerCase()) && (
+            <div className="d-flex gap-2">
+              <Link
+                to={`/documents/${documentData.id}`}
+                state={{ returnTo }}
+                className="btn btn-phoenix-secondary btn-sm"
+              >
+                <i className="bi bi-pencil" /> Edit
+              </Link>
+              <button className="btn btn-phoenix-danger btn-sm" onClick={handleDelete}>
+                <i className="bi bi-trash" /> Delete
+              </button>
+            </div>
           )}
+        </div>
 
-          {/* Card */}
-          <div className="card">
-            <div className="card-header bg-dark text-white">
-              <h5 className="card-title mb-0">
-                <i className="bi bi-file-earmark"></i> Document Information
-              </h5>
-            </div>
+        {/* Row con las dos cards */}
+        <div className="row g-4">
+          {/* Card de información del documento */}
+          <div className="col-6">
+            <div className="card mb-4">
+              <div className="card-body">
+                {/* Download */}
+                <div className="d-flex justify-content-between align-items-center py-2">
+                  <span className="fw-semibold text-muted">Download</span>
+                  <button
+                    onClick={() => handleDownload(documentData)}
+                    className="btn btn-phoenix btn-phoenix-success"
+                    title={`Download ${documentData.name || ""}`}
+                  >
+                    <i className="bi bi-download" />{" "}
+                    {documentData.original_filename || documentData.name || "File"}
+                  </button>
+                </div>
+                <hr className="my-2" />
 
-            <div className="card-body">
-              <div className="row">
-                {/* Columna izquierda */}
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Document Name</label>
-                    <p className="fs-6">{documentData.name || "-"}</p>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Download</label>
-                    <p className="fs-6">
-                      <button
-                        onClick={() => handleDownload(documentData)}
-                        className="btn btn-success btn-sm"
-                        title={`Download ${documentData.name}`}
-                      >
-                        <i className="bi bi-download"></i> {documentData.name}
-                      </button>
-                    </p>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Created At</label>
-                    <p className="fs-6">{formatDate(documentData.create_at) || "-"}</p>
-                  </div>
+                {/* Document Date */}
+                <div className="d-flex justify-content-between align-items-center py-2">
+                  <span className="fw-semibold text-muted">Document Date</span>
+                  <span className="fw-bold">
+                    {documentData.document_date ? dateYMDToDMY(documentData.document_date) : "—"}
+                  </span>
                 </div>
 
-                {/* Columna derecha */}
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Category</label>
-                    <p className="fs-6">
-                      {documentData.category ? (
-                        <span className="badge bg-secondary">
-                          {documentData.category}
-                        </span>
-                      ) : (
-                        "-"
-                      )}
-                    </p>
-                  </div>
+                <hr className="my-2" />
 
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Document Date</label>
-                    <p className="fs-6">{dateWithoutHours(documentData.document_date) || "-"}</p>
+                {/* Category */}
+                <div className="d-flex justify-content-between align-items-center py-2">
+                  <span className="fw-semibold text-muted">Category</span>
+                  {documentData.category ? (
+                    <span className="badge badge-phoenix badge-phoenix-secondary">
+                      {documentData.category}
+                    </span>
+                  ) : (
+                    <span className="text-body">—</span>
+                  )}
+                </div>
+                <hr className="my-2" />
+
+                {/* Created At */}
+                <div className="d-flex justify-content-between align-items-center py-2">
+                  <span className="fw-semibold text-muted">Created At</span>
+                  <span className="fw-bold">{safeDateTime(createdAt) || "—"}</span>
+                </div>
+                <hr className="my-2" />
+
+                {/* Case File */}
+                <div className="d-flex justify-content-between align-items-center py-2">
+                  <span className="fw-semibold text-muted">Case File</span>
+                  {linkedCourtfile ? (
+                    <Link
+                      to={`/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`}
+                      className="badge badge-phoenix badge-phoenix-secondary fs-8"
+                      title={linkedCourtfile.title || ""}
+                      state={{ returnTo: `/documents/view/${documentData.id}` }}
+                    >
+                      {linkedCourtfile.number || `#${linkedCourtfile.id}`}
+                    </Link>
+                  ) : (
+                    <span className="text-body-secondary">—</span>
+                  )}
+                </div>
+
+                {/* Description */}
+                <hr className="my-2" />
+                <div className="py-2">
+                  <span className="fw-semibold text-muted d-block mb-2">Description</span>
+                  <div className="border rounded bg-light p-3">
+                    {documentData.description && documentData.description.trim() ? (
+                      <p className="mb-0" style={{ whiteSpace: "pre-wrap" }}>
+                        {documentData.description}
+                      </p>
+                    ) : (
+                      <span className="text-body-secondary">No description provided</span>
+                    )}
                   </div>
                 </div>
-              </div>
-
-              <div className="row">
-                <div className="col-12">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Description</label>
-                    <div className="border p-3 bg-light rounded">
-                      {documentData.description ? (
-                        <p className="mb-0">{documentData.description}</p>
-                      ) : (
-                        <p className="text-muted mb-0">No description provided</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="card-footer bg-light">
-              <div className="d-flex gap-2 justify-content-end">
-
-                <Link
-                  to={`/documents/${documentData.id}`}
-                  state={{ returnTo }}
-                  className="btn btn-warning"
-                >
-                  <i className="bi bi-pencil"></i> Edit
-                </Link>
-
-                <button className="btn btn-danger" onClick={handleDelete}>
-                  <i className="bi bi-trash"></i> Delete
-                </button>
               </div>
             </div>
           </div>
 
+          {/* ======== ASIDE: AI Suggestions para este documento ======== */}
+          <div className="col-6">
+            <div className="card">
+              <div className="card-body">
+                {/* Header igual a Payments / Courtfile AI */}
+                <div className="d-flex align-items-center justify-content-between">
+                  <h2 className="h3 mb-0 fw-bold">AI Suggestions</h2>
+                  <button
+                    className="btn btn-phoenix-secondary ms-2"
+                    onClick={runDocumentAnalysis}
+                    disabled={aiLoading}
+                  >
+                    {aiLoading ? (
+                      <span className="spinner-border spinner-border-sm" role="status" />
+                    ) : (
+                      <>
+                        <i className="bi bi-arrow-repeat me-1"></i> Reload
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="border-top my-3"></div>
+
+                {/* Contenido */}
+                {aiError && <div className="alert alert-danger mb-0">{aiError}</div>}
+
+                {!aiError && aiLoading && (
+                  <div className="text-muted d-flex align-items-center">
+                    <span className="spinner-border spinner-border-sm me-2" />
+                    Analizando el contenido del documento…
+                  </div>
+                )}
+
+                {!aiLoading && !aiError && (!aiSuggestions || aiSuggestions.length === 0) && (
+                  <div className="alert alert-info mb-0">Sin sugerencias por ahora.</div>
+                )}
+
+                {!aiLoading && !aiError && Array.isArray(aiSuggestions) && aiSuggestions.length > 0 && (
+                  <div className="list-group list-group-flush">
+                    {aiSuggestions.map((sug, idx) => {
+                      const urg = String(sug.urgency || "medium").toLowerCase();
+                      const urgClass =
+                        urg === "urgent" ? "badge-phoenix-danger" :
+                          urg === "high" ? "badge-phoenix-warning" :
+                            urg === "medium" ? "badge-phoenix-info" :
+                              "badge-phoenix-secondary";
+
+                      return (
+                        <div key={sug.id || idx} className="list-group-item">
+                          {/* Header item: título + urgencia + kebab */}
+                          <div className="d-flex justify-content-between align-items-start">
+                            <div>
+                              <h5 className="mb-1 fw-semibold">{sug.title || "Sugerencia"}</h5>
+                              <span className={`fs-10 badge-phoenix badge ${urgClass}`}>
+                                {String(sug.urgency || "MEDIUM").toUpperCase()}
+                              </span>
+                            </div>
+
+                            <div className="dropdown">
+                              <button
+                                className="btn btn-sm btn-link text-body-tertiary p-0"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                              >
+                                <i className="bi bi-three-dots fs-8"></i>
+                              </button>
+                              <ul className="dropdown-menu dropdown-menu-end shadow-sm">
+                                {/* Crear Deadline desde sugerencia */}
+                                <li>
+                                  <Link
+                                    className="dropdown-item"
+                                    to="/deadlines/addDeadline"
+                                    state={{
+                                      courtfileId: linkedCourtfile?.id || cfDetails?.id || null,
+                                      courtfileNumber: linkedCourtfile?.number || cfDetails?.case_number || null,
+                                      courtfileTitle: linkedCourtfile?.title || null,
+                                      prefill: { type: "Other", description: sug.title || "" },
+                                      suggestion: sug,
+                                      returnTo: `/documents/view/${documentData.id}`,
+                                    }}
+                                  >
+                                    <i className="bi bi-calendar2-plus me-2"></i> Deadline
+                                  </Link>
+                                </li>
+
+                                {/* Crear Appointment desde sugerencia */}
+                                <li>
+                                  <Link
+                                    className="dropdown-item"
+                                    to="/appointments/addAppointment"
+                                    state={{
+                                      courtfileId: linkedCourtfile?.id || cfDetails?.id || null,
+                                      courtfileNumber: linkedCourtfile?.number || cfDetails?.case_number || null,
+                                      courtfileTitle: linkedCourtfile?.title || null,
+                                      prefill: { title: sug.title || "", details: sug.reasoning || "" },
+                                      suggestion: sug,
+                                      returnTo: `/documents/view/${documentData.id}`,
+                                    }}
+                                  >
+                                    <i className="bi bi-clock me-2"></i> Appointment
+                                  </Link>
+                                </li>
+
+                                {/* Crear Document (nota) desde sugerencia */}
+                                <li>
+                                  <Link
+                                    className="dropdown-item"
+                                    to="/documents/addDocument"
+                                    state={{
+                                      courtfileId: linkedCourtfile?.id || cfDetails?.id || null,
+                                      courtfileNumber: linkedCourtfile?.number || cfDetails?.case_number || null,
+                                      courtfileTitle: linkedCourtfile?.title || null,
+                                      prefill: { title: sug.title || "", content: sug.reasoning || "" },
+                                      suggestion: sug,
+                                      returnTo: `/documents/view/${documentData.id}`,
+                                    }}
+                                  >
+                                    <i className="bi bi-file-earmark-plus me-2"></i> Document
+                                  </Link>
+                                </li>
+
+                                {/* Archivar si la sugerencia viene persistida con id */}
+                                {sug.id && (
+                                  <>
+                                    <li><hr className="dropdown-divider" /></li>
+                                    <li>
+                                      <button
+                                        className="dropdown-item text-danger"
+                                        onClick={() => handleArchiveSuggestion(sug.id)}
+                                      >
+                                        <i className="bi bi-archive me-2"></i> Archivar
+                                      </button>
+                                    </li>
+                                  </>
+                                )}
+                              </ul>
+                            </div>
+                          </div>
+
+                          {sug.reasoning && (
+                            <p className="mt-2 mb-2 text-body-secondary small">{sug.reasoning}</p>
+                          )}
+                          {Array.isArray(sug.next_steps) && sug.next_steps.length > 0 && (
+                            <ul className="mb-2 small ps-3">
+                              {sug.next_steps.map((step, i) => <li key={i}>{step}</li>)}
+                            </ul>
+                          )}
+                          <small className="text-body-tertiary">
+                            {sug.legal_basis ? `Fundamento: ${sug.legal_basis}` : ""}
+                            {typeof sug.confidence === "number" ? ` • Conf.: ${(sug.confidence * 100).toFixed(0)}%` : ""}
+                          </small>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+    </AppNavsShell>
   );
 };

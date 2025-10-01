@@ -1,6 +1,7 @@
 import { Link, useNavigate, useParams, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import AppNavsShell from "../../components/AppNavsShell";
 
 export const EditDeadline = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -12,15 +13,11 @@ export const EditDeadline = () => {
   const API = import.meta.env.VITE_BACKEND_URL;
 
   const token = store?.auth?.token;
-  const me    = store?.me || null;
-  const role  = (me?.role || "").toLowerCase();
+  const role = (store?.me?.role || "").toLowerCase();
 
   // ---------- Guards ----------
-      const allowed =
-          role === "admin_user" ||
-          role === "lawyer";
-  
-      if (!allowed) return <Navigate to="/403" replace />;
+  const allowed = role === "admin_user" || role === "lawyer";
+  if (!allowed) return <Navigate to="/403" replace />;
 
   const [formData, setFormData] = useState({
     deadline_type: "",
@@ -31,7 +28,11 @@ export const EditDeadline = () => {
 
   const initialLinked =
     location.state?.courtfileId
-      ? { id: location.state.courtfileId, number: location.state.courtfileNumber, title: location.state.courtfileTitle }
+      ? {
+          id: location.state.courtfileId,
+          number: location.state.courtfileNumber,
+          title: location.state.courtfileTitle,
+        }
       : null;
 
   const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
@@ -39,22 +40,15 @@ export const EditDeadline = () => {
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState(null);
 
-  const Deadline_Categories = ["Contestación de demanda", "Traslado / Vista", "Ofrecimiento de prueba", "Producción de prueba", "Audiencia",
-    "Recurso / Apelación", "Ejecución / Cumplimiento", "Caducidad de instancia", "Plazo penal (excarcelación, preventiva, etc.)",
-    "Mediación obligatoria", "Vencimiento de contrato", "Pago de tasa de justicia / aportes", "Vencimiento administrativo (AFIP, IGJ, etc.)",
-    "Documentación del cliente", "Recordatorio interno / reunión con cliente", "Otros"
-  ]
-
+  // Fetch Deadline
   const fetchDeadline = async () => {
     try {
       setFetching(true);
-      const response = await fetch(`${API}/api/deadlines/${deadlineId}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const resp = await fetch(`${API}/api/deadlines/${deadlineId}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
-
-
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
       setFormData({
         deadline_type: data.deadline_type,
         deadline_date: data.deadline_date,
@@ -70,27 +64,26 @@ export const EditDeadline = () => {
     }
   };
 
+  // Fetch Courtfile linked
   const fetchLinkedCourtfile = async () => {
     try {
-
       const resp = await fetch(`${API}/api/deadlines-courtfiles`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      if (!resp.ok) return;
       const rows = await resp.json();
-      const rel = (rows || []).find(r => Number(r.deadline_id) === Number(deadlineId));
+      const rel = (rows || []).find(
+        (r) => Number(r.deadline_id) === Number(deadlineId)
+      );
       if (rel) {
         setLinkedCourtfile({
           id: rel.courtfile_id,
           number: rel.courtfile_number,
-          title: rel.courtfile_title
+          title: rel.courtfile_title,
         });
-      } else {
-        setLinkedCourtfile(null);
       }
-    } catch (e) {
-      console.warn("Could not fetch linked courtfile:", e);
-      setLinkedCourtfile(null);
+    } catch {
+      /* noop */
     }
   };
 
@@ -101,20 +94,25 @@ export const EditDeadline = () => {
     }
   }, [deadlineId, linkedCourtfile, API, token]);
 
+  // hydrate cf
   useEffect(() => {
     const loadCf = async () => {
       try {
         if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
           const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
           });
           if (resp.ok) {
             const d = await resp.json();
-            setLinkedCourtfile(cf => ({ ...(cf || {}), number: d.case_number, title: d.title }));
+            setLinkedCourtfile((cf) => ({
+              ...(cf || {}),
+              number: d.case_number,
+              title: d.title,
+            }));
           }
         }
-      } catch (e) {
-        // noop
+      } catch {
+        /* noop */
       }
     };
     loadCf();
@@ -122,7 +120,7 @@ export const EditDeadline = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -130,22 +128,22 @@ export const EditDeadline = () => {
     setLoading(true);
     setError(null);
     try {
-
-      const response = await fetch(`${API}/api/deadlines/${deadlineId}`, {
+      const resp = await fetch(`${API}/api/deadlines/${deadlineId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(formData)
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
       });
-
-      if (response.ok) {
-        const updatedDeadline = await response.json();
-        dispatch({ type: "UPDATE_DEADLINE", payload: updatedDeadline });
-        navigate(returnTo, { replace: true });
-        alert("Deadline updated successfully!");
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to update deadline");
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to update deadline");
       }
+      const updated = await resp.json();
+      dispatch({ type: "UPDATE_DEADLINE", payload: updated });
+      navigate(returnTo, { replace: true });
+      alert("Deadline updated successfully!");
     } catch (err) {
       console.error("Error updating deadline:", err);
       setError(err.message);
@@ -154,13 +152,28 @@ export const EditDeadline = () => {
     }
   };
 
+  // helpers
+  const times15 = Array.from({ length: 96 }, (_, i) => {
+    const hh = String(Math.floor(i / 4)).padStart(2, "0");
+    const mm = String((i % 4) * 15).padStart(2, "0");
+    return `${hh}:${mm}`;
+  });
+
+  const crumbs = useMemo(() => {
+    const arr = [
+      { label: "Dashboard", to: "/dashboard" },
+      { label: "Deadlines", to: "/deadlines" },
+      { label: `Edit #${deadlineId}`, to: null },
+    ];
+    return arr;
+  }, [deadlineId]);
+
+  // Loading
   if (fetching) {
     return (
-      <div className="container mt-4">
-        <div className="text-center">
-          <div className="spinner-border" role="status"><span className="visually-hidden">Loading...</span></div>
-          <p>Loading deadline data...</p>
-        </div>
+      <div className="container mt-4 text-center">
+        <div className="spinner-border" role="status"></div>
+        <p>Loading deadline data...</p>
       </div>
     );
   }
@@ -171,134 +184,161 @@ export const EditDeadline = () => {
         <div className="alert alert-danger">
           <i className="bi bi-exclamation-triangle"></i> {error}
         </div>
-        <Link to="/deadlines" className="btn btn-primary">Back to Deadlines</Link>
+        <Link to={returnTo} className="btn btn-primary">
+          Back
+        </Link>
       </div>
     );
   }
 
-  // helpers
-  const timeToMinutes = (hhmm) => {
-    const [h, m] = hhmm.split(":").map(Number);
-    return h * 60 + m;
-  };
-
-  const times15 = Array.from({ length: (24 * 60) / 15 }, (_, i) => {
-    const total = i * 15;
-    const hh = String(Math.floor(total / 60)).padStart(2, "0");
-    const mm = String(total % 60).padStart(2, "0");
-    return `${hh}:${mm}`;
-  });
-
   return (
-    <div className="container mt-4">
-      <div className="row justify-content-center">
-        <div className="col-md-8">
-          {/* Header */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1>Edit Deadline</h1>
-            <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back
-            </Link>
-          </div>
+    <AppNavsShell>
+      <div className="container add-page">
+        <div className="row">
+          <div className="col-lg-9">
+            {/* Breadcrumb */}
+            <nav aria-label="breadcrumb" className="mb-4">
+              <ol className="breadcrumb small mb-0">
+                {crumbs.map((c, i) => {
+                  const isLast = i === crumbs.length - 1;
+                  return (
+                    <li
+                      key={i}
+                      className={`breadcrumb-item ${isLast ? "active" : ""}`}
+                      {...(isLast ? { "aria-current": "page" } : {})}
+                    >
+                      {isLast || !c.to ? (
+                        <span className="text-body">{c.label}</span>
+                      ) : (
+                        <Link to={c.to} state={{ returnTo }}>
+                          {c.label}
+                        </Link>
+                      )}
+                    </li>
+                  );
+                })}
+              </ol>
+            </nav>
 
-          {linkedCourtfile && (
-            <span className="badge bg-dark mt-1 mb-2">
-              Related to Courtfile {linkedCourtfile.number || "—"}
-              {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
-            </span>
-          )}
-
-          {/* Form */}
-          <div className="card">
-            <div className="card-body">
-              {error && (
-                <div className="alert alert-danger" role="alert">
-                  <i className="bi bi-exclamation-triangle"></i> {error}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label className="form-label">Deadline Type</label>
-                  <div className="form-control-plaintext">
-                    {formData.deadline_type}
-                  </div>
-                </div>
-
-                <div className="mb-3">
-                  <label htmlFor="deadline_date" className="form-label">Deadline Date *</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    id="deadline_date"
-                    name="deadline_date"
-                    value={formData.deadline_date}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-
-                <div className="mb-3">
-                  <label htmlFor="deadline_hour" className="form-label">Deadline Time *</label>
-                  <select
-                    className="form-select"
-                    id="deadline_hour"
-                    name="deadline_hour"
-                    value={formData.deadline_hour}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                  >
-                    <option value="" disabled>Select time…</option>
-                    {times15.map(t => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="mb-3">
-                  <label htmlFor="priority" className="form-label">Priority *</label>
-                  <select
-                    className="form-select"
-                    id="priority"
-                    name="priority"
-                    value={formData.priority}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
-                </div>
-
-                <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>
-                  <button type="submit" className="btn btn-primary" disabled={loading}>
-                    {loading ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm" role="status"></span>
-                        Updating...
-                      </>
-                    ) : (
-                      <>
-                        <i className="bi bi-check-circle"></i> Update Deadline
-                      </>
-                    )}
-                  </button>
-                </div>
-
-              </form>
+            {/* Header */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h1 className="display-5 fw-bold mb-0">Edit Deadline</h1>
+              <div className="d-flex gap-2">
+                <Link
+                  to={returnTo}
+                  className="btn btn-phoenix btn-phoenix-secondary"
+                >
+                  Cancel
+                </Link>
+                <button
+                  type="submit"
+                  form="deadlineForm"
+                  className="btn btn-phoenix btn-phoenix-primary"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-check-circle me-2" />
+                      Update Deadline
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
 
+            {linkedCourtfile && (
+              <span className="badge badge-phoenix-secondary mb-3">
+                Related to Courtfile {linkedCourtfile.number || "—"}
+                {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
+              </span>
+            )}
+
+            {error && (
+              <div className="alert alert-danger d-flex align-items-center">
+                <i className="bi bi-exclamation-triangle me-2" /> {error}
+              </div>
+            )}
+
+            {/* Form */}
+            <form id="deadlineForm" onSubmit={handleSubmit}>
+              {/* Deadline Type */}
+              <div className="form-floating mb-3">
+                <input
+                  type="text"
+                  className="form-control form-control-ux"
+                  id="deadline_type"
+                  name="deadline_type"
+                  placeholder=" "
+                  value={formData.deadline_type}
+                  disabled
+                />
+                <label htmlFor="deadline_type">Deadline Type</label>
+              </div>
+
+              {/* Date */}
+              <div className="form-floating mb-3">
+                <input
+                  type="date"
+                  className="form-control form-control-ux"
+                  id="deadline_date"
+                  name="deadline_date"
+                  placeholder=" "
+                  value={formData.deadline_date}
+                  onChange={handleInputChange}
+                  required
+                  disabled={loading}
+                />
+                <label htmlFor="deadline_date">Deadline Date *</label>
+              </div>
+
+              {/* Hour */}
+              <div className="form-floating mb-3">
+                <select
+                  className="form-select form-control-ux"
+                  id="deadline_hour"
+                  name="deadline_hour"
+                  value={formData.deadline_hour}
+                  onChange={handleInputChange}
+                  required
+                  disabled={loading}
+                >
+                  <option value=""></option>
+                  {times15.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="deadline_hour">Deadline Time *</label>
+              </div>
+
+              {/* Priority */}
+              <div className="form-floating mb-4">
+                <select
+                  className="form-select form-control-ux"
+                  id="priority"
+                  name="priority"
+                  value={formData.priority}
+                  onChange={handleInputChange}
+                  required
+                  disabled={loading}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+                <label htmlFor="priority">Priority *</label>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
+    </AppNavsShell>
   );
 };

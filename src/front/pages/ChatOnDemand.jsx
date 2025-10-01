@@ -5,8 +5,10 @@ import { io } from "socket.io-client";
 import { setLastRead, getLastRead } from "../hooks/chatUnread.jsx";
 import { markNow } from "../hooks/chatUnread";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
+import EmojiPicker from 'emoji-picker-react';
 
 export default function ChatOnDemand(props) {
+  const { embed = false } = props;
   const location = useLocation();
   const API = import.meta.env.VITE_BACKEND_URL;
   const { courtfileId: paramCourtfileId } = useParams()
@@ -18,13 +20,20 @@ export default function ChatOnDemand(props) {
   const role = (me?.role || "").toLowerCase();
   const currentUserId = me?.id || null;
 
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  // Función para agregar emoji
+  const addEmoji = (emojiData) => {
+    setDraft(prev => prev + emojiData.emoji);
+    setShowEmojiPicker(false);
+  };
+
   // === Derivar datos desde props, state o query ===
   const query = new URLSearchParams(location.search);
   const courtfileIdRaw =
     props.courtfileId ??
     location.state?.courtfileId ??
     query.get("courtfileId") ??
-    paramCourtfileId; // 👈 ahora también soporta /chat/:courtfileId
+    paramCourtfileId;
 
   const courtfileId = courtfileIdRaw ? Number(courtfileIdRaw) : null;
 
@@ -94,8 +103,14 @@ export default function ChatOnDemand(props) {
     }
   }, [cacheKey]);
 
+  // Agrega este ref
+  const chatContainerRef = useRef(null);
+
+  // Y modifica el scrollToBottom
   const scrollToBottom = useCallback(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, []);
 
   // === Enviar mensaje por Socket.IO ===
@@ -356,51 +371,90 @@ export default function ChatOnDemand(props) {
   };
 
   return (
-    <div className="container mt-4">
-      <h1 className="mb-3">
-        {`Chat for Courtfile`}
-        {courtfileNumber ? ` #${courtfileNumber}` : ""}
-        {courtfileTitle ? ` — ${courtfileTitle}` : ""}
-      </h1>
+    <div className={embed ? "" : "container mt-4"}>
+      {!embed && (
+        <h1 className="mb-3">
+          {`Chat for Courtfile`}
+          {courtfileNumber ? ` #${courtfileNumber}` : ""}
+          {courtfileTitle ? ` — ${courtfileTitle}` : ""}
+        </h1>
+      )}
 
       <div className="card">
-        <div className="card-header d-flex align-items-center">
-          <div className="d-flex gap-3 align-items-center ms-auto">
-            <span
-              className={`badge ${getStatusBadgeClass()}`}
-              title={connectionStatus}
-            >
-              {getStatusText()}
-            </span>
-            {returnTo && (
-              <Link to={returnTo} className="btn btn-sm btn-outline-secondary">
-                <i className="bi bi-arrow-left" /> Volver
-              </Link>
-            )}
-          </div>
+        <div className="card-header d-flex align-items-center justify-content-between">
+          <h4 className="mb-0 fw-normal">
+            {`Chat for Courtfile`}
+            {courtfileNumber ? ` #${courtfileNumber}` : ""}
+            {courtfileTitle ? ` — ${courtfileTitle}` : ""}
+          </h4>
+
+          {returnTo && (
+            <Link to={returnTo} className="btn btn-phoenix-primary d-flex align-items-center gap-2 fs-10">
+              <i className="bi bi-folder2-open"></i>
+              View case
+            </Link>
+
+          )}
         </div>
 
-        <div className="card-body" style={{ maxHeight: 360, overflowY: "auto" }}>
+        <div className="card-body" style={{ maxHeight: 200, overflowY: "auto" }} ref={chatContainerRef}>
           {messages.length === 0 && !err && (
             <p className="text-muted m-0">Sin mensajes aún. Sé el primero en enviar un mensaje.</p>
           )}
 
-          {messages.map((m) => (
-            <div
-              key={m.id}
-              className={`mb-2 ${m.isOptimistic ? 'opacity-75' : ''}`}
-            >
-              <div className="small text-secondary">
-                <span className="badge bg-light text-dark me-2">
-                  {m.sender_name || m.sender_role}
-                  {m.isOptimistic && " (enviando...)"}
-                </span>
-                <span>{new Date(m.created_at).toLocaleString()}</span>
+          {/* Código burbujas  */}
+          {messages.map((m) => {
+            const isMine = m.sender_role === senderRole;
+            return (
+              <div
+                key={m.id}
+                className={`d-flex mb-4 ${m.isOptimistic ? 'opacity-75' : ''} ${isMine ? 'justify-content-end' : 'justify-content-start'}`}
+              >
+                {/* Avatar solo para mensajes del otro */}
+                {!isMine && (
+                  <div className="d-flex align-items-end me-2 mb-6" style={{ width: '32px' }}>
+                    <img
+                      src={m.avatar}
+                      alt="Avatar"
+                      className="rounded-circle"
+                      style={{ width: '32px', height: '32px', objectFit: 'cover' }}
+                    />
+                  </div>
+                )}
+                <div className={`position-relative ${isMine ? 'order-2' : 'order-1'}`} style={{ maxWidth: '70%' }}>
+                  {/* Nombre solo para mensajes ajenos */}
+                  {!isMine && (
+                    <div className="small text-secondary fw-bold mb-1 ms-3">
+                      <span>{m.sender_name || m.sender_role}</span>
+                      {m.isOptimistic && " (enviando...)"}
+                    </div>
+                  )}
+
+                  {/* Contenedor de la burbuja + pico (desde CSS) */}
+                  <div className="chat-bubble-wrap">
+                    <div
+                      className={`p-3 bubble ${isMine ? 'bubble--right' : 'bubble--left text-dark'}`}
+                    >
+                      <div>{m.text}</div>
+                    </div>
+                  </div>
+
+                  {/* Fecha y check */}
+                  <div className={`small text-muted mt-1 fs-10 ${isMine ? 'text-end' : ''}`}>
+                    {new Date(m.created_at).toLocaleString([], {
+                      year: "2-digit",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })}
+                  </div>
+                </div>
               </div>
-              <div>{m.text}</div>
-              <hr className="my-2" />
-            </div>
-          ))}
+            );
+          })}
+
+
 
           {err && (
             <div className={`alert ${connectionStatus === "reconnecting" ? "alert-warning" : "alert-danger"} my-2`}>
@@ -426,28 +480,69 @@ export default function ChatOnDemand(props) {
           <div ref={bottomRef} />
         </div>
 
-        <form className="card-footer d-flex gap-2" onSubmit={sendMessage}>
-          <input
-            className="form-control"
-            placeholder="Escribe un mensaje…"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            disabled={!courtfileId || connectionStatus !== "connected" || !isValidRole}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage(e);
-              }
-            }}
-          />
-          <button
-            className="btn btn-primary"
-            type="submit"
-            disabled={!courtfileId || !draft.trim() || connectionStatus !== "connected" || !isValidRole}
-          >
-            {connectionStatus === "connected" ? "Enviar" : "Conectando..."}
-          </button>
+        <form className="card-footer bg-white border-top d-flex" onSubmit={sendMessage} style={{ minHeight: '197px' }}>
+          <div className="d-flex flex-column w-100">
+
+            {/* Emoji Picker */}
+            {showEmojiPicker && (
+              <div className="mb-2">
+                <EmojiPicker onEmojiClick={addEmoji} />
+              </div>
+            )}
+
+            {/* Fila superior: textarea SOLO */}
+            <div className="flex-grow-1">
+              <textarea
+                className="chat-textarea w-100"
+                placeholder="Type your message..."
+                value={draft}
+                onChange={(e) => {
+                  setDraft(e.target.value);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = e.target.scrollHeight + 'px';
+                }}
+                disabled={!courtfileId || connectionStatus !== "connected" || !isValidRole}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage(e);
+                  }
+                }}
+                rows={1}
+                style={{
+                  minHeight: '42px',
+                  maxHeight: '100px',
+                  overflowY: 'auto'
+                }}
+              />
+            </div>
+
+            {/* Fila inferior: botón emoji a la izquierda y enviar a la derecha */}
+            <div className="d-flex justify-content-between align-items-center mt-2">
+              {/* Botón emoji a la izquierda */}
+              <button
+                type="button"
+                className="btn btn-link text-dark p-0 border-0 ms-3"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                style={{ background: 'none' }}
+              >
+                <i className="bi bi-emoji-smile fs-9"></i>
+              </button>
+
+              {/* Botón enviar a la derecha */}
+              <button
+                className="btn btn-primary d-flex gap-2"
+                type="submit"
+                disabled={!courtfileId || !draft.trim() || connectionStatus !== "connected" || !isValidRole}
+              >
+                {connectionStatus === "connected" ? "Send" : "Conectando..."}
+                <i className="bi bi-send-fill"></i>
+              </button>
+            </div>
+          </div>
         </form>
+
+
       </div>
     </div>
   );

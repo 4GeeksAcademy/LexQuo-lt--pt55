@@ -33,7 +33,10 @@ export const AddCourtfilesDocuments = () => {
       try {
         if (courtfiles.length === 0) {
           const response = await fetch(`${API}/api/courtfiles`, {
-            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+            headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`, 
+                },
           });
           if (response.ok) {
             const data = await response.json();
@@ -43,7 +46,10 @@ export const AddCourtfilesDocuments = () => {
 
         if (documents.length === 0) {
           const response = await fetch(`${API}/api/documents`, {
-            headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+            headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`, 
+                },
           });
           if (response.ok) {
             const data = await response.json();
@@ -79,7 +85,10 @@ export const AddCourtfilesDocuments = () => {
 
       const res = await fetch(`${API}/api/courtfile-document`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`, 
+                },
         body: JSON.stringify(payload),
       });
 
@@ -89,7 +98,10 @@ export const AddCourtfilesDocuments = () => {
       }
 
       const relationsResponse = await fetch(`${API}/api/courtfile-document`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`, 
+                },
       });
       if (relationsResponse.ok) {
         const allRelations = await relationsResponse.json();

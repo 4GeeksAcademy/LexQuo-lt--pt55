@@ -1,6 +1,8 @@
 import { Link, useParams, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import AppNavsShell from "../../components/AppNavsShell";
+import StatusPill from "../../components/StatusPill";
 
 export const ViewClient = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -104,8 +106,9 @@ export const ViewClient = () => {
           .map((r) => ({
             relation_id: r.id,
             courtfile_id: r.courtfile_id,
-            number: r.courtfile_number,
-            title: r.courtfile_title,
+            // ← ahora priorizamos los campos del objeto courtfile
+            number: r.courtfile?.case_number ?? r.courtfile_number ?? null,
+            title: r.courtfile?.title ?? r.courtfile_title ?? null,
           }));
 
         setLinkedRelations(list);
@@ -167,7 +170,7 @@ export const ViewClient = () => {
       setUnlinking(true);
       const resp = await fetch(`${API}/api/clients-courtfiles/${relationId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` } 
+        headers: { Authorization: `Bearer ${token}` }
       });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
@@ -205,6 +208,13 @@ export const ViewClient = () => {
     }
   };
 
+  const goToCourtfile = (cfId) => {
+    if (role !== "lawyer") return;              // sólo abogados navegan ahí
+    navigate(`/courtfiles/ViewCourtfileLawyer/${cfId}`, {
+      state: { returnTo },                      // volvés fácil
+    });
+  };
+
   // 5) Render
   if (loading) {
     return (
@@ -233,144 +243,55 @@ export const ViewClient = () => {
   }
 
   return (
-    <div className="container mt-4">
-      <div className="row justify-content-center">
-        <div className="col-md-8">
-          {/* Header */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h1>Client Details</h1>
-            </div>
-            <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back
-            </Link>
-          </div>
+    <AppNavsShell>
+      <div className="container-fluid px-0 px-md-3">
+        {/* Breadcrumb */}
+        <nav aria-label="breadcrumb" className="mb-2">
+          <ol className="breadcrumb mb-0">
+            <li className="breadcrumb-item"><Link to="/clients">Clients</Link></li>
+            <li className="breadcrumb-item active" aria-current="page">Client details</li>
+          </ol>
+        </nav>
 
-          {/* Tabla con TODAS las relaciones */}
-          {linkedRelations.length > 0 ? (
-            <div className="card mb-3">
-              <div className="card-header">
-                <strong>Linked Cases ({linkedRelations.length})</strong>
-              </div>
-              <div className="card-body p-0">
-                <div className="table-responsive">
-                  <table className="table table-sm mb-0">
-                    <thead>
-                      <tr>
-                        <th style={{ width: "160px" }}>Case Number</th>
-                        <th>Title</th>
-                        {role === "lawyer" && (
-                          <th className="text-end" style={{ width: "140px" }}>
-                            Actions
-                          </th>
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {linkedRelations.map((rel) => (
-                        <tr key={rel.relation_id}>
-                          <td>{rel.number || `#${rel.courtfile_id}`}</td>
-                          <td>{rel.title || "—"}</td>
-                          {role === "lawyer" && (
-                            <td className="text-end">
-                              <button
-                                className="btn btn-sm btn-outline-danger"
-                                onClick={() => handleUnlinkOne(rel.relation_id)}
-                                title="Unlink from this case"
-                              >
-                                <i className="bi bi-link-45deg"></i> Unlink
-                              </button>
-                            </td>
-                          )}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="alert alert-info mb-3">This client is not linked to any case.</div>
-          )}
+        {/* Header con acciones AL ANCHO DE LA CARD (col-7) */}
+        <div className="row g-3 mb-3">
+          <div className="col-12 col-xxl-7 col-xl-7">
+            <div className="d-flex flex-wrap align-items-center justify-content-between">
+              <h2 className="mb-3 mt-2">Client details</h2>
 
-          {/* Card con datos del cliente */}
-          <div className="card">
-            <div className="card-header bg-dark text-white">
-              <h5 className="card-title mb-0">
-                <i className="bi bi-person-badge"></i> Client Information
-              </h5>
-            </div>
-
-            <div className="card-body">
-              <div className="d-flex justify-content-center mb-4">
-                {client.url_img ? (
-                  <img
-                    src={client.url_img}
-                    alt="Client Profile"
-                    className="rounded-circle border border-2 shadow-sm"
-                    style={{ width: "150px", height: "150px", objectFit: "cover" }}
-                  />
-                ) : (
-                  <i className="bi bi-person-circle text-muted" style={{ fontSize: "150px" }}></i>
+              <div className="d-flex gap-2 flex-wrap">
+                {/* Botón de unlink (solo lawyer con relationId) */}
+                {role === "lawyer" && relationId && (
+                  <button
+                    type="button"
+                    className="btn btn-outline-danger btn-sm"
+                    onClick={handleUnlink}
+                    disabled={unlinking}
+                    title="Unlink this client from the current case"
+                  >
+                    <i className="bi bi-link-45deg" /> {unlinking ? "Unlinking..." : "Unlink from case"}
+                  </button>
                 )}
-              </div>
-              <div className="row">
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">First Name</label>
-                    <p className="fs-6">{client.firstname || "-"}</p>
-                  </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Last Name</label>
-                    <p className="fs-6">{client.lastname || "-"}</p>
-                  </div>
-                </div>
 
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Email</label>
-                    <p className="fs-6">{client.email || "-"}</p>
-                  </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Phone</label>
-                    <p className="fs-6">{client.phone || "-"}</p>
-                  </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Status</label>
-                    <p className="fs-6">
-                      {client.is_active ? (
-                        <span className="badge text-bg-success">Active</span>
-                      ) : (
-                        <span className="badge text-bg-secondary">Inactive</span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="card-footer bg-light">
-              <div className="d-flex gap-2 justify-content-end">
-                {role === "lawyer" ? (
-                  <div></div>
-                ) : (
+                {/* Acciones de admin (antes estaban en el footer) */}
+                {role !== "lawyer" && (
                   <>
                     <Link
                       to={`/clients/${client.id}/password`}
                       state={{ returnTo }}
-                      className="btn btn-outline-secondary"
+                      className="btn btn-phoenix-secondary"
                     >
-                      <i className="bi bi-key"></i> Change Password
+                      <i className="bi bi-key" /> Change Password
                     </Link>
                     <Link
                       to={`/clients/${client.id}`}
                       state={{ returnTo }}
-                      className="btn btn-warning"
+                      className="btn btn-phoenix-secondary"
                     >
-                      <i className="bi bi-pencil"></i> Edit
+                      <i className="bi bi-pencil" /> Edit
                     </Link>
-                    <button className="btn btn-danger" onClick={handleDelete}>
-                      <i className="bi bi-trash"></i> Delete
+                    <button className="btn btn-phoenix-danger btn-sm" onClick={handleDelete}>
+                      <i className="bi bi-trash" /> Delete
                     </button>
                   </>
                 )}
@@ -378,7 +299,127 @@ export const ViewClient = () => {
             </div>
           </div>
         </div>
+
+        {/* Card perfil (col-7) */}
+        <div className="row g-4">
+          <div className="col-12 col-xxl-7 col-xl-7">
+            <div className="card h-100">
+              <div className="card-body pb-3 d-flex flex-column justify-content-between">
+                <div className="row g-5 align-items-center text-center text-sm-start mb-3">
+                  {/* Avatar */}
+                  <div className="col-sm-auto col-12 mb-sm-3">
+                    <div className="d-inline-flex">
+                      <div className="avatar avatar-5xl">
+                        {client.url_img ? (
+                          <img src={client.url_img} alt="Client Profile" className="rounded-circle" />
+                        ) : (
+                          <i className="bi bi-person-circle text-muted d-block" style={{ fontSize: 90 }} />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Nombre + estado */}
+                  <div className="col-sm-auto col-12 flex-1 ps-sm-5">
+                    <h3 className="mb-1">
+                      {(client.firstname || "-") + " " + (client.lastname || "")}
+                    </h3>
+                    <div className="d-inline-flex gap-2 mt-2">
+                      {client.is_active ? (
+                        <span className="badge badge-phoenix badge-phoenix-success">Active</span>
+                      ) : (
+                        <span className="badge badge-phoenix badge-phoenix-danger">Inactive</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Datos */}
+                <div className="border-top border-dashed pt-4 mt-3">
+                  <div className="d-flex justify-content-between mb-2">
+                    <span className="fw-semibold">Email</span>
+                    <span className="fw-medium">
+                      {client.email ? (
+                        <a href={`mailto:${client.email}`} className="link-underline-opacity-0">
+                          {client.email}
+                        </a>
+                      ) : "-"}
+                    </span>
+                  </div>
+                  <div className="d-flex justify-content-between">
+                    <span className="fw-semibold">Phone</span>
+                    <span className="fw-medium">{client.phone || "-"}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quitamos footer: las acciones ahora están arriba alineadas a col-7 */}
+            </div>
+          </div>
+        </div>
+
+        {/* Courtfiles ABAJO de la card, mismo ancho col-7 */}
+        <div className="row g-3 mt-4">
+          <div className="col-12 col-xxl-7 col-xl-7">
+            <h3 className="mb-3 fs-5">
+              Courtfiles{" "}
+              <span className="text-body-tertiary fw-normal fs-10">
+                ({linkedRelations.length})
+              </span>
+            </h3>
+
+            {linkedRelations.length > 0 ? (
+              <div className="table-responsive">
+                <table className="table table-hover align-middle table-modern mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th className="px-3" style={{ width: 200 }}>Case Number</th>
+                      <th className="px-3">Title</th>
+                      {role === "lawyer" && (
+                        <th className="text-end px-3" style={{ width: 160 }}>Actions</th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {linkedRelations.map((rel) => (
+                      <tr
+                        key={rel.relation_id}
+                        onClick={() => goToCourtfile(rel.courtfile_id)}
+                        className="table-row-clickable"
+                        style={{ cursor: role === "lawyer" ? "pointer" : "default" }}
+                      >
+                        <td className="fw-semibold px-3">
+                          {rel.number ?? `#${rel.courtfile_id}`}
+                        </td>
+                        <td className="text-body-secondary px-3">
+                          {rel.title ?? "—"}
+                        </td>
+                        {role === "lawyer" && (
+                          <td className="text-end px-3">
+                            <button
+                              className="btn btn-phoenix btn-phoenix-danger"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUnlinkOne(rel.relation_id);
+                              }}
+                            >
+                              <i className="bi bi-link-45deg" /> Unlink
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="alert alert-info mb-0">
+                This client is not linked to any case.
+              </div>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </AppNavsShell>
   );
 };

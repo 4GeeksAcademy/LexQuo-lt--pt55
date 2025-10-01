@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import AppNavsShell from "../../components/AppNavsShell";
 
 export const AddDeadline = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -13,6 +14,7 @@ export const AddDeadline = () => {
   const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
   const returnTo = location.state?.returnTo || "/deadlines";
   const suggestion = location.state?.suggestion || null;
+  const preselectedDate = location.state?.date || "";
 
   const token = store?.auth?.token;
   const role = (store?.me?.role || "").toLowerCase();
@@ -32,7 +34,7 @@ export const AddDeadline = () => {
 
   const [formData, setFormData] = useState({
     deadline_type: "",
-    deadline_date: "",
+    deadline_date: preselectedDate,
     deadline_hour: "",
     priority: "medium",
     courtfile_id: preselectedCourtfileId ? String(preselectedCourtfileId) : "",
@@ -186,169 +188,229 @@ export const AddDeadline = () => {
     return `${hh}:${mm}`;
   });
 
+  const caseLabel =
+    preselectedCourtfileNumber ||
+    preselectedCourtfileTitle ||
+    (preselectedCourtfileId ? `#${preselectedCourtfileId}` : null);
+
   return (
-    <div className="container mt-4">
-      <div className="row justify-content-center">
-        <div className="col-md-8">
-          {/* Header */}
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <h1>Add New Deadline</h1>
-            <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back
-            </Link>
-          </div>
+    <AppNavsShell>
+      <div className="container add-page">
+        <div className="row">
+          <div className="col-8">
 
-          {preselectedCourtfileId ? (
-            <span className="badge bg-dark mt-1 mb-2">
-              Related to Courtfile {preselectedCf?.case_number || "—"}
-              {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
-            </span>
+            <nav aria-label="breadcrumb" className="mb-3">
+              <ol className="breadcrumb">
+                {caseLabel && (
+                  <li className="breadcrumb-item">
+                    <Link to={`/courtfiles/ViewCourtfileLawyer/${preselectedCourtfileId}`}>
+                      {caseLabel}
+                    </Link>
+                  </li>
+                )}
+                <li className="breadcrumb-item">
+                  <Link to={returnTo || "/deadlines"}>Deadlines</Link>
+                </li>
+                <li className="breadcrumb-item active" aria-current="page">
+                  Add
+                </li>
+              </ol>
+            </nav>
 
-          ) : (
-            <div className="mb-3">
-              <label htmlFor="courtfile_id" className="form-label">Link to Courtfile *</label>
-              <select
-                className="form-select"
-                id="courtfile_id"
-                name="courtfile_id"
-                value={formData.courtfile_id}
-                onChange={handleInputChange}
-                required
-                disabled={loading || loadingCases}
-              >
-                <option value="">Select a courtfile</option>
-                {myCases.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.number} — {c.title}
-                  </option>
-                ))}
-              </select>
+            {/* Header */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <h1 className="display-5 fw-bold mb-0">Add New Deadline</h1>
+              <div className="d-flex gap-2">
+                <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary">
+                  Cancel
+                </Link>
+                <button
+                  type="submit"
+                  form="addDeadlineForm"
+                  className="btn btn-phoenix btn-phoenix-primary"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-plus-circle me-2" />
+                      Create Deadline
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-          )}
 
-          {/* Card */}
-          <div className="card">
-            {suggestion && (
-              <div className="alert alert-info">
-                <h5 className="mb-1">
-                  <i className="bi bi-lightbulb"></i> Sugerencia IA
-                </h5>
-                <strong>{suggestion.title}</strong>
-                {suggestion.reasoning && <p className="mb-1">{suggestion.reasoning}</p>}
-                {Array.isArray(suggestion.next_steps) && suggestion.next_steps.length > 0 && (
-                  <ul className="mb-1">
-                    {suggestion.next_steps.map((step, i) => (
-                      <li key={i}>{step}</li>
-                    ))}
-                  </ul>
-                )}
-                {suggestion.legal_basis && (
-                  <small className="text-muted">Fundamento: {suggestion.legal_basis}</small>
-                )}
+            {/* Courtfile context / selector */}
+            {preselectedCourtfileId ? (
+              <span className="badge badge-phoenix-secondary mt-1 mb-3">
+                Related to Courtfile {preselectedCf?.case_number || "—"}
+                {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
+              </span>
+            ) : (
+              <div className="form-floating mb-3">
+                <select
+                  className="form-select"
+                  id="courtfile_id"
+                  name="courtfile_id"
+                  value={formData.courtfile_id}
+                  onChange={handleInputChange}
+                  required
+                  disabled={loading || loadingCases}
+                >
+                  <option value=""></option>
+                  {myCases.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.number} — {c.title}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="courtfile_id">Link to Courtfile *</label>
               </div>
             )}
-            <div className="card-body">
-              {error && (
-                <div className="alert alert-danger" role="alert">
-                  <i className="bi bi-exclamation-triangle"></i> {error}
-                </div>
-              )}
 
-              <form onSubmit={handleSubmit}>
-                <div className="mb-3">
-                  <label htmlFor="deadline_type" className="form-label">Deadline Type *</label>
-                  <select
-                    className="form-select"
-                    id="deadline_type"
-                    name="deadline_type"
-                    value={formData.deadline_type}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                  >
-                    <option value="">Select a Type</option>
-                    {Deadline_Categories.map(type => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            {/* Card contenedora */}
 
-                <div className="mb-3">
-                  <label htmlFor="deadline_date" className="form-label">Deadline Date *</label>
-                  <input
-                    type="date"
-                    className="form-control"
-                    id="deadline_date"
-                    name="deadline_date"
-                    value={formData.deadline_date}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                  />
-                </div>
 
-                <div className="mb-3">
-                  <label htmlFor="deadline_hour" className="form-label">Deadline Time *</label>
-                  <select
-                    className="form-select"
-                    id="deadline_hour"
-                    name="deadline_hour"
-                    value={formData.deadline_hour}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                  >
-                    <option value="" disabled>Select time…</option>
-                    {times15.map(t => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+            {suggestion && (
+              <div className="card border-0 shadow-sm mb-4">
+                <div className="card-body p-3 p-md-4 border-start border-4 border-primary rounded-start">
+                  <div className="d-flex align-items-start">
+                    <div
+                      className="me-3 rounded-circle bg-warning-subtle text-warning d-inline-flex align-items-center justify-content-center"
+                      style={{ width: 36, height: 36 }}
+                    >
+                      <i className="bi bi-lightbulb-fill" />
+                    </div>
 
-                <div className="mb-3">
-                  <label htmlFor="priority" className="form-label">Priority *</label>
-                  <select
-                    className="form-select"
-                    id="priority"
-                    name="priority"
-                    value={formData.priority}
-                    onChange={handleInputChange}
-                    required
-                    disabled={loading}
-                  >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
-                </div>
+                    <div className="flex-grow-1">
+                      <div className="d-flex justify-content-between align-items-start">
+                        <h6 className="mb-1 text-uppercase text-muted fw-bold">Sugerencia IA</h6>
+                        {suggestion.urgency && (
+                          <span className={`badge badge-phoenix ${String(suggestion.urgency).toLowerCase() === "urgent" ? "badge-phoenix-danger" :
+                              String(suggestion.urgency).toLowerCase() === "high" ? "badge-phoenix-warning" :
+                                String(suggestion.urgency).toLowerCase() === "medium" ? "badge-phoenix-info" :
+                                  "badge-phoenix-secondary"
+                            }`}>
+                            {String(suggestion.urgency).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
 
-                <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                  <Link to={returnTo} className="btn btn-secondary me-md-2">Cancel</Link>
-                  <button type="submit" className="btn btn-primary" disabled={loading}>
-                    {loading ? (
-                      <>
-                        <span className="spinner-border spinner-border-sm" role="status"></span>
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <i className="bi bi-plus-circle"></i> Create Deadline
-                      </>
-                    )}
-                  </button>
-                </div>
+                      <h5 className="mb-1 fw-semibold">{suggestion.title}</h5>
 
-              </form>
-            </div>
+                      {suggestion.reasoning && (
+                        <p className="mb-2 text-body-secondary">{suggestion.reasoning}</p>
+                      )}
+
+                      {Array.isArray(suggestion.next_steps) && suggestion.next_steps.length > 0 && (
+                        <ul className="mb-2 small ps-3">
+                          {suggestion.next_steps.map((step, i) => <li key={i}>{step}</li>)}
+                        </ul>
+                      )}
+
+                      {(suggestion.legal_basis || typeof suggestion.confidence === "number") && (
+                        <div className="small text-body-tertiary">
+                          {suggestion.legal_basis ? `Fundamento: ${suggestion.legal_basis}` : ""}
+                          {typeof suggestion.confidence === "number" ? ` • Conf.: ${(suggestion.confidence * 100).toFixed(0)}%` : ""}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div className="alert alert-danger d-flex align-items-center" role="alert">
+                <i className="bi bi-exclamation-triangle me-2" /> {error}
+              </div>
+            )}
+
+            <form id="addDeadlineForm" onSubmit={handleSubmit}>
+
+              <div className="form-floating mb-3">
+                <select
+                  className="form-select"
+                  id="deadline_type"
+                  name="deadline_type"
+                  value={formData.deadline_type}
+                  onChange={handleInputChange}
+                  required
+                  disabled={loading}
+                >
+                  <option value=""></option>
+                  {Deadline_Categories.map(type => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="deadline_type">Deadline Type *</label>
+              </div>
+
+              <div className="form-floating mb-3">
+                <input
+                  type="date"
+                  className="form-control"
+                  id="deadline_date"
+                  name="deadline_date"
+                  placeholder=" "
+                  value={formData.deadline_date}
+                  onChange={handleInputChange}
+                  required
+                  disabled={loading}
+                />
+                <label htmlFor="deadline_date">Deadline Date *</label>
+              </div>
+
+              <div className="form-floating mb-3">
+                <select
+                  className="form-select"
+                  id="deadline_hour"
+                  name="deadline_hour"
+                  value={formData.deadline_hour}
+                  onChange={handleInputChange}
+                  required
+                  disabled={loading}
+                >
+                  <option value=""></option>
+                  {times15.map(t => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                <label htmlFor="deadline_hour">Deadline Time *</label>
+              </div>
+
+              <div className="form-floating mb-3">
+                <select
+                  className="form-select"
+                  id="priority"
+                  name="priority"
+                  value={formData.priority}
+                  onChange={handleInputChange}
+                  required
+                  disabled={loading}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+                <label htmlFor="priority">Priority *</label>
+              </div>
+
+            </form>
           </div>
-
         </div>
       </div>
-    </div>
+
+    </AppNavsShell>
   );
 };

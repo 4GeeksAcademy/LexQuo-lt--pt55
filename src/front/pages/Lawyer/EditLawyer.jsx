@@ -1,6 +1,7 @@
 import { Link, useNavigate, useParams, Navigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import AppNavsShell from "../../components/AppNavsShell";
 
 export const EditLawyer = () => {
     const { store, dispatch } = useGlobalReducer();
@@ -197,163 +198,178 @@ export const EditLawyer = () => {
         );
     }
 
-    return (
-        <div className="container mt-4">
-            <div className="row justify-content-center">
-                <div className="col-md-8">
-                    {/* Header */}
-                    <div className="d-flex justify-content-between align-items-center mb-4">
-                        <h1>Edit Lawyer</h1>
-                        <Link to="/lawyers" className="btn btn-outline-secondary">
-                            <i className="bi bi-arrow-left"></i> Back to List
-                        </Link>
-                    </div>
+   return (
+  <AppNavsShell>
+    <div className="container add-page">
+      <div className="row">
+        <div className="col-lg-9">
+          {/* Breadcrumb (mismo estilo que EditDeadline) */}
+          <nav aria-label="breadcrumb" className="mb-4">
+            <ol className="breadcrumb small mb-0">
+              <li className="breadcrumb-item">
+                <Link to="/dashboard">Dashboard</Link>
+              </li>
+              <li className="breadcrumb-item">
+                <Link to="/lawyers">Lawyers</Link>
+              </li>
+              <li className="breadcrumb-item active" aria-current="page">
+                Edit #{lawyerId}
+              </li>
+            </ol>
+          </nav>
 
-                    {/* Formulario */}
-                    <div className="card">
-                        <div className="card-body">
-                            {error && (
-                                <div className="alert alert-danger" role="alert">
-                                    <i className="bi bi-exclamation-triangle"></i> {error}
-                                </div>
-                            )}
-
-                            <form onSubmit={handleSubmit}>
-                                <div className="mb-3">
-                                    <label htmlFor="firstname" className="form-label">
-                                        First Name *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        id="firstname"
-                                        name="firstname"
-                                        value={formData.firstname}
-                                        onChange={handleInputChange}
-                                        required
-                                        disabled={loading}
-                                    />
-                                </div>
-
-                                <div className="mb-3">
-                                    <label htmlFor="lastname" className="form-label">
-                                        Last Name *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        id="lastname"
-                                        name="lastname"
-                                        value={formData.lastname}
-                                        onChange={handleInputChange}
-                                        required
-                                        disabled={loading}
-                                    />
-                                </div>
-
-                                <div className="mb-3">
-                                    <label htmlFor="email" className="form-label">
-                                        Email *
-                                    </label>
-                                    <input
-                                        type="email"
-                                        className="form-control"
-                                        id="email"
-                                        name="email"
-                                        value={formData.email}
-                                        readOnly
-                                        disabled
-                                    />
-                                </div>
-
-                                <div className="mb-3">
-                                    <label htmlFor="phone" className="form-label">
-                                        Phone *
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        className="form-control"
-                                        id="phone"
-                                        name="phone"
-                                        value={formData.phone || ""}
-                                        onChange={handleInputChange}
-                                        required
-                                        placeholder="+54 9 11 5555-5555"
-                                    />
-                                </div>
-
-                                <div className="mb-3">
-                                    <label htmlFor="password" className="form-label">
-                                        Password (leave empty to keep current)
-                                    </label>
-                                    <input
-                                        type="password"
-                                        className="form-control"
-                                        id="password"
-                                        name="password"
-                                        value={formData.password}
-                                        onChange={handleInputChange}
-                                        disabled={loading}
-                                        placeholder="Enter new password"
-                                    />
-                                </div>
-
-                                <div className="mb-3">
-                                    <label htmlFor="file" className="form-label">
-                                        Profile image
-                                    </label>
-                                    <input
-                                        type="file"
-                                        className="form-control"
-                                        id="file"
-                                        name="file"
-                                        onChange={handleFileChange}
-                                        disabled={loading}
-                                    />
-                                </div>
-
-                                <div className="mb-3 form-check">
-                                    <input
-                                        type="checkbox"
-                                        className="form-check-input"
-                                        id="is_active"
-                                        name="is_active"
-                                        checked={formData.is_active}
-                                        onChange={handleInputChange}
-                                        disabled={loading}
-                                    />
-                                    <label htmlFor="is_active" className="form-check-label">
-                                        Active Lawyer
-                                    </label>
-                                </div>
-
-                                {/* Buttons */}
-                                <div className="d-grid gap-2 d-md-flex justify-content-md-end">
-                                    <Link to={`/lawyers/view/${lawyerId}`} className="btn btn-secondary me-md-2">
-                                        Cancel
-                                    </Link>
-                                    <button
-                                        type="submit"
-                                        className="btn btn-primary"
-                                        disabled={loading}
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <span className="spinner-border spinner-border-sm" role="status"></span>
-                                                Updating...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <i className="bi bi-check-circle"></i> Update Lawyer
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+          {/* Header con acciones */}
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h1 className="display-5 fw-bold mb-0">Edit Lawyer</h1>
+            <div className="d-flex gap-2">
+              <Link
+                to={`/lawyers/view/${lawyerId}`}
+                className="btn btn-phoenix btn-phoenix-secondary"
+              >
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                form="lawyerForm"
+                className="btn btn-phoenix btn-phoenix-primary"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-check-circle me-2" />
+                    Update Lawyer
+                  </>
+                )}
+              </button>
             </div>
+          </div>
+
+          {/* Alert de error */}
+          {error && (
+            <div className="alert alert-danger d-flex align-items-center">
+              <i className="bi bi-exclamation-triangle me-2" /> {error}
+            </div>
+          )}
+
+          {/* Form (floating controls como en EditDeadline) */}
+          <form id="lawyerForm" onSubmit={handleSubmit}>
+            {/* Firstname */}
+            <div className="form-floating mb-3">
+              <input
+                type="text"
+                className="form-control form-control-ux"
+                id="firstname"
+                name="firstname"
+                placeholder=" "
+                value={formData.firstname}
+                onChange={handleInputChange}
+                required
+                disabled={loading}
+              />
+              <label htmlFor="firstname">First Name *</label>
+            </div>
+
+            {/* Lastname */}
+            <div className="form-floating mb-3">
+              <input
+                type="text"
+                className="form-control form-control-ux"
+                id="lastname"
+                name="lastname"
+                placeholder=" "
+                value={formData.lastname}
+                onChange={handleInputChange}
+                required
+                disabled={loading}
+              />
+              <label htmlFor="lastname">Last Name *</label>
+            </div>
+
+            {/* Email (read-only) */}
+            <div className="form-floating mb-3">
+              <input
+                type="email"
+                className="form-control form-control-ux"
+                id="email"
+                name="email"
+                placeholder=" "
+                value={formData.email}
+                readOnly
+                disabled
+              />
+              <label htmlFor="email">Email</label>
+            </div>
+
+            {/* Phone */}
+            <div className="form-floating mb-3">
+              <input
+                type="tel"
+                className="form-control form-control-ux"
+                id="phone"
+                name="phone"
+                placeholder=" "
+                value={formData.phone || ""}
+                onChange={handleInputChange}
+                required
+                disabled={loading}
+              />
+              <label htmlFor="phone">Phone *</label>
+            </div>
+
+            {/* Password (opcional) */}
+            <div className="form-floating mb-3">
+              <input
+                type="password"
+                className="form-control form-control-ux"
+                id="password"
+                name="password"
+                placeholder=" "
+                value={formData.password}
+                onChange={handleInputChange}
+                disabled={loading}
+              />
+              <label htmlFor="password">Password (leave empty to keep current)</label>
+            </div>
+
+            {/* Profile image (no floating por ser file) */}
+            <div className="mb-3">
+              <label htmlFor="file" className="form-label">Profile image</label>
+              <input
+                type="file"
+                className="form-control"
+                id="file"
+                name="file"
+                onChange={handleFileChange}
+                disabled={loading}
+              />
+            </div>
+
+            {/* Active switch */}
+            <div className="form-check form-switch mb-4">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                role="switch"
+                id="is_active"
+                name="is_active"
+                checked={formData.is_active}
+                onChange={handleInputChange}
+                disabled={loading}
+              />
+              <label className="form-check-label" htmlFor="is_active">
+                Active Lawyer
+              </label>
+            </div>
+          </form>
         </div>
-    );
+      </div>
+    </div>
+  </AppNavsShell>
+);
+
 };

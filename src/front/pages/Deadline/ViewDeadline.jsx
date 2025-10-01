@@ -1,220 +1,312 @@
-import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
+import { Link, useParams, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import AppNavsShell from "../../components/AppNavsShell";
+import DeadlineBadge from "../../components/DeadlineBadge";
+
+
+// ----------------- Helpers -----------------
+const dateYMDToDMY = (v) => {
+  if (!v) return "—";
+  const isYMD = /^\d{4}-\d{2}-\d{2}$/.test(v);
+  const parts = isYMD
+    ? v.split("-")
+    : new Date(v).toISOString().slice(0, 10).split("-");
+  if (!parts || parts.length !== 3) return "—";
+  const [yy, mm, dd] = parts;
+  return `${dd}/${mm}/${yy}`;
+};
+const safeTime = (v) => (v ? String(v).slice(0, 5) : "—");
 
 export const ViewDeadline = () => {
   const { store, dispatch } = useGlobalReducer();
   const { deadlineId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const returnTo = location.state?.returnTo || "/deadlines";
 
   const API = import.meta.env.VITE_BACKEND_URL;
-
-  // ---------- AUTH + ME ----------
   const token = store?.auth?.token || null;
-  const me    = store?.me || null;
-  const role  = (me?.role || "").toLowerCase();
+  const role = (store?.me?.role || "").toLowerCase();
 
-  // ---------- Guards ----------
-      const allowed =
-          role === "admin_user" ||
-          role === "lawyer";
-  
-      if (!allowed) return <Navigate to="/403" replace />;
+  // Guards
+  const allowed = role === "admin_user" || role === "lawyer" || role === "client";
+  if (!allowed) return <Navigate to="/403" replace />;
+
+  // ReturnTo: default a /deadlines si no vino por state
+  const returnTo = useMemo(
+    () => location.state?.returnTo || "/deadlines",
+    [location.state]
+  );
+
+  // Si vino por state desde un expediente, lo precargamos
+  const state = location.state || {};
+  const initialLinked =
+    state.courtfileId
+      ? { id: state.courtfileId, number: state.courtfileNumber, title: state.courtfileTitle }
+      : null;
 
   const [deadline, setDeadline] = useState(null);
+  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Si vino por state desde un expediente
-  const prelinked = location.state?.courtfileId
-    ? { id: location.state.courtfileId, number: location.state.courtfileNumber, title: location.state.courtfileTitle }
-    : null;
-
-  const [linkedCourtfile, setLinkedCourtfile] = useState(prelinked);
-
-
+  // Fetch principal
   useEffect(() => {
+    let abort = false;
     const fetchDeadline = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API}/api/deadlines/${deadlineId}`, {
-          headers: { Authorization: `Bearer ${token}` }
+        const resp = await fetch(`${API}/api/deadlines/${deadlineId}`, {
+          headers: { Authorization: `Bearer ${token}` },
         });
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const data = await response.json();
-        setDeadline(data);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching deadline:", err);
-        setError("Failed to load deadline data");
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        if (!abort) {
+          setDeadline(data);
+          setError(null);
+        }
+      } catch (e) {
+        if (!abort) {
+          console.error("Error fetching deadline:", e);
+          setError("Failed to load deadline data");
+        }
       } finally {
-        setLoading(false);
+        if (!abort) setLoading(false);
       }
     };
+    if (deadlineId && token) fetchDeadline();
+    return () => { abort = true; };
+  }, [API, token, deadlineId]);
 
-    if (deadlineId) fetchDeadline();
-
-  }, [deadlineId]);
-
+  // Si vino solo el id del courtfile, completar number/title
   useEffect(() => {
+    let abort = false;
+    const loadCf = async () => {
+      try {
+        if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
+          const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (resp.ok) {
+            const d = await resp.json();
+            if (!abort) {
+              setLinkedCourtfile((cf) => ({
+                ...(cf || {}),
+                number: d.case_number,
+                title: d.title,
+              }));
+            }
+          }
+        }
+      } catch {
+        /* noop */
+      }
+    };
+    loadCf();
+    return () => { abort = true; };
+  }, [API, linkedCourtfile?.id, token]);
+
+  // Si no vino por state, buscá el link en la tabla de relaciones
+  useEffect(() => {
+    let abort = false;
     const fetchLinked = async () => {
       try {
         if (linkedCourtfile || !deadlineId) return;
-        
         const resp = await fetch(`${API}/api/deadlines-courtfiles`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (!resp.ok) return;
         const rows = await resp.json();
-        const rel = (rows || []).find(r => Number(r.deadline_id) === Number(deadlineId));
-        if (rel) {
+        const rel = (rows || []).find((r) => Number(r.deadline_id) === Number(deadlineId));
+        if (rel && !abort) {
           setLinkedCourtfile({
             id: rel.courtfile_id,
             number: rel.courtfile_number,
-            title: rel.courtfile_title
+            title: rel.courtfile_title,
           });
         }
-      } catch (e) {
-        // silencioso
+      } catch {
+        /* noop */
       }
     };
     fetchLinked();
-  }, [API, deadlineId, linkedCourtfile, token]);
+    return () => { abort = true; };
+  }, [API, token, deadlineId, linkedCourtfile]);
 
+  // Delete
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete this deadline?")) return;
     try {
-      const response = await fetch(`${API}/api/deadlines/${deadlineId}`, { 
+      const resp = await fetch(`${API}/api/deadlines/${deadlineId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (response.ok) {
-        dispatch({ type: "DELETE_DEADLINE", payload: Number(deadlineId) || deadlineId });
-        navigate(returnTo, { replace: true });
-        alert("Deadline deleted successfully!");
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to delete deadline");
+      if (!resp.ok) {
+        const e = await resp.json().catch(() => ({}));
+        throw new Error(e.error || `HTTP ${resp.status}`);
       }
+      dispatch({ type: "DELETE_DEADLINE", payload: Number(deadlineId) || deadlineId });
+      alert("Deadline deleted successfully!");
+      navigate(returnTo, { replace: true });
     } catch (err) {
       console.error("Error deleting deadline:", err);
       alert(`Error deleting deadline: ${err.message}`);
     }
   };
 
-  const getPriorityBadgeClass = (priority) => {
-    switch (priority) {
-      case "low": return "bg-secondary";
-      case "medium": return "bg-info";
-      case "high": return "bg-warning";
-      case "urgent": return "bg-danger";
-      default: return "bg-secondary";
-    }
-  };
-
+  // UI states
   if (loading) {
     return (
-      <div className="container mt-4">
-        <div className="text-center">
-          <div className="spinner-border" role="status"><span className="visually-hidden">Loading...</span></div>
-          <p>Loading deadline...</p>
+      <AppNavsShell>
+        <div className="container mt-4 text-center">
+          <div className="spinner-border" role="status">
+            <span className="visually-hidden">Loading…</span>
+          </div>
+          <p className="mt-2">Loading deadline…</p>
         </div>
-      </div>
+      </AppNavsShell>
     );
   }
 
   if (error || !deadline) {
     return (
-      <div className="container mt-4">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle"></i> {error || "Deadline not found"}
+      <AppNavsShell>
+        <div className="container add-page">
+          <div className="alert alert-danger">
+            <i className="bi bi-exclamation-triangle"></i> {error || "Deadline not found"}
+          </div>
+          <Link to={returnTo} className="btn btn-outline-secondary">
+            <i className="bi bi-arrow-left"></i> Back
+          </Link>
         </div>
-        <Link to={returnTo} className="btn btn-outline-secondary">
-          <i className="bi bi-arrow-left"></i> Back
-        </Link>
-      </div>
+      </AppNavsShell>
     );
   }
 
   return (
-    <div className="container mt-4">
-      <div className="row justify-content-center">
-        <div className="col-md-8">
+    <AppNavsShell>
+      <div className="container add-page">
+        {/* Breadcrumbs */}
+        <nav aria-label="breadcrumb" className="mb-3">
+          <ol className="breadcrumb">
+            <li className="breadcrumb-item">
+              <Link to={returnTo || "/deadlines"}>Deadlines</Link>
+            </li>
+            <li className="breadcrumb-item active" aria-current="page">
+              Details
+            </li>
+          </ol>
+        </nav>
 
-          <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <h1>Deadline Details</h1>
-            </div>
-            <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back
-            </Link>
-          </div>
+        <div className="col-md-8 col-lg-8">
+          {/* Header (title + actions) */}
+          <div className="d-flex justify-content-between align-items-start mb-3">
+            <h1 className="h2 fw-bolder mb-0 line-clamp-1">
+              {deadline.deadline_type || "Deadline"}
+            </h1>
 
-          {linkedCourtfile && (
-            <span className="badge bg-dark mt-1 mb-3">
-              Related to Courtfile {linkedCourtfile.number || "—"}
-              {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
-            </span>
-          )}
-
-          <div className="card">
-            <div className="card-header bg-dark text-white">
-              <h5 className="card-title mb-0">
-                <i className="bi bi-calendar-event"></i> Deadline Information
-              </h5>
-            </div>
-
-            <div className="card-body">
-              <div className="row">
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Deadline Type</label>
-                    <p className="fs-6">{deadline.deadline_type || "-"}</p>
-                  </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Deadline Date</label>
-                    <p className="fs-6">{deadline.deadline_date || "-"}</p>
-                  </div>
-                </div>
-
-                <div className="col-md-6">
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Deadline Time</label>
-                    <p className="fs-6">{deadline.deadline_hour || "-"}</p>
-                  </div>
-                  <div className="mb-3">
-                    <label className="fw-bold text-muted">Priority</label>
-                    <p className="fs-6">
-                      <span className={`badge ${getPriorityBadgeClass(deadline.priority)}`}>
-                        {deadline.priority ? deadline.priority.charAt(0).toUpperCase() + deadline.priority.slice(1) : "-"}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="card-footer bg-light">
-              <div className="d-flex gap-2 justify-content-end">
+            {["lawyer", "admin_user"].includes(role) && (
+              <div className="d-flex gap-2">
                 <Link
                   to={`/deadlines/${deadline.id}`}
                   state={{ returnTo }}
-                  className="btn btn-warning"
+                  className="btn btn-phoenix-secondary btn-sm"
                 >
-                  <i className="bi bi-pencil"></i> Edit
+                  <i className="bi bi-pencil" /> Edit
                 </Link>
-                <button className="btn btn-danger" onClick={handleDelete}>
-                  <i className="bi bi-trash"></i> Delete
+                <button className="btn btn-phoenix-danger btn-sm" onClick={handleDelete}>
+                  <i className="bi bi-trash" /> Delete
                 </button>
               </div>
-            </div>
-
+            )}
           </div>
+
+          {/* Summary strip */}
+          <div className="card mb-3 mt-5">
+            <div className="card-body">
+              <div className="row text-center g-4">
+
+                {/* Date */}
+                <div className="col-sm-4">
+                  <div className="d-inline-flex align-items-center">
+                    <div
+                      className="d-flex bg-success-subtle rounded flex-center me-3"
+                      style={{ width: 32, height: 32 }}
+                    >
+                      <i className="bi bi-calendar-event text-success" />
+                    </div>
+                    <div className="text-start">
+                      <p className="fw-bold mb-1">Date</p>
+                      <h4 className="fw-bolder text-nowrap mb-0">
+                        {deadline.deadline_date ? dateYMDToDMY(deadline.deadline_date) : "—"}
+                      </h4>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Time */}
+                <div className="col-sm-4 border-start-sm border-translucent ps-sm-5">
+                  <div className="d-inline-flex align-items-center">
+                    <div
+                      className="d-flex bg-info-subtle rounded flex-center me-3"
+                      style={{ width: 32, height: 32 }}
+                    >
+                      <i className="bi bi-clock-history text-info" />
+                    </div>
+                    <div className="text-start">
+                      <p className="fw-bold mb-1">Time</p>
+                      <h4 className="fw-bolder text-nowrap mb-0">
+                        {safeTime(deadline.deadline_hour) || "—"}
+                      </h4>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Priority */}
+                <div className="col-sm-4 border-start-sm border-translucent ps-sm-5">
+                  <div className="d-inline-flex align-items-center">
+                    <div
+                      className="d-flex bg-primary-subtle rounded flex-center me-3"
+                      style={{ width: 32, height: 32 }}
+                    >
+                      <i className="bi bi-flag text-primary" />
+                    </div>
+                    <div className="text-start">
+                      <p className="fw-bold mb-1">Priority</p>
+                      <div className="mt-1">
+                        <DeadlineBadge priority={deadline.priority} outline />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+
+          {/* Case File abajo */}
+          <div className="row g-3 mt-3">
+            <div className="col-12">
+              {linkedCourtfile && (
+                <div className="mb-4 ms-2">
+                  <h3 className="fw-bold mb-1 text-muted">Case File</h3>
+                  <Link
+                    to={`/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`}
+                    className="badge badge-phoenix badge-phoenix-secondary fs-8 mt-2"
+                    title={linkedCourtfile.title || ""}
+                  >
+                    {linkedCourtfile.number || `#${linkedCourtfile.id}`}
+                  </Link>
+                </div>
+              )}
+            </div>
+        
 
         </div>
       </div>
-    </div >
+    </div>
+    </AppNavsShell >
   );
-};
+
+}

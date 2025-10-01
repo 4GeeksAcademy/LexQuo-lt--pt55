@@ -100,7 +100,7 @@ import { Team } from "./pages/Team.jsx";
 import { PublicLayout } from "./components/PublicLayout.jsx";
 import { NotFound } from "./pages/NotFound.jsx";
 
-
+import Calendar from "./pages/Calendar.jsx";
 
 
 
@@ -115,7 +115,7 @@ export const router = createBrowserRouter(
 
     // Root Route: All navigation will start from here.
     //<Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
-    <Route path="/" element={<PublicLayout />} errorElement={<NotFound />} >
+    <Route path="/" element={<Layout />} errorElement={<NotFound />} >
 
       {/* Nested Routes: Defines sub-routes within the BaseHome component. */}
       <Route path="/403" element={<Forbidden />} />
@@ -136,18 +136,12 @@ export const router = createBrowserRouter(
         <Route path="/admins/:adminId" element={<EditAdmin />} />
         <Route path="/admins/dashboard" element={<DashboardAdminUser />} />
 
-        <Route path="/lawyers" element={<Lawyers />} />
         <Route path="/lawyers/addLawyer" element={<AddLawyer />} />
 
         <Route path="/courtfiles/view/:courtfileId" element={<ViewCourtfile />} />
-        <Route path="/courtfiles" element={<Courtfiles />} />
 
-        <Route path="/clients" element={<Clients />} />
         <Route path="/clients/addClient" element={<AddClient />} />
 
-        <Route path="/payments" element={<Payments />} />
-        <Route path="/deadlines" element={<Deadlines />} />
-        <Route path="/appointments" element={<Appointments />} />
         <Route path="/documents" element={<Documents />} />
 
         <Route path="/ClientsCourtfiles" element={<ClientsCourtfiles />} />
@@ -195,34 +189,51 @@ export const router = createBrowserRouter(
       <Route element={<PrivateRoute />}>
         <Route path="/DashboardClient" element={<DashboardClient />} />
         <Route path="/DashboardLawyer" element={<DashboardLawyer />} />
+
         <Route path="/courtfiles/addcourtfile" element={<AddCourtfile />} />
         <Route path="/courtfiles/ViewCourtfileLawyer/:courtfileId" element={<ViewCourtfileLawyer />} />
         <Route path="/courtfiles/viewclient/:courtfileId" element={<ViewCourtfileClient />} />
         <Route path="/courtfiles/:courtfileId" element={<EditCourtfile />} />
+
         <Route path="/lawyers/view/:lawyerId" element={<ViewLawyer />} />
         <Route path="/lawyers/:lawyerId" element={<EditLawyer />} />
+
         <Route path="/clients/view/:clientId" element={<ViewClient />} />
         <Route path="/clients/:clientId" element={<EditClient />} />
+
         <Route path="/clients/link-or-create" element={<LawyerLinkOrCreateClient />} />
         <Route path="/lawyers/link-or-invite" element={<LawyerLinkOrInviteLawyer />} />
+
         <Route path="/payments/view/:paymentId" element={<ViewPayment />} />
         <Route path="/payments/addPayment" element={<AddPayment />} />
         <Route path="/payments/:paymentId" element={<EditPayment />} />
+
         <Route path="/deadlines/addDeadline" element={<AddDeadline />} />
         <Route path="/deadlines/view/:deadlineId" element={<ViewDeadline />} />
         <Route path="/deadlines/:deadlineId" element={<EditDeadline />} />
+
         <Route path="/appointments/addAppointment" element={<AddAppointment />} />
         <Route path="/appointments/view/:appointmentId" element={<ViewAppointment />} />
         <Route path="/appointments/:appointmentId" element={<EditAppointment />} />
+
         <Route path="/documents/addDocument" element={<AddDocument />} />
         <Route path="/documents/view/:documentId" element={<ViewDocument />} />
         <Route path="/documents/:documentId" element={<EditDocument />} />
 
-        <Route path="/chats/:courtfileId" element={<ChatOnDemand />} />
         <Route path="/chats" element={<ChatsOverview />} />
+        <Route path="/chats/:courtfileId" element={<ChatsOverview />} />
 
         <Route path="/lawyers/:id/password" element={<ChangePassword kind="lawyer" />} />
         <Route path="/clients/:id/password" element={<ChangePassword kind="client" />} />
+
+        <Route path="/lawyers" element={<Lawyers />} />
+        <Route path="/clients" element={<Clients />} />
+        <Route path="/payments" element={<Payments />} />
+        <Route path="/deadlines" element={<Deadlines />} />
+        <Route path="/appointments" element={<Appointments />} />
+        <Route path="/courtfiles" element={<Courtfiles />} />
+
+        <Route path="/calendar" element={<Calendar />} />
 
       </Route>
 

@@ -45,14 +45,21 @@ class Message(db.Model):
     lawyer = relationship("Lawyer", lazy="joined", foreign_keys=[lawyer_id])
 
     # ------ Helpers para serializar como lo espera el FRONT ------
-    def to_front_dict(self):
-        """Devuelve el shape que ya usa tu ChatOnDemand.jsx"""
+    def to_front_dict(self):  
+        avatar_url = None
+    
         if self.sender == "lawyer" and self.lawyer:
             name = f"{self.lawyer.firstname} {self.lawyer.lastname}".strip()
+            avatar_url = self.lawyer.url_img  # Agregar esta línea
         elif self.sender == "client" and self.client:
             name = f"{self.client.firstname} {self.client.lastname}".strip()
+            avatar_url = self.client.url_img  # Agregar esta línea
         else:
             name = self.sender
+
+    # Si no hay avatar, usar uno por defecto
+        if not avatar_url:
+            avatar_url = f"https://ui-avatars.com/api/?name={name.replace(' ', '+')}&background=random&size=32"
 
         return {
             "id": self.id,
@@ -63,7 +70,8 @@ class Message(db.Model):
             ),
             "sender_name": name, 
             "text": self.texto,                         # <- mapeo
-            "created_at": (self.created_at.isoformat() if self.created_at else None)
+            "created_at": (self.created_at.isoformat() if self.created_at else None),
+            "avatar": avatar_url  # Agregar esta propiedad
         }
     
     __table_args__ = (

@@ -3,7 +3,7 @@ import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useEffect, useState } from "react";
 
 export const AddPaymentCourtfile = () => {
-  const { dispatch } = useGlobalReducer();
+  const { store, dispatch } = useGlobalReducer();
   const navigate = useNavigate();
   const API = import.meta.env.VITE_BACKEND_URL;
 
@@ -29,7 +29,10 @@ export const AddPaymentCourtfile = () => {
   const fetchPayments = async () => {
     try {
       const response = await fetch(`${API}/api/payments`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`, 
+                },
       });
       if (response.ok) {
         const data = await response.json();
@@ -45,7 +48,10 @@ export const AddPaymentCourtfile = () => {
   const fetchCourtfiles = async () => {
     try {
       const response = await fetch(`${API}/api/courtfiles`, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`, 
+                },
       });
       if (response.ok) {
         const data = await response.json();
@@ -68,7 +74,10 @@ export const AddPaymentCourtfile = () => {
 
       const response = await fetch(`${API}/api/payments-courtfile`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+        headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`, 
+                },
         body: JSON.stringify({ payment_id: payload.payment, courtfile_id: payload.courtfile })
       });
 

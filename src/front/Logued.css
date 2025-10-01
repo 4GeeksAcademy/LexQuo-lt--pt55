@@ -1,0 +1,893 @@
+/* =========================================================
+   LexQuo x Phoenix — Sidebar + Topbar + Layout (ordenado)
+   ========================================================= */
+
+/* ===================== VARIABLES ====================== */
+:root{
+  --phoenix-navbar-vertical-width: 14rem !important;
+  --lex-topbar-h: 60px;
+}
+
+/* =================== BASE DE LAYOUT =================== */
+body{
+  padding-top: var(--lex-topbar-h);
+}
+
+/* ======================= TOPBAR ======================= */
+.navbar.fixed-top{
+  z-index: 1045 !important;
+  min-height: 3.75rem;
+}
+.navbar-dark{
+  background-color: #222834 !important;
+}
+
+/* ====================== SIDEBAR ======================= */
+.navbar-vertical{
+  position: fixed;
+  top: var(--lex-topbar-h);
+  left: 0;
+  bottom: 0;
+  width: var(--phoenix-navbar-vertical-width) !important;
+  z-index: 1035 !important;
+  background-color: #222834 !important;
+  border-right: 0 !important;
+  box-shadow: none !important;
+}
+.navbar-vertical .navbar-collapse{
+  height: 100% !important;
+  border: 0 !important;
+}
+.navbar-vertical .navbar-vertical-content{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ================= FLECHA / TOGGLERS ================= */
+.navbar-vertical .dropdown-indicator-icon{
+  width: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--phoenix-gray-500, #8a94a6);
+  margin-right: 0.25rem !important;
+}
+.navbar-vertical .dropdown-indicator-icon i{
+  font-size: 0.62rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+.navbar-vertical .nav-link[aria-expanded="true"] .dropdown-indicator-icon i{
+  transform: rotate(90deg);
+}
+.navbar-vertical .dropdown-indicator-icon:empty{
+  visibility: hidden;
+}
+
+/* ============== LINKs / ICONOS / TEXTO =============== */
+.navbar-vertical .nav-link{
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.375rem;
+  margin: 0 0.5rem;
+  width: auto;
+  color: var(--phoenix-gray-400, #a0aabb) !important;
+  transition: all 0.15s ease;
+  font-size: 13px !important;
+}
+.navbar-vertical .nav-link:hover{
+  color: var(--phoenix-gray-300, #c1c9d2) !important;
+  background: rgba(255,255,255,0.035);
+}
+.navbar-vertical .nav-link.active{
+  color: var(--phoenix-gray-300, #c1c9d2) !important; 
+  font-weight: 1000; 
+  background: rgba(102,161,255,0.08);
+}
+.navbar-vertical .nav-link > .d-flex{
+  gap: 0.1rem !important;
+  align-items: center;
+}
+.navbar-vertical .nav-link .nav-link-icon{
+  width: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--phoenix-gray-400, #a0aabb);
+  margin-right: 0.5rem !important;
+}
+.navbar-vertical .nav-link .nav-link-text{
+  margin-left: 0 !important;
+}
+.navbar-vertical .collapse .nav .nav-link{
+  padding: 0.375rem 1rem 0.375rem 2.25rem !important;
+}
+
+/* ================ LABELS (APPS/PAGES) ================ */
+.navbar-vertical .nav-label{
+  padding: 0.5rem 1rem 0.35rem 2rem !important;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+  color: var(--phoenix-gray-500, #8a94a6);
+  opacity: 0.9;
+  margin-bottom: 0.5rem;
+}
+.navbar-vertical .nav-item{ margin-bottom: 0.125rem; }
+
+/* ============= BLOQUE INFERIOR (.mt-auto) ============ */
+.navbar-vertical .mt-auto{
+  margin-top: auto !important;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  font-size: 0.90rem;
+  line-height: 1;
+  font-weight: 600;
+}
+.navbar-vertical .mt-auto .nav-link{
+  color: var(--phoenix-gray-400, #a0aabb) !important;
+}
+.navbar-vertical .mt-auto .nav-link:hover{
+  color: var(--phoenix-gray-300, #c1c9d2) !important;
+}
+.navbar-vertical .mt-auto .nav-link.active{
+  color: var(--phoenix-primary, #66a1ff) !important;
+}
+.navbar-vertical .mt-auto .nav-link i{
+  margin-right: 0rem;
+  width: 16px;
+}
+.navbar-vertical .mt-auto .nav-link .d-flex{
+  gap: 0.1rem !important;
+  align-items: center;
+}
+.navbar-vertical .mt-auto .nav-link .nav-link-icon{
+  width: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--phoenix-gray-400, #a0aabb);
+  margin-right: 0.5rem !important;
+}
+.navbar-vertical .mt-auto .nav-link .nav-link-text{
+  margin-left: 0 !important;
+}
+.navbar-vertical .mt-auto ul.nav > li.nav-item > .nav-link{
+  padding-left: 1.1rem !important;
+}
+
+/* ===================== SCROLLBAR ====================== */
+.scrollbar{
+  scrollbar-width: thin;
+  scrollbar-color: var(--phoenix-gray-400) transparent;
+}
+.scrollbar::-webkit-scrollbar{ width: 6px; }
+.scrollbar::-webkit-scrollbar-thumb{
+  background-color: var(--phoenix-gray-400);
+  border-radius: 3px;
+}
+
+
+
+/* ================== CARET ROTATION ==================== */
+button[data-bs-toggle="collapse"][aria-expanded="true"] .bi-caret-right-fill {
+  transform: rotate(90deg);
+  transition: transform .2s ease;
+}
+button[data-bs-toggle="collapse"] .bi-caret-right-fill {
+  transition: transform .2s ease;
+}
+
+/* =================== HOVER ICON BUTTONS =================== */
+.navbar .nav-item button:has(.bi-brightness-high),
+.navbar .nav-item button:has(.bi-bell) {
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+.navbar .nav-item button:has(.bi-brightness-high):hover,
+.navbar .nav-item button:has(.bi-bell):hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* =================== LAYOUT OVERRIDES (FINAL) =================== */
+.main-content{
+  margin-left: var(--phoenix-navbar-vertical-width);
+  padding-top: var(--lex-topbar-h);
+  min-height: 100vh;
+  background-color: var(--phoenix-gray-100);
+}
+.content{
+  flex: 1;
+  padding: 1.5rem;  
+  margin-left: var(--phoenix-navbar-vertical-width);
+  background-color: var(--phoenix-gray-100);
+  min-height: 100vh;
+}
+
+/* =========== OVERRIDE ESPECIFICO (PISA A TODO) =========== */
+
+.container.main-content {
+  max-width: 100% !important;   
+  margin-left: 0 !important;
+  margin-right: 0 !important;   
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* ======================= LAYOUT ======================= */
+.main{ display:flex; min-height:100vh; }
+@media (max-width: 991.98px){
+  .main-content,
+  .content{
+    margin-left: 0;
+  }
+}
+
+/* Elimina el backdrop del offcanvas ==================================================================================*/
+.offcanvas-backdrop {
+  display: none !important;
+}
+
+/* === Sidebar: sólo scroll vertical, nunca horizontal ===================================================================================== */
+#navbarVerticalOffcanvas .navbar-vertical-content,
+.scrollbar {
+  overflow-y: auto !important; /* scroll vertical */
+  overflow-x: hidden !important;/* sin scroll horizontal */
+}
+
+/* Footer visual, pegado abajo, solo desktop */
+.navbar-vertical-footer{
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding: .75rem 1rem;
+  background: var(--phoenix-gray-1100, #0e1624);
+}
+.navbar-vertical-footer .btn{
+  color: var(--phoenix-gray-300, #c1c9d2);
+  background: transparent;
+}
+.navbar-vertical-footer .btn:hover{
+  background: rgba(255,255,255,0.06);
+}
+
+/* Evitar scroll horizontal en la parte scrolleable ==================================================================================*/
+#navbarVerticalOffcanvas .navbar-vertical-content{
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Colapso real en escritorio ==================================================================================*/
+@media (min-width: 992px){
+  html.navbar-vertical-collapsed #navbarVerticalOffcanvas.offcanvas-lg{
+    width: 4rem !important;
+  }
+  html.navbar-vertical-collapsed .content{
+    margin-left: 4rem !important;
+  }
+
+  html.navbar-vertical-collapsed .navbar-vertical .nav-label,
+  html.navbar-vertical-collapsed .navbar-vertical .nav-link-text,
+  html.navbar-vertical-collapsed .navbar-vertical .dropdown-indicator-icon,
+  html.navbar-vertical-collapsed .navbar-vertical .collapse{
+    display: none !important;
+  }
+
+  html.navbar-vertical-collapsed .navbar-vertical .nav-link{
+    margin: .25rem .5rem;
+    padding: .5rem !important;
+    justify-content: center;
+    text-align: center;
+  }
+  html.navbar-vertical-collapsed .navbar-vertical .nav-link .nav-link-icon{
+    margin: 0 !important;
+    width: 1.25rem;
+  }
+
+  /* En colapsado, el texto del botón se oculta (dejá sólo el ícono si querés) */
+  html.navbar-vertical-collapsed .navbar-vertical-footer-text{
+    display: none !important;
+  }
+}
+
+/* ========================Sidebar: estructura para fijar Pages al fondo ===============================================*/
+#navbarVerticalOffcanvas .offcanvas-body{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* La parte superior (tu menú) ocupa el espacio disponible y scrollea */
+#navbarVerticalOffcanvas .navbar-vertical-content{
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;          /* clave para que el scroll funcione */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* El bloque "Pages" ya tiene .mt-auto: esto lo asegura */
+#navbarVerticalOffcanvas .mt-auto{
+  margin-top: auto !important;
+}
+
+/* La flechita puede animar */
+.toggle-icon{
+  display: inline-block;
+  transition: transform .2s ease;
+}
+
+/* Cuando el NAV está colapsado, girar a la derecha */
+#navbarVerticalOffcanvas.is-collapsed .toggle-icon{
+  transform: rotate(180deg);
+}
+
+.navbar-vertical .mt-auto .navbar-vertical-toggle{
+  margin-top: auto !important;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+
+/* ============================== Tabla moderna al estilo "admin" =============================== */
+
+.table-row-clickable {
+  cursor: pointer;
+}
+.table-row-clickable:hover {
+  background-color: #f8fafc; 
+}
+
+/* ===== Contenedor tipo card ===== */
+.table-wrap {
+  overflow: hidden;
+}
+
+/* ===== Tabla moderna ===== */
+.table-modern {
+  border-collapse: separate;
+  border-spacing: 0;
+  padding: 10px 0 0 0;
+}
+
+/* ===== Header de tabla ===== */
+
+.table-modern thead th {
+  color: #31374A;      
+  font-weight: 800;       
+  font-size: 12px;
+  letter-spacing: .04em;  
+  text-transform: uppercase;
+  padding-top: .65rem;
+  padding-bottom: .65rem;
+  border-bottom: 1.5px solid #b8b0b5 !important;
+  border-top: 1.5px solid #b8b0b5 !important;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: transparent !important;
+}
+
+.table-modern tbody td {
+  color: #212529;
+  font-size: 12.8px;      
+  font-weight: 600;       
+  border-bottom: 1px solid #e5e5e5; 
+  vertical-align: middle;  
+}
+
+
+/*====================PUNTITOS ACTION ===========================================*/
+/* botón de tres puntos más sutil */
+.icon-btn{
+  border: 0px;
+  background: none;
+}
+.icon-btn:hover{ background: #f1f3f5; }
+
+/* ====== Search box estilo admin ====== */
+.search-box {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.45rem 2rem 0.45rem 2rem; /* espacio para icono a la izquierda */
+  border-radius: 8px;
+  border: 1px solid #d0d7de;
+  font-size: 0.8rem;
+  background-color: #f9fafb;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #0d6efd;
+  background-color: #fff;
+  box-shadow: 0 0 0 2px rgba(13,110,253,0.2);
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.7rem;
+  color: #6c757d;
+  pointer-events: none;
+}
+
+.clear-btn {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #6c757d;
+}
+
+.clear-btn:hover {
+  color: #020202;
+}
+
+/* ==============================================================================================
+   React-Calendar — fila estable al hover
+   (normalizamos <abbr> para TODOS los estados)
+   ========================================= ======================================================*/
+
+/* Base calendario */
+.react-calendar { 
+  width: 100%; 
+  border: none; 
+}
+
+/* Navegación */
+.react-calendar__navigation button { 
+  border-radius: 8px; 
+}
+
+/* ---- Tiles (celdas de día) ---- */
+.react-calendar__tile { 
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px; 
+  transition: background 0.15s ease; 
+  line-height: 1;
+  padding: 0.5rem 0 1.1rem !important; /* espacio inferior p/ dot */ 
+}
+
+/* Número del día */
+.react-calendar__tile abbr {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  box-sizing: border-box;
+  text-decoration: none;
+  cursor: default;
+  margin: 0;
+  line-height: 1;
+}
+
+/* Hover */
+.react-calendar__tile:enabled:hover { 
+  background: transparent !important; 
+}
+.react-calendar__tile:enabled:hover abbr {
+  background: #d0d7de;
+}
+
+/* Hoy */
+.react-calendar__tile--now { background: transparent !important; font-weight: 600; }
+.react-calendar__tile--now abbr { background: #1a73e8; color: #fff; }
+
+/* Seleccionado */
+.react-calendar__tile--active { background: transparent !important; color: inherit !important; box-shadow: none !important; border-radius: 8px; }
+.react-calendar__tile--active abbr { background: transparent !important; color: inherit !important; box-shadow: 0 0 0 2px #1a73e8; }
+
+/* Hoy + Seleccionado */
+.react-calendar__tile--now.react-calendar__tile--active abbr { background: #1a73e8 !important; color: #fff !important; box-shadow: none !important; }
+
+/* Finde */
+.react-calendar__month-view__days__day--weekend { color: #6c757d !important; font-weight: 500; }
+
+/* Altura mínima */
+.react-calendar__month-view__days__day { min-height: 44px; }
+
+/* Dot */
+.react-calendar__tile .rc-dot {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px; height: 6px; border-radius: 50%; pointer-events: none;
+}
+.react-calendar__tile .rc-dot.is-appointment { background: var(--phoenix-primary);   }
+.react-calendar__tile .rc-dot.is-deadline    { background: var(--phoenix-danger);   }
+
+/* Weekdays header */
+.react-calendar__month-view__weekdays abbr { text-decoration: none !important; border-bottom: none !important; cursor: default; }
+
+/* Year view */
+.react-calendar__year-view .react-calendar__tile abbr { display: inline; width: auto; height: auto; border-radius: 0; background: transparent !important; box-shadow: none !important; }
+.react-calendar__year-view .react-calendar__tile:enabled:hover,
+.react-calendar__year-view .react-calendar__tile:enabled:focus { background: transparent !important; color: inherit !important; }
+.react-calendar__year-view .react-calendar__tile--now abbr,
+.react-calendar__year-view .react-calendar__tile--active,
+.react-calendar__year-view .react-calendar__tile--hasActive { background: transparent !important; color: inherit !important; box-shadow: none !important; font-weight: 600; }
+
+/* Tarjetas del listado */
+.hover-elevate { transition: box-shadow .15s ease, transform .05s ease; border: 1px solid rgba(0,0,0,.08); }
+.hover-elevate:hover { box-shadow: 0 8px 24px rgba(0,0,0,.08); transform: translateY(-1px); }
+
+
+/* ===== Pill tipo etiqueta para el tipo de evento ===== */
+
+/* Afinamos jerarquía visual en la tarjeta */
+.rc-event-title{ font-weight: 600; font-size: 1.5rem; }
+.rc-event-time { font-size: 13px; color: #6c757d; }
+
+/* Agrandar el título del mes/año en la barra de navegación */
+.react-calendar__navigation__label {
+  font-size: 1.5rem !important;   /* más grande */
+  font-weight: 700 !important;    /* más grueso */
+}
+
+.react-calendar__navigation {
+  padding-top: 1rem;
+  padding-bottom: 2rem;     /* espacio interno */
+  border-top: 2px solid #dee2e6;
+  border-bottom: 2px solid #dee2e6;
+  margin-bottom: 2rem; /* espacio con el grid de días */
+}
+
+
+/* =============parche calendario============================= */
+.react-calendar { 
+  width: 100% !important; /* O el porcentaje que prefieras */
+  max-width: 500px; /* O un ancho fijo */
+  margin: 0 auto; /* Centrar */
+  border: none !important;
+}
+
+/* =============parche margenes============================= */
+.add-page {
+  margin-top: 1rem !important;   
+  max-width: 100% !important;   
+  margin-left: 1rem !important;
+  margin-right: 0 !important;   
+  padding-left: 0 !important;
+  padding-right: 1.5rem !important;
+}
+
+
+/* =============parche tabla============================= */
+.juris-clip {
+  max-width: 35ch;        /* límite aprox. al largo de esa frase */
+  white-space: nowrap;    /* que no se corte en varias líneas */
+  overflow: hidden;       /* oculta el resto */
+  text-overflow: ellipsis;/* agrega … al final */
+}
+
+/* =============view clients/lawyers============================= */
+/* avatar tamaño Shopify-like sin romper nada más */
+.avatar-xl { width: 96px; height: 96px; }
+
+/* util para imágenes de perfil */
+.object-fit-cover { object-fit: cover; }
+
+.card-roomy .card-body { padding: 1.5rem; }
+@media (min-width: 992px) { .card-roomy .card-body { padding: 2rem; } }
+.avatar-xl { width: 96px; height: 96px; }
+.object-fit-cover { object-fit: cover; }
+
+/* margen interno */
+.table-edge thead th:first-child, .table-edge tbody td:first-child { padding-left: 1.5rem; }
+.table-edge thead th:last-child,  .table-edge tbody td:last-child  { padding-right: 1.5rem; }
+.table-edge th, .table-edge td { padding-top: .8rem; padding-bottom: .8rem; }
+
+/* =============================parche tabla dashboard lawyer payment======================== */
+.payment-detail-text {
+  font-size: 0.8rem; /* 12.8px */
+}
+
+/* =============================parche calendar======================== */
+/* Formato dot+texto, sin fondo/borde del pill */
+.fc .lxq-deadline {
+  --fc-event-bg-color: transparent;
+  --fc-event-border-color: transparent;     /* quita el borde del pill */
+  --fc-event-text-color: var(--phoenix-danger, #dc3545);
+}
+.fc .lxq-appointment {
+  --fc-event-bg-color: transparent;
+  --fc-event-border-color: transparent;
+  --fc-event-text-color: var(--phoenix-primary, #0d6efd);
+}
+
+/* 👇 El puntito usa BORDER-COLOR, no background */
+.fc .lxq-deadline .fc-daygrid-event-dot {
+  border-color: var(--phoenix-danger, #dc3545) !important;
+}
+.fc .lxq-appointment .fc-daygrid-event-dot {
+  border-color: var(--phoenix-primary, #0d6efd) !important;
+}
+
+/* por si bootstrap/phoenix pisa el color del texto */
+.fc .lxq-deadline .fc-event-title,
+.fc .lxq-deadline .fc-event-time {
+  color: var(--phoenix-danger, #dc3545) !important;
+}
+.fc .lxq-appointment .fc-event-title,
+.fc .lxq-appointment .fc-event-time {
+  color: var(--phoenix-primary, #0d6efd) !important;
+}
+
+/* (opcional) tamaño del puntito */
+.fc .fc-daygrid-event-dot { border-width: 4px; }
+
+
+/* Cursor de mano para eventos del calendario */
+.fc-event {
+  cursor: pointer !important;
+}
+
+/* Cursor de mano específico para tus eventos personalizados */
+.fc-event.lxq-deadline,
+.fc-event.lxq-appointment,
+.fc-daygrid-event.lxq-deadline,
+.fc-daygrid-event.lxq-appointment,
+.fc-timegrid-event.lxq-deadline,
+.fc-timegrid-event.lxq-appointment {
+  cursor: pointer !important;
+}
+
+/* También para los dots de los eventos */
+.fc-daygrid-event-dot,
+.fc-timegrid-event-dot {
+  cursor: pointer !important;
+}
+
+/* Y para los elementos internos del evento */
+.fc-event-title,
+.fc-event-time,
+.fc-event-main {
+  cursor: pointer !important;
+}
+
+
+
+/* =============================parche scrollbars======================== */
+
+/* Para todos los scrollbars de la app */
+::-webkit-scrollbar {
+  height: 2px;   /* altura en scroll horizontal */
+  width: 2px;    /* ancho en scroll vertical */
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; /* o un gris muy claro si querés */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #adb5bd; /* color del thumb */
+  border-radius: 20px;       /* bordes redondeados */
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #868e96; /* un poquito más oscuro al hover */
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;       /* fino */
+  scrollbar-color: #adb5bd transparent; /* thumb y track */
+}
+
+
+
+
+/* =====================HELPERS CHAT================================ */
+/* Asegurá que el contenedor no recorte el pico */
+.chat-bubble-wrap { position: relative; overflow: visible; }
+
+/* Burbujas base */
+.bubble {
+  position: relative;
+  border-radius: .75rem;
+}
+
+/* ====== Recibidos (izquierda) con borde ====== */
+.bubble--left {
+  background: #fff;                     /* mismo fondo que la burbuja con .border */
+  border: 1px solid #dee2e6;            /* igual a Bootstrap border */
+  margin-left: 8px;                     /* aire para el pico */
+}
+
+/* doble capa: borde + relleno - PICO ARRIBA */
+.bubble--left::before,
+.bubble--left::after {
+  content: "";
+  position: absolute;
+  top: 10px;                          /* PICO ARRIBA en lugar de bottom */
+  width: 12px;
+  height: 12px;
+  transform: rotate(45deg);
+}
+
+/* capa “borde” */
+.bubble--left::before {
+  left: -7px;                            /* sobresale un poco */
+  background: #dee2e6;                   /* color del borde */
+}
+
+/* capa “relleno” */
+.bubble--left::after {
+  left: -6px;                            /* 1px hacia adentro */
+  top: 11px;                           /* PICO ARRIBA - 1px hacia abajo */
+  background: #fff;                      /* relleno de la burbuja */
+}
+
+/* ====== Enviados (derecha) llenos ====== */
+.bubble--right {
+  background: #0d6efd;                   /* bg-primary */
+  color: #fff;
+}
+
+/* un solo diamante (no hay borde) */
+.bubble--right::after {
+  content: "";
+  position: absolute;
+  bottom: 10px;
+  right: -5px;
+  width: 12px;
+  height: 12px;
+  transform: rotate(45deg);
+  background: #0d6efd;                   /* igual que la burbuja */
+}
+
+/* Caja del composer (borde suave + sombra leve) */
+.composer {
+  box-shadow: 0 1px 0 rgba(16,24,40,.04), 0 1px 2px rgba(16,24,40,.06);
+}
+
+/* Textarea plano, sin borde, con foco suave y altura mínima como input */
+.composer-input {
+  min-height: 24px;           /* igual a la altura que mostrás en el ejemplo */
+  max-height: 180px;          /* evita crecer infinito */
+}
+.composer-input:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 .2rem rgba(13,110,253,.12) !important; /* ring suave */
+  border-radius: .5rem;
+}
+
+/* Botón enviar con altura fija y esquinas suaves */
+.composer-send {
+  height: 40px;
+  border-radius: .5rem;
+  padding-inline: 16px;
+}
+
+/* Iconitos: cursor y color al hover */
+.composer .bi { cursor: pointer; }
+.composer .bi:hover { color: var(--bs-body-color); }
+
+
+.chat-textarea {
+  border: none;
+  outline: none;
+  resize: none;
+  font-size: 16px;
+  background: transparent;
+  width: 100%;
+  line-height: 1.4;
+  transition: height 0.2s;
+}
+
+/* Para que crezca automáticamente */
+.chat-textarea:focus {
+  box-shadow: none;
+  border: none;
+  outline: none;
+}
+
+/* Asegurar que el card-footer ocupe todo el ancho */
+.card-footer {
+  padding: 24px;
+}
+
+.card-footer.msg {
+  min-height: 145px;
+  height: 145px;
+  display: flex;
+  align-items: center;
+}
+
+
+.badge-phoenix-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* Solo afecta al calendario que tenga .lxq-cal-widget */
+.lxq-cal-widget .fc .fc-event {
+  font-size: 0.75rem;    /* ~12px */
+  line-height: 1.2;
+  border-radius: 6px;     /* opcional: pill */
+  padding: 2px 6px;       /* compensa el texto chico */
+}
+
+/* Si querés diferenciar tipos: */
+.lxq-cal-widget .lxq-deadline {
+  font-size: 0.7rem;      /* deadlines aún más chicos */
+}
+
+.lxq-cal-widget .lxq-appointment {
+  font-size: 0.75rem;
+}
+
+/* Truncar títulos largos sin romper el diseño */
+.lxq-cal-widget .fc .fc-event-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Un poquito menos de padding en los “chips” del month view */
+.lxq-cal-widget .fc-daygrid-event {
+  padding: 0.125rem 0.375rem;
+}
+
+
+/* Cabecera (Mon, Tue...) */
+.lxq-cal-widget .fc .fc-col-header-cell-cushion {
+  font-size: 0.75rem;       /* ~12px */
+  padding: 4px 0;
+}
+
+/* Números de día (1,2,3...) */
+.lxq-cal-widget .fc .fc-daygrid-day-number {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+}
+
+/* Eventos estilo “chip” más chicos */
+.lxq-cal-widget .fc .fc-daygrid-event {
+  font-size: 0.6875rem;     /* ~11px */
+  line-height: 1.2;
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+
+/* “Más” link más compacto si se activa (e.g., +2 more) */
+.lxq-cal-widget .fc .fc-daygrid-more-link {
+  font-size: 0.6875rem;
+  padding: 0 4px;
+}
+
+/* Opcional: que los eventos tengan menos margen vertical */
+.lxq-cal-widget .fc .fc-daygrid-day-events {
+  margin: 2px 4px;
+}
+
+/* Si querés diferenciar tamaños entre tipos: */
+.lxq-cal-widget .lxq-deadline { font-size: 0.65625rem; }   /* ~10.5px */
+.lxq-cal-widget .lxq-appointment { font-size: 0.6875rem; } /* ~11px */
+
