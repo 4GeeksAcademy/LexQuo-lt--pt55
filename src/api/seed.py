@@ -368,33 +368,74 @@ def seed_documents(session):
     print(f"Documents: agregados {created} (total deseado: {len(rows)})")
 
 def seed_payments(session):
+    # Usá naive UTC para ser consistente con tus columnas DateTime (sin tz)
     now = datetime.utcnow()
-    # 🔟 pagos exactos
+
+    # Helper: “x días atrás” pero SIN salir del mes actual
+    def days_back_same_month(days: int) -> datetime:
+        target = now - timedelta(days=days)
+        if target.year != now.year or target.month != now.month:
+            # clamp al primer día del mes actual (mediodía para evitar edge de 00:00)
+            target = now.replace(day=1, hour=12, minute=0, second=0, microsecond=0)
+        else:
+            target = target.replace(hour=12, minute=0, second=0, microsecond=0)
+        return target
+
+    # Fechas “pagadas” dentro del mes actual
+    paid_1d = days_back_same_month(1)
+    paid_3d = days_back_same_month(3)
+    paid_7d = days_back_same_month(7)
+
     rows = [
-        # approved (3)
-        dict(amount=5000.0,  currency="ARS", status=PaymentStatus.approved,  paid_at=now - timedelta(days=1),  means="TDC",          stripe_payment_intent_id="pi_appr_001"),
-        dict(amount=12000.0, currency="ARS", status=PaymentStatus.approved,  paid_at=now - timedelta(days=3),  means="Transferencia", stripe_payment_intent_id="pi_appr_002"),
-        dict(amount=3500.0,  currency="USD", status=PaymentStatus.approved,  paid_at=now - timedelta(days=7),  means="TDC",          stripe_payment_intent_id="pi_appr_003"),
-        # pending (3)
-        dict(amount=7500.0,  currency="USD", status=PaymentStatus.pending,   paid_at=None,                      means="TDC",          stripe_payment_intent_id=None),
-        dict(amount=8900.0,  currency="ARS", status=PaymentStatus.pending,   paid_at=None,                      means="Link de pago", stripe_payment_intent_id=None),
-        dict(amount=4200.0,  currency="EUR", status=PaymentStatus.pending,   paid_at=None,                      means="TDC",          stripe_payment_intent_id=None),
-        # processing (2)
-        dict(amount=8500.0,  currency="EUR", status=PaymentStatus.processing, paid_at=None,                     means="TDC",          stripe_payment_intent_id="pi_proc_001"),
-        dict(amount=6000.0,  currency="COP", status=PaymentStatus.processing, paid_at=None,                     means="TDC",          stripe_payment_intent_id="pi_proc_002"),
-        # rejected (2)
-        dict(amount=12000.0, currency="ARS", status=PaymentStatus.rejected,  paid_at=None,                      means="TDC",          stripe_payment_intent_id="pi_rej_001"),
-        dict(amount=3000.0,  currency="USD", status=PaymentStatus.rejected,  paid_at=None,                      means="Transferencia",stripe_payment_intent_id="pi_rej_002"),
+        # === approved (en el mes actual) ===
+        dict(amount=5000.0,  currency="ARS", status=PaymentStatus.approved,  paid_at=paid_1d, means="TDC",           stripe_payment_intent_id="pi_appr_001", updated_at=paid_1d, created_at=paid_1d),
+        dict(amount=12000.0, currency="ARS", status=PaymentStatus.approved,  paid_at=paid_3d, means="Transferencia", stripe_payment_intent_id="pi_appr_002", updated_at=paid_3d, created_at=paid_3d),
+        dict(amount=3500.0,  currency="USD", status=PaymentStatus.approved,  paid_at=paid_7d, means="TDC",           stripe_payment_intent_id="pi_appr_003", updated_at=paid_7d, created_at=paid_7d),
+
+        # === pending ===
+        dict(amount=7500.0,  currency="USD", status=PaymentStatus.pending,   paid_at=None,   means="TDC",           stripe_payment_intent_id=None,           created_at=now - timedelta(days=2)),
+        dict(amount=8900.0,  currency="ARS", status=PaymentStatus.pending,   paid_at=None,   means="Link de pago",  stripe_payment_intent_id=None,           created_at=now - timedelta(days=5)),
+        dict(amount=4200.0,  currency="EUR", status=PaymentStatus.pending,   paid_at=None,   means="TDC",           stripe_payment_intent_id=None,           created_at=now - timedelta(days=8)),
+
+        # === processing ===
+        dict(amount=8500.0,  currency="EUR", status=PaymentStatus.processing, paid_at=None,  means="TDC",           stripe_payment_intent_id="pi_proc_001",  created_at=now - timedelta(days=4)),
+        dict(amount=6000.0,  currency="COP", status=PaymentStatus.processing, paid_at=None,  means="TDC",           stripe_payment_intent_id="pi_proc_002",  created_at=now - timedelta(days=6)),
+
+        # === rejected ===
+        dict(amount=12000.0, currency="ARS", status=PaymentStatus.rejected,  paid_at=None,   means="TDC",           stripe_payment_intent_id="pi_rej_001",   created_at=now - timedelta(days=9)),
+        dict(amount=3000.0,  currency="USD", status=PaymentStatus.rejected,  paid_at=None,   means="Transferencia", stripe_payment_intent_id="pi_rej_002",   created_at=now - timedelta(days=10)),
     ]
+
     created = 0
     for r in rows:
         unique = {
-            "amount": r["amount"], "currency": r["currency"], "status": r["status"],
-            "paid_at": r["paid_at"], "stripe_payment_intent_id": r["stripe_payment_intent_id"]
+            # Usá el intent_id como “casi-único” para evitar duplicados si re-seedeás
+            "stripe_payment_intent_id": r.get("stripe_payment_intent_id"),
+            "amount": r["amount"],
+            "currency": r["currency"],
+            "status": r["status"],
+            "paid_at": r["paid_at"],
         }
-        defaults = {"means": r.get("means")}
-        _, was_created = get_or_create(session, Payment, unique, defaults)
-        if was_created: created += 1
+        defaults = {
+            "means": r.get("means"),
+            # Si pasás created_at/updated_at explícitos, respetalos; si no, que aplique default
+            "created_at": r.get("created_at"),
+            "updated_at": r.get("updated_at") or r.get("created_at"),
+        }
+        obj, was_created = get_or_create(session, Payment, unique, defaults)
+        if was_created:
+            created += 1
+        else:
+            # Si ya existía, actualizá created/updated si los agregaste ahora
+            if r.get("created_at"):
+                obj.created_at = r["created_at"]
+            if r.get("updated_at") or r.get("created_at"):
+                obj.updated_at = r.get("updated_at") or r.get("created_at")
+            if r.get("paid_at") is not None:
+                obj.paid_at = r["paid_at"]
+            session.add(obj)
+            session.commit()
+
     print(f"Payments: agregados {created} (total deseado: {len(rows)})")
 
 # =============================== relaciones =============================== #

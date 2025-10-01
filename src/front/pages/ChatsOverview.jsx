@@ -207,7 +207,7 @@ export default function ChatsOverview() {
 
             {/* Lista de conversaciones */}
             <div className="scrollbar">
-              <div className="chat-conversation-tab flex-column nav" role="tablist">
+              <div className="chat-conversation-tab flex-column nav h-200" role="tablist">
                 {loading && <div className="px-3 py-2 text-muted small">Loading chats…</div>}
                 {err && <div className="px-3 py-2 text-danger small">{err}</div>}
                 {!loading && !err && filtered.length === 0 && (
@@ -281,7 +281,7 @@ export default function ChatsOverview() {
           </div>
 
           {/* ===== PANEL DERECHO ===== */}
-          <div className="h-100 w-100 d-none d-sm-block">
+          <div className="h-200 w-100 d-none d-sm-block">
             {activeId ? (
               <ChatOnDemand
                 key={`chat-${activeId}`}
@@ -294,7 +294,7 @@ export default function ChatsOverview() {
               />
             ) : (
               // Placeholder si no hay chat seleccionado
-              <div className="h-100 w-100 card">
+              <div className="h-200 w-100 card">
                 <div className="h-100 d-flex flex-column flex-center text-center card-body">
                   <img alt="chat" className="d-dark-none" src={conversation} />
 

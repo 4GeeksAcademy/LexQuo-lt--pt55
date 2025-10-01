@@ -8,10 +8,6 @@
   --lex-topbar-h: 60px;
 }
 
-/* =================== BASE DE LAYOUT =================== */
-body{
-  padding-top: var(--lex-topbar-h);
-}
 
 /* ======================= TOPBAR ======================= */
 .navbar.fixed-top{
@@ -219,6 +215,7 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   padding-left: 0 !important;
   padding-right: 0 !important;
   padding-top: 0 !important;
+  margin-top: var(--lex-topbar-h);
 }
 
 /* ======================= LAYOUT ======================= */
@@ -565,7 +562,7 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 
 /* =============parche margenes============================= */
 .add-page {
-  margin-top: 1rem !important;   
+  margin-top: 5rem !important;   
   max-width: 100% !important;   
   margin-left: 1rem !important;
   margin-right: 0 !important;   
@@ -891,3 +888,5 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 .lxq-cal-widget .lxq-deadline { font-size: 0.65625rem; }   /* ~10.5px */
 .lxq-cal-widget .lxq-appointment { font-size: 0.6875rem; } /* ~11px */
 
+
+/* ==================fix navbar ===========================*/
