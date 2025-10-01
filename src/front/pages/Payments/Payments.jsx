@@ -25,61 +25,60 @@ export const Payments = () => {
 
   // ---------- Fetch ----------
   const fetchPayments = async () => {
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const endpoint =
-      role === "admin_user"
-        ? `${API}/api/payments`
-        : `${API}/api/payments-courtfile?expand=payment`;
+      const endpoint =
+        role === "admin_user"
+          ? `${API}/api/payments`
+          : `${API}/api/payments-courtfile?expand=payment`;
 
-    const response = await fetch(endpoint, {
-      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
+      const response = await fetch(endpoint, {
+        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
 
-    // ✅ CORREGIDO: Normalización adecuada para lawyer/client
-    const paymentsData =
-      role === "admin_user"
-        ? data.map(p => ({
-          id: p.id,
-          relation_id: null,
-          amount: p.amount,
-          currency: p.currency,
-          status: p.status,
-          means: p.means,
-          created_at: p.created_at,
-          paid_at: p.paid_at
-        }))
-        : data.map(pc => {
-          if (!pc.payment) {
-            console.warn('PaymentCourtfile without payment:', pc.id);
-            return null;
-          }
-          
-          const pay = pc.payment;
-          return {
-            id: pay.id,
-            relation_id: pc.id,  
-            amount: pay.amount,
-            currency: pay.currency,
-            status: pay.status,
-            means: pay.means,
-            created_at: pay.created_at,
-            paid_at: pay.paid_at,
-            // ✅ Opcional: incluir courtfile_id para debugging
-            courtfile_id: pc.courtfile_id
-          };
-        }).filter(Boolean); // Filtrar nulls
+      const paymentsData =
+        role === "admin_user"
+          ? data.map(p => ({
+            id: p.id,
+            relation_id: null,
+            amount: p.amount,
+            currency: p.currency,
+            status: p.status,
+            means: p.means,
+            created_at: p.created_at,
+            paid_at: p.paid_at
+          }))
+          : data.map(pc => {
+            if (!pc.payment) {
+              console.warn('PaymentCourtfile without payment:', pc.id);
+              return null;
+            }
+            const pay = pc.payment;
+            return {
+              id: pay.id,
+              relation_id: pc.id,
+              amount: pay.amount,
+              currency: pay.currency,
+              status: pay.status,
+              means: pay.means,
+              created_at: pay.created_at,
+              paid_at: pay.paid_at,
+              courtfile_id: pc.courtfile_id,
+              // 👇 tomamos el número si viene del backend
+              courtfile_number: pc.courtfile_number || pc?.courtfile?.case_number || null
+            };
+          }).filter(Boolean);
 
-    dispatch({ type: "SET_PAYMENTS", payload: paymentsData });
-  } catch (e) {
-    console.error("Error fetching payments:", e);
-  } finally {
-    setLoading(false);
-  }
-};
+      dispatch({ type: "SET_PAYMENTS", payload: paymentsData });
+    } catch (e) {
+      console.error("Error fetching payments:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     fetchPayments();
@@ -186,7 +185,7 @@ export const Payments = () => {
           </ol>
         </nav>
 
-        
+
         {/* ===== Toolbar ===== */}
         <div className="mb-1">
           {/* Fila 1: título + contador */}
@@ -263,13 +262,14 @@ export const Payments = () => {
               <thead className="table-light">
                 <tr>
                   <th style={{ width: "20px" }} className="text-start">ID</th>
+                  <th>Courtfile</th>
                   <th>Amount</th>
                   <th>Currency</th>
                   <th>Status</th>
                   <th>Means</th>
                   <th>Created</th>
                   <th>Paid</th>
-                  <th style={{ width: 60 }} className="text-start pe-3">
+                  <th style={{ width: 60 }} className="text-center">
                     <span className="text-muted">Actions</span>
                   </th>
                 </tr>
@@ -283,6 +283,13 @@ export const Payments = () => {
                     role="button"
                   >
                     <td className="text-start ps-2">{p.id}</td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      {p.courtfile_id ? (
+                        <Link to={`/courtfiles/view/${p.courtfile_id}`}>
+                          {p.courtfile_number || `${p.courtfile_id}`}
+                        </Link>
+                      ) : "—"}
+                    </td>
                     <td>{money(p.amount, p.currency)}</td>
                     <td>{(p.currency || "").toUpperCase() || "—"}</td>
                     <td><PaymentBadge status={p.status} outline /></td>
@@ -290,57 +297,65 @@ export const Payments = () => {
                     <td>{formatDateTime(p.created_at)}</td>
                     <td>{formatDateTime(p.paid_at)}</td>
 
-                    {/* Actions (dropdown) */}
-                    <td className="text-center" onClick={(e) => e.stopPropagation()}>
-                      <div className="dropdown position-static">
-                        <button
-                          className="btn btn-link text-secondary p-0 me-3"
-                          type="button"
-                          data-bs-toggle="dropdown"
-                          aria-expanded="false"
-                          aria-label="Row actions"
-                        >
-                          <i className="bi bi-three-dots icon-btn"></i>
-                        </button>
-                        <ul className="dropdown-menu dropdown-menu-end">
-                          <li>
-                            <Link className="dropdown-item" to={`/payments/view/${p.id}`}>
-                              <i className="bi bi-eye me-2" /> View
-                            </Link>
-                          </li>
-
-                          {/* Pay (solo client y pending) */}
-                          {canPay(p) && (
+                    {/* Actions (dropdown / pay / dash) */}
+                    {role === "client" ? (
+                      <td className="text-center">
+                        {canPay(p) ? (
+                          <Link
+                            className="btn btn-outline-success d-flex align-items-center justify-content-center"
+                            to={`/payments/pay/${p.id}`}
+                            style={{ minWidth: "100px", padding: "4px 8px", fontSize: "0.8rem" }}
+                          >
+                            <i className="bi bi-cash-stack me-1" /> Pay
+                          </Link>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                      </td>
+                    ) : (
+                      <td className="text-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="dropdown position-static">
+                          <button
+                            className="btn btn-link text-secondary p-0 me-3"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                            aria-label="Row actions"
+                          >
+                            <i className="bi bi-three-dots icon-btn"></i>
+                          </button>
+                          <ul className="dropdown-menu dropdown-menu-end">
                             <li>
-                              <Link className="dropdown-item" to={`/payments/pay/${p.id}`}>
-                                <i className="bi bi-credit-card me-2" /> Pay now
+                              <Link className="dropdown-item" to={`/payments/view/${p.id}`}>
+                                <i className="bi bi-eye me-2" /> View
                               </Link>
                             </li>
-                          )}
 
-                          {/* Edit (admin o lawyer si pending) */}
-                          {canEdit(p) && (
-                            <li>
-                              <Link className="dropdown-item" to={`/payments/${p.id}`}>
-                                <i className="bi bi-pencil me-2" /> Edit
-                              </Link>
-                            </li>
-                          )}
-
-                          {/* Delete (admin o lawyer si pending) */}
-                          {canDelete(p) && (
-                            <>
-                              <li><hr className="dropdown-divider" /></li>
+                            {/* Edit (admin o lawyer si pending) */}
+                            {canEdit(p) && (
                               <li>
-                                <button className="dropdown-item text-danger" onClick={() => handleDelete(p)}>
-                                  <i className="bi bi-trash me-2" /> Delete
-                                </button>
+                                <Link className="dropdown-item" to={`/payments/${p.id}`}>
+                                  <i className="bi bi-pencil me-2" /> Edit
+                                </Link>
                               </li>
-                            </>
-                          )}
-                        </ul>
-                      </div>
-                    </td>
+                            )}
+
+                            {/* Delete (admin o lawyer si pending) */}
+                            {canDelete(p) && (
+                              <>
+                                <li><hr className="dropdown-divider" /></li>
+                                <li>
+                                  <button className="dropdown-item text-danger" onClick={() => handleDelete(p)}>
+                                    <i className="bi bi-trash me-2" /> Delete
+                                  </button>
+                                </li>
+                              </>
+                            )}
+                          </ul>
+                        </div>
+                      </td>
+                    )}
+
                   </tr>
                 ))}
               </tbody>

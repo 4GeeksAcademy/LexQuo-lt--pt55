@@ -1253,42 +1253,64 @@ def get_deadlines():
         requested_lawyer_id = request.args.get('lawyer_id', type=int)
         requested_courtfile_id = request.args.get('courtfile_id', type=int)
 
+        # base: Deadlines + relación
         base = db.session.query(Deadlines) \
             .join(DeadlineCourtfile, DeadlineCourtfile.deadline_id == Deadlines.id)
 
+        # ⚠️ agregamos join con Courtfile para poder traer case_number
+        base = base.join(Courtfile, Courtfile.id == DeadlineCourtfile.courtfile_id)
+
         if role == "admin_user":
             q = base
-            # filtros opcionales para admin
             if requested_lawyer_id is not None:
-                q = q.join(
-                    LawyerCourtfile,
-                    LawyerCourtfile.courtfile_id == DeadlineCourtfile.courtfile_id
-                ).filter(LawyerCourtfile.lawyer_id == requested_lawyer_id)
+                q = q.join(LawyerCourtfile,
+                           LawyerCourtfile.courtfile_id == DeadlineCourtfile.courtfile_id) \
+                     .filter(LawyerCourtfile.lawyer_id == requested_lawyer_id)
 
             if requested_courtfile_id is not None:
-                q = q.filter(DeadlineCourtfile.courtfile_id ==
-                             requested_courtfile_id)
+                q = q.filter(DeadlineCourtfile.courtfile_id == requested_courtfile_id)
 
-            deadlines = q.distinct().all()
-            return jsonify([d.serialize() for d in deadlines]), 200
+            rows = q.with_entities(
+                Deadlines,
+                DeadlineCourtfile.courtfile_id,
+                Courtfile.case_number
+            ).all()
 
         elif role == "lawyer":
-            # courtfiles del abogado logueado (subconsulta)
             subq_cf = db.session.query(LawyerCourtfile.courtfile_id) \
                 .filter(LawyerCourtfile.lawyer_id == int(current_id)) \
                 .subquery()
 
             q = base.filter(DeadlineCourtfile.courtfile_id.in_(subq_cf))
 
-            # si pidió filtrar por un courtfile concreto:
             if requested_courtfile_id is not None:
-                q = q.filter(DeadlineCourtfile.courtfile_id ==
-                             requested_courtfile_id)
+                q = q.filter(DeadlineCourtfile.courtfile_id == requested_courtfile_id)
 
-            deadlines = q.distinct().all()
-            return jsonify([d.serialize() for d in deadlines]), 200
+            rows = q.with_entities(
+                Deadlines,
+                DeadlineCourtfile.courtfile_id,
+                Courtfile.case_number
+            ).all()
 
-        return jsonify({'error': 'forbidden'}), 403
+        else:
+            return jsonify({'error': 'forbidden'}), 403
+
+        by_deadline = {}
+        for d, cf_id, cf_number in rows:
+            if d.id not in by_deadline:
+                base_payload = d.serialize()
+                by_deadline[d.id] = {
+                    **base_payload,
+                    "courtfile_id": cf_id,
+                    "courtfile_number": cf_number,
+                    "courtfiles": [{"id": cf_id, "case_number": cf_number}]
+                }
+            else:
+                by_deadline[d.id]["courtfiles"].append(
+                    {"id": cf_id, "case_number": cf_number}
+                )
+
+        return jsonify(list(by_deadline.values())), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -2635,6 +2657,8 @@ def create_payment_courtfile():
         return jsonify({'error': str(e)}), 500
 
 
+from sqlalchemy.orm import joinedload
+
 @api.route('/payments-courtfile', methods=['GET'])
 @jwt_required()
 def get_payments_courtfile():
@@ -2669,22 +2693,30 @@ def get_payments_courtfile():
         if 'payment' in expand:
             query = query.options(joinedload(PaymentCourtfile.payment))
 
-        query = query.join(Payment, Payment.id == PaymentCourtfile.payment_id)\
-                     .order_by(Payment.created_at.desc())
+        # 👇 join con Courtfile para traer también su número
+        query = (
+            query.join(Payment, Payment.id == PaymentCourtfile.payment_id)
+                 .join(Courtfile, Courtfile.id == PaymentCourtfile.courtfile_id)
+                 .order_by(Payment.created_at.desc())
+        )
 
         pcs = query.all()
 
         result = []
         for pc in pcs:
             item = pc.serialize()
-            if 'payment' in expand:
+            if 'payment' in expand and pc.payment:
                 item['payment'] = pc.payment.serialize()
+            # 👇 agregamos número de expediente
+            if pc.courtfile:
+                item['courtfile_number'] = pc.courtfile.case_number
             result.append(item)
 
         return jsonify(result), 200
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 
 @api.route('/payments-courtfile/<int:id>', methods=['GET'])

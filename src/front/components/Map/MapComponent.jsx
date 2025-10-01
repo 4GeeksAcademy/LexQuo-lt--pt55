@@ -6,8 +6,8 @@ const MapComponent = ({ position, onPositionChange, readonly = false }) => {
   const markerRef = useRef(null);
   const mapInstance = useRef(null);
   const clickHandlerRef = useRef(null);
+  const resizeObsRef = useRef(null);
 
-  // Función auxiliar para normalizar la posición
   const normPos = (pos) => {
     if (!pos) return null;
     if (Array.isArray(pos) && pos.length === 2) return { lat: pos[0], lng: pos[1] };
@@ -15,15 +15,12 @@ const MapComponent = ({ position, onPositionChange, readonly = false }) => {
     return null;
   };
 
-  // Efecto para inicializar el mapa
   useEffect(() => {
-    // Verificar que Leaflet está disponible globalmente
     if (typeof L === 'undefined') {
       console.error('Leaflet no está cargado. Asegúrate de incluir el CDN en index.html');
       return;
     }
 
-    // Configurar los íconos del marcador de Leaflet
     delete L.Icon.Default.prototype._getIconUrl;
     L.Icon.Default.mergeOptions({
       iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -31,23 +28,63 @@ const MapComponent = ({ position, onPositionChange, readonly = false }) => {
       shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
     });
 
-    // Inicializar el mapa
-    mapInstance.current = L.map(mapRef.current).setView(
-      normPos(position) || [-34.6037, -58.3816],
-      13
-    );
+    const initial = normPos(position) || { lat: -34.6037, lng: -58.3816 };
+    const centerArr = [initial.lat, initial.lng];
+
+    // 1) Crear mapa ya con un setView básico
+    mapInstance.current = L.map(mapRef.current, {
+      zoom: 13,
+      center: centerArr,
+      zoomAnimation: true,
+      fadeAnimation: true
+    });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(mapInstance.current);
 
-    // Ajustar el tamaño del mapa después de la inicialización
-    setTimeout(() => {
-      if (mapInstance.current) mapInstance.current.invalidateSize();
-    }, 0);
+    // 2) whenReady: invalidar tamaño y re-centrar sin animación
+    mapInstance.current.whenReady(() => {
+      // primer frame de layout real
+      requestAnimationFrame(() => {
+        if (!mapInstance.current) return;
+        mapInstance.current.invalidateSize();
+        mapInstance.current.setView(centerArr, mapInstance.current.getZoom(), { animate: false });
+      });
+    });
 
-    // Función de limpieza
+    // Crear marcador inicial si hay position
+    if (position) {
+      markerRef.current = L.marker(centerArr, { draggable: !readonly }).addTo(mapInstance.current);
+      markerRef.current.bindPopup(
+        `<div style="text-align:center;">
+          <strong>Ubicación seleccionada</strong><br/>
+          Lat: ${initial.lat.toFixed(6)}<br/>
+          Lng: ${initial.lng.toFixed(6)}
+        </div>`
+      );
+      if (!readonly && onPositionChange) {
+        markerRef.current.on('dragend', (e) => {
+          const newPos = e.target.getLatLng();
+          onPositionChange(newPos.lat, newPos.lng);
+        });
+      }
+    }
+
+    // 3) Observador de resize del contenedor
+    if ('ResizeObserver' in window && mapRef.current) {
+      resizeObsRef.current = new ResizeObserver(() => {
+        if (!mapInstance.current) return;
+        mapInstance.current.invalidateSize();
+      });
+      resizeObsRef.current.observe(mapRef.current);
+    }
+
     return () => {
+      if (resizeObsRef.current && mapRef.current) {
+        try { resizeObsRef.current.unobserve(mapRef.current); } catch {}
+        resizeObsRef.current = null;
+      }
       if (mapInstance.current) {
         mapInstance.current.remove();
         mapInstance.current = null;
@@ -55,19 +92,15 @@ const MapComponent = ({ position, onPositionChange, readonly = false }) => {
       markerRef.current = null;
       clickHandlerRef.current = null;
     };
-  }, []); // El array de dependencias vacío asegura que se ejecute una sola vez
+  }, []); // solo una vez
 
-  // Efecto para gestionar el evento de click en el mapa
+  // Click para elegir posición (si no es readonly)
   useEffect(() => {
     if (!mapInstance.current) return;
-
-    // Remover el handler de click anterior si existe
     if (clickHandlerRef.current) {
       mapInstance.current.off('click', clickHandlerRef.current);
       clickHandlerRef.current = null;
     }
-
-    // Si no es de solo lectura, agregar el nuevo handler
     if (!readonly) {
       const handler = (e) => {
         onPositionChange && onPositionChange(e.latlng.lat, e.latlng.lng);
@@ -77,17 +110,16 @@ const MapComponent = ({ position, onPositionChange, readonly = false }) => {
     }
   }, [readonly, onPositionChange]);
 
-  // Efecto para manejar el marcador y el centrado del mapa cuando cambia 'position'
+  // Sincronizar marcador/centro cuando cambia position
   useEffect(() => {
     if (!mapInstance.current || typeof L === 'undefined') return;
 
     const p = normPos(position);
-
     if (p) {
-      // Crear o actualizar el marcador
-      if (!markerRef.current) {
-        markerRef.current = L.marker([p.lat, p.lng], { draggable: !readonly }).addTo(mapInstance.current);
+      const next = [p.lat, p.lng];
 
+      if (!markerRef.current) {
+        markerRef.current = L.marker(next, { draggable: !readonly }).addTo(mapInstance.current);
         if (!readonly && onPositionChange) {
           markerRef.current.on('dragend', (e) => {
             const newPos = e.target.getLatLng();
@@ -95,37 +127,32 @@ const MapComponent = ({ position, onPositionChange, readonly = false }) => {
           });
         }
       } else {
-        markerRef.current.setLatLng([p.lat, p.lng]);
-        // Actualizar la capacidad de arrastre según 'readonly'
+        markerRef.current.setLatLng(next);
         if (markerRef.current.dragging) {
-          if (readonly) {
-            markerRef.current.dragging.disable();
-          } else {
-            markerRef.current.dragging.enable();
-          }
+          if (readonly) markerRef.current.dragging.disable();
+          else markerRef.current.dragging.enable();
         }
       }
 
-      // Actualizar el popup del marcador
-      const latTxt = p.lat.toFixed(6);
-      const lngTxt = p.lng.toFixed(6);
       markerRef.current.bindPopup(
         `<div style="text-align:center;">
           <strong>Ubicación seleccionada</strong><br/>
-          Lat: ${latTxt}<br/>
-          Lng: ${lngTxt}
+          Lat: ${p.lat.toFixed(6)}<br/>
+          Lng: ${p.lng.toFixed(6)}
         </div>`
       );
 
-      // Recenter el mapa de forma suave si la posición ha cambiado significativamente
-      const current = mapInstance.current.getCenter();
-      const dist = mapInstance.current.distance(current, L.latLng(p.lat, p.lng));
-      if (dist > 5) { // Un umbral para evitar saltos bruscos
-        mapInstance.current.setView([p.lat, p.lng], mapInstance.current.getZoom(), { animate: true });
-      }
-
+      // Recentrar sin “salto” tras poder medir tamaño real
+      requestAnimationFrame(() => {
+        if (!mapInstance.current) return;
+        mapInstance.current.invalidateSize();
+        const current = mapInstance.current.getCenter();
+        const dist = mapInstance.current.distance(current, L.latLng(p.lat, p.lng));
+        if (dist > 5) {
+          mapInstance.current.setView(next, mapInstance.current.getZoom(), { animate: true });
+        }
+      });
     } else {
-      // Remover el marcador si la posición es nula
       if (markerRef.current) {
         mapInstance.current.removeLayer(markerRef.current);
         markerRef.current = null;
@@ -137,9 +164,10 @@ const MapComponent = ({ position, onPositionChange, readonly = false }) => {
     <div
       ref={mapRef}
       style={{
-        height: '400px',
+        height: '220px',         // el alto chico que usás en ViewAppointment
         width: '100%',
         borderRadius: '8px',
+        overflow: 'hidden',       // evita “sangrado” de tiles
         border: '1px solid #ccc'
       }}
     />

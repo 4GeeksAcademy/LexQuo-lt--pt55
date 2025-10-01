@@ -183,8 +183,8 @@ export const Deadlines = () => {
               Deadlines
             </li>
           </ol>
-        </nav> 
-        
+        </nav>
+
         {/* ===== Toolbar ===== */}
         <div className="mb-1">
           {/* Fila 1: título + contador */}
@@ -269,6 +269,8 @@ export const Deadlines = () => {
                     />
                   </th>
 
+                  <th>Courtfile</th>
+
                   <th role="button" onClick={() => requestSort("deadline_type")}>
                     Type{" "}
                     <i
@@ -332,6 +334,13 @@ export const Deadlines = () => {
                     role="button"
                   >
                     <td className="text-start ps-2">{d.id}</td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      {d.courtfile_id ? (
+                        <Link to={`/courtfiles/view/${d.courtfile_id}`}>
+                          {d.courtfile_number || `#${d.courtfile_id}`}
+                        </Link>
+                      ) : "—"}
+                    </td>
                     <td>{d.deadline_type}</td>
                     <td>{formatDate(d.deadline_date)}</td>
                     <td>{d.deadline_hour || "—"}</td>

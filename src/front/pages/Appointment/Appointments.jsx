@@ -46,17 +46,18 @@ export const Appointments = () => {
         role === "admin_user"
           ? data
           : data.map((item) => ({
-              id: item.appointment_id, // id lógico del turno
-              relation_id: item.relation_id ?? item.id, // id de la relación appointment-courtfile (para deletes si aplicara)
-              title: item.appointment_title,
-              date: item.appointment_date,
-              location: item.appointment_location,
-              starts_at: item.starts_at,
-              ends_at: item.ends_at,
-              details: item.appointment_details || item.details || "",
-              courtfile_id: item.courtfile_id,
-              courtfile_title: item.courtfile_title,
-            }));
+            id: item.appointment_id, // id lógico del turno
+            relation_id: item.relation_id ?? item.id, // id de la relación appointment-courtfile (para deletes si aplicara)
+            title: item.appointment_title,
+            date: item.appointment_date,
+            location: item.appointment_location,
+            starts_at: item.starts_at,
+            ends_at: item.ends_at,
+            details: item.appointment_details || item.details || "",
+            courtfile_id: item.courtfile_id,
+            courtfile_title: item.courtfile_title,
+            courtfile_number: item.courtfile_number ?? item?.courtfile?.case_number ?? null, //
+          }));
 
       dispatch({ type: "SET_APPOINTMENTS", payload: appointmentsData });
     } catch (err) {
@@ -183,8 +184,8 @@ export const Appointments = () => {
     role === "admin_user"
       ? "/DashboardAdmin"
       : role === "client"
-      ? "/DashboardClient"
-      : "/DashboardLawyer";
+        ? "/DashboardClient"
+        : "/DashboardLawyer";
 
   const isClient = role === "client";
 
@@ -282,78 +283,73 @@ export const Appointments = () => {
                   <th className="text-start" role="button" onClick={() => requestSort("id")}>
                     ID{" "}
                     <i
-                      className={`bi ${
-                        sortConfig.key === "id"
+                      className={`bi ${sortConfig.key === "id"
                           ? sortConfig.direction === "asc"
                             ? "bi-arrow-up"
                             : "bi-arrow-down"
                           : "bi-arrow-down-up text-muted"
-                      }`}
+                        }`}
                     />
                   </th>
+                  <th>Courtfile</th>
 
                   <th role="button" onClick={() => requestSort("title")}>
                     Title{" "}
                     <i
-                      className={`bi ${
-                        sortConfig.key === "title"
+                      className={`bi ${sortConfig.key === "title"
                           ? sortConfig.direction === "asc"
                             ? "bi-arrow-up"
                             : "bi-arrow-down"
                           : "bi-arrow-down-up text-muted"
-                      }`}
+                        }`}
                     />
                   </th>
 
                   <th role="button" onClick={() => requestSort("location")}>
                     Location{" "}
                     <i
-                      className={`bi ${
-                        sortConfig.key === "location"
+                      className={`bi ${sortConfig.key === "location"
                           ? sortConfig.direction === "asc"
                             ? "bi-arrow-up"
                             : "bi-arrow-down"
                           : "bi-arrow-down-up text-muted"
-                      }`}
+                        }`}
                     />
                   </th>
 
                   <th role="button" onClick={() => requestSort("date")}>
                     Date{" "}
                     <i
-                      className={`bi ${
-                        sortConfig.key === "date"
+                      className={`bi ${sortConfig.key === "date"
                           ? sortConfig.direction === "asc"
                             ? "bi-arrow-up"
                             : "bi-arrow-down"
                           : "bi-arrow-down-up text-muted"
-                      }`}
+                        }`}
                     />
                   </th>
 
                   <th role="button" onClick={() => requestSort("starts_at")}>
                     Starts{" "}
                     <i
-                      className={`bi ${
-                        sortConfig.key === "starts_at"
+                      className={`bi ${sortConfig.key === "starts_at"
                           ? sortConfig.direction === "asc"
                             ? "bi-arrow-up"
                             : "bi-arrow-down"
                           : "bi-arrow-down-up text-muted"
-                      }`}
+                        }`}
                     />
                   </th>
 
                   <th role="button" onClick={() => requestSort("ends_at")}>
                     Ends{" "}
                     <i
-                      className={`bi ${
-                        sortConfig.key === "ends_at"
+                      className={`bi ${sortConfig.key === "ends_at"
                           ? sortConfig.direction === "asc"
                             ? "bi-arrow-up"
                             : "bi-arrow-down"
                           : "bi-arrow-down-up text-muted"
-                      }`}
+                        }`}
                     />
                   </th>
 
@@ -373,8 +369,15 @@ export const Appointments = () => {
                     className="table-row-clickable"
                     onClick={() => navigate(`/appointments/view/${a.id}`)}
                     role="button"
-                  >
+                  >                    
                     <td className="text-start ps-2">{a.id}</td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      {a.courtfile_id ? (
+                        <Link to={`/courtfiles/view/${a.courtfile_id}`}>
+                          {a.courtfile_number || `#${a.courtfile_id}`}
+                        </Link>
+                      ) : "—"}
+                    </td>
                     <td>{a.title}</td>
                     <td style={{ maxWidth: "200px" }}>{a.location}</td>
                     <td>{formatDate(a.date)}</td>

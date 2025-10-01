@@ -14,7 +14,7 @@ export const Lawyers = () => {
   const role = (me?.role || "").toLowerCase();
   const canEdit = role === "admin_user";
 
-  
+
 
   // ---------- Local UI state ----------
   const [q, setQ] = useState("");              // search
@@ -107,7 +107,7 @@ export const Lawyers = () => {
             </li>
           </ol>
         </nav>
-        
+
         {/* ===== Toolbar superior ===== */}
         <div className="mb-1">
           {/* Fila 1: título + contador */}
@@ -218,9 +218,11 @@ export const Lawyers = () => {
                   <th>Email</th>
                   <th>Phone</th>
                   <th>Status</th>
-                  <th style={{ width: 60 }}>
-                    <span className="text-muted">Actions</span>
-                  </th>
+                  {role !== "client" && (
+                    <th style={{ width: 60 }}>
+                      <span className="text-muted">Actions</span>
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -278,47 +280,48 @@ export const Lawyers = () => {
                     </td>
 
                     {/* Kebab actions */}
-                    <td className="text-center" onClick={(e) => e.stopPropagation()}>
-                      <div className="dropdown position-static">
-                        <button
-                          className="btn btn-link text-secondary p-0"
-                          type="button"
-                          data-bs-toggle="dropdown"
-                          aria-expanded="false"
-                          aria-label="Row actions"
-                        >
-                          <i className="bi bi-three-dots icon-btn"></i>
-                        </button>
-                        <ul className="dropdown-menu dropdown-menu-end">
-                          <li>
-                            <Link className="dropdown-item" to={`/lawyers/view/${l.id}`}>
-                              <i className="bi bi-eye me-2"></i> View
-                            </Link>
-                          </li>
-                          {canEdit && (
+                    {role !== "client" && (
+                      <td className="text-center" onClick={(e) => e.stopPropagation()}>
+                        <div className="dropdown position-static">
+                          <button
+                            className="btn btn-link text-secondary p-0"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                            aria-label="Row actions"
+                          >
+                            <i className="bi bi-three-dots icon-btn"></i>
+                          </button>
+                          <ul className="dropdown-menu dropdown-menu-end">
                             <li>
-                              <Link className="dropdown-item" to={`/lawyers/${l.id}`}>
-                                <i className="bi bi-pencil me-2"></i> Edit
+                              <Link className="dropdown-item" to={`/lawyers/view/${l.id}`}>
+                                <i className="bi bi-eye me-2"></i> View
                               </Link>
                             </li>
-                          )}
-
-                          {canEdit && (
-                            <>
-                              <li><hr className="dropdown-divider" /></li>
+                            {canEdit && (
                               <li>
-                                <button
-                                  className="dropdown-item text-danger"
-                                  onClick={() => handleDeleteLawyer(l.id)}
-                                >
-                                  <i className="bi bi-trash me-2"></i> Delete
-                                </button>
+                                <Link className="dropdown-item" to={`/lawyers/${l.id}`}>
+                                  <i className="bi bi-pencil me-2"></i> Edit
+                                </Link>
                               </li>
-                            </>
-                          )}
-                        </ul>
-                      </div>
-                    </td>
+                            )}
+                            {canEdit && (
+                              <>
+                                <li><hr className="dropdown-divider" /></li>
+                                <li>
+                                  <button
+                                    className="dropdown-item text-danger"
+                                    onClick={() => handleDeleteLawyer(l.id)}
+                                  >
+                                    <i className="bi bi-trash me-2"></i> Delete
+                                  </button>
+                                </li>
+                              </>
+                            )}
+                          </ul>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
