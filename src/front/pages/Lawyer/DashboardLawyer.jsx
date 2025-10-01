@@ -784,6 +784,7 @@ export const DashboardLawyer = () => {
                             getCourtfileUrl={(id) => `/courtfiles/ViewCourtfileLawyer/${id}`}
                             height={420}
                             contentHeight={420}
+                            userRole="client"
                         />
                     </div>
 

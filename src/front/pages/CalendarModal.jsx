@@ -1,4 +1,4 @@
-/// components/CalendarModal.jsx
+// components/CalendarModal.jsx
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import DeadlineBadge from "../components/DeadlineBadge"; // 🔁 ajustá la ruta si hace falta
@@ -55,7 +55,7 @@ const buildGoogleCalUrl = (ev, courtfileUrlFn = defaultCourtfileUrl) => {
 };
 
 // ===== Componente =====
-const CalendarModal = ({ isOpen, onClose, event, onDelete }) => {
+const CalendarModal = ({ isOpen, onClose, event, onDelete, userRole }) => { // Agregar userRole como prop
   if (!isOpen || !event) return null;
 
   const { title, extendedProps = {} } = event;
@@ -140,6 +140,9 @@ const CalendarModal = ({ isOpen, onClose, event, onDelete }) => {
     },
     defaultCourtfileUrl
   );
+
+  // Verificar si el usuario es client
+  const isClient = userRole === "client";
 
   return (
     <div
@@ -237,29 +240,34 @@ const CalendarModal = ({ isOpen, onClose, event, onDelete }) => {
               <i className="bi bi-google me-1" /> 
             </a>
 
-            <Link
-              role="button"
-              tabIndex={0}
-              to={editPath}
-              className="btn btn-phoenix-secondary btn-sm"
-              onClick={onClose}
-            >
-              <i className="bi bi-pencil me-1" /> Edit
-            </Link>
+            {/* Botones condicionales - ocultar Edit y Delete para client */}
+            {!isClient && (
+              <>
+                <Link
+                  role="button"
+                  tabIndex={0}
+                  to={editPath}
+                  className="btn btn-phoenix-secondary btn-sm"
+                  onClick={onClose}
+                >
+                  <i className="bi bi-pencil me-1" /> Edit
+                </Link>
 
-            <button
-              type="button"
-              className="btn btn-phoenix-danger btn-sm ms-2"
-              onClick={onDelete}
-            >
-              <i className="bi bi-trash me-1" /> Delete
-            </button>
+                <button
+                  type="button"
+                  className="btn btn-phoenix-danger btn-sm ms-2"
+                  onClick={onDelete}
+                >
+                  <i className="bi bi-trash me-1" /> Delete
+                </button>
+              </>
+            )}
 
             <Link
               role="button"
               tabIndex={0}
               to={detailsPath}
-              className="btn btn-primary btn-sm ms-2"
+              className={`btn btn-primary btn-sm ${!isClient ? 'ms-2' : ''}`}
               onClick={onClose}
             >
               See more details <i className="bi bi-chevron-right ms-1" />

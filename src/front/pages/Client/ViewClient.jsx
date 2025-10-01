@@ -244,7 +244,7 @@ export const ViewClient = () => {
 
   return (
     <AppNavsShell>
-      <div className="container add-page">
+      <div className="container-fluid px-0 px-md-3">
         {/* Breadcrumb */}
         <nav aria-label="breadcrumb" className="mb-2">
           <ol className="breadcrumb mb-0">
@@ -255,7 +255,7 @@ export const ViewClient = () => {
 
         {/* Header con acciones AL ANCHO DE LA CARD (col-7) */}
         <div className="row g-3 mb-3">
-          <div className="col-12 col-xxl-7">
+          <div className="col-12 col-xxl-7 col-xl-7">
             <div className="d-flex flex-wrap align-items-center justify-content-between">
               <h2 className="mb-3 mt-2">Client details</h2>
 
@@ -279,18 +279,18 @@ export const ViewClient = () => {
                     <Link
                       to={`/clients/${client.id}/password`}
                       state={{ returnTo }}
-                      className="btn btn-outline-secondary btn-sm"
+                      className="btn btn-phoenix-secondary"
                     >
                       <i className="bi bi-key" /> Change Password
                     </Link>
                     <Link
                       to={`/clients/${client.id}`}
                       state={{ returnTo }}
-                      className="btn btn-warning btn-sm"
+                      className="btn btn-phoenix-secondary"
                     >
                       <i className="bi bi-pencil" /> Edit
                     </Link>
-                    <button className="btn btn-danger btn-sm" onClick={handleDelete}>
+                    <button className="btn btn-phoenix-danger btn-sm" onClick={handleDelete}>
                       <i className="bi bi-trash" /> Delete
                     </button>
                   </>
@@ -302,7 +302,7 @@ export const ViewClient = () => {
 
         {/* Card perfil (col-7) */}
         <div className="row g-4">
-          <div className="col-12 col-xxl-7">
+          <div className="col-12 col-xxl-7 col-xl-7">
             <div className="card h-100">
               <div className="card-body pb-3 d-flex flex-column justify-content-between">
                 <div className="row g-5 align-items-center text-center text-sm-start mb-3">
@@ -360,7 +360,7 @@ export const ViewClient = () => {
 
         {/* Courtfiles ABAJO de la card, mismo ancho col-7 */}
         <div className="row g-3 mt-4">
-          <div className="col-12 col-xxl-7">
+          <div className="col-12 col-xxl-7 col-xl-7">
             <h3 className="mb-3 fs-5">
               Courtfiles{" "}
               <span className="text-body-tertiary fw-normal fs-10">

@@ -18,6 +18,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 export default function DashboardCalendarWidget({
   apiBase,
   authToken,
+  userRole, // Nuevo prop para el rol del usuario
   height = 420,
   contentHeight = 420,
 }) {
@@ -73,6 +74,10 @@ export default function DashboardCalendarWidget({
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
   };
   const handleDateClick = (arg) => {
+    // Bloquear para client
+    if (userRole === "client") {
+      return; // No hacer nada si es client
+    }
     const iso = arg.dateStr || toYMD(arg.date);
     setNewDateISO(iso);
     setShowNewPicker(true);
@@ -80,6 +85,11 @@ export default function DashboardCalendarWidget({
 
   // ---------------- Fetch ----------------
   const fetchDeadlines = async () => {
+    // Si el usuario es "client", no hacer fetch de deadlines
+    if (userRole === "client") {
+      return [];
+    }
+
     const resp = await fetch(`${API}/api/deadlines-courtfiles`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
@@ -109,10 +119,20 @@ export default function DashboardCalendarWidget({
       try {
         setLoading(true);
         setErr("");
-        const [dl, ap] = await Promise.all([fetchDeadlines(), fetchAppointments()]);
-        if (!mounted) return;
-        setDeadlines(dl);
-        setAppointments(ap);
+
+        // Si el usuario es "client", solo fetch appointments
+        if (userRole === "client") {
+          const ap = await fetchAppointments();
+          if (!mounted) return;
+          setAppointments(ap);
+          setDeadlines([]); // Asegurar que deadlines esté vacío
+        } else {
+          // Para otros roles, fetch ambos
+          const [dl, ap] = await Promise.all([fetchDeadlines(), fetchAppointments()]);
+          if (!mounted) return;
+          setDeadlines(dl);
+          setAppointments(ap);
+        }
       } catch (e) {
         if (!mounted) return;
         setErr(e.message || "Error fetching events");
@@ -124,7 +144,7 @@ export default function DashboardCalendarWidget({
     return () => {
       mounted = false;
     };
-  }, [API, token]);
+  }, [API, token, userRole]); // Agregar userRole como dependencia
 
   // ---------------- Helpers ----------------
   const pad2 = (n) => String(n).padStart(2, "0");
@@ -157,6 +177,13 @@ export default function DashboardCalendarWidget({
   const handleDeleteEvent = async () => {
     if (!selectedEvent) return;
     const { type, relationId } = selectedEvent.extendedProps;
+
+    // Si es client y trata de borrar un deadline, no permitir
+    if (userRole === "client" && type === "deadline") {
+      alert("You don't have permission to delete deadlines");
+      return;
+    }
+
     const endpoint = type === "deadline" ? "deadlines-courtfiles" : "appointments-courtfiles";
 
     if (!window.confirm(`Are you sure you want to delete this ${type}?`)) return;
@@ -168,9 +195,15 @@ export default function DashboardCalendarWidget({
       });
 
       if (response.ok) {
-        const [dl, ap] = await Promise.all([fetchDeadlines(), fetchAppointments()]);
-        setDeadlines(dl);
-        setAppointments(ap);
+        // Refetch según el rol
+        if (userRole === "client") {
+          const ap = await fetchAppointments();
+          setAppointments(ap);
+        } else {
+          const [dl, ap] = await Promise.all([fetchDeadlines(), fetchAppointments()]);
+          setDeadlines(dl);
+          setAppointments(ap);
+        }
         handleCloseModal();
       } else {
         throw new Error("Failed to delete event");
@@ -181,7 +214,7 @@ export default function DashboardCalendarWidget({
     }
   };
 
-  // ---------------- Normalización → FullCalendar events (igual que Calendar) ----------------
+  // ---------------- Normalización → FullCalendar events ----------------
   const fcEvents = useMemo(() => {
     const normD = (deadlines || [])
       .map((rel) => {
@@ -301,7 +334,9 @@ export default function DashboardCalendarWidget({
           </div>
 
           <div className="col-12 col-md-6 d-flex justify-content-end gap-2 mt-2 mt-md-0">
-            <p className="fs-9">Add appointments and deadlines in just one click</p>
+            {userRole !== "client" && (
+              <p className="fs-9">Add appointments and deadlines in just one click</p>
+            )}
           </div>
         </div>
 
@@ -390,15 +425,16 @@ export default function DashboardCalendarWidget({
           onClose={handleCloseModal}
           event={selectedEvent}
           onDelete={handleDeleteEvent}
+          userRole={userRole} // Pasar el rol al modal para controlar permisos
         />
         {/* Modal quick create */}
         <CalendarModalAdd
           isOpen={showNewPicker}
           onClose={() => setShowNewPicker(false)}
           dateISO={newDateISO}
+          userRole={userRole} // Pasar el rol al modal de creación
         />
       </div>
     </div>
   );
 }
-

@@ -27,8 +27,6 @@ export const ViewLawyer = () => {
       : null
   );
 
-  const allowed = role === "admin_user" || role === "lawyer";
-  if (!allowed) return <Navigate to="/403" replace />;
 
   const [lawyer, setLawyer] = useState(null);
   const [linkedRelations, setLinkedRelations] = useState([]);
@@ -185,7 +183,7 @@ return (
 
       {/* Header con acciones AL ANCHO DE LA CARD (col-7) */}
       <div className="row g-3 mb-3">
-        <div className="col-12 col-xxl-7">
+        <div className="col-12 col-xxl-7 col-xl-7">
           <div className="d-flex flex-wrap align-items-center justify-content-between">
             <h2 className="mb-3 mt-2">Lawyer details</h2>
             {(role === "admin_user" || isMyProfile) && (
@@ -215,7 +213,7 @@ return (
 
       {/* Card perfil (col-7) */}
       <div className="row g-4">
-        <div className="col-12 col-xxl-7">
+        <div className="col-12 col-xxl-7 col-xl-7">
           <div className="card h-100">
             <div className="card-body pb-3 d-flex flex-column justify-content-between">
               <div className="row g-5 align-items-center text-center text-sm-start mb-3">
@@ -270,7 +268,7 @@ return (
       {/* Courtfiles ABAJO de la card, mismo ancho col-7 */}
       {!isMyProfile && (
         <div className="row g-3 mt-4">
-          <div className="col-12 col-xxl-7">
+          <div className="col-12 col-xxl-7 col-xl-7">
             <h3 className="mb-3 fs-5">
               {role === "lawyer" ? "Courtfiles in common" : "Courtfiles"}{" "}
               <span className="text-body-tertiary fw-normal fs-10">

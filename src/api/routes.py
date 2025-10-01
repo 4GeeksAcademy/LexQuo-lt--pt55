@@ -309,7 +309,6 @@ def delete_courtfile(courtfile_id):
 @jwt_required()
 def get_lawyers():
     try:
-        # por defecto: NO incluirse a sí mismo
         role, current_id = _get_role_and_identity()
 
         if role == 'admin_user':
@@ -325,7 +324,18 @@ def get_lawyers():
                  .filter(LawyerCourtfile.courtfile_id.in_(subq))
                  .filter(Lawyer.id != int(current_id))
                  .distinct())
+            lawyers = q.all()
 
+        elif role == 'client':
+            # todos los lawyers vinculados a expedientes del cliente
+            subq = db.session.query(ClientCourtfile.courtfile_id).filter(
+                ClientCourtfile.client_id == int(current_id)
+            ).subquery()
+
+            q = (db.session.query(Lawyer)
+                 .join(LawyerCourtfile, Lawyer.id == LawyerCourtfile.lawyer_id)
+                 .filter(LawyerCourtfile.courtfile_id.in_(subq))
+                 .distinct())
             lawyers = q.all()
 
         else:
@@ -337,8 +347,6 @@ def get_lawyers():
         return jsonify({'error': str(e)}), 500
 
 
-# imports que podrías necesitar arriba del archivo
-# asumo que ya tenés: db, Lawyer, LawyerCourtfile, _get_role_and_identity, _is_admin, _role, _current_user_id
 
 
 @api.route('/lawyers/<int:lawyer_id>', methods=['GET'])
@@ -376,10 +384,27 @@ def get_lawyer_detail(lawyer_id):
 
             lawyer = Lawyer.query.get_or_404(lawyer_id)
             return jsonify(lawyer.serialize()), 200
+        
+        # NEW: Client puede ver al abogado solo si comparten al menos un courtfile
+        if role == 'client':
+            client_cfs = db.session.query(ClientCourtfile.courtfile_id).filter(
+                ClientCourtfile.client_id == current_id
+            ).subquery()
+
+            shared = db.session.query(LawyerCourtfile).filter(
+                LawyerCourtfile.lawyer_id == lawyer_id,
+                LawyerCourtfile.courtfile_id.in_(client_cfs)
+            ).first()
+
+            if not shared:
+                return jsonify({'error': 'forbidden'}), 403
+
+            lawyer = Lawyer.query.get_or_404(lawyer_id)
+            return jsonify(lawyer.serialize()), 200
 
         # Otros roles: prohibido
         return jsonify({'error': 'forbidden'}), 403
-
+    
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -1798,11 +1823,10 @@ def get_lawyers_courtfiles():
         q = LawyerCourtfile.query
 
         if role == "admin_user":
-            # admin ve todo; puede filtrar por lawyer_id/courtfile_id abajo
             pass
 
         elif role == "lawyer":
-            # 1) si filtran por un courtfile específico, validar que esté vinculado
+            # chequeos de seguridad igual que antes
             if requested_courtfile_id:
                 is_linked = LawyerCourtfile.query.filter_by(
                     lawyer_id=int(current_id), courtfile_id=requested_courtfile_id
@@ -1811,7 +1835,6 @@ def get_lawyers_courtfiles():
                     return jsonify({'error': 'You are not linked to this courtfile'}), 403
                 q = q.filter_by(courtfile_id=requested_courtfile_id)
 
-            # 2) si piden intersección con otro lawyer
             elif requested_lawyer_id and requested_lawyer_id != int(current_id) and only_common:
                 subq = (db.session.query(LawyerCourtfile.courtfile_id)
                         .filter(LawyerCourtfile.lawyer_id == int(current_id))
@@ -1820,16 +1843,25 @@ def get_lawyers_courtfiles():
                      .filter(LawyerCourtfile.lawyer_id == requested_lawyer_id)
                      .filter(LawyerCourtfile.courtfile_id.in_(subq)))
             else:
-                # sin courtfile_id ni only_common: limitar a ver sus propios vínculos
                 requested_lawyer_id = int(current_id)
+
+        elif role == "client":
+            # validar que el cliente esté vinculado al courtfile
+            subq = db.session.query(ClientCourtfile.courtfile_id).filter(
+                ClientCourtfile.client_id == int(current_id)
+            ).subquery()
+            q = q.filter(LawyerCourtfile.courtfile_id.in_(subq))
+
+            if requested_courtfile_id:
+                q = q.filter(LawyerCourtfile.courtfile_id == requested_courtfile_id)
+
         else:
             return jsonify({'error': 'forbidden'}), 403
 
         if requested_lawyer_id is not None:
             q = q.filter(LawyerCourtfile.lawyer_id == requested_lawyer_id)
         if requested_courtfile_id is not None:
-            q = q.filter(LawyerCourtfile.courtfile_id ==
-                         requested_courtfile_id)
+            q = q.filter(LawyerCourtfile.courtfile_id == requested_courtfile_id)
 
         rows = q.all()
         return jsonify([{
@@ -2603,51 +2635,41 @@ def create_payment_courtfile():
         return jsonify({'error': str(e)}), 500
 
 
-# ...otros imports
-
-
 @api.route('/payments-courtfile', methods=['GET'])
 @jwt_required()
 def get_payments_courtfile():
     try:
         courtfile_id = request.args.get('courtfile_id', type=int)
         expand_raw = request.args.get('expand', default='')
-        expand = {s.strip().lower()
-                  for s in expand_raw.split(',')} if expand_raw else set()
+        expand = {s.strip().lower() for s in expand_raw.split(',')} if expand_raw else set()
 
         role, current_id = _get_role_and_identity()
-
         query = PaymentCourtfile.query
 
-        # Filtro por rol
         if role == "lawyer":
             query = (
-                query.join(LawyerCourtfile, 
-                         LawyerCourtfile.courtfile_id == PaymentCourtfile.courtfile_id)
+                query.join(LawyerCourtfile, LawyerCourtfile.courtfile_id == PaymentCourtfile.courtfile_id)
                 .filter(LawyerCourtfile.lawyer_id == int(current_id))
             )
 
         elif role == "client":
-            subq = select(ClientCourtfile.courtfile_id).where(
+            subq = db.session.query(ClientCourtfile.courtfile_id).filter(
                 ClientCourtfile.client_id == int(current_id)
-            )
+            ).subquery()
             query = query.filter(PaymentCourtfile.courtfile_id.in_(subq))
 
         elif role == "admin_user":
-            pass  # ve todo
+            pass
         else:
             return jsonify({'error': 'forbidden'}), 403
 
-        # Filtro por courtfile si viene
         if courtfile_id is not None:
             query = query.filter(PaymentCourtfile.courtfile_id == courtfile_id)
 
-        # Eager load del pago si lo vamos a expandir
         if 'payment' in expand:
             query = query.options(joinedload(PaymentCourtfile.payment))
 
-        # Orden sugerido por fecha de creación del Payment (si existe)
-        query = query.join(Payment, Payment.id == PaymentCourtfile.payment_id) \
+        query = query.join(Payment, Payment.id == PaymentCourtfile.payment_id)\
                      .order_by(Payment.created_at.desc())
 
         pcs = query.all()

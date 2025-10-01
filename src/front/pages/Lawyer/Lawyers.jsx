@@ -14,9 +14,7 @@ export const Lawyers = () => {
   const role = (me?.role || "").toLowerCase();
   const canEdit = role === "admin_user";
 
-  // ---------- Guards ----------
-  const allowed = role === "admin_user" || role === "lawyer";
-  if (!allowed) return <Navigate to="/403" replace />;
+  
 
   // ---------- Local UI state ----------
   const [q, setQ] = useState("");              // search
