@@ -39103,17 +39103,17 @@ a[href].bg-body-secondary:hover, a[href].bg-body-secondary:focus {
 .watchlist-collapsible[aria-expanded=true] + .summery-statistics {
   display: none;
 }
-
-.revenue-this-year-chart {
-  height: 2.5rem;
-  width: 2.5rem;
-}
-
-.revenue-next-year-chart {
-  width: 2.25rem;
-  height: 3rem;
-}
-
+/*  */
+/* .revenue-this-year-chart { */
+/*   height: 2.5rem; */
+/*   width: 2.5rem; */
+/* } */
+/*  */
+/* .revenue-next-year-chart { */
+/*   width: 2.25rem; */
+/*   height: 3rem; */
+/* } */
+/*  */
 .eps-this-year-chart {
   width: 1.5rem;
   height: 3rem;

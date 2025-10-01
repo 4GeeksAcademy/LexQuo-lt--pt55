@@ -7,7 +7,8 @@ import {
 
 import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
-
+import { AboutUs } from "./pages/AboutUs.jsx";
+import { ContactUs } from "./pages/ContactUs.jsx";
 
 import { Courtfiles } from "./pages/Courtfile/Courtfiles";
 import { ViewCourtfile } from "./pages/Courtfile/ViewCourtfile";
@@ -93,8 +94,11 @@ import ChangePassword from "./pages/ChangePassword";
 import PrivateRoute from "./components/PrivateRoute.jsx";
 import PrivateAdminRoute from "./components/PrivateAdminRoute";
 
-import LoginForAll from "./pages/LoginForAll.jsx";
-import SignUpForAll from "./pages/SignUpForAll.jsx";
+import SignIn from "./pages/SignIn.jsx";
+import SignUp from "./pages/SignUp.jsx";
+import { Team } from "./pages/Team.jsx";
+import { PublicLayout } from "./components/PublicLayout.jsx";
+import { NotFound } from "./pages/NotFound.jsx";
 
 import Calendar from "./pages/Calendar.jsx";
 
@@ -110,11 +114,19 @@ export const router = createBrowserRouter(
     //                          luego cada componente, establece los permisos de rol. También se establecen en el back. 
 
     // Root Route: All navigation will start from here.
-    <Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
+    //<Route path="/" element={<Layout />} errorElement={<h1>Not found!</h1>} >
+    <Route path="/" element={<Layout />} errorElement={<NotFound />} >
 
       {/* Nested Routes: Defines sub-routes within the BaseHome component. */}
-      <Route path="/" element={<Home />} />
+      <Route path="/403" element={<Forbidden />} />
 
+      <Route path="/" element={<Home />} />
+      <Route path="/about-us" element={<AboutUs />} />
+      <Route path="/contact-us" element={<ContactUs />} />
+      <Route path="/team" element={<Team />} />
+
+      <Route path="/sign-in" element={<SignIn />} />
+      <Route path="/sign-up" element={<SignUp />} />
       {/* ==========RUTAS PROTEGIDAS PARA EL ADMIN========== */}
 
       <Route element={<PrivateAdminRoute />}>
@@ -168,8 +180,8 @@ export const router = createBrowserRouter(
 
       <Route path="/403" element={<Forbidden />} />
 
-      <Route path="/login" element={<LoginForAll />} />
-      <Route path="/signUp" element={<SignUpForAll />} />
+      <Route path="/sign-in" element={<SignIn />} />
+      <Route path="/sign-up" element={<SignUp />} />
 
 
       {/* ==========RUTAS PROTEGIDAS========== */}
