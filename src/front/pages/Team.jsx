@@ -1,15 +1,13 @@
 import { Link } from "react-router-dom"
+import { PublicLayout } from "../components/PublicLayout"
 
 export const Team = () => {
     return (
-        <>
+        <PublicLayout>
             <section id="team" className="bg-white">
                 <div className="bg-white position-absolute h-70 w-100 bg-body" style={{ transform: "skew(0deg, -10deg)", top: "10%" }}></div>
-
                 <div className="bg-holder bg-white z-2" style={{ backgroundImage: "url(https://res.cloudinary.com/doxdmmj1o/image/upload/v1759342631/image_vlijsj.png)", backgroundSize: "auto", backgroundPosition: "left center" }}></div>
-
                 <div className="bg-holder z-2" style={{ backgroundImage: "url(https://phoenix-react-alt.prium.me/assets/bg-right-17-CRsD7o3l.png)", backgroundSize: "auto", backgroundPosition: "right center" }}></div>
-
                 <div className="container-small position-relative py-1 px-lg-7 px-xxl-3" style={{ zIndex: 10 }}>
                     <div className="row">
                         <div className="mb-4 text-center text-sm-start col-12">
@@ -27,7 +25,6 @@ export const Team = () => {
                     </div>
 
                     <div className="align-items-center ps-lg-11 pe-lg-9 row">
-                        {/* Team member cards */}
                         <div className="col-lg-3 col-md-4 col-sm-6">
                             <div className="text-center mt-5 position-relative">
                                 <div className="team-avatar-container d-inline-block position-relative">
@@ -49,9 +46,6 @@ export const Team = () => {
                                 </div>
                             </div>
                         </div>
-
-                        {/* Additional team member cards with similar structure */}
-                        {/* Marc Chiasson */}
                         <div className="col-lg-3 col-md-4 col-sm-6">
                             <div className="text-center mt-5 position-relative">
                                 <div className="team-avatar-container d-inline-block position-relative">
@@ -74,7 +68,6 @@ export const Team = () => {
                             </div>
                         </div>
 
-                        {/* Lilah Lola */}
                         <div className="col-lg-3 col-md-4 col-sm-6">
                             <div className="text-center mt-5 position-relative">
                                 <div className="team-avatar-container d-inline-block position-relative">
@@ -209,6 +202,6 @@ export const Team = () => {
                     </div>
                 </div>
             </section>
-        </>
+        </PublicLayout>
     )
 }

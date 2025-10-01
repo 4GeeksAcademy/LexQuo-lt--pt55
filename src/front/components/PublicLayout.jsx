@@ -1,16 +1,12 @@
-import { PublicNavbar } from "./PublicNavbar"
 import ScrollToTop from "./ScrollToTop"
-import { Outlet } from "react-router-dom"
-import { Home } from "../pages/Home"
+import { PublicNavbar } from "./PublicNavbar"
 import { PublicFooter } from "./PublicFooter"
 
-export const PublicLayout = () => {
+export const PublicLayout = ({ children }) => {
     return (
         <ScrollToTop>
-            <PublicNavbar >
-                <Home />
-            </PublicNavbar>
-            <Outlet />
+            <PublicNavbar />
+            {children}
             <PublicFooter />
         </ScrollToTop>
     )

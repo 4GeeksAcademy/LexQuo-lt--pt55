@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
+import { PublicLayout } from "../components/PublicLayout";
 
 export const Home = () => {
 	return (
-		<>
+		<PublicLayout>
 			<section className="bg-body-emphasis bg-white pb-8" id="home">
 				<div className="container-small hero-header-container px-lg-7 px-xxl-3">
 					<div className="row align-items-center">
@@ -260,6 +261,6 @@ export const Home = () => {
 					</div>
 				</section>
 			</div>
-		</>
+		</PublicLayout>
 	)
 }; 
