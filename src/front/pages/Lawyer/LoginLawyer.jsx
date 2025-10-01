@@ -126,7 +126,7 @@ export const LoginLawyer = () => {
             </form>
 
             <div className="d-flex gap-2 mt-5 justify-content-end">
-                <Link to="/signup" className="btn btn-sm btn-outline-warning mt-3" style={{ border: "none" }}>Create User</Link>
+                <Link to="/sign-up" className="btn btn-sm btn-outline-warning mt-3" style={{ border: "none" }}>Create User</Link>
             </div>
 
         </div>
