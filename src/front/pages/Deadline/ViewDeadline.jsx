@@ -171,7 +171,7 @@ export const ViewDeadline = () => {
   if (error || !deadline) {
     return (
       <AppNavsShell>
-        <div className="container mt-4">
+        <div className="container add-page">
           <div className="alert alert-danger">
             <i className="bi bi-exclamation-triangle"></i> {error || "Deadline not found"}
           </div>
@@ -185,7 +185,7 @@ export const ViewDeadline = () => {
 
   return (
     <AppNavsShell>
-      <div className="container main-content">
+      <div className="container add-page">
         {/* Breadcrumbs */}
         <nav aria-label="breadcrumb" className="mb-3">
           <ol className="breadcrumb">

@@ -733,7 +733,7 @@ export const ViewCourtfileLawyer = () => {
 
   return (
     <AppNavsShell>
-      <div className="container-fluid">
+      <div className="container add-page">
 
         {/* ===== Breadcrumbs ===== */}
         <nav aria-label="breadcrumb" className="mb-2">

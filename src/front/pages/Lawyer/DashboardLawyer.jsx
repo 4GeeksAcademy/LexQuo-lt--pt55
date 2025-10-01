@@ -274,7 +274,8 @@ export const DashboardLawyer = () => {
         fetchCases();      // ya definida arriba
         fetchPayments();
         fetchPaymentLinks();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        fetchAppointments();
+        fetchDeadlines();
     }, [API, token, currentLawyerId]);
 
     // ----------------------- HOOK PARA ORDENAR TABLA -------------------------
@@ -312,13 +313,194 @@ export const DashboardLawyer = () => {
         return "inactive"; // default fallback
     };
 
+    // ---------------- HELPERS FOR HEADER ----------------
+    // ---- top stats (derived from existing state) ----
+    const courtfilesCount = Array.isArray(cases) ? cases.length : 0;
+    const pendingPaymentsCount = Array.isArray(pending) ? pending.length : 0;
+    const unreadMessagesCount = Number.isFinite(totalUnread) ? totalUnread : 0;
 
+    // ===== Appointments & Deadlines (LAWYER scope) =====
+    const [appointments, setAppointments] = useState([]);
+    const [deadlines, setDeadlines] = useState([]);
 
+    const fetchAppointments = async () => {
+        try {
+            const r = await fetch(`${API}/api/appointments-courtfiles`, {
+                headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+            });
+            const data = r.ok ? await r.json() : [];
+            setAppointments(Array.isArray(data) ? data : []);
+        } catch {
+            setAppointments([]);
+        }
+    };
+
+    const fetchDeadlines = async () => {
+        try {
+            const r = await fetch(`${API}/api/deadlines-courtfiles`, {
+                headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+            });
+            const data = r.ok ? await r.json() : [];
+            setDeadlines(Array.isArray(data) ? data : []);
+        } catch {
+            setDeadlines([]);
+        }
+    };
+
+    // --- date utils (supports "YYYY-MM-DD" and ISO) ---
+    const toLocalDate = (iso) => {
+        if (!iso) return null;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+            const [y, m, d] = iso.split("-").map(Number);
+            return new Date(y, m - 1, d);
+        }
+        const d = new Date(iso);
+        return Number.isNaN(d) ? null : d;
+    };
+
+    const isWithinNextNDaysISO = (iso, n = 7) => {
+        const d = toLocalDate(iso);
+        if (!d) return false;
+        const today = new Date();
+        const a = new Date(today.getFullYear(), today.getMonth(), today.getDate());   // today 00:00
+        const b = new Date(d.getFullYear(), d.getMonth(), d.getDate());               // event 00:00
+        const diffDays = (b - a) / 86400000;
+        return diffDays >= 0 && diffDays <= n;
+    };
+
+    // ---- Upcoming (next 7 days): appointments + deadlines ----
+    // appointments use `appointment_date`; deadlines use `deadline_date`
+    const upcomingAppointments = useMemo(
+        () => appointments.filter(a => isWithinNextNDaysISO(a?.appointment_date, 7)),
+        [appointments]
+    );
+
+    const upcomingDeadlines = useMemo(
+        () => deadlines.filter(d => isWithinNextNDaysISO(d?.deadline_date, 7)),
+        [deadlines]
+    );
+
+    const upcomingCount =
+        (upcomingAppointments?.length || 0) + (upcomingDeadlines?.length || 0);
 
 
     return (
         <AppNavsShell>
-            <div className="container main-content">
+            <div className="container add-page">
+
+                {/* ===== TOP: title, subtitle, date ===== */}
+                <div className="row align-items-center mb-4">
+                    <div className="col">
+                        <h2 className="mb-1">Lawyer Dashboard</h2>
+                        <p className="text-body-secondary mb-0">What’s going on today</p>
+                    </div>
+                    <div className="col-md-3 col-auto">
+                        <div className="position-relative">
+                            <i
+                                className="bi bi-calendar3 text-body-tertiary position-absolute top-50 start-0 translate-middle-y ms-3"
+                                style={{ pointerEvents: "none" }}
+                            />
+                            <input
+                                type="text"
+                                className="form-control ps-6"
+                                style={{ paddingLeft: "40px" }} // fuerza el mismo padding que viste en el ejemplo
+                                value={new Date().toLocaleDateString("en-US", {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "2-digit",
+                                })}
+                                readOnly
+                            />
+                        </div>
+                    </div>
+
+                </div>
+
+                {/* ===== TOP STATS: floating (no cards) ===== */}
+                <div className="row align-items-center g-4 mb-3 mt-3">
+
+                    {/* Courtfiles */}
+                    <div className="col-12 col-sm-6 col-md-3">
+                        <div className="d-flex align-items-center">
+                            <div
+                                className="flex-shrink-0 d-inline-flex align-items-center justify-content-center me-2"
+                                style={{ width: 40, height: 40 }}
+                            >
+                                <i className="bi bi-folder2-open text-primary fs-4" />
+                            </div>
+
+                            <div className="ms-1">
+                                <div className="d-flex align-items-baseline">
+                                    <h2 className="mb-0 me-2 lh-1">{courtfilesCount}</h2>
+                                    <span className="fw-semibold text-body lh-1">Courtfiles</span>
+                                </div>
+                                <p className="text-body-secondary fs-9 mb-0">Active</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Upcoming (week) */}
+                    <div className="col-12 col-sm-6 col-md-3">
+                        <div className="d-flex align-items-center">
+                            <div
+                                className="flex-shrink-0 d-inline-flex align-items-center justify-content-center me-2"
+                                style={{ width: 40, height: 40 }}
+                            >
+                                <i className="bi bi-clock-history text-info fs-4" />
+                            </div>
+
+                            <div className="ms-1">
+                                <div className="d-flex align-items-baseline">
+                                    <h2 className="mb-0 me-2 lh-1">{upcomingCount}</h2>
+                                    <span className="fw-semibold text-body lh-1">Upcoming</span>
+                                </div>
+                                <p className="text-body-secondary fs-9 mb-0">Next 7 days</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Payments pending */}
+                    <div className="col-12 col-sm-6 col-md-3">
+                        <div className="d-flex align-items-center">
+                            <div
+                                className="flex-shrink-0 d-inline-flex align-items-center justify-content-center me-2"
+                                style={{ width: 40, height: 40 }}
+                            >
+                                <i className="bi bi-receipt text-warning fs-4" />
+                            </div>
+
+                            <div className="ms-1">
+                                <div className="d-flex align-items-baseline">
+                                    <h2 className="mb-0 me-2 lh-1">{pendingPaymentsCount}</h2>
+                                    <span className="fw-semibold text-body lh-1">Payments</span>
+                                </div>
+                                <p className="text-body-secondary fs-9 mb-0">Pending</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Unread messages */}
+                    <div className="col-12 col-sm-6 col-md-3">
+                        <div className="d-flex align-items-center">
+                            <div
+                                className="flex-shrink-0 d-inline-flex align-items-center justify-content-center me-2"
+                                style={{ width: 40, height: 40 }}
+                            >
+                                <i className="bi bi-envelope text-danger fs-4" />
+                            </div>
+
+                            <div className="ms-1">
+                                <div className="d-flex align-items-baseline">
+                                    <h2 className="mb-0 me-2 lh-1">{unreadMessagesCount}</h2>
+                                    <span className="fw-semibold text-body lh-1">Messages</span>
+                                </div>
+                                <p className="text-body-secondary fs-9 mb-0">Unread</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
 
                 {/* ==== FILA 1: COURTFILES FULL WIDTH ==== */}
                 <div className="row g-4">
@@ -327,8 +509,8 @@ export const DashboardLawyer = () => {
                         <div>
                             {/* Fila 1: título + contador (arriba) */}
                             <div className="d-flex align-items-center gap-3 mb-2">
-                                <div className="mb-4">
-                                    <h2 className="mb-1">Courtfiles</h2>
+                                <div className="mb-2 mt-5">
+                                    <h3 className="mb-1">Courtfiles</h3>
                                     <p className="text-muted mb-0 fs-9 mt-2">Manage your entire law firm in one place</p>
                                 </div>
                             </div>
@@ -724,7 +906,7 @@ export const DashboardLawyer = () => {
 
 
             </div>
-        </AppNavsShell>
+        </AppNavsShell >
     );
 
 };

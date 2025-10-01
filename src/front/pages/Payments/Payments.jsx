@@ -179,7 +179,7 @@ export const Payments = () => {
               <Link to={homeByRole}>Dashboard</Link>
             </li>
             <li className="breadcrumb-item active" aria-current="page">
-              Appointments
+              Payments
             </li>
           </ol>
         </nav>

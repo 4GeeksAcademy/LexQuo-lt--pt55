@@ -149,11 +149,30 @@ export const Courtfiles = () => {
         return "inactive"; // default fallback
     };
 
+    const homeByRole =
+        role === "admin_user"
+            ? "/DashboardAdmin"
+            : role === "client"
+                ? "/DashboardClient"
+                : "/DashboardLawyer";
+
+
 
 
     return (
         <AppNavsShell>
-            <div className="container main-content">
+            <div className="container add-page">
+                <nav aria-label="breadcrumb" className="mb-3">
+                    <ol className="breadcrumb mb-0">
+                        <li className="breadcrumb-item">
+                            <Link to={homeByRole}>Dashboard</Link>
+                        </li>
+                        <li className="breadcrumb-item active" aria-current="page">
+                            Courtfiles
+                        </li>
+                    </ol>
+                </nav>
+
                 <div className="table-responsive table-wrap">
 
                     {/* ===== Toolbar ===== */}
@@ -161,7 +180,7 @@ export const Courtfiles = () => {
                         {/* Fila 1: título + contador + botón (opcional puedes dejarlo abajo también) */}
                         <div className="d-flex gap-3 mb-2">
                             <h2 className="mb-5">Courtfiles</h2>
-                            
+
                         </div>
 
                         {/* Fila 2: izq = search + filtros | der = New Courtfile */}

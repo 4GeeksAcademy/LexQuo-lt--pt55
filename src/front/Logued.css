@@ -565,12 +565,12 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 
 /* =============parche margenes============================= */
 .add-page {
-  margin-top: 0rem !important;   
+  margin-top: 1rem !important;   
   max-width: 100% !important;   
-  margin-left: 0 !important;
+  margin-left: 1rem !important;
   margin-right: 0 !important;   
   padding-left: 0 !important;
-  padding-right: 0 !important;
+  padding-right: 1.5rem !important;
 }
 
 

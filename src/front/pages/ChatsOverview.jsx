@@ -155,7 +155,7 @@ export default function ChatsOverview() {
 
   return (
     <AppNavsShell>
-      <div className="container-fluid px-3">        
+      <div className="container add-page">        
 
         {/* ===== Layout Phoenix: sidebar + placeholder ===== */}
 

@@ -191,100 +191,125 @@ export const ViewDocument = () => {
 
   return (
     <AppNavsShell>
-      <div className="page-add col-8">
+      <div className="container add-page">
+        {/* Breadcrumbs */}
+        <nav aria-label="breadcrumb" className="mb-3">
+          <ol className="breadcrumb">
+            <li className="breadcrumb-item">
+              <Link to={returnTo || "/documents"}>Documents</Link>
+            </li>
+            <li className="breadcrumb-item active" aria-current="page">
+              Details
+            </li>
+          </ol>
+        </nav>
 
-        {/* Topbar */}
-        <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-          <div className="d-flex align-items-center gap-3">
-            <h1 className="h2 mb-2">Document details</h1>
+        <div className="col-md-8 col-lg-8">
+          {/* Header (title + actions) */}
+          <div className="d-flex justify-content-between align-items-start mb-3">
+            <h1 className="h2 fw-bolder mb-4 line-clamp-1">
+              {documentData.name || "Document"}
+            </h1>
 
-            {linkedCourtfile && (
-              <span className="badge bg-dark">
-                {`Linked to Case ${linkedCourtfile.number || `#${linkedCourtfile.id}`}${linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""
-                  }`}
-              </span>
+            {["lawyer", "admin_user"].includes((store?.me?.role || "").toLowerCase()) && (
+              <div className="d-flex gap-2">
+                <Link
+                  to={`/documents/${documentData.id}`}
+                  state={{ returnTo }}
+                  className="btn btn-phoenix-secondary btn-sm"
+                >
+                  <i className="bi bi-pencil" /> Edit
+                </Link>
+                <button className="btn btn-phoenix-danger btn-sm" onClick={handleDelete}>
+                  <i className="bi bi-trash" /> Delete
+                </button>
+              </div>
             )}
           </div>
 
-          <div className="d-flex align-items-center gap-2">
-            <Link to={returnTo} className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back
-            </Link>
-          </div>
-        </div>
+          {/* Card con data */}
+          <div className="card mb-4">
+            <div className="card-body">
+              {/* Download */}
+              <div className="d-flex justify-content-between align-items-center py-2">
+                <span className="fw-semibold text-muted">Download</span>
+                <button
+                  onClick={() => handleDownload(documentData)}
+                  className="btn btn-phoenix btn-phoenix-success"
+                  title={`Download ${documentData.name || ""}`}
+                >
+                  <i className="bi bi-download" />{" "}
+                  {documentData.original_filename || documentData.name || "File"}
+                </button>
+              </div>
+              <hr className="my-2" />
 
-        {/* Card */}
-        <div className="card card-roomy">
-          <div className="card-body">
-            {/* Título principal = NAME */}
-            <h2 className="h1 mb-4">{documentData.name || "-"}</h2>
+              {/* Document Date */}
+              <div className="d-flex justify-content-between align-items-center py-2">
+                <span className="fw-semibold text-muted">Document Date</span>
+                <span className="fw-bold">
+                  {documentData.document_date ? dateYMDToDMY(documentData.document_date) : "—"}
+                </span>
+              </div>
 
-            {/* Grid 2x2 alineada */}
-            <div className="row g-4">
-              {/* Col izquierda */}
-              <div className="col-12 col-lg-6">
-                <div className="mb-3">
-                  <span className="fw-semibold text-muted d-block mb-1">Download</span>
-                  <button
-                    onClick={() => handleDownload(documentData)}
-                    className="btn btn-success btn-sm mt-1"
-                    title={`Download ${documentData.name}`}
+
+              <hr className="my-2" />
+
+              {/* Category */}
+              <div className="d-flex justify-content-between align-items-center py-2">
+                <span className="fw-semibold text-muted">Category</span>
+                {documentData.category ? (
+                  <span className="badge badge-phoenix badge-phoenix-secondary">
+                    {documentData.category}
+                  </span>
+                ) : (
+                  <span className="text-body">—</span>
+                )}
+              </div>
+              <hr className="my-2" />
+
+              {/* Created At */}
+              <div className="d-flex justify-content-between align-items-center py-2">
+                <span className="fw-semibold text-muted">Created At</span>
+                <span className="fw-bold">{safeDateTime(createdAt) || "—"}</span>
+              </div>
+              <hr className="my-2" />
+
+              {/* Case File */}
+              <div className="d-flex justify-content-between align-items-center py-2">
+                <span className="fw-semibold text-muted">Case File</span>
+                {linkedCourtfile ? (
+                  <Link
+                    to={`/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`}
+                    className="badge badge-phoenix badge-phoenix-secondary fs-8"
+                    title={linkedCourtfile.title || ""}
+                    state={{ returnTo: `/documents/view/${documentData.id}` }}
                   >
-                    <i className="bi bi-download"></i>{" "}
-                    {documentData.original_filename || documentData.name || "File"}
-                  </button>
-                </div>
-
-                <div className="mb-0">
-                  <span className="fw-semibold text-muted d-block mb-1">Created At</span>
-                  <span className="fs-8">{safeDateTime(createdAt)}</span>
-                </div>
+                    {linkedCourtfile.number || `#${linkedCourtfile.id}`}
+                  </Link>
+                ) : (
+                  <span className="text-body-secondary">—</span>
+                )}
               </div>
 
-              {/* Col derecha */}
-              <div className="col-12 col-lg-6">
-                <div className="mb-3">
-                  <span className="fw-semibold text-muted d-block mb-1">Category</span>
-                  {documentData.category ? (
-                    <span className="badge bg-secondary mt-1">{documentData.category}</span>
-                  ) : (
-                    <span className="fs-6">—</span>
-                  )}
-                </div>
-
-                <div className="mb-0">
-                  <span className="fw-semibold text-muted d-block mb-1">Document Date</span>
-                  <span className="fs-8">{dateYMDToDMY(documentData.document_date)}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Descripción */}
-            <div className="row mt-4">
-              <div className="col-12">
+              {/* Description */}
+              <hr className="my-2" />
+              <div className="py-2">
                 <span className="fw-semibold text-muted d-block mb-2">Description</span>
-                <div className="border p-3 bg-light rounded">
-                  {documentData.description ? (
-                    <p className="mb-0">{documentData.description}</p>
+                <div className="border rounded bg-light p-3">
+                  {documentData.description && documentData.description.trim() ? (
+                    <p className="mb-0" style={{ whiteSpace: "pre-wrap" }}>
+                      {documentData.description}
+                    </p>
                   ) : (
-                    <p className="text-muted mb-0">No description provided</p>
+                    <span className="text-body-secondary">No description provided</span>
                   )}
                 </div>
               </div>
             </div>
-          </div>
-
-          <div className="card-footer bg-light d-flex justify-content-end gap-2">
-            <Link to={`/documents/${documentData.id}`} state={{ returnTo }} className="btn btn-warning btn-sm">
-              <i className="bi bi-pencil"></i> Edit
-            </Link>
-            <button className="btn btn-danger btn-sm" onClick={handleDelete}>
-              <i className="bi bi-trash"></i> Delete
-            </button>
           </div>
         </div>
       </div>
     </AppNavsShell>
   );
-
 };

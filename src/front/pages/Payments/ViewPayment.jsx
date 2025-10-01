@@ -297,7 +297,7 @@ export const ViewPayment = () => {
 
   return (
     <AppNavsShell>
-      <div className="container main-content">
+      <div className="container add-page">
         {/* Breadcrumbs */}
         <nav aria-label="breadcrumb" className="mb-3">
           <ol className="breadcrumb">

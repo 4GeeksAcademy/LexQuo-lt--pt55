@@ -134,7 +134,7 @@ export const ViewAppointment = () => {
 
   if (error || !appointment) {
     return (
-      <div className="container mt-4">
+      <div className="container add-page">
         <nav aria-label="breadcrumb" className="mb-3">
           <ol className="breadcrumb">
             <li className="breadcrumb-item"><Link to="/">Inicio</Link></li>
@@ -156,7 +156,7 @@ export const ViewAppointment = () => {
   // ---------- Render ----------
   return (
     <AppNavsShell>
-      <div className="container main-content">
+      <div className="container add-page">
         {/* Breadcrumbs */}
         <nav aria-label="breadcrumb" className="mb-3">
           <ol className="breadcrumb">

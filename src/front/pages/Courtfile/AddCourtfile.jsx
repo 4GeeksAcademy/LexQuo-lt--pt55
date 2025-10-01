@@ -114,7 +114,7 @@ export const AddCourtfile = () => {
 
     return (
         <AppNavsShell>
-            <div className="container main-content add-page">
+            <div className="container add-page">
                 {/* Header */}
                 <nav aria-label="breadcrumb" className="mb-3">
                     <ol className="breadcrumb">
