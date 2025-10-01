@@ -21,6 +21,11 @@ export default function ChatOnDemand(props) {
   const currentUserId = me?.id || null;
 
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  // Función para agregar emoji
+  const addEmoji = (emojiData) => {
+    setDraft(prev => prev + emojiData.emoji);
+    setShowEmojiPicker(false);
+  };
 
   // === Derivar datos desde props, state o query ===
   const query = new URLSearchParams(location.search);
@@ -392,7 +397,7 @@ export default function ChatOnDemand(props) {
           )}
         </div>
 
-        <div className="card-body" style={{ maxHeight: 324, overflowY: "auto" }} ref={chatContainerRef}>
+        <div className="card-body" style={{ maxHeight: 200, overflowY: "auto" }} ref={chatContainerRef}>
           {messages.length === 0 && !err && (
             <p className="text-muted m-0">Sin mensajes aún. Sé el primero en enviar un mensaje.</p>
           )}
@@ -436,7 +441,13 @@ export default function ChatOnDemand(props) {
 
                   {/* Fecha y check */}
                   <div className={`small text-muted mt-1 fs-10 ${isMine ? 'text-end' : ''}`}>
-                    {new Date(m.created_at).toLocaleString()}
+                    {new Date(m.created_at).toLocaleString([], {
+                      year: "2-digit",
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })}
                   </div>
                 </div>
               </div>
@@ -469,17 +480,24 @@ export default function ChatOnDemand(props) {
           <div ref={bottomRef} />
         </div>
 
-        <form className="card-footer bg-white border-top" onSubmit={sendMessage} style={{ minHeight: '145px' }}>
+        <form className="card-footer bg-white border-top d-flex" onSubmit={sendMessage} style={{ minHeight: '197px' }}>
           <div className="d-flex flex-column w-100">
-            {/* Fila superior: textarea */}
+
+            {/* Emoji Picker */}
+            {showEmojiPicker && (
+              <div className="mb-2">
+                <EmojiPicker onEmojiClick={addEmoji} />
+              </div>
+            )}
+
+            {/* Fila superior: textarea SOLO */}
             <div className="flex-grow-1">
               <textarea
-                className="chat-textarea"
+                className="chat-textarea w-100"
                 placeholder="Type your message..."
                 value={draft}
                 onChange={(e) => {
                   setDraft(e.target.value);
-                  // Auto-growth
                   e.target.style.height = 'auto';
                   e.target.style.height = e.target.scrollHeight + 'px';
                 }}
@@ -499,10 +517,21 @@ export default function ChatOnDemand(props) {
               />
             </div>
 
-            {/* Fila inferior: botón alineado a la derecha */}
-            <div className="d-flex justify-content-end mt-2">
+            {/* Fila inferior: botón emoji a la izquierda y enviar a la derecha */}
+            <div className="d-flex justify-content-between align-items-center mt-2">
+              {/* Botón emoji a la izquierda */}
               <button
-                className="btn btn-primary d-flex align-items-center gap-2"
+                type="button"
+                className="btn btn-link text-dark p-0 border-0 ms-3"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                style={{ background: 'none' }}
+              >
+                <i className="bi bi-emoji-smile fs-9"></i>
+              </button>
+
+              {/* Botón enviar a la derecha */}
+              <button
+                className="btn btn-primary d-flex gap-2"
                 type="submit"
                 disabled={!courtfileId || !draft.trim() || connectionStatus !== "connected" || !isValidRole}
               >

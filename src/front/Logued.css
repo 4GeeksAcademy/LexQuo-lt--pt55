@@ -808,7 +808,7 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 
 /* Asegurar que el card-footer ocupe todo el ancho */
 .card-footer {
-  padding: 16px;
+  padding: 24px;
 }
 
 .card-footer.msg {
