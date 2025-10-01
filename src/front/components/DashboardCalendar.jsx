@@ -288,7 +288,7 @@ export default function DashboardCalendarWidget({
   };
 
   return (
-    <div className="card border-0">
+    <div className="card border-0 lxq-cal-widget">
       <div className="card-body">
         {/* Mini topbar (compacta para dashboard) */}
         <div className="row g-0 align-items-center mb-3">
@@ -382,6 +382,11 @@ export default function DashboardCalendarWidget({
             info.el.title = `${info.event.title} (${ep.type || "event"})${cf}`;
           }}
           dateClick={handleDateClick}
+
+          /* 🔽 nuevo */
+          fixedWeekCount={false}
+          showNonCurrentDates={false}
+          dayMaxEventRows={3}
         />
 
         {/* Modal detalle */}

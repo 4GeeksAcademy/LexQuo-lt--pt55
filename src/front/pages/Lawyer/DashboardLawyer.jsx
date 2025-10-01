@@ -7,7 +7,6 @@ import { markNow } from "../../hooks/chatUnread";
 import { useNavigate } from "react-router-dom";
 import DashboardCalendar from "../../components/DashboardCalendar";
 import AppNavsShell from "../../components/AppNavsShell";
-import StatusPill from "../../components/StatusPill";
 import PaymentBadge from "../../components/PaymentBadge";
 
 
@@ -690,8 +689,6 @@ export const DashboardLawyer = () => {
                                                         )}
                                                     </td>
 
-
-
                                                     {/* Actions compactas a la derecha (tus mismos botones) */}
                                                     <td className="col-actions">
                                                         <div className="dropdown position-static">
@@ -784,7 +781,6 @@ export const DashboardLawyer = () => {
                             getCourtfileUrl={(id) => `/courtfiles/ViewCourtfileLawyer/${id}`}
                             height={420}
                             contentHeight={420}
-                            userRole="client"
                         />
                     </div>
 
