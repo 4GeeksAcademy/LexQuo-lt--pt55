@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom"
+import { PublicLayout } from "../components/PublicLayout"
 
 export const ContactUs = () => {
     return (
-        <>
+        <PublicLayout>
             <section id="contact" className="bg-white">
                 <div className="bg-white position-absolute h-70 w-100 bg-body" style={{ transform: "skew(0deg, -10deg)", top: "10%" }}></div>
 
@@ -84,6 +85,6 @@ export const ContactUs = () => {
                     </div>
                 </div>
             </section>
-        </>
+        </PublicLayout>
     )
 }

@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
+import { PublicLayout } from "../components/PublicLayout";
 
 export const Forbidden = () => {
   return (
-    <>
+    <PublicLayout>
       <section className="bg-white min-vh-100 d-flex align-items-center">
         <div className="bg-white position-absolute h-70 w-100 bg-body" style={{ transform: "skew(0deg, -10deg)", top: "10%" }}></div>
 
@@ -40,7 +41,6 @@ export const Forbidden = () => {
                 </div>
               </div>
 
-              {/* Botones de acción */}
               <div className="d-flex flex-column flex-sm-row gap-3 justify-content-center">
                 <Link
                   to="/sign-in"
@@ -78,6 +78,6 @@ export const Forbidden = () => {
           </div>
         </div>
       </section>
-    </>
+    </PublicLayout>
   );
 };
