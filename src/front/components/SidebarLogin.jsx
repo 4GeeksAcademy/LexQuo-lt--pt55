@@ -208,7 +208,7 @@ export default function SidebarLogin() {
                 <div className="d-flex align-items-center">
                   <span className="dropdown-indicator-icon me-1"></span>
                   <span className="nav-link-icon"><i className="bi bi-file-earmark-plus" /></span>
-                  <span className="nav-link-text">Add Documents</span>
+                  <span className="nav-link-text">Add Case Record</span>
                 </div>
               </NavLink>
 

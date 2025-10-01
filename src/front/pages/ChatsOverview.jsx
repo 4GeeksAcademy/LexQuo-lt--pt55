@@ -7,6 +7,7 @@ import AppNavsShell from "../components/AppNavsShell.jsx";
 import ChatOnDemand from "../pages/ChatOnDemand.jsx";
 import Avatar from "react-avatar";
 import conversation from "../assets/img/conversation.png";
+import { markNow } from "../hooks/chatUnread.jsx";
 
 export default function ChatsOverview() {
   const API = import.meta.env.VITE_BACKEND_URL;
@@ -22,7 +23,11 @@ export default function ChatsOverview() {
 
   const returnTo =
     location.state?.returnTo ||
-    (role === "lawyer" ? "/DashboardLawyer" : role === "client" ? "/DashboardClient" : "/DashboardAdmin");
+    (role === "lawyer"
+      ? "/DashboardLawyer"
+      : role === "client"
+      ? "/DashboardClient"
+      : "/DashboardAdmin");
 
   // ---- Endpoint según rol ----
   const listEndpoint = useMemo(
@@ -37,28 +42,15 @@ export default function ChatsOverview() {
   const [q, setQ] = useState("");
   const [tab, setTab] = useState("all"); // all | read | unread
 
-  // ---- Unread helper ----
-  const caseIds = useMemo(() => rows.map((r) => Number(r.id)).filter(Boolean), [rows]);
-  const { unreadByCase, totalUnread } = useUnreadBadges({
-    API,
-    token,
-    userId: me?.id,
-    role,
-    courtfileIds: caseIds,
-  });
-  const unreadCountFor = (id) => {
-    const key = Number(id);
-    const u = typeof unreadByCase?.get === "function" ? unreadByCase.get(key) : unreadByCase?.[key];
-    return u?.count ?? (u?.hasUnread ? 1 : 0);
-  };
-
-  // ---- Fetch ----
+  // ---- Fetch courtfiles ----
   const fetchData = async () => {
     try {
       setLoading(true);
       setErr("");
 
-      const resp = await fetch(`${API}${listEndpoint}`, { headers: { Authorization: `Bearer ${token}` } });
+      const resp = await fetch(`${API}${listEndpoint}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!resp.ok) {
         const e = await resp.json().catch(() => ({}));
         throw new Error(e.error || `HTTP ${resp.status}`);
@@ -66,36 +58,8 @@ export default function ChatsOverview() {
       const data = await resp.json();
 
       const normalized = data.map((r) => ({ relation_id: r.id, ...(r.courtfile || r) }));
-      const ids = normalized.map((cf) => cf.id).filter(Boolean);
 
-      let unreadMap = {};
-      if (ids.length) {
-        const unreadResp = await fetch(
-          `${API}/api/messages/unread?role=${encodeURIComponent(role)}&user_id=${me?.id}&courtfile_ids=${ids.join(",")}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        unreadMap = unreadResp.ok ? await unreadResp.json() : {};
-      }
-
-      const merged = normalized.map((cf) => {
-        const u = unreadMap?.[String(cf.id)];
-        return {
-          ...cf,
-          last_message_at: u?.last_message_at || null,
-          _unreadCount: u?.count ?? (u?.hasUnread ? 1 : 0),
-          _snippet: u?.snippet || "",
-          _avatar: cf.avatar_url || null, // si algún día mandás avatar por expediente/persona
-        };
-      });
-
-      merged.sort((a, b) => {
-        const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
-        const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
-        if (tb !== ta) return tb - ta;
-        return (b._unreadCount || 0) - (a._unreadCount || 0);
-      });
-
-      setRows(merged);
+      setRows(normalized);
     } catch (e) {
       setErr(e.message || "Error fetching chats");
     } finally {
@@ -107,6 +71,61 @@ export default function ChatsOverview() {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [API, listEndpoint, token]);
+
+  // ---- Unread (única fuente: hook) ----
+  const caseIds = useMemo(() => rows.map((r) => Number(r.id)).filter(Boolean), [rows]);
+
+  const { unreadByCase, totalUnread, refresh } = useUnreadBadges({
+    API,
+    token,
+    userId: me?.id,
+    role,
+    courtfileIds: caseIds,
+  });
+
+  const unreadCountFor = (id) => {
+    const key = Number(id);
+    return unreadByCase.get(key)?.count ?? 0;
+  };
+
+  // --- URL param para chat activo ---
+  const { courtfileId: paramCourtfileId } = useParams();
+  const activeId = useMemo(
+    () => (paramCourtfileId ? Number(paramCourtfileId) : null),
+    [paramCourtfileId]
+  );
+
+  // expediente activo (si existe en la lista)
+  const activeCase = useMemo(
+    () => (activeId ? rows.find((r) => Number(r.id) === activeId) || null : null),
+    [rows, activeId]
+  );
+
+  // ---- Marcar como leído al abrir un chat ----
+  useEffect(() => {
+    if (!activeId) return;
+    const uid = me?.id;
+    if (!uid) return;
+
+    markNow(uid, activeId); // feedback local inmediato
+
+    fetch(`${API}/api/messages/read`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        courtfile_id: activeId,
+        role,
+        user_id: uid,
+      }),
+    })
+      .then(() => {
+        refresh(); // refresca el hook con datos del backend
+      })
+      .catch((err) => console.error("Error marcando leído:", err));
+  }, [activeId, me?.id, role, API, token, refresh]);
 
   // ---- Derivados (tabs + search) ----
   const filtered = useMemo(() => {
@@ -123,39 +142,24 @@ export default function ChatsOverview() {
         String(cf.court || "").toLowerCase().includes(term)
       );
     });
-  }, [rows, q, tab]);
+  }, [rows, q, tab, unreadByCase]);
 
-  // ---- UI helpers ----
+   // ---- Helper para mostrar la hora de último mensaje ----
   const fmtTime = (iso) => {
     if (!iso) return "";
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return "";
-    return d.toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" }); // e.g. Mon, 10:05
+    return d.toLocaleString(undefined, {
+      weekday: "short",
+      hour: "numeric",
+      minute: "2-digit",
+    }); // ej: Mon, 10:05
   };
-  const initials = (txt) =>
-    (txt || "")
-      .trim()
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((p) => p[0]?.toUpperCase() || "")
-      .join("") || "CF";
 
-  // --- URL param para chat activo ---
-  const { courtfileId: paramCourtfileId } = useParams();
-  const activeId = useMemo(
-    () => (paramCourtfileId ? Number(paramCourtfileId) : null),
-    [paramCourtfileId]
-  );
-
-  // expediente activo (si existe en la lista)
-  const activeCase = useMemo(
-    () => (activeId ? rows.find(r => Number(r.id) === activeId) || null : null),
-    [rows, activeId]
-  );
 
   return (
     <AppNavsShell>
-      <div className="container add-page">        
+      <div className="container add-page">
 
         {/* ===== Layout Phoenix: sidebar + placeholder ===== */}
 
@@ -293,8 +297,8 @@ export default function ChatsOverview() {
               // Placeholder si no hay chat seleccionado
               <div className="h-100 w-100 card">
                 <div className="h-100 d-flex flex-column flex-center text-center card-body">
-                  <img alt="chat" className="d-dark-none" src={conversation}  />
-                  
+                  <img alt="chat" className="d-dark-none" src={conversation} />
+
                   <h3 className="text-body fw-semibold mb-3 fs-7 fs-sm-6">Click to select a Conversation</h3>
                 </div>
               </div>

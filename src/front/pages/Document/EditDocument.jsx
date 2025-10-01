@@ -219,7 +219,7 @@ export const EditDocument = () => {
 
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
-              <h1 className="display-5 fw-bold mb-0">Edit Document</h1>
+              <h1 className="display-5 fw-bold mb-0">Edit Case Record</h1>
               <div className="d-flex gap-2">
                 <Link
                   to={returnTo}
@@ -241,7 +241,7 @@ export const EditDocument = () => {
                   ) : (
                     <>
                       <i className="bi bi-check-circle me-2" />
-                      Update Document
+                      Update Record
                     </>
                   )}
                 </button>

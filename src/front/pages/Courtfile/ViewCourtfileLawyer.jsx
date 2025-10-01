@@ -11,7 +11,7 @@ function KebabMenu({ children }) {
   const stop = (e) => { e.preventDefault(); e.stopPropagation(); };
 
   return (
-    <div className="dropdown dropup position-static text-center" onClick={stop}>
+    <div className="dropdown dropup position-static text-center kebab-menu" onClick={stop}>
       <button
         className="btn btn-link text-secondary p-0 me-2"
         type="button"
@@ -651,15 +651,64 @@ export const ViewCourtfileLawyer = () => {
 
   const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
 
-  function goRow(e, path, state) {
+  function goRow(e, path, state = {}) {
     // si viene con Ctrl/Cmd → nueva pestaña
     if (e?.metaKey || e?.ctrlKey) {
-      window.open(`${FRONTEND_URL}${path.startsWith("/") ? "" : "/"}${path}`, "_blank", "noopener,noreferrer");
+      const fullPath = `${FRONTEND_URL}${path.startsWith("/") ? "" : "/"}${path}`;
+      window.open(fullPath, "_blank", "noopener,noreferrer");
       return;
     }
     navigate(path, { state });
   }
 
+  // Define viewPath y viewState para cada tipo de entidad
+  const getRowNavigation = (type, item) => {
+    switch (type) {
+      case 'deadline':
+        return {
+          path: `/deadlines/view/${item.deadline_id}`,
+          state: { returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }
+        };
+      case 'appointment':
+        return {
+          path: `/appointments/view/${item.appointment_id}`,
+          state: { returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }
+        };
+      case 'document':
+        return {
+          path: `/documents/view/${item.document_id || item.id}`,
+          state: { returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }
+        };
+      case 'lawyer':
+        return {
+          path: `/lawyers/view/${item.lawyer_id}`,
+          state: { returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }
+        };
+      case 'client':
+        return {
+          path: `/clients/view/${item.client_id}`,
+          state: { returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }
+        };
+      case 'payment':
+        return {
+          path: `/payments/view/${item.id}`,
+          state: { returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }
+        };
+      default:
+        return { path: '#', state: {} };
+    }
+  };
+
+  // Función unificada para manejar clicks en filas
+  const handleRowClick = (e, type, item) => {
+    if (!item) return;
+
+    const interactive = e.target.closest('a, button, .dropdown-menu, .dropdown, .no-row-nav, .kebab-menu');
+    if (interactive) return;
+
+    const navigation = getRowNavigation(type, item);
+    goRow(e, navigation.path, navigation.state);
+  };
 
 
   // ------------------- Document AI -------------------
@@ -703,6 +752,8 @@ export const ViewCourtfileLawyer = () => {
       setAnalyzingDocId(null);
     };
   };
+
+
 
   // ------------------- RENDER -------------------
   if (loading) {
@@ -756,13 +807,26 @@ export const ViewCourtfileLawyer = () => {
           <h2 className="mb-0 fw-bold">Courtfile details</h2>
 
           {/* Botones */}
-          <div className="d-flex gap-2">
+          <div className="position-relative d-flex gap-2">
             <button
-              className="px-3 text-body text-decoration-none btn btn-link"
+              className="px-3 text-body text-decoration-none btn btn-link position-relative"
               onClick={(e) => onOpenChatClick(e)}
               title="Open chat"
             >
-              <i className="bi bi-chat-dots me-1" />
+              <span className="position-relative">
+                <i className="bi bi-chat-dots me-2" />
+                {unreadByCase.get(Number(courtfileId))?.hasUnread && (
+                  <span
+                    className="position-absolute bg-danger border border-light rounded-circle"
+                    style={{
+                      top: "-2px",
+                      right: "2px",
+                      width: "10px",
+                      height: "10px"
+                    }}
+                  />
+                )}
+              </span>
               Chat
             </button>
 
@@ -874,7 +938,7 @@ export const ViewCourtfileLawyer = () => {
 
             {/* ===== Documents ===== */}
             <div className="d-flex align-items-center justify-content-between mt-4">
-              <h2 className="h5 text-uppercase text-muted mb-0 fw-bold">Documents</h2>
+              <h2 className="h5 text-uppercase text-muted mb-0 fw-bold">Notes & Documents</h2>
               <Link
                 to="/documents/addDocument"
                 state={{
@@ -885,7 +949,7 @@ export const ViewCourtfileLawyer = () => {
                 }}
                 className="btn btn-phoenix-primary ms-2"
               >
-                + New document
+                + Case Record
               </Link>
             </div>
 
@@ -915,7 +979,7 @@ export const ViewCourtfileLawyer = () => {
                       .map((doc) => (
                         <tr key={doc.relation_id}
                           className="table-row-clickable"
-                          onClick={(e) => goRow(e, viewPath, viewState)}>
+                          onClick={(e) => handleRowClick(e, 'document', doc)}>
                           <td>{parseDate(doc).toLocaleDateString()}</td>
                           <td>{doc.name || doc.document_name || "—"}</td>
                           <td>{doc.category || doc.document_type || "—"}</td>
@@ -1018,7 +1082,7 @@ export const ViewCourtfileLawyer = () => {
                     {caseDeadlines.map((dl) => (
                       <tr key={dl.relation_id}
                         className="table-row-clickable"
-                        onClick={(e) => goRow(e, viewPath, viewState)}>
+                       onClick={(e) => handleRowClick(e, 'deadline', dl)}>
                         <td className="text-start ps-2">{dl.deadline_id}</td>
                         <td>{dl.deadline_type}</td>
                         <td>{dl.deadline_date}</td>
@@ -1113,7 +1177,7 @@ export const ViewCourtfileLawyer = () => {
                     {caseAppointments.map((ap) => (
                       <tr key={ap.relation_id}
                         className="table-row-clickable"
-                        onClick={(e) => goRow(e, viewPath, viewState)}>
+                        onClick={(e) => handleRowClick(e, 'appointment', ap)}>
                         <td className="text-start ps-2">{ap.appointment_id}</td>
                         <td>{ap.appointment_title}</td>
                         <td>{ap.appointment_date}</td>
@@ -1202,7 +1266,7 @@ export const ViewCourtfileLawyer = () => {
                     {caseLawyers.map((lw) => (
                       <tr key={lw.relation_id}
                         className="table-row-clickable"
-                        onClick={(e) => goRow(e, viewPath, viewState)}>
+                        onClick={(e) => handleRowClick(e, 'lawyer', lw)}>
                         <td className="text-start ps-2">{lw.lawyer_id}</td>
                         <td>{lw.lawyer_name || "—"}</td>
                         <td>{lw.lawyer_email || "—"}</td>
@@ -1289,7 +1353,7 @@ export const ViewCourtfileLawyer = () => {
                     {caseClients.map((cl) => (
                       <tr key={cl.relation_id}
                         className="table-row-clickable"
-                        onClick={(e) => goRow(e, viewPath, viewState)}>
+                         onClick={(e) => handleRowClick(e, 'client', cl)}>
                         <td className="text-start ps-2">{cl.client_id}</td>
                         <td>{cl.client_name || "—"}</td>
                         <td>{cl.client_email || "—"}</td>
@@ -1534,7 +1598,7 @@ export const ViewCourtfileLawyer = () => {
                           {casePayments.map((p) => (
                             <tr key={`${p.id}-${p.relation_id}`}
                               className="table-row-clickable"
-                              onClick={(e) => goRow(e, viewPath, viewState)}>
+                              onClick={(e) => handleRowClick(e, 'payment', p)}>
                               <td className="text-start ps-2">{p.id}</td>
                               <td>{p.amount}</td>
                               <td>{p.currency}</td>
