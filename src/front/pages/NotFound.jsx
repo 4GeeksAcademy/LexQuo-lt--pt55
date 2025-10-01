@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom"
+import { PublicLayout } from "../components/PublicLayout"
 
 export const NotFound = () => {
     return (
-        <>
+        <PublicLayout>
             <section className="bg-white min-vh-100 d-flex align-items-center">
                 <div className="bg-white position-absolute h-70 w-100 bg-body" style={{ transform: "skew(0deg, -10deg)", top: "10%" }}></div>
                 <div className="bg-holder bg-white z-2" style={{ backgroundImage: "url(https://res.cloudinary.com/doxdmmj1o/image/upload/v1759342631/image_vlijsj.png)", backgroundSize: "auto", backgroundPosition: "left center" }}></div>
@@ -77,6 +78,6 @@ export const NotFound = () => {
                     </div>
                 </div>
             </section>
-        </>
+        </PublicLayout>
     )
 }

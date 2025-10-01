@@ -14,7 +14,7 @@ export default function PrivateRoute() {
   if (!token) {
     return (
       <Navigate
-        to="/login"
+        to="/403"
         replace
         state={{ returnTo: location.pathname + location.search }}
       />
@@ -27,14 +27,14 @@ export default function PrivateRoute() {
   const [invalid, setInvalid] = useState(null);
 
   useEffect(() => {
-    
+
 
     const verify = async () => {
       try {
         setChecking(true);
         const resp = await fetch(`${API}/api/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
-          
+
         });
         const data = await resp.json().catch(() => ({}));
         if (!resp.ok) throw new Error(data?.error || "Auth failed");
@@ -50,7 +50,7 @@ export default function PrivateRoute() {
 
         setInvalid(false);
       } catch (err) {
-                
+
         setInvalid(true);
         dispatch({ type: "CLEAR_AUTH" });
       } finally {
@@ -69,7 +69,7 @@ export default function PrivateRoute() {
   if (invalid == true) {
     return (
       <Navigate
-        to="/login"
+        to="/403"
         replace
         state={{ returnTo: location.pathname + location.search }}
       />

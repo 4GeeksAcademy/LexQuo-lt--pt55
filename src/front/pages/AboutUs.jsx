@@ -1,15 +1,14 @@
 import { Link } from "react-router-dom"
+import { PublicLayout } from "../components/PublicLayout"
 
 export const AboutUs = () => {
     return (
-        <>
+        <PublicLayout>
             <section id="about" className="bg-white">
-                {/* Fondos decorativos */}
                 <div className="bg-holder bg-white z-2" style={{ backgroundImage: "url(https://res.cloudinary.com/doxdmmj1o/image/upload/v1759342631/image_vlijsj.png)", backgroundSize: "auto", backgroundPosition: "left center" }}></div>
                 <div className="bg-holder z-2" style={{ backgroundImage: "url(https://phoenix-react-alt.prium.me/assets/bg-right-17-CRsD7o3l.png)", backgroundSize: "auto", backgroundPosition: "right center" }}></div>
 
                 <div className="container-small position-relative py-1 px-lg-7 px-xxl-3" style={{ zIndex: 10 }}>
-                    {/* Hero Section */}
                     <div className="row align-items-center min-vh-50 py-8">
                         <div className="col-lg-6">
                             <h4 className="text-primary fw-bolder mb-3">About LexQuo</h4>
@@ -39,7 +38,6 @@ export const AboutUs = () => {
                         </div>
                     </div>
 
-                    {/* Stats Section */}
                     <div className="row py-8 border-top border-bottom border-primary border-opacity-10">
                         <div className="col-md-3 text-center mb-4 mb-md-0">
                             <h3 className="display-4 fw-bold text-primary mb-2">50+</h3>
@@ -59,7 +57,6 @@ export const AboutUs = () => {
                         </div>
                     </div>
 
-                    {/* Mission & Vision */}
                     <div className="row py-8">
                         <div className="col-lg-6 mb-5 mb-lg-0">
                             <div className="pe-lg-5">
@@ -109,7 +106,6 @@ export const AboutUs = () => {
                         </div>
                     </div>
 
-                    {/* Features Grid */}
                     <div className="row py-8">
                         <div className="col-12 text-center mb-6">
                             <h2 className="h1 fw-bold text-dark mb-3">Why Legal Professionals Choose LexQuo</h2>
@@ -154,8 +150,6 @@ export const AboutUs = () => {
                             </div>
                         </div>
                     </div>
-
-                    {/* CTA Section */}
                     <div className="row py-8">
                         <div className="col-12">
                             <div className="bg-primary rounded-4 p-5 text-center text-white">
@@ -173,6 +167,6 @@ export const AboutUs = () => {
                     </div>
                 </div>
             </section>
-        </>
+        </PublicLayout>
     )
 }

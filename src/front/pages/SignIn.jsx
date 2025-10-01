@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
+import { PublicLayout } from "../components/PublicLayout";
 
 export default function SigIn() {
   const API = import.meta.env.VITE_BACKEND_URL;
@@ -57,8 +58,7 @@ export default function SigIn() {
   };
 
   return (
-    <>
-      {/* Fondo blanco forzado en toda la página */}
+    <PublicLayout>
       <div style={{ backgroundColor: 'white', minHeight: '100vh' }}>
         <div className="container bg-white w-100" style={{ backgroundColor: 'white' }}>
           <div className="row justify-content-center align-items-center min-vh-100 m-0">
@@ -141,6 +141,6 @@ export default function SigIn() {
           </div>
         </div>
       </div>
-    </>
+    </PublicLayout>
   )
 }
