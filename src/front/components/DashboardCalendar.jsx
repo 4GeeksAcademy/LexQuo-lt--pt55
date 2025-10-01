@@ -4,53 +4,30 @@ import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { enUS } from "date-fns/locale";
 
-// ⬇️ Ajustá las rutas según tu árbol:
 import CalendarModal from "../pages/CalendarModal";
 import CalendarModalAdd from "../pages/CalendarModalAdd";
 
-// FullCalendar
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
 export default function DashboardCalendarWidget({
   apiBase,
-  authToken,
   height = 420,
   contentHeight = 420,
 }) {
-  // ---------------- Config ----------------
+  const { store } = useGlobalReducer();
+
+  // Config
   const API = apiBase || import.meta.env.VITE_BACKEND_URL || "";
 
-  const token =
-    authToken ||
-    (() => {
-      const tryGet = (k) => {
-        try {
-          const v = localStorage.getItem(k) || sessionStorage.getItem(k);
-          if (!v) return null;
-          try {
-            const parsed = JSON.parse(v);
-            if (parsed?.token) return parsed.token;
-            if (parsed?.auth?.token) return parsed.auth.token;
-            if (typeof parsed === "string") return parsed;
-          } catch {
-            return v;
-          }
-        } catch {
-          return null;
-        }
-      };
-      return (
-        tryGet("auth") ||
-        tryGet("token") ||
-        tryGet("access_token") ||
-        tryGet("jwt") ||
-        null
-      );
-    })();
+  // Token y rol directo del store (sin fallbacks)
+  const token = store?.auth?.token ?? "";
+  const role = store?.me?.role?.toLowerCase() ?? "";
+  const isClient = role === "client";
 
   // ---------------- UI state ----------------
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -80,6 +57,7 @@ export default function DashboardCalendarWidget({
 
   // ---------------- Fetch ----------------
   const fetchDeadlines = async () => {
+    if (isClient) return []; // 👈 no fetch para clientes
     const resp = await fetch(`${API}/api/deadlines-courtfiles`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
@@ -109,7 +87,10 @@ export default function DashboardCalendarWidget({
       try {
         setLoading(true);
         setErr("");
-        const [dl, ap] = await Promise.all([fetchDeadlines(), fetchAppointments()]);
+        const [dl, ap] = await Promise.all([
+          isClient ? Promise.resolve([]) : fetchDeadlines(),
+          fetchAppointments(),
+        ]);
         if (!mounted) return;
         setDeadlines(dl);
         setAppointments(ap);
@@ -124,7 +105,7 @@ export default function DashboardCalendarWidget({
     return () => {
       mounted = false;
     };
-  }, [API, token]);
+  }, [API, token, isClient]);
 
   // ---------------- Helpers ----------------
   const pad2 = (n) => String(n).padStart(2, "0");
@@ -183,7 +164,7 @@ export default function DashboardCalendarWidget({
 
   // ---------------- Normalización → FullCalendar events (igual que Calendar) ----------------
   const fcEvents = useMemo(() => {
-    const normD = (deadlines || [])
+    const normD = (isClient ? [] : (deadlines || []))
       .map((rel) => {
         const relationId = rel.relation_id ?? rel.id ?? null;
         const dateStr = rel.deadline_date || rel.due_date || rel.date || null;
@@ -300,9 +281,11 @@ export default function DashboardCalendarWidget({
             </h4>
           </div>
 
-          <div className="col-12 col-md-6 d-flex justify-content-end gap-2 mt-2 mt-md-0">
-            <p className="fs-9">Add appointments and deadlines in just one click</p>
-          </div>
+          {!isClient && (
+            <div className="col-12 col-md-6 d-flex justify-content-end gap-2 mt-2 mt-md-0">
+              <p className="fs-9">Add appointments and deadlines in just one click</p>
+            </div>
+          )}
         </div>
 
         {/* Sub-toolbar "phoenix-like" compacta */}
@@ -381,7 +364,7 @@ export default function DashboardCalendarWidget({
             const cf = ep.courtfileNumber ? ` · #${ep.courtfileNumber}` : "";
             info.el.title = `${info.event.title} (${ep.type || "event"})${cf}`;
           }}
-          dateClick={handleDateClick}
+         dateClick={isClient ? undefined : handleDateClick}
 
           /* 🔽 nuevo */
           fixedWeekCount={false}
