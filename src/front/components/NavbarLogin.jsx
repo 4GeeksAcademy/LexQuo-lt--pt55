@@ -64,14 +64,15 @@ const NavbarLogin = () => {
           <li className="nav-item dropdown">
             <a
               href="#"
-              className="nav-link p-0"   // 👈 sacamos "dropdown-toggle"
+              className="nav-link p-0"
               id="userDropdown"
               role="button"
-              data-bs-toggle="dropdown"  // 👈 esto sigue, para que Bootstrap abra el menú
+              data-bs-toggle="dropdown"
               aria-expanded="false"
             >
               <Avatar
                 name={me?.full_name || me?.email || "LexQuo User"}
+                src={me?.url_img || undefined}   // ✅ foto si existe
                 size="40"
                 round={true}
                 textSizeRatio={2}

@@ -5,6 +5,7 @@ import { io } from "socket.io-client";
 import { setLastRead, getLastRead } from "../hooks/chatUnread.jsx";
 import { markNow } from "../hooks/chatUnread";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
+import EmojiPicker from 'emoji-picker-react';
 
 export default function ChatOnDemand(props) {
   const { embed = false } = props;
@@ -18,6 +19,8 @@ export default function ChatOnDemand(props) {
   const me = store?.me || null;
   const role = (me?.role || "").toLowerCase();
   const currentUserId = me?.id || null;
+
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   // === Derivar datos desde props, state o query ===
   const query = new URLSearchParams(location.search);
@@ -95,8 +98,14 @@ export default function ChatOnDemand(props) {
     }
   }, [cacheKey]);
 
+  // Agrega este ref
+  const chatContainerRef = useRef(null);
+
+  // Y modifica el scrollToBottom
   const scrollToBottom = useCallback(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, []);
 
   // === Enviar mensaje por Socket.IO ===
@@ -375,20 +384,20 @@ export default function ChatOnDemand(props) {
           </h4>
 
           {returnTo && (
-            <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary">
-              Ir al expediente
+            <Link to={returnTo} className="btn btn-phoenix-primary d-flex align-items-center gap-2 fs-10">
+              <i className="bi bi-folder2-open"></i>
+              View case
             </Link>
+
           )}
         </div>
 
-        <div className="card-body" style={{ maxHeight: 324, overflowY: "auto" }}>
+        <div className="card-body" style={{ maxHeight: 324, overflowY: "auto" }} ref={chatContainerRef}>
           {messages.length === 0 && !err && (
             <p className="text-muted m-0">Sin mensajes aún. Sé el primero en enviar un mensaje.</p>
           )}
 
           {/* Código burbujas  */}
-
-
           {messages.map((m) => {
             const isMine = m.sender_role === senderRole;
             return (
@@ -396,6 +405,17 @@ export default function ChatOnDemand(props) {
                 key={m.id}
                 className={`d-flex mb-4 ${m.isOptimistic ? 'opacity-75' : ''} ${isMine ? 'justify-content-end' : 'justify-content-start'}`}
               >
+                {/* Avatar solo para mensajes del otro */}
+                {!isMine && (
+                  <div className="d-flex align-items-end me-2 mb-6" style={{ width: '32px' }}>
+                    <img
+                      src={m.avatar}
+                      alt="Avatar"
+                      className="rounded-circle"
+                      style={{ width: '32px', height: '32px', objectFit: 'cover' }}
+                    />
+                  </div>
+                )}
                 <div className={`position-relative ${isMine ? 'order-2' : 'order-1'}`} style={{ maxWidth: '70%' }}>
                   {/* Nombre solo para mensajes ajenos */}
                   {!isMine && (
@@ -449,7 +469,7 @@ export default function ChatOnDemand(props) {
           <div ref={bottomRef} />
         </div>
 
-        <form className="card-footer bg-white border-top" onSubmit={sendMessage}>
+        <form className="card-footer bg-white border-top" onSubmit={sendMessage} style={{ minHeight: '145px' }}>
           <div className="d-flex flex-column w-100">
             {/* Fila superior: textarea */}
             <div className="flex-grow-1">
@@ -457,7 +477,12 @@ export default function ChatOnDemand(props) {
                 className="chat-textarea"
                 placeholder="Type your message..."
                 value={draft}
-                onChange={(e) => setDraft(e.target.value)}
+                onChange={(e) => {
+                  setDraft(e.target.value);
+                  // Auto-growth
+                  e.target.style.height = 'auto';
+                  e.target.style.height = e.target.scrollHeight + 'px';
+                }}
                 disabled={!courtfileId || connectionStatus !== "connected" || !isValidRole}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
@@ -466,6 +491,11 @@ export default function ChatOnDemand(props) {
                   }
                 }}
                 rows={1}
+                style={{
+                  minHeight: '42px',
+                  maxHeight: '100px',
+                  overflowY: 'auto'
+                }}
               />
             </div>
 

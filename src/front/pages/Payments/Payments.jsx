@@ -24,59 +24,62 @@ export const Payments = () => {
   const [loading, setLoading] = useState(false);
 
   // ---------- Fetch ----------
-  // ---------- Fetch ----------
   const fetchPayments = async () => {
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      // ✅ Admin ve todo; lawyer/client ven solo vinculados vía pivot
-      const endpoint =
-        role === "admin_user"
-          ? `${API}/api/payments`
-          : `${API}/api/payments-courtfile?expand=payment`; // pedimos expand para tener los datos del payment
+    const endpoint =
+      role === "admin_user"
+        ? `${API}/api/payments`
+        : `${API}/api/payments-courtfile?expand=payment`;
 
-      const response = await fetch(endpoint, {
-        headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const data = await response.json();
+    const response = await fetch(endpoint, {
+      headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
 
-      // ✅ Normalizamos a un shape único para la tabla
-      // - Admin: vienen de /payments (ya son payments)
-      // - Lawyer/Client: vienen de /payments-courtfile (pivot) + payment expandido
-      const paymentsData =
-        role === "admin_user"
-          ? data.map(p => ({
-            id: p.id,
-            relation_id: null,              // no aplica
-            amount: p.amount,
-            currency: p.currency,
-            status: p.status,
-            means: p.means,
-            created_at: p.created_at,
-            paid_at: p.paid_at
-          }))
-          : data.map(pc => {
-            const pay = pc.payment || {};
-            return {
-              id: pay.id,
-              relation_id: pc.id,
-              amount: pay.amount,
-              currency: pay.currency,
-              status: pay.status,
-              means: pay.means,
-              created_at: pay.created_at,
-              paid_at: pay.paid_at
-            };
-          });
+    // ✅ CORREGIDO: Normalización adecuada para lawyer/client
+    const paymentsData =
+      role === "admin_user"
+        ? data.map(p => ({
+          id: p.id,
+          relation_id: null,
+          amount: p.amount,
+          currency: p.currency,
+          status: p.status,
+          means: p.means,
+          created_at: p.created_at,
+          paid_at: p.paid_at
+        }))
+        : data.map(pc => {
+          if (!pc.payment) {
+            console.warn('PaymentCourtfile without payment:', pc.id);
+            return null;
+          }
+          
+          const pay = pc.payment;
+          return {
+            id: pay.id,
+            relation_id: pc.id,  
+            amount: pay.amount,
+            currency: pay.currency,
+            status: pay.status,
+            means: pay.means,
+            created_at: pay.created_at,
+            paid_at: pay.paid_at,
+            // ✅ Opcional: incluir courtfile_id para debugging
+            courtfile_id: pc.courtfile_id
+          };
+        }).filter(Boolean); // Filtrar nulls
 
-      dispatch({ type: "SET_PAYMENTS", payload: paymentsData });
-    } catch (e) {
-      console.error("Error fetching payments:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
+    dispatch({ type: "SET_PAYMENTS", payload: paymentsData });
+  } catch (e) {
+    console.error("Error fetching payments:", e);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchPayments();
@@ -131,7 +134,6 @@ export const Payments = () => {
         throw new Error(errorData.error || `HTTP ${resp.status}`);
       }
 
-      // ✅ El payload del reducer debe usar el id que corresponda
       dispatch({
         type: "DELETE_PAYMENT",
         payload: role === "admin_user" ? payment.id : payment.relation_id
@@ -330,7 +332,7 @@ export const Payments = () => {
                             <>
                               <li><hr className="dropdown-divider" /></li>
                               <li>
-                                <button className="dropdown-item text-danger" onClick={() => handleDelete(p.id)}>
+                                <button className="dropdown-item text-danger" onClick={() => handleDelete(p)}>
                                   <i className="bi bi-trash me-2" /> Delete
                                 </button>
                               </li>

@@ -452,7 +452,7 @@ export const DashboardLawyer = () => {
                             <div className="ms-1">
                                 <div className="d-flex align-items-baseline">
                                     <h2 className="mb-0 me-2 lh-1">{upcomingCount}</h2>
-                                    <span className="fw-semibold text-body lh-1">Upcoming</span>
+                                    <span className="fw-semibold text-body lh-1">Events</span>
                                 </div>
                                 <p className="text-body-secondary fs-9 mb-0">Next 7 days</p>
                             </div>

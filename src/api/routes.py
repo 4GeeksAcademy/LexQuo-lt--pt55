@@ -1,6 +1,12 @@
 """
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
+from flask import request, jsonify
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+from flask_jwt_extended import jwt_required
+from flask import jsonify, request
+from sqlalchemy import and_
 import os
 import cloudinary
 import cloudinary.uploader
@@ -190,7 +196,6 @@ def get_courtfiles():
         return jsonify({'error': str(e)}), 500
 
 
-
 @api.route('/courtfiles/<int:courtfile_id>', methods=['GET'])
 @jwt_required()
 def get_courtfile(courtfile_id):
@@ -300,7 +305,6 @@ def delete_courtfile(courtfile_id):
 # -----------------ROUTES PARA LAWYER's--------------------------------------------
 
 
-
 @api.route('/lawyers', methods=['GET'])
 @jwt_required()
 def get_lawyers():
@@ -319,7 +323,7 @@ def get_lawyers():
             q = (db.session.query(Lawyer)
                  .join(LawyerCourtfile, Lawyer.id == LawyerCourtfile.lawyer_id)
                  .filter(LawyerCourtfile.courtfile_id.in_(subq))
-                 .filter(Lawyer.id != int(current_id))   
+                 .filter(Lawyer.id != int(current_id))
                  .distinct())
 
             lawyers = q.all()
@@ -332,11 +336,10 @@ def get_lawyers():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 # imports que podrías necesitar arriba del archivo
-from sqlalchemy import and_
-from flask import jsonify, request
-from flask_jwt_extended import jwt_required
 # asumo que ya tenés: db, Lawyer, LawyerCourtfile, _get_role_and_identity, _is_admin, _role, _current_user_id
+
 
 @api.route('/lawyers/<int:lawyer_id>', methods=['GET'])
 @jwt_required()
@@ -379,7 +382,6 @@ def get_lawyer_detail(lawyer_id):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 
 @api.route('/lawyers/lookup', methods=['GET'])
@@ -1239,7 +1241,8 @@ def get_deadlines():
                 ).filter(LawyerCourtfile.lawyer_id == requested_lawyer_id)
 
             if requested_courtfile_id is not None:
-                q = q.filter(DeadlineCourtfile.courtfile_id == requested_courtfile_id)
+                q = q.filter(DeadlineCourtfile.courtfile_id ==
+                             requested_courtfile_id)
 
             deadlines = q.distinct().all()
             return jsonify([d.serialize() for d in deadlines]), 200
@@ -1254,7 +1257,8 @@ def get_deadlines():
 
             # si pidió filtrar por un courtfile concreto:
             if requested_courtfile_id is not None:
-                q = q.filter(DeadlineCourtfile.courtfile_id == requested_courtfile_id)
+                q = q.filter(DeadlineCourtfile.courtfile_id ==
+                             requested_courtfile_id)
 
             deadlines = q.distinct().all()
             return jsonify([d.serialize() for d in deadlines]), 200
@@ -1263,7 +1267,6 @@ def get_deadlines():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 
 @api.route('/deadlines/<int:deadline_id>', methods=['GET'])
@@ -1825,7 +1828,8 @@ def get_lawyers_courtfiles():
         if requested_lawyer_id is not None:
             q = q.filter(LawyerCourtfile.lawyer_id == requested_lawyer_id)
         if requested_courtfile_id is not None:
-            q = q.filter(LawyerCourtfile.courtfile_id == requested_courtfile_id)
+            q = q.filter(LawyerCourtfile.courtfile_id ==
+                         requested_courtfile_id)
 
         rows = q.all()
         return jsonify([{
@@ -1840,7 +1844,6 @@ def get_lawyers_courtfiles():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 
 @api.route('/lawyers-courtfiles', methods=['POST'])
@@ -2183,7 +2186,6 @@ def delete_appointment_courtfile(id):
 
 # -----------------ROUTES PARA COURTFILE-DOCUMENT--------------------------------------------
 
-from sqlalchemy.orm import selectinload
 
 @api.route('/courtfile-document', methods=['GET'])
 @jwt_required()
@@ -2210,7 +2212,8 @@ def get_courtfile_document():
             return jsonify({'error': 'forbidden'}), 403
 
         if requested_courtfile_id is not None:
-            q = q.filter(CourtfileDocument.courtfile_id == requested_courtfile_id)
+            q = q.filter(CourtfileDocument.courtfile_id ==
+                         requested_courtfile_id)
 
         rows = q.all()
 
@@ -2222,7 +2225,8 @@ def get_courtfile_document():
             d = cd.document
             cf = cd.courtfile
             # tolerar create_at vs created_at
-            created = getattr(d, "created_at", None) or getattr(d, "create_at", None)
+            created = getattr(d, "created_at", None) or getattr(
+                d, "create_at", None)
 
             out.append({
                 "id": cd.id,
@@ -2240,10 +2244,13 @@ def get_courtfile_document():
                 "created_at": iso_or_none(created),
 
                 # tipo / categoría / metadata
-                "document_type": getattr(d, "type", None),            # ej: 'application/pdf' o 'pdf'
-                "mime_type": getattr(d, "mime_type", None),           # si lo guardás aparte
+                # ej: 'application/pdf' o 'pdf'
+                "document_type": getattr(d, "type", None),
+                # si lo guardás aparte
+                "mime_type": getattr(d, "mime_type", None),
                 "original_filename": getattr(d, "original_filename", None),
-                "category": getattr(d, "category", None),             # <---- ¡LO NUEVO!
+                # <---- ¡LO NUEVO!
+                "category": getattr(d, "category", None),
             })
         return jsonify(out), 200
 
@@ -2368,7 +2375,8 @@ def create_payment():
             ).first()
             if not linked:
                 return jsonify({'error': 'Forbidden for this courtfile'}), 403
-            db.session.add(PaymentCourtfile(payment_id=payment.id, courtfile_id=int(cf_id)))
+            db.session.add(PaymentCourtfile(
+                payment_id=payment.id, courtfile_id=int(cf_id)))
 
         db.session.commit()
         return jsonify(payment.serialize()), 201
@@ -2387,13 +2395,11 @@ def get_payments():
         if role == "admin_user":
             q = Payment.query
         elif role == "lawyer":
-            subq = db.session.query(LawyerCourtfile.courtfile_id).filter(
-                LawyerCourtfile.lawyer_id == int(uid)
-            ).subquery()
             q = (
                 db.session.query(Payment)
                 .join(PaymentCourtfile, PaymentCourtfile.payment_id == Payment.id)
-                .filter(PaymentCourtfile.courtfile_id.in_(subq))
+                .join(LawyerCourtfile, LawyerCourtfile.courtfile_id == PaymentCourtfile.courtfile_id)
+                .filter(LawyerCourtfile.lawyer_id == int(uid))
                 .distinct()
                 .order_by(Payment.created_at.desc())
             )
@@ -2536,7 +2542,7 @@ def delete_payment(payment_id):
                 return jsonify({'error': 'forbidden'}), 403
             if payment.status != PaymentStatus.pending:
                 return jsonify({'error': 'Only pending payments can be deleted by lawyer'}), 403
-                
+
         else:
             return jsonify({'error': 'forbidden'}), 403
 
@@ -2597,32 +2603,55 @@ def create_payment_courtfile():
         return jsonify({'error': str(e)}), 500
 
 
+# ...otros imports
+
+
 @api.route('/payments-courtfile', methods=['GET'])
 @jwt_required()
 def get_payments_courtfile():
     try:
         courtfile_id = request.args.get('courtfile_id', type=int)
-        expand = request.args.get('expand', default='')
+        expand_raw = request.args.get('expand', default='')
+        expand = {s.strip().lower()
+                  for s in expand_raw.split(',')} if expand_raw else set()
 
         role, current_id = _get_role_and_identity()
+
         query = PaymentCourtfile.query
 
+        # Filtro por rol
         if role == "lawyer":
-            subq = select(LawyerCourtfile.courtfile_id).where(
-                LawyerCourtfile.lawyer_id == int(current_id)
+            query = (
+                query.join(LawyerCourtfile, 
+                         LawyerCourtfile.courtfile_id == PaymentCourtfile.courtfile_id)
+                .filter(LawyerCourtfile.lawyer_id == int(current_id))
             )
-            query = query.filter(PaymentCourtfile.courtfile_id.in_(subq))
 
-        if role == "client":
+        elif role == "client":
             subq = select(ClientCourtfile.courtfile_id).where(
                 ClientCourtfile.client_id == int(current_id)
             )
             query = query.filter(PaymentCourtfile.courtfile_id.in_(subq))
 
+        elif role == "admin_user":
+            pass  # ve todo
+        else:
+            return jsonify({'error': 'forbidden'}), 403
+
+        # Filtro por courtfile si viene
         if courtfile_id is not None:
-            query = query.filter_by(courtfile_id=courtfile_id)
+            query = query.filter(PaymentCourtfile.courtfile_id == courtfile_id)
+
+        # Eager load del pago si lo vamos a expandir
+        if 'payment' in expand:
+            query = query.options(joinedload(PaymentCourtfile.payment))
+
+        # Orden sugerido por fecha de creación del Payment (si existe)
+        query = query.join(Payment, Payment.id == PaymentCourtfile.payment_id) \
+                     .order_by(Payment.created_at.desc())
 
         pcs = query.all()
+
         result = []
         for pc in pcs:
             item = pc.serialize()
@@ -2631,6 +2660,7 @@ def get_payments_courtfile():
             result.append(item)
 
         return jsonify(result), 200
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -3219,15 +3249,16 @@ def webhook():
 def _cap(s: str) -> str:
     return s[:1].upper() + s[1:] if s else s
 
+
 @api.route("/emails/invite", methods=["POST"])
 @jwt_required()
 def send_invite_email():
     data = request.get_json() or {}
-    email      = (data.get("email") or "").strip().lower()
-    firstname  = (data.get("firstname") or "").strip()
-    lastname   = (data.get("lastname") or "").strip()
-    cf_number  = data.get("courtfile_number")  # opcional
-    cf_id      = data.get("courtfile_id")      # opcional
+    email = (data.get("email") or "").strip().lower()
+    firstname = (data.get("firstname") or "").strip()
+    lastname = (data.get("lastname") or "").strip()
+    cf_number = data.get("courtfile_number")  # opcional
+    cf_id = data.get("courtfile_id")      # opcional
 
     if not email or not firstname or not lastname:
         return jsonify({"error": "email, firstname y lastname son obligatorios"}), 400
@@ -3279,11 +3310,11 @@ def send_invite_email():
 @jwt_required()
 def send_linked_email():
     data = request.get_json() or {}
-    email      = (data.get("email") or "").strip().lower()
-    firstname  = (data.get("firstname") or "").strip()
-    lastname   = (data.get("lastname") or "").strip()
-    cf_number  = data.get("courtfile_number")  # opcional
-    cf_id      = data.get("courtfile_id")      # opcional
+    email = (data.get("email") or "").strip().lower()
+    firstname = (data.get("firstname") or "").strip()
+    lastname = (data.get("lastname") or "").strip()
+    cf_number = data.get("courtfile_number")  # opcional
+    cf_id = data.get("courtfile_id")      # opcional
 
     if not email or not firstname or not lastname:
         return jsonify({"error": "email, firstname y lastname son obligatorios"}), 400
