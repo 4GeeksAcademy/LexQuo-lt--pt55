@@ -366,7 +366,7 @@ export const Payments = () => {
             <span className="spinner-border spinner-border-sm me-2" /> Loading payments…
           </div>
         ) : (
-          <div className="alert alert-info">
+          <div className="alert text-secondary bg-transparent border-0 mt-2">
             <i className="bi bi-info-circle" /> No payments found.
           </div>
         )}

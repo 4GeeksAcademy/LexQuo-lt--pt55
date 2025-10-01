@@ -121,7 +121,7 @@ export const Admins = () => {
           </table>
         </div>
       ) : (
-        <div className="alert alert-info">
+        <div className="alert text-secondary bg-transparent border-0 mt-2">
           <i className="bi bi-info-circle"></i> No Admins found. Create your
           first one!
         </div>

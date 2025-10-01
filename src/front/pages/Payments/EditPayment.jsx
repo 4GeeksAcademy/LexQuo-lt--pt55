@@ -233,7 +233,7 @@ export const EditPayment = () => {
             </div>
 
             {!canEdit && (
-              <div className="alert alert-info mb-3">
+              <div className="alert text-secondary bg-transparent border-0 mt-2">
                 {role === "lawyer" ? (
                   <>
                     Only <strong>pending</strong> payments can be edited by lawyers.

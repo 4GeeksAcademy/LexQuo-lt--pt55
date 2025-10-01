@@ -332,7 +332,7 @@ export const Lawyers = () => {
             <span className="spinner-border spinner-border-sm me-2" /> Loading lawyers…
           </div>
         ) : (
-          <div className="alert alert-info">
+          <div className="alert text-secondary bg-transparent border-0 mt-2">
             <i className="bi bi-info-circle"></i> No lawyers found for your shared courtfiles.
           </div>
         )}

@@ -497,7 +497,7 @@ export const ViewDocument = () => {
                 )}
 
                 {!aiLoading && !aiError && (!aiSuggestions || aiSuggestions.length === 0) && (
-                  <div className="alert alert-info mb-0">Sin sugerencias por ahora.</div>
+                  <div className="alert text-secondary bg-transparent border-0 mt-2">Sin sugerencias por ahora.</div>
                 )}
 
                 {!aiLoading && !aiError && Array.isArray(aiSuggestions) && aiSuggestions.length > 0 && (

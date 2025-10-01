@@ -958,7 +958,7 @@ export const ViewCourtfileLawyer = () => {
               <div className="alert alert-danger mt-2">{documentsErr}</div>
             )}
             {!loadingDocuments && !documentsErr && caseDocuments.length === 0 && (
-              <div className="alert alert-info mt-2">No documents yet.</div>
+              <div className="alert text-secondary bg-transparent border-0 mt-2">No documents yet.</div>
             )}
 
             {!loadingDocuments && caseDocuments.length > 0 && (
@@ -1063,7 +1063,7 @@ export const ViewCourtfileLawyer = () => {
               <div className="alert alert-danger mt-2">{deadlinesErr}</div>
             )}
             {!loadingDeadlines && !deadlinesErr && caseDeadlines.length === 0 && (
-              <div className="alert alert-info mt-2">No deadlines yet.</div>
+              <div className="alert text-secondary bg-transparent border-0 mt-2">No deadlines yet.</div>
             )}
             {!loadingDeadlines && caseDeadlines.length > 0 && (
               <div className="table-responsive mt-2">
@@ -1157,7 +1157,7 @@ export const ViewCourtfileLawyer = () => {
               <div className="alert alert-danger mt-2">{appointmentsErr}</div>
             )}
             {!loadingAppointments && !appointmentsErr && caseAppointments.length === 0 && (
-              <div className="alert alert-info mt-2">No appointments yet.</div>
+              <div className="alert text-secondary bg-transparent border-0 mt-2">No appointments yet.</div>
             )}
             {!loadingAppointments && caseAppointments.length > 0 && (
               <div className="table-responsive mt-2">
@@ -1248,7 +1248,7 @@ export const ViewCourtfileLawyer = () => {
             {loadingLawyers && <p className="mt-2">Loading lawyers…</p>}
             {lawyersErr && <div className="alert alert-danger mt-2">{lawyersErr}</div>}
             {!loadingLawyers && !lawyersErr && caseLawyers.length === 0 && (
-              <div className="alert alert-info mt-2">No lawyers linked.</div>
+              <div className="alert text-secondary bg-transparent border-0 mt-2">No lawyers linked.</div>
             )}
             {!loadingLawyers && caseLawyers.length > 0 && (
               <div className="table-responsive mt-2">
@@ -1335,7 +1335,7 @@ export const ViewCourtfileLawyer = () => {
               <div className="alert alert-danger mt-2">{clientsErr}</div>
             )}
             {!loadingClients && !clientsErr && caseClients.length === 0 && (
-              <div className="alert alert-info mt-2">No clients linked.</div>
+              <div className="alert text-secondary bg-transparent border-0 mt-2">No clients linked.</div>
             )}
             {!loadingClients && caseClients.length > 0 && (
               <div className="table-responsive mt-2">
@@ -1434,7 +1434,7 @@ export const ViewCourtfileLawyer = () => {
                   )}
 
                   {!aiLoading && !aiError && (!aiSuggestions || aiSuggestions.length === 0) && (
-                    <div className="alert alert-info mb-0">Sin sugerencias por ahora.</div>
+                    <div className="alert text-secondary bg-transparent border-0 mt-2">Sin sugerencias por ahora.</div>
                   )}
 
                   {!aiLoading && !aiError && Array.isArray(aiSuggestions) && aiSuggestions.length > 0 && (
@@ -1577,7 +1577,7 @@ export const ViewCourtfileLawyer = () => {
                   {loadingPayments && <p className="mt-2">Loading payments…</p>}
                   {paymentsErr && <div className="alert alert-danger mt-2">{paymentsErr}</div>}
                   {!loadingPayments && !paymentsErr && casePayments.length === 0 && (
-                    <div className="alert alert-info mt-2">No payments linked.</div>
+                    <div className="alert text-secondary bg-transparent border-0 mt-2">No payments linked.</div>
                   )}
 
                   {!loadingPayments && casePayments.length > 0 && (

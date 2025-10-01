@@ -382,7 +382,7 @@ export default function Calendar() {
 
         {/* Avisos de carga/errores */}
         {loading && (
-          <div className="alert alert-info mt-3 py-2 mb-0">Cargando eventos…</div>
+          <div className="alert text-secondary bg-transparent border-0 mt-2">Cargando eventos…</div>
         )}
         {err && !loading && (
           <div className="alert alert-warning mt-3 py-2 mb-0">{err}</div>

@@ -434,7 +434,7 @@ export const Appointments = () => {
             <span className="spinner-border spinner-border-sm me-2" /> Loading appointments…
           </div>
         ) : (
-          <div className="alert alert-info">
+          <div className="alert text-secondary bg-transparent border-0 mt-2">
             <i className="bi bi-info-circle" /> No appointments found.
             {!isClient && " Create your first one!"}
           </div>
