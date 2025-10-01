@@ -71,6 +71,7 @@ export default function ChatsOverview() {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [API, listEndpoint, token]);
+  
 
   // ---- Unread (única fuente: hook) ----
   const caseIds = useMemo(() => rows.map((r) => Number(r.id)).filter(Boolean), [rows]);
@@ -165,7 +166,7 @@ export default function ChatsOverview() {
 
         <div className="chat d-flex gap-3">
           {/* ===== SIDEBAR ===== */}
-          <div className="chat-sidebar p-3 p-xl-1 card" style={{ minWidth: 320, maxWidth: 420, width: "100%" }}>
+          <div className="chat-sidebar p-3 p-xl-1 card" style={{ minWidth: 320, maxWidth: 372, width: "100%" }}>
             {/* (Botón y menú responsive del demo existen, pero no hacen falta funcionalmente) */}
 
             {/* Search (desktop) */}
@@ -289,9 +290,7 @@ export default function ChatsOverview() {
                 courtfileNumber={activeCase?.case_number}
                 courtfileTitle={activeCase?.title}
                 senderRole={role}
-              // aseguramos que el botón "Volver" del header del chat te regrese a la lista
-              // (adentro de ChatOnDemand ya respeta location.state.returnTo, pero se lo reforzamos):
-              // También podrías pasar `returnTo="/chats"` si decides usarlo directamente allí
+
               />
             ) : (
               // Placeholder si no hay chat seleccionado

@@ -25,7 +25,7 @@ export default function ChatOnDemand(props) {
     props.courtfileId ??
     location.state?.courtfileId ??
     query.get("courtfileId") ??
-    paramCourtfileId; 
+    paramCourtfileId;
 
   const courtfileId = courtfileIdRaw ? Number(courtfileIdRaw) : null;
 
@@ -367,43 +367,63 @@ export default function ChatOnDemand(props) {
       )}
 
       <div className="card">
-        <div className="card-header d-flex align-items-center">
-          <div className="d-flex gap-3 align-items-center ms-auto">
-            <span
-              className={`badge ${getStatusBadgeClass()}`}
-              title={connectionStatus}
-            >
-              {getStatusText()}
-            </span>
-            {returnTo && (
-              <Link to={returnTo} className="btn btn-sm btn-outline-secondary">
-                <i className="bi bi-arrow-left" /> Volver
-              </Link>
-            )}
-          </div>
+        <div className="card-header d-flex align-items-center justify-content-between">
+          <h4 className="mb-0 fw-normal">
+            {`Chat for Courtfile`}
+            {courtfileNumber ? ` #${courtfileNumber}` : ""}
+            {courtfileTitle ? ` — ${courtfileTitle}` : ""}
+          </h4>
+
+          {returnTo && (
+            <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary">
+              Ir al expediente
+            </Link>
+          )}
         </div>
 
-        <div className="card-body" style={{ maxHeight: 360, overflowY: "auto" }}>
+        <div className="card-body" style={{ maxHeight: 324, overflowY: "auto" }}>
           {messages.length === 0 && !err && (
             <p className="text-muted m-0">Sin mensajes aún. Sé el primero en enviar un mensaje.</p>
           )}
 
-          {messages.map((m) => (
-            <div
-              key={m.id}
-              className={`mb-2 ${m.isOptimistic ? 'opacity-75' : ''}`}
-            >
-              <div className="small text-secondary">
-                <span className="badge bg-light text-dark me-2">
-                  {m.sender_name || m.sender_role}
-                  {m.isOptimistic && " (enviando...)"}
-                </span>
-                <span>{new Date(m.created_at).toLocaleString()}</span>
+          {/* Código burbujas  */}
+
+
+          {messages.map((m) => {
+            const isMine = m.sender_role === senderRole;
+            return (
+              <div
+                key={m.id}
+                className={`d-flex mb-4 ${m.isOptimistic ? 'opacity-75' : ''} ${isMine ? 'justify-content-end' : 'justify-content-start'}`}
+              >
+                <div className={`position-relative ${isMine ? 'order-2' : 'order-1'}`} style={{ maxWidth: '70%' }}>
+                  {/* Nombre solo para mensajes ajenos */}
+                  {!isMine && (
+                    <div className="small text-secondary fw-bold mb-1 ms-3">
+                      <span>{m.sender_name || m.sender_role}</span>
+                      {m.isOptimistic && " (enviando...)"}
+                    </div>
+                  )}
+
+                  {/* Contenedor de la burbuja + pico (desde CSS) */}
+                  <div className="chat-bubble-wrap">
+                    <div
+                      className={`p-3 bubble ${isMine ? 'bubble--right' : 'bubble--left text-dark'}`}
+                    >
+                      <div>{m.text}</div>
+                    </div>
+                  </div>
+
+                  {/* Fecha y check */}
+                  <div className={`small text-muted mt-1 fs-10 ${isMine ? 'text-end' : ''}`}>
+                    {new Date(m.created_at).toLocaleString()}
+                  </div>
+                </div>
               </div>
-              <div>{m.text}</div>
-              <hr className="my-2" />
-            </div>
-          ))}
+            );
+          })}
+
+
 
           {err && (
             <div className={`alert ${connectionStatus === "reconnecting" ? "alert-warning" : "alert-danger"} my-2`}>
@@ -429,28 +449,41 @@ export default function ChatOnDemand(props) {
           <div ref={bottomRef} />
         </div>
 
-        <form className="card-footer d-flex gap-2" onSubmit={sendMessage}>
-          <input
-            className="form-control"
-            placeholder="Escribe un mensaje…"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            disabled={!courtfileId || connectionStatus !== "connected" || !isValidRole}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage(e);
-              }
-            }}
-          />
-          <button
-            className="btn btn-primary"
-            type="submit"
-            disabled={!courtfileId || !draft.trim() || connectionStatus !== "connected" || !isValidRole}
-          >
-            {connectionStatus === "connected" ? "Enviar" : "Conectando..."}
-          </button>
+        <form className="card-footer bg-white border-top" onSubmit={sendMessage}>
+          <div className="d-flex flex-column w-100">
+            {/* Fila superior: textarea */}
+            <div className="flex-grow-1">
+              <textarea
+                className="chat-textarea"
+                placeholder="Type your message..."
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                disabled={!courtfileId || connectionStatus !== "connected" || !isValidRole}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage(e);
+                  }
+                }}
+                rows={1}
+              />
+            </div>
+
+            {/* Fila inferior: botón alineado a la derecha */}
+            <div className="d-flex justify-content-end mt-2">
+              <button
+                className="btn btn-primary d-flex align-items-center gap-2"
+                type="submit"
+                disabled={!courtfileId || !draft.trim() || connectionStatus !== "connected" || !isValidRole}
+              >
+                {connectionStatus === "connected" ? "Send" : "Conectando..."}
+                <i className="bi bi-send-fill"></i>
+              </button>
+            </div>
+          </div>
         </form>
+
+
       </div>
     </div>
   );

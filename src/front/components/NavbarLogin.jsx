@@ -3,29 +3,38 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import "../Logued.css";
 import LogoLexQuoB from "../assets/img/LogoLexQuoB.png";
 import useGlobalReducer from "../hooks/useGlobalReducer";
+import Avatar from "react-avatar";
+
 
 const NavbarLogin = () => {
   const { store, dispatch } = useGlobalReducer();
   const navigate = useNavigate();
 
-  const me   = store?.me || null;
+  const me = store?.me || null;
   const role = (me?.role || "").toLowerCase();
-  const id   = me?.id;
+  const id = me?.id;
 
   // Rutas según rol
   const profilePath =
     role === "lawyer"
       ? (id ? `/lawyers/view/${id}` : "/lawyers/view")
       : role === "client"
-      ? (id ? `/clients/view/${id}` : "/clients/view")
-      : "/login";
+        ? (id ? `/clients/view/${id}` : "/clients/view")
+        : "/login";
 
   const passwordPath =
     role === "lawyer"
       ? (id ? `/lawyers/${id}/password` : "/lawyers/password")
       : role === "client"
-      ? (id ? `/clients/${id}/password` : "/clients/password")
-      : "/login";
+        ? (id ? `/clients/${id}/password` : "/clients/password")
+        : "/login";
+
+  function getInitials(name = "") {
+    if (!name) return "LQ";
+    const parts = name.trim().split(" ");
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
 
   return (
     <nav className="navbar navbar-expand navbar-dark bg-dark fixed-top py-2">
@@ -48,70 +57,63 @@ const NavbarLogin = () => {
           </Link>
         </div>
 
-        {/* Centro: buscador */}
-        <form className="w-100 d-none d-md-block">
-          <div className="position-relative mx-auto" style={{ maxWidth: 420 }}>
-            <input
-              type="search"
-              placeholder="Search..."
-              className="form-control form-control-sm rounded-pill bg-dark text-light border-secondary"
-            />
-            <i className="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3 text-secondary" />
-          </div>
-        </form>
 
         {/* Derecha: iconos */}
         <ul className="navbar-nav flex-row gap-3 align-items-center ms-auto">
-          <li className="nav-item">
-            <button className="btn btn-sm btn-outline-light border-0 p-0">
-              <i className="bi bi-brightness-high" />
-            </button>
-          </li>
-          <li className="nav-item">
-            <button className="btn btn-sm btn-outline-light border-0 p-0 position-relative">
-              <i className="bi bi-bell" />
-            </button>
-          </li>
+
           <li className="nav-item dropdown">
             <a
-              className="nav-link dropdown-toggle p-0"
               href="#"
+              className="nav-link p-0"   // 👈 sacamos "dropdown-toggle"
               id="userDropdown"
               role="button"
-              data-bs-toggle="dropdown"
+              data-bs-toggle="dropdown"  // 👈 esto sigue, para que Bootstrap abra el menú
               aria-expanded="false"
             >
-              <img
-                src="https://dummyimage.com/40x40/0b3a6a/ffffff.png&text=LQ"
-                alt="User Avatar"
-                className="rounded-circle"
-                style={{ height: 32, width: 32 }}
+              <Avatar
+                name={me?.full_name || me?.email || "LexQuo User"}
+                size="40"
+                round={true}
+                textSizeRatio={2}
+                maxInitials={2}
+                className="cursor-pointer"
               />
             </a>
-            <ul className="dropdown-menu dropdown-menu-start" style={{ right: 0, left: "auto" }} aria-labelledby="userDropdown">
+
+            <ul
+              className="dropdown-menu dropdown-menu-start"
+              style={{ right: 0, left: "auto" }}
+              aria-labelledby="userDropdown"
+            >
+              {/* Profile */}
               <li>
                 <Link
-                  className={`dropdown-item ${!id ? "disabled" : ""}`}
+                  className={`dropdown-item d-flex align-items-center ${!id ? "disabled" : ""}`}
                   to={id ? profilePath : "#"}
                   onClick={(e) => { if (!id) e.preventDefault(); }}
                 >
-                  Profile
+                  <i className="bi bi-person me-2" /> Profile
                 </Link>
               </li>
+
+              {/* Change Password */}
               <li>
                 <Link
-                  className={`dropdown-item ${!id ? "disabled" : ""}`}
+                  className={`dropdown-item d-flex align-items-center ${!id ? "disabled" : ""}`}
                   to={id ? passwordPath : "#"}
                   onClick={(e) => { if (!id) e.preventDefault(); }}
                 >
-                  Change Password
+                  <i className="bi bi-gear me-2" /> Change Password
                 </Link>
               </li>
+
               <li><hr className="dropdown-divider" /></li>
+
+              {/* Logout */}
               <li>
                 <NavLink
                   to="#"
-                  className="dropdown-item"
+                  className="btn btn-phoenix d-flex align-items-center fw-semibold text-dark"
                   onClick={(e) => {
                     e.preventDefault();
                     localStorage.removeItem("auth");
@@ -120,10 +122,7 @@ const NavbarLogin = () => {
                     navigate("/login");
                   }}
                 >
-                  <div className="d-flex align-items-center">
-                    <i className="bi bi-box-arrow-right me-2" />
-                    Logout
-                  </div>
+                  <i className="bi bi-box-arrow-right me-2" /> Sign out
                 </NavLink>
               </li>
             </ul>
