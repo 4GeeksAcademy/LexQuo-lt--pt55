@@ -123,7 +123,7 @@ const NavbarLogin = () => {
                     localStorage.removeItem("auth");
                     localStorage.removeItem("user_name");
                     dispatch({ type: "CLEAR_AUTH" });
-                    navigate("/login");
+                    navigate("/");
                   }}
                 >
                   <i className="bi bi-box-arrow-right me-2" /> Sign out
