@@ -23,5 +23,6 @@ pip install flask-jwt-extended==4.6.0
 pip install flask-jwt-extended==4.6.0
 pip install stripe==5.0.0
 pip install requests==2.31.0
+pip install cloudinary==1.41.0
 
 flask db upgrade
