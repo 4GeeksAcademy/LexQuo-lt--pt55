@@ -4,7 +4,7 @@ import io
 import PyPDF2
 from flask import Blueprint, request, jsonify
 from openai import OpenAI
-from google import genai
+import google.generativeai as genai
 from google.genai import types
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from api.models import Courtfile, PaymentCourtfile, PaymentStatus, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, Message, ChatRead, AISuggestion
