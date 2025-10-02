@@ -6,6 +6,35 @@ from flask import Blueprint, request, jsonify
 from openai import OpenAI
 import google.generativeai as genai
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+# Modelos candidatos (podés forzar con GEMINI_MODEL en env)
+GEMINI_CANDIDATES = [
+    os.getenv("GEMINI_MODEL"),   # ej: "gemini-1.5-flash-001"
+    "gemini-1.5-flash-001",
+    "gemini-1.5-flash-latest",
+    "gemini-1.5-pro-001",
+    "gemini-1.5-pro-latest",
+]
+
+def _pick_gemini_model():
+    """
+    Devuelve el primer modelo disponible que soporte generateContent.
+    Si falla el listado, cae a GEMINI_MODEL o 'gemini-1.5-flash-001'.
+    """
+    try:
+        models = list(genai.list_models())
+        usable = {
+            (m.name.split("/", 1)[-1])  # convierte 'models/xxx' -> 'xxx'
+            for m in models
+            if "generateContent" in getattr(m, "supported_generation_methods", [])
+        }
+        for cand in GEMINI_CANDIDATES:
+            if cand and cand in usable:
+                return cand
+        # fallback al primero usable
+        return next(iter(usable), None)
+    except Exception as e:
+        print(f"[Gemini] list_models failed: {e}")
+        return os.getenv("GEMINI_MODEL") or "gemini-1.5-flash-001"
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from api.models import Courtfile, PaymentCourtfile, PaymentStatus, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, Message, ChatRead, AISuggestion
 # api_ai_routes.py (o en tu mismo bp_ai)
@@ -184,8 +213,13 @@ INSTRUCCIONES:
 Sé conciso y enfocado en aspectos prácticos. Máximo 5 puntos principales.
 """
 
+        model_name = _pick_gemini_model()
+        print(f"[Gemini] usando modelo: {model_name}")
+        if not model_name:
+            raise RuntimeError("No hay modelo Gemini disponible para generateContent. Revisá tu cuenta/API key.")
+
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name=model_name,
             generation_config={"temperature": 0.3, "max_output_tokens": 2000},
         )
         resp = model.generate_content(prompt)
