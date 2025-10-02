@@ -1,7 +1,9 @@
-# This file was created to run the application on heroku using gunicorn.
-# Read more about it here: https://devcenter.heroku.com/articles/python-gunicorn
+from app import app, socketio
 
-from app import app as application
+# 👉 Esta línea expone la variable que gunicorn busca
+application = app   # (opcional si algún servicio espera 'application')
+app = app           # (necesaria si usás "wsgi:app" en render.yaml)
 
 if __name__ == "__main__":
-    application.run()
+    # Cuando corres localmente: python wsgi.py
+    socketio.run(app, host="0.0.0.0", port=3001)
