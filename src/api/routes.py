@@ -24,6 +24,7 @@ from werkzeug.utils import secure_filename
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from sqlalchemy.orm import joinedload
 from api.mails_utils import render_email_template, send_email
+import logging
 
 from api.validators import parse_iso_date, parse_24h_time, is_valid_24h_time, validate_required_fields, validate_time_order, create_error_response
 
@@ -3394,6 +3395,7 @@ def send_invite_email():
         )
         return jsonify({"ok": True, "sent_to": email})
     except Exception as e:
+        logging.exception("Error al enviar correo")
         return jsonify({"error": str(e)}), 500
 
 
@@ -3443,6 +3445,7 @@ def send_linked_email():
         )
         return jsonify({"ok": True, "sent_to": email})
     except Exception as e:
+        logging.exception("Error al enviar correo")
         return jsonify({"error": str(e)}), 500
 
 # =================LOGIN GENERAL =====================================
