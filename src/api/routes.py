@@ -42,7 +42,11 @@ stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
 os.getenv("FLASK_DEBUG")
 
-FRONTEND_BASE_URL = os.getenv("FRONTEND_ORIGIN")
+FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL") or os.getenv("FRONTEND_ORIGIN")
+
+def _base_url():
+    b = FRONTEND_BASE_URL or request.url_root
+    return b.rstrip("/")
 
 
 @api.route('/hello', methods=['POST', 'GET'])
@@ -410,6 +414,16 @@ def get_lawyer_detail(lawyer_id):
         return jsonify({'error': str(e)}), 500
 
 
+def _mini_user(u):
+    if not u:
+        return None
+    return {
+        "id": u.id,
+        "firstname": getattr(u, "firstname", None),
+        "lastname": getattr(u, "lastname", None),
+        "email": getattr(u, "email", None),
+    }
+
 @api.route('/lawyers/lookup', methods=['GET'])
 @jwt_required(optional=True)
 def lookup_lawyer_by_email():
@@ -419,10 +433,15 @@ def lookup_lawyer_by_email():
             return jsonify({'error': 'email required'}), 400
 
         lawyer = Lawyer.query.filter(func.lower(Lawyer.email) == email).first()
-        if not lawyer:
-            return jsonify({'found': False}), 200
+        client = Client.query.filter(func.lower(Client.email) == email).first()
 
-        return jsonify({'found': True, 'lawyer': lawyer.serialize()}), 200
+        return jsonify({
+            'found': bool(lawyer),
+            'lawyer': _mini_user(lawyer),
+            'client_exists': bool(client),
+            'client': _mini_user(client) if client else None,
+            'conflict': bool(client and not lawyer) or bool(client and lawyer),
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -649,10 +668,17 @@ def lookup_client_by_email():
             return jsonify({'error': 'email required'}), 400
 
         client = Client.query.filter(func.lower(Client.email) == email).first()
-        if not client:
-            return jsonify({'found': False}), 200
+        lawyer = Lawyer.query.filter(func.lower(Lawyer.email) == email).first()
 
-        return jsonify({'found': True, 'client': client.serialize()}), 200
+        # "found": ¿existe como client?
+        # Agregamos lawyer_exists/conflict para detectar cruces.
+        return jsonify({
+            'found': bool(client),
+            'client': _mini_user(client),
+            'lawyer_exists': bool(lawyer),
+            'lawyer': _mini_user(lawyer) if lawyer else None,
+            'conflict': bool(lawyer and not client) or bool(lawyer and client),
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -3301,6 +3327,8 @@ def webhook():
 
 
 # =====================RUTAS PARA MAILS======================
+from urllib.parse import quote as _urlq
+
 def _cap(s: str) -> str:
     return s[:1].upper() + s[1:] if s else s
 
@@ -3313,7 +3341,7 @@ def send_invite_email():
     firstname = (data.get("firstname") or "").strip()
     lastname = (data.get("lastname") or "").strip()
     cf_number = data.get("courtfile_number")  # opcional
-    cf_id = data.get("courtfile_id")      # opcional
+    cf_id = data.get("courtfile_id")          # opcional
 
     if not email or not firstname or not lastname:
         return jsonify({"error": "email, firstname y lastname son obligatorios"}), 400
@@ -3332,7 +3360,8 @@ def send_invite_email():
 
     default_pwd = f"LexQuo{_cap(firstname)}{_cap(lastname)}"
 
-    invite_url = f"{FRONTEND_BASE_URL}/accept-invite?email={email}"
+    base = _base_url()
+    invite_url = f"{base}/accept-invite?email={_urlq(email)}"
     if cf_id:
         invite_url += f"&courtfile_id={cf_id}"
 
@@ -3349,12 +3378,12 @@ def send_invite_email():
         courtfile_number=cf_number or ""
     )
 
-    # El util genera texto plano de fallback si no lo pasás
     try:
         send_email(
             to_email=email,
             subject=subject,
-            html_body=html
+            html_body=html,
+            timeout_seconds=12,  # evita colgar el worker si el SMTP no responde
         )
         return jsonify({"ok": True, "sent_to": email})
     except Exception as e:
@@ -3369,7 +3398,7 @@ def send_linked_email():
     firstname = (data.get("firstname") or "").strip()
     lastname = (data.get("lastname") or "").strip()
     cf_number = data.get("courtfile_number")  # opcional
-    cf_id = data.get("courtfile_id")      # opcional
+    cf_id = data.get("courtfile_id")          # opcional
 
     if not email or not firstname or not lastname:
         return jsonify({"error": "email, firstname y lastname son obligatorios"}), 400
@@ -3386,7 +3415,8 @@ def send_linked_email():
             if not linked:
                 return jsonify({"error": "forbidden"}), 403
 
-    case_url = f"{FRONTEND_BASE_URL}/courtfiles/{cf_id}" if cf_id else FRONTEND_BASE_URL
+    base = _base_url()
+    case_url = f"{base}/courtfiles/{cf_id}" if cf_id else base
     subject = f"Acceso habilitado en LexQuo{f' – Expediente #{cf_number}' if cf_number else ''}"
 
     html = render_email_template(
@@ -3401,7 +3431,8 @@ def send_linked_email():
         send_email(
             to_email=email,
             subject=subject,
-            html_body=html
+            html_body=html,
+            timeout_seconds=12,  # igual que arriba
         )
         return jsonify({"ok": True, "sent_to": email})
     except Exception as e:

@@ -4,7 +4,12 @@ import useGlobalReducer from "../../hooks/useGlobalReducer";
 import AppNavsShell from "../../components/AppNavsShell";
 
 export const LawyerLinkOrCreateClient = () => {
-  const API = import.meta.env.VITE_BACKEND_URL;
+  const RAW_API =
+    import.meta.env.PROD
+      ? (import.meta.env.VITE_BACKEND_URL || window.location.origin)  // prod: env o mismo origen
+      : (import.meta.env.VITE_BACKEND_URL || "http://localhost:3001"); // dev: env o localhost
+
+  const API = RAW_API.replace(/\/+$/, ""); // quita slash final para evitar //api
   const { store } = useGlobalReducer();
   const navigate = useNavigate();
   const location = useLocation();

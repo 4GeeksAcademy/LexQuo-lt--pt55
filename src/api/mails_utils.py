@@ -5,7 +5,7 @@ from pathlib import Path
 from email.message import EmailMessage
 from email.headerregistry import Address
 from typing import Iterable, Optional, Tuple, Union, Any, Dict
-
+import socket
 # =========================
 # Config SMTP (ENV VARS)
 # =========================
@@ -101,12 +101,14 @@ def send_email(
     reply_to: Optional[str] = None,
     headers: Optional[dict] = None,
     attachments: Optional[Iterable[Tuple[str, bytes]]] = None,
+    timeout_seconds: int = 12,  # <-- parámetro nuevo con default
 ) -> None:
     """
     Envía un correo multipart/alternative (texto + HTML).
     - to_email: string o iterable
     - attachments: iterable de (filename, bytes)
     """
+
     if not SMTP_USER or not SMTP_PASS:
         raise RuntimeError("SMTP_USER/SMTP_PASS no configurados")
 
@@ -116,12 +118,11 @@ def send_email(
 
     # Destinatarios
     if isinstance(to_email, str):
-        msg["To"] = to_email
         recipients = [to_email]
+        msg["To"] = to_email
     else:
-        to_list = list(to_email)
-        msg["To"] = ", ".join(to_list)
-        recipients = to_list
+        recipients = list(to_email)
+        msg["To"] = ", ".join(recipients)
 
     if cc:
         cc_list = list(cc)
@@ -136,7 +137,7 @@ def send_email(
     if _reply_to:
         msg["Reply-To"] = _reply_to
 
-    # Headers opcionales (List-Unsubscribe, etc.)
+    # Headers opcionales
     if headers:
         for k, v in headers.items():
             if v is not None:
@@ -151,16 +152,15 @@ def send_email(
     # Adjuntos
     _add_attachments(msg, attachments)
 
-    # SMTP
+    # SMTP (un solo bloque, con timeout)
+    context = ssl.create_default_context()
     if SMTP_USE_TLS and SMTP_PORT == 587:
-        context = ssl.create_default_context()
-        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=timeout_seconds) as server:
             server.ehlo()
             server.starttls(context=context)
             server.login(SMTP_USER, SMTP_PASS)
             server.send_message(msg, to_addrs=recipients)
     else:
-        context = ssl.create_default_context()
-        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context) as server:
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context, timeout=timeout_seconds) as server:
             server.login(SMTP_USER, SMTP_PASS)
             server.send_message(msg, to_addrs=recipients)
