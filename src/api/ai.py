@@ -155,7 +155,6 @@ def download_and_extract_pdf(document_url):
 def call_gemini_api(pdf_text, case_description, doc_name):
     """Llama a la API de Gemini y devuelve análisis estructurado"""
     try:
-        # Ya está configurado arriba con genai.configure(...)
         prompt = f"""
 Eres un abogado experto en derecho argentino. Analiza el siguiente documento y proporciona un análisis estructurado en formato JSON.
 
@@ -175,7 +174,7 @@ INSTRUCCIONES:
   "analysis": [
     {{
       "title": "Título del punto principal",
-      "content": "Descripción concisa del hallazgo mencionando el articulo del documento",
+      "content": "Descripción concisa del hallazgo mencionando el artículo del documento",
       "urgency": "high/medium/low",
       "actions": "Acciones específicas sugeridas"
     }}
@@ -185,44 +184,34 @@ INSTRUCCIONES:
 Sé conciso y enfocado en aspectos prácticos. Máximo 5 puntos principales.
 """
 
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(
-            prompt,
-            generation_config={
-                "temperature": 0.3,
-                "max_output_tokens": 2000,
-            },
+        model = genai.GenerativeModel(
+            model_name="gemini-1.5-flash",
+            generation_config={"temperature": 0.3, "max_output_tokens": 2000},
         )
+        resp = model.generate_content(prompt)
+        result_text = resp.text or ""
 
-        result_text = getattr(response, "text", "") or ""
-        # Intentar extraer JSON
-        json_start = result_text.find('{')
-        json_end = result_text.rfind('}') + 1
+        import json
+        i, j = result_text.find("{"), result_text.rfind("}") + 1
+        if i != -1 and j != -1:
+            parsed = json.loads(result_text[i:j])
+            return parsed.get("analysis", [])
 
-        if json_start != -1 and json_end > json_start:
-            import json
-            json_str = result_text[json_start:json_end]
-            parsed = json.loads(json_str)
-            return (parsed.get("analysis") or [])[:5]
-
-        # Fallback si no vino JSON limpio
         return [{
             "title": "Análisis del documento",
-            "content": (result_text or "Sin contenido")[:500] + "...",
+            "content": (result_text[:500] + "...") if result_text else "Sin salida del modelo",
             "urgency": "medium",
             "actions": "Revisar documento completo"
         }]
 
     except Exception as e:
-        print(f"Error con Gemini API: {str(e)}")
+        print(f"[Gemini] error: {e}")
         return [{
             "title": "Error en el análisis",
             "content": f"No se pudo completar el análisis: {str(e)}",
             "urgency": "medium",
-            "actions": "Intentar nuevamente más tarde"
+            "actions": "Verificar GEMINI_API_KEY y volver a intentar"
         }]
-
-
 
 def _hash_source(description, jurisdiction, court):
     base = f"{(description or '').strip()}|{(jurisdiction or '').strip()}|{(court or '').strip()}".lower()

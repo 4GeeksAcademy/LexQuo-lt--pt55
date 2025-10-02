@@ -14,9 +14,7 @@ from flask_jwt_extended import JWTManager
 from api.ai import bp_ai
 
 # === 1) Definí el origen del FRONT (EXACTO, el de tu 3000) ===
-FRONTEND_ORIGIN = os.getenv(
-    "FRONTEND_ORIGIN"
-)
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN")
 
 ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
 static_file_dir = os.path.join(os.path.dirname(
@@ -29,8 +27,8 @@ app.url_map.strict_slashes = False
 CORS(
     app,
     resources={
-        r"/api/*": {"origins": [FRONTEND_ORIGIN]},
-        r"/socket.io/*": {"origins": [FRONTEND_ORIGIN]},
+        r"/api/*": {"origins": [FRONTEND_ORIGIN] if FRONTEND_ORIGIN else "*"},
+        r"/socket.io/*": {"origins": [FRONTEND_ORIGIN] if FRONTEND_ORIGIN else "*"},
     },
     supports_credentials=True,
     allow_headers=["Content-Type", "Authorization"],
@@ -39,9 +37,9 @@ CORS(
 
 socketio = SocketIO(
     app,
-    cors_allowed_origins=[FRONTEND_ORIGIN],
-    async_mode="threading",
-    allow_upgrades=False,
+    cors_allowed_origins=[FRONTEND_ORIGIN] if FRONTEND_ORIGIN else "*",
+    async_mode="eventlet",        # con tu gunicorn -k eventlet
+    allow_upgrades=True,          # permite upgrade a websocket
     transports=["polling"],
     ping_timeout=25,
     ping_interval=20,
