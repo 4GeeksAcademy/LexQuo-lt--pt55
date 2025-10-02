@@ -413,6 +413,15 @@ def get_lawyer_detail(lawyer_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+def _mini_user(u):
+    if not u:
+        return None
+    return {
+        "id": u.id,
+        "firstname": getattr(u, "firstname", None),
+        "lastname": getattr(u, "lastname", None),
+        "email": getattr(u, "email", None),
+    }
 
 def _mini_user(u):
     if not u:

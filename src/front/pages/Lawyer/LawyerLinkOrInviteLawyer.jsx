@@ -23,6 +23,7 @@ export const LawyerLinkOrInviteLawyer = () => {
   const preselectedCourtfileNumber = location.state?.courtfileNumber || null;
   const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
   const returnTo = location.state?.returnTo || "/DashboardLawyer";
+  const [clientConflict, setClientConflict] = useState(null);
 
   // SIEMPRE usamos selectedCourtfileId (preseleccionado o elegido del combo)
   const [selectedCourtfileId, setSelectedCourtfileId] = useState(
@@ -98,30 +99,55 @@ export const LawyerLinkOrInviteLawyer = () => {
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    setSearchErr(""); setFoundLawyer(null); setNotFound(false);
+    setSearchErr("");
+    setFoundLawyer(null);
+    setNotFound(false);
+    setClientConflict(null);
 
     const emailTrim = (email || "").trim().toLowerCase();
-    if (!emailTrim) { setSearchErr("Enter an email"); return; }
+    if (!emailTrim) {
+      setSearchErr("Enter an email");
+      return;
+    }
 
     try {
       setSearching(true);
-      const resp = await fetch(`${API}/api/lawyers/lookup?email=${encodeURIComponent(emailTrim)}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const resp = await fetch(
+        `${API}/api/lawyers/lookup?email=${encodeURIComponent(emailTrim)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-      if (resp.status === 404) { setFoundLawyer(null); setNotFound(true); return; }
+      if (resp.status === 404) {
+        setFoundLawyer(null);
+        setNotFound(true);
+        return;
+      }
 
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
 
-      if (data?.found && data?.lawyer) { setFoundLawyer(data.lawyer); setNotFound(false); }
-      else { setFoundLawyer(null); setNotFound(true); }
+      if (data?.client_exists) {
+        setClientConflict(data.client);
+        setFoundLawyer(null);
+        setNotFound(false);
+      } else if (data?.found && data?.lawyer) {
+        setFoundLawyer(data.lawyer);
+        setNotFound(false);
+        setClientConflict(null);
+      } else {
+        setFoundLawyer(null);
+        setNotFound(true);
+        setClientConflict(null);
+      }
     } catch (err) {
       setSearchErr(err.message || "Search error");
     } finally {
       setSearching(false);
     }
   };
+
 
   // -------- Helpers --------
   const capitalize = (s = "") => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
@@ -385,6 +411,33 @@ export const LawyerLinkOrInviteLawyer = () => {
                 )}
               </div>
             </form>
+
+            {/* Conflict: email belongs to a Client */}
+            {clientConflict && (
+              <div className="mt-5 ms-2">
+                <h4 className="mb-3 text-danger">
+                  <i className="bi bi-exclamation-triangle me-2" />
+                  This email is already registered as a Client
+                </h4>
+                <p className="mb-2 fs-9">
+                  <strong>Name:</strong> {clientConflict.firstname} {clientConflict.lastname}
+                </p>
+                <p className="mb-3 fs-9">
+                  <strong>Email:</strong> {clientConflict.email}
+                </p>
+
+                <div className="d-flex align-items-center text-dark">
+                  <i className="bi bi-info-circle me-2" />
+                  <span>
+                    You cannot link this user as a Lawyer. Please go to the{" "}
+                    <Link to="/clients" className="fw-bold text-decoration-none">
+                      Clients section
+                    </Link>{" "}
+                    to link them to a Courtfile instead.
+                  </span>
+                </div>
+              </div>
+            )}
 
 
             {/* Resultado: lawyer encontrado */}
