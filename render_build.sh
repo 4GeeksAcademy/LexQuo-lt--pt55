@@ -51,7 +51,7 @@ flask db upgrade
 # ---------- OPTIONAL ONE-SHOT SEED ----------
 if [ "${RUN_SEED}" = "1" ]; then
   echo "Running seed..."
-  flask insert-seed          # usa el alias que agregamos
+  flask insert-seed
   echo "Seed done."
 else
   echo "Skipping seed (set RUN_SEED=1 to enable)"
