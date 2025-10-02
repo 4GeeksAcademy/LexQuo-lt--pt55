@@ -80,3 +80,10 @@ database.database
 database.db
 diagram.png
 __pycache__/
+
+
+# --- EMAIL TEMPLATES ---
+!src/api/email_templates/
+!src/api/email_templates/*
+
+.env

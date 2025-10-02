@@ -8,7 +8,7 @@ from typing import Iterable, Optional, Tuple, Union, Any, Dict
 # =========================
 # Config Brevo API (HTTPS)
 # =========================
-BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+BREVO_API_KEY = os.getenv("BREVO_API_KEY") or os.getenv("BREVO_LEXQUO_KEY")
 FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@lexquo.com")
 FROM_NAME = os.getenv("FROM_NAME", "LexQuo")
 
