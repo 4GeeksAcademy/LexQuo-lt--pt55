@@ -16,7 +16,8 @@ from sqlalchemy import select, func, and_, or_, literal, case
 from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import Courtfile, PaymentCourtfile, PaymentStatus, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, Message, ChatRead
 from api.utils import generate_sitemap, APIException
-from datetime import datetime, UTC, timedelta, timezone
+from datetime import datetime, timedelta, timezone
+UTC = timezone.utc
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
