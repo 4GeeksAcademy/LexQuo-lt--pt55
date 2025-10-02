@@ -44,4 +44,15 @@ pip install PyPDF2==3.0.1
 pip install wtforms==3.2.1
 
 # ---------- DB MIGRATIONS ----------
+export FLASK_APP=src/app.py
+export FLASK_ENV=production
 flask db upgrade
+
+# ---------- OPTIONAL ONE-SHOT SEED ----------
+if [ "${RUN_SEED}" = "1" ]; then
+  echo "Running seed..."
+  flask seed           # usa el alias que agregamos
+  echo "Seed done."
+else
+  echo "Skipping seed (set RUN_SEED=1 to enable)"
+fi

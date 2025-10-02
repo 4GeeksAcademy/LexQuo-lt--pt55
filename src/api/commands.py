@@ -30,6 +30,13 @@ def setup_commands(app):
 
         print("All test users created")
 
-    @app.cli.command("insert-seed")
-    def insert_seed():
-        run(db.session)
+    def setup_commands(app):
+        @app.cli.command("insert-seed")
+        def insert_seed():
+            run(db.session)
+            click.echo("✅ insert-seed completado")
+
+        @app.cli.command("seed")   # <--- alias simple para Render
+        def seed():
+            run(db.session)
+            click.echo("✅ seed completado")
