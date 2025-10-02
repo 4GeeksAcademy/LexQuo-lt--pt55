@@ -670,8 +670,6 @@ def lookup_client_by_email():
         client = Client.query.filter(func.lower(Client.email) == email).first()
         lawyer = Lawyer.query.filter(func.lower(Lawyer.email) == email).first()
 
-        # "found": ¿existe como client?
-        # Agregamos lawyer_exists/conflict para detectar cruces.
         return jsonify({
             'found': bool(client),
             'client': _mini_user(client),
