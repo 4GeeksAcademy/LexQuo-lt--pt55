@@ -418,10 +418,15 @@ def lookup_lawyer_by_email():
             return jsonify({'error': 'email required'}), 400
 
         lawyer = Lawyer.query.filter(func.lower(Lawyer.email) == email).first()
-        if not lawyer:
-            return jsonify({'found': False}), 200
+        client = Client.query.filter(func.lower(Client.email) == email).first()
 
-        return jsonify({'found': True, 'lawyer': lawyer.serialize()}), 200
+        return jsonify({
+            'found': bool(lawyer),
+            'lawyer': _mini_user(lawyer),
+            'client_exists': bool(client),
+            'client': _mini_user(client) if client else None,
+            'conflict': bool(client and not lawyer) or bool(client and lawyer),
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -648,10 +653,15 @@ def lookup_client_by_email():
             return jsonify({'error': 'email required'}), 400
 
         client = Client.query.filter(func.lower(Client.email) == email).first()
-        if not client:
-            return jsonify({'found': False}), 200
+        lawyer = Lawyer.query.filter(func.lower(Lawyer.email) == email).first()
 
-        return jsonify({'found': True, 'client': client.serialize()}), 200
+        return jsonify({
+            'found': bool(client),
+            'client': _mini_user(client),
+            'lawyer_exists': bool(lawyer),
+            'lawyer': _mini_user(lawyer) if lawyer else None,
+            'conflict': bool(lawyer and not client) or bool(lawyer and client),
+        }), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
