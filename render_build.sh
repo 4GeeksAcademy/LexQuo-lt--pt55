@@ -17,5 +17,7 @@ pip install gunicorn==21.2.0
 pip install python-dotenv==1.0.0
 pip install alembic==1.12.1
 pip install pyyaml==6.0.1
+pip install flask-socketio==5.3.6
+pip install eventlet==0.36.1
 
 flask db upgrade
