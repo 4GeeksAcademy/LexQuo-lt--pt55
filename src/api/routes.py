@@ -3334,8 +3334,9 @@ def webhook():
     return jsonify(success=True)
 
 
-# =====================RUTAS PARA MAILS======================
+# ===================== RUTAS PARA MAILS ======================
 from urllib.parse import quote as _urlq
+from flask import current_app
 
 def _cap(s: str) -> str:
     return s[:1].upper() + s[1:] if s else s
@@ -3395,7 +3396,7 @@ def send_invite_email():
         )
         return jsonify({"ok": True, "sent_to": email})
     except Exception as e:
-        logging.exception("Error al enviar correo")
+        current_app.logger.exception("Error al enviar correo (invite)")
         return jsonify({"error": str(e)}), 500
 
 
@@ -3445,8 +3446,9 @@ def send_linked_email():
         )
         return jsonify({"ok": True, "sent_to": email})
     except Exception as e:
-        logging.exception("Error al enviar correo")
+        current_app.logger.exception("Error al enviar correo (linked)")
         return jsonify({"error": str(e)}), 500
+
 
 # =================LOGIN GENERAL =====================================
 

@@ -1,20 +1,25 @@
-# api/mail_utils.py
 from __future__ import annotations
-import os, ssl, smtplib, mimetypes, re
+import os, ssl, smtplib, mimetypes, re, requests
 from pathlib import Path
 from email.message import EmailMessage
 from email.headerregistry import Address
 from typing import Iterable, Optional, Tuple, Union, Any, Dict
-import socket
+
 # =========================
-# Config SMTP (ENV VARS)
+# Config Brevo API (HTTPS)
+# =========================
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@lexquo.com")
+FROM_NAME = os.getenv("FROM_NAME", "LexQuo")
+
+# =========================
+# Config SMTP (fallback)
 # =========================
 SMTP_USER = os.getenv("SMTP_USER")
 SMTP_PASS = os.getenv("SMTP_PASS")
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "465"))      # 465=SSL, 587=STARTTLS
 SMTP_USE_TLS = os.getenv("SMTP_USE_TLS", "false").lower() in ("1", "true", "yes")
-FROM_NAME = os.getenv("FROM_NAME", "LexQuo")
 REPLY_TO = os.getenv("REPLY_TO")  # opcional
 
 # =========================
@@ -40,22 +45,8 @@ def render_email_template(filename: str, **kwargs: Dict[str, Any]) -> str:
         raise FileNotFoundError(f"No se encontró la plantilla: {path}")
 
     html = path.read_text(encoding="utf-8")
-
-    # 1) Condicionales simples
-    def _if_repl(m: re.Match) -> str:
-        var = m.group(1)
-        body = m.group(2)
-        val = kwargs.get(var)
-        return body if _truthy(val) else ""
-    html = _IF_BLOCK_RE.sub(_if_repl, html)
-
-    # 2) Variables
-    def _var_repl(m: re.Match) -> str:
-        var = m.group(1)
-        val = kwargs.get(var)
-        return "" if val is None else str(val)
-    html = _VAR_RE.sub(_var_repl, html)
-
+    html = _IF_BLOCK_RE.sub(lambda m: m.group(2) if _truthy(kwargs.get(m.group(1))) else "", html)
+    html = _VAR_RE.sub(lambda m: str(kwargs.get(m.group(1), "")), html)
     return html
 
 # =========================
@@ -82,7 +73,6 @@ def _add_attachments(msg: EmailMessage, attachments: Iterable[Tuple[str, bytes]]
         msg.add_attachment(content, maintype=maintype, subtype=subtype, filename=filename)
 
 def _format_addr(name_email: str) -> Union[str, Address]:
-    # Soporte "Nombre <email@dominio>" o "email@dominio"
     if "<" in name_email and ">" in name_email:
         name, email = name_email.split("<", 1)
         email = email.strip(" >")
@@ -90,6 +80,9 @@ def _format_addr(name_email: str) -> Union[str, Address]:
         return Address(display_name=name, addr_spec=email)
     return name_email
 
+# =========================
+# Envío híbrido
+# =========================
 def send_email(
     to_email: Union[str, Iterable[str]],
     subject: str,
@@ -101,22 +94,48 @@ def send_email(
     reply_to: Optional[str] = None,
     headers: Optional[dict] = None,
     attachments: Optional[Iterable[Tuple[str, bytes]]] = None,
-    timeout_seconds: int = 12,  # <-- parámetro nuevo con default
-) -> None:
+    timeout_seconds: int = 12,
+) -> dict:
     """
-    Envía un correo multipart/alternative (texto + HTML).
-    - to_email: string o iterable
-    - attachments: iterable de (filename, bytes)
+    Envía un correo:
+    - Si existe BREVO_API_KEY => usa API HTTP de Brevo (Render).
+    - Si no => usa SMTP clásico (local).
     """
 
+    # ---------------- Brevo API (preferido en producción) ----------------
+    if BREVO_API_KEY:
+        if isinstance(to_email, str):
+            recipients = [to_email]
+        else:
+            recipients = list(to_email)
+
+        url = "https://api.brevo.com/v3/smtp/email"
+        headers_api = {
+            "accept": "application/json",
+            "api-key": BREVO_API_KEY,
+            "content-type": "application/json",
+        }
+        payload = {
+            "sender": {"name": FROM_NAME, "email": FROM_EMAIL},
+            "to": [{"email": r} for r in recipients],
+            "subject": subject,
+            "htmlContent": html_body,
+        }
+        if text_body:
+            payload["textContent"] = text_body
+
+        resp = requests.post(url, headers=headers_api, json=payload, timeout=timeout_seconds)
+        resp.raise_for_status()
+        return {"ok": True, "via": "BrevoAPI", "response": resp.json()}
+
+    # ---------------- Fallback SMTP (ej: local dev) ----------------
     if not SMTP_USER or not SMTP_PASS:
-        raise RuntimeError("SMTP_USER/SMTP_PASS no configurados")
+        raise RuntimeError("SMTP_USER/SMTP_PASS no configurados y tampoco BREVO_API_KEY")
 
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = f"{FROM_NAME} <{SMTP_USER}>"
 
-    # Destinatarios
     if isinstance(to_email, str):
         recipients = [to_email]
         msg["To"] = to_email
@@ -130,33 +149,27 @@ def send_email(
         recipients.extend(cc_list)
 
     if bcc:
-        recipients.extend(list(bcc))  # BCC no va en headers
+        recipients.extend(list(bcc))
 
-    # Reply-To
     _reply_to = reply_to or REPLY_TO
     if _reply_to:
         msg["Reply-To"] = _reply_to
 
-    # Headers opcionales
     if headers:
         for k, v in headers.items():
             if v is not None:
                 msg[k] = str(v)
 
-    # Cuerpo: siempre texto + HTML
     if not text_body:
         text_body = _fallback_text_from_html(html_body)
     msg.set_content(text_body)
     msg.add_alternative(html_body, subtype="html")
 
-    # Adjuntos
     _add_attachments(msg, attachments)
 
-    # SMTP (un solo bloque, con timeout)
     context = ssl.create_default_context()
     if SMTP_USE_TLS and SMTP_PORT == 587:
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=timeout_seconds) as server:
-            server.ehlo()
             server.starttls(context=context)
             server.login(SMTP_USER, SMTP_PASS)
             server.send_message(msg, to_addrs=recipients)
@@ -164,3 +177,5 @@ def send_email(
         with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=context, timeout=timeout_seconds) as server:
             server.login(SMTP_USER, SMTP_PASS)
             server.send_message(msg, to_addrs=recipients)
+
+    return {"ok": True, "via": "SMTP"}
