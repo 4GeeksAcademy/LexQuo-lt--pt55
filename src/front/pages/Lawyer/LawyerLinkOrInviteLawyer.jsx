@@ -305,7 +305,7 @@ export const LawyerLinkOrInviteLawyer = () => {
 
             {/* Desplegable de courtfiles (solo si NO hay preseleccionado) */}
             {!preselectedCourtfileId && (
-              <div className="row g-2 align-items-end">
+              <div className="row g-2 align-items-end mb-4 mt-2">
                 <div className="col-md-8">
                   <div className="form-floating">
                     <select
