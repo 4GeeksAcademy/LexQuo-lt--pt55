@@ -238,7 +238,7 @@ export const DashboardClient = () => {
             {loadingCases && <p className="mt-3">Loading courtfiles...</p>}
             {casesErr && <div className="alert alert-danger mt-3">{casesErr}</div>}
             {!loadingCases && cases.length === 0 && (
-              <div className="alert alert-info mt-3">No courtfiles found.</div>
+              <div className="alert text-secondary bg-transparent border-0 mt-2">No courtfiles found.</div>
             )}
 
             {cases.length > 0 && (

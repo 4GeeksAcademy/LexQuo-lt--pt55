@@ -338,7 +338,7 @@ export const ViewCourtfileClient = () => {
             {loadingAppointments && <p className="mt-2">Loading appointments…</p>}
             {appointmentsErr && <div className="alert alert-danger mt-2">{appointmentsErr}</div>}
             {!loadingAppointments && !appointmentsErr && caseAppointments.length === 0 && (
-              <div className="alert alert-info mt-2">No appointments scheduled for this case.</div>
+              <div className="alert text-secondary bg-transparent border-0 mt-2">No appointments scheduled for this case.</div>
             )}
 
             {!loadingAppointments && caseAppointments.length > 0 && (
@@ -394,7 +394,7 @@ export const ViewCourtfileClient = () => {
                 {loadingPayments && <p className="mt-2">Loading payments…</p>}
                 {paymentsErr && <div className="alert alert-danger mt-2">{paymentsErr}</div>}
                 {!loadingPayments && !paymentsErr && casePayments.length === 0 && (
-                  <div className="alert alert-info mt-2">No payments for this case.</div>
+                  <div className="alert text-secondary bg-transparent border-0 mt-2">No payments for this case.</div>
                 )}
 
                 {!loadingPayments && casePayments.length > 0 && (

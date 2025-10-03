@@ -335,7 +335,7 @@ export const Clients = () => {
             <span className="spinner-border spinner-border-sm me-2" /> Loading clients…
           </div>
         ) : (
-          <div className="alert alert-info">
+          <div className="alert text-secondary bg-transparent border-0 mt-2">
             <i className="bi bi-info-circle"></i> No clients found. Create your first one!
           </div>
         )}

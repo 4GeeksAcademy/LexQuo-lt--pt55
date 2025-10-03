@@ -244,7 +244,7 @@ export const ViewClient = () => {
 
   return (
     <AppNavsShell>
-      <div className="container-fluid px-0 px-md-3">
+      <div className="container-fluid add-page">
         {/* Breadcrumb */}
         <nav aria-label="breadcrumb" className="mb-2">
           <ol className="breadcrumb mb-0">
@@ -413,7 +413,7 @@ export const ViewClient = () => {
                 </table>
               </div>
             ) : (
-              <div className="alert alert-info mb-0">
+              <div className="alert text-secondary bg-transparent border-0 mt-2">
                 This client is not linked to any case.
               </div>
             )}
