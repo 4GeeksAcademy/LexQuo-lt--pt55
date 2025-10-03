@@ -306,17 +306,32 @@ const NavbarLogin = () => {
   ]);
 
   const goFromItem = (it) => {
-    if (!it) return;
-    setOpen(false);
-    setQ("");
-    setItems([]);
-    if (it.type === "courtfile") navigate(`/courtfiles/${it.id}`);
-    else if (it.type === "lawyer") navigate(`/lawyers/view/${it.id}`);
-    else if (it.type === "client") navigate(`/clients/view/${it.id}`);
-    else if (it.type === "appointment") navigate(`/appointments/view/${it.id}`);
-    else if (it.type === "deadline") navigate(`/deadlines/view/${it.id}`);
-    else if (it.type === "document") navigate(`/documents/view/${it.id}`);
-  };
+  if (!it) return;
+  setOpen(false);
+  setQ("");
+  setItems([]);
+
+  if (it.type === "courtfile") {
+    if ((store?.me?.role || "").toLowerCase() === "client") {
+      navigate(`/courtfiles/viewclient/${it.id}`);
+    } else if ((store?.me?.role || "").toLowerCase() === "lawyer") {
+      navigate(`/courtfiles/ViewCourtfileLawyer/${it.id}`);
+    } else {
+      // fallback por si el rol es admin_user u otro
+      navigate(`/courtfiles/${it.id}`);
+    }
+  } else if (it.type === "lawyer") {
+    navigate(`/lawyers/view/${it.id}`);
+  } else if (it.type === "client") {
+    navigate(`/clients/view/${it.id}`);
+  } else if (it.type === "appointment") {
+    navigate(`/appointments/view/${it.id}`);
+  } else if (it.type === "deadline") {
+    navigate(`/deadlines/view/${it.id}`);
+  } else if (it.type === "document") {
+    navigate(`/documents/view/${it.id}`);
+  }
+};
 
   return (
     <nav className="navbar navbar-expand navbar-dark bg-dark fixed-top py-2">
