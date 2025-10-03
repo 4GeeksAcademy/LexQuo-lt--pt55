@@ -367,36 +367,34 @@ export const EditAppointment = () => {
             <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start mb-4">
               <h1 className="display-5 fw-bold mb-2 mb-sm-0">Edit Appointment</h1>
 
-              <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
-                <Link
-                  to={returnTo}
-                  className="btn btn-phoenix btn-phoenix-secondary fs-10 fs-md-9"
-                >
-                  Cancel
-                </Link>
-                <button
-                  type="submit"
-                  form="appointmentForm"
-                  className="btn btn-phoenix btn-phoenix-primary fs-10 fs-md-9"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        role="status"
-                      />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-plus-circle me-2" />
-                      Update Appointment
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+              {/* Botones solo en md+ */}
+  <div className="d-none d-md-flex gap-2">
+    <Link
+      to={returnTo}
+      className="btn btn-phoenix btn-phoenix-secondary fs-10 fs-md-9"
+    >
+      Cancel
+    </Link>
+    <button
+      type="submit"
+      form="appointmentForm"
+      className="btn btn-phoenix btn-phoenix-primary fs-10 fs-md-9"
+      disabled={loading}
+    >
+      {loading ? (
+        <>
+          <span className="spinner-border spinner-border-sm me-2" role="status" />
+          Updating...
+        </>
+      ) : (
+        <>
+          <i className="bi bi-check-circle me-2" />
+          Update Appointment
+        </>
+      )}
+    </button>
+  </div>
+</div>
 
 
             {(linkedCourtfile?.id || preselectedCourtfileId) ? (
@@ -583,6 +581,33 @@ export const EditAppointment = () => {
                 </div>
               </div>
             </form>
+            {/* Botones solo en mobile */}
+  <div className="d-flex d-md-none gap-2 mt-3 justify-content-end">
+    <Link
+      to={returnTo}
+      className="btn btn-phoenix btn-phoenix-secondary fs-10"
+    >
+      Cancel
+    </Link>
+    <button
+      type="submit"
+      form="appointmentForm"
+      className="btn btn-phoenix btn-phoenix-primary fs-10"
+      disabled={loading}
+    >
+      {loading ? (
+        <>
+          <span className="spinner-border spinner-border-sm me-2" role="status" />
+          Updating...
+        </>
+      ) : (
+        <>
+          <i className="bi bi-check-circle me-2" />
+          Update Appointment
+        </>
+      )}
+    </button>
+  </div>
           </div>
         </div>
       </div>

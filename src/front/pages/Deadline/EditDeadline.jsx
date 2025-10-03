@@ -223,11 +223,11 @@ export const EditDeadline = () => {
 
             {/* Header */}
             <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start mb-4">
-              {/* Título */}             
+              {/* Título */}
               <h1 className="display-5 fw-bold mb-2 mb-md-0">Edit Deadline</h1>
-            
-              {/* Botones */}
-              <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
+
+              {/* Botones solo en md+ */}
+              <div className="d-none d-md-flex gap-2">
                 <Link
                   to={returnTo}
                   className="btn btn-phoenix btn-phoenix-secondary fs-10 fs-md-9"
@@ -341,6 +341,33 @@ export const EditDeadline = () => {
                 <label htmlFor="priority">Priority *</label>
               </div>
             </form>
+            {/* Botones solo en mobile */}
+            <div className="d-flex d-md-none gap-2 mt-3 justify-content-end">
+              <Link
+                to={returnTo}
+                className="btn btn-phoenix btn-phoenix-secondary fs-10"
+              >
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                form="deadlineForm"
+                className="btn btn-phoenix btn-phoenix-primary fs-10"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-check-circle me-2" />
+                    Update Deadline
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

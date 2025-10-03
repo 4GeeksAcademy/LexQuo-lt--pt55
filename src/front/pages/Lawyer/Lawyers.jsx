@@ -122,24 +122,24 @@ export const Lawyers = () => {
           </div>
 
           {/* Fila 2: izquierda = search + filtros | derecha = Add lawyer (solo admin) */}
-          <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
-            {/* Izquierda */}
-            <div className="d-flex align-items-center gap-2 flex-nowrap">
+          <div className="d-flex flex-column flex-md-row align-items-stretch align-items-md-center justify-content-md-between gap-2">
+            {/* Izquierda (buscador + filtros) */}
+            <div className="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 w-100">
               {/* Search */}
-              <div className="search-box" style={{ position: "relative", maxWidth: 320, flex: "1 1 auto" }}>
+              <div className="search-box position-relative flex-grow-1" style={{ maxWidth: 640 }}>
                 <i
                   className="bi bi-search"
                   style={{
                     position: "absolute",
                     top: "50%",
-                    left: "10px",
+                    left: 10,
                     transform: "translateY(-50%)",
                     color: "#6c757d",
                   }}
                 />
                 <input
                   type="search"
-                  className="form-control"
+                  className="form-control w-100"
                   placeholder="Search lawyers"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
@@ -152,7 +152,7 @@ export const Lawyers = () => {
                     title="Clear"
                     style={{
                       top: "50%",
-                      right: "6px",
+                      right: 6,
                       transform: "translateY(-50%)",
                       background: "transparent",
                       border: "none",
@@ -164,8 +164,8 @@ export const Lawyers = () => {
                 )}
               </div>
 
-              {/* Filtros en la misma línea */}
-              <div className="d-flex align-items-center gap-2 flex-nowrap">
+              {/* Filtros */}
+              <div className="d-flex flex-wrap gap-2 mt-2 mt-md-0">
                 <button
                   className={`btn btn-sm ${status === "all" ? "btn-dark" : "btn-outline-secondary"}`}
                   onClick={() => setStatus("all")}
@@ -187,25 +187,28 @@ export const Lawyers = () => {
               </div>
             </div>
 
-            {/* Derecha */}
-            <div className="ms-auto">
+            {/* Derecha (Add/Link) */}
+            <div className="ms-0 ms-md-auto w-100 w-md-auto mt-2 mt-md-0 d-flex justify-content-md-end align-items-start align-items-md-center">
               {role === "lawyer" ? (
                 <Link
                   to="/lawyers/link-or-invite"
-                  className="btn btn-phoenix btn-phoenix-primary"
+                  className="btn btn-phoenix btn-phoenix-primary btn-sm px-3 py-2 lh-sm text-nowrap w-100 w-md-auto d-inline-flex align-items-center gap-2 flex-shrink-0"
                 >
-                  <i className="bi bi-plus-lg me-1"></i> Link or invite
+                  <i className="bi bi-plus-lg" />
+                  <span>Link or invite</span>
                 </Link>
               ) : (
                 <Link
                   to="/lawyers/addLawyer"
-                  className="btn btn-phoenix btn-phoenix-primary"
+                  className="btn btn-phoenix btn-phoenix-primary btn-sm px-3 py-2 lh-sm text-nowrap w-100 w-md-auto d-inline-flex align-items-center gap-2 flex-shrink-0"
                 >
-                  <i className="bi bi-plus-lg me-1"></i> Add lawyer
+                  <i className="bi bi-plus-lg" />
+                  <span>Add lawyer</span>
                 </Link>
               )}
             </div>
           </div>
+
         </div>
 
         {/* ===== Tabla ===== */}

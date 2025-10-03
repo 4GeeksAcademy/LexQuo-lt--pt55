@@ -749,7 +749,7 @@ export const DashboardLawyer = () => {
                                                                 <li>
                                                                     <Link
                                                                         to={`/courtfiles/${cf.id}`}
-                                                                        state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${cf.id}` }}
+                                                                        state={{ returnTo: "/DashboardLawyer" }}
                                                                         className="dropdown-item d-flex align-items-center gap-2"
                                                                     >
                                                                         <i className="bi bi-pencil" />

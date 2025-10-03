@@ -195,7 +195,7 @@ export const DashboardClient = () => {
         <div className="row align-items-center g-4 mb-4">
           <div className="col-6 col-md-3">
             <div className="d-flex align-items-center">
-              <i className="bi bi-folder2-open text-primary fs-3 me-2"></i>
+              <i className="bi bi-folder2-open text-primary fs-4 fs-md-3 me-2"></i>
               <div>
                 <h4 className="mb-0">{cases.length}</h4>
                 <small className="text-muted">Courtfiles</small>
@@ -204,7 +204,7 @@ export const DashboardClient = () => {
           </div>
           <div className="col-6 col-md-3">
             <div className="d-flex align-items-center">
-              <i className="bi bi-clock-history text-info fs-3 me-2"></i>
+              <i className="bi bi-clock-history text-info fs-4 fs-md-3 me-2"></i>
               <div>
                 <h4 className="mb-0">{upcomingAppointments.length}</h4>
                 <small className="text-muted">Next 7 days</small>
@@ -213,7 +213,7 @@ export const DashboardClient = () => {
           </div>
           <div className="col-6 col-md-3">
             <div className="d-flex align-items-center">
-              <i className="bi bi-receipt text-warning fs-3 me-2"></i>
+              <i className="bi bi-receipt text-warning fs-4 fs-md-3 me-2"></i>
               <div>
                 <h4 className="mb-0">{pendingPayments.length}</h4>
                 <small className="text-muted">Payments Pending</small>
@@ -222,7 +222,7 @@ export const DashboardClient = () => {
           </div>
           <div className="col-6 col-md-3">
             <div className="d-flex align-items-center">
-              <i className="bi bi-envelope text-danger fs-3 me-2"></i>
+              <i className="bi bi-envelope text-danger fs-4 fs-md-3 me-2"></i>
               <div>
                 <h4 className="mb-0">{totalUnread}</h4>
                 <small className="text-muted">Unread Messages</small>
@@ -243,7 +243,7 @@ export const DashboardClient = () => {
 
             {cases.length > 0 && (
               <div className="table-responsive table-wrap">
-                <table className="table table-modern align-middle mb-0">
+                <table className="table table-modern align-middle mb-0 table-courtfiles">
                   <thead>
                     <tr>
                       <th>ID</th>

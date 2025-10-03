@@ -275,8 +275,8 @@ export const AddAppointment = () => {
               {/* Título */}
               <h1 className="display-6 display-sm-5 fw-bold mb-0">Add New Appointment</h1>
 
-              {/* Botones */}
-              <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
+              {/* Botones solo en md+ */}
+              <div className="d-none d-md-flex gap-2">
                 <Link
                   to={returnTo}
                   className="btn btn-phoenix btn-phoenix-secondary fs-10 fs-md-9"
@@ -291,10 +291,7 @@ export const AddAppointment = () => {
                 >
                   {loading ? (
                     <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        role="status"
-                      />
+                      <span className="spinner-border spinner-border-sm me-2" role="status" />
                       Creating...
                     </>
                   ) : (
@@ -311,9 +308,14 @@ export const AddAppointment = () => {
             {/* Courtfile context / selector */}
             {preselectedCourtfileId ? (
               <>
-                <span className="badge badge-phoenix-secondary mb-3">
+                <span className="badge badge-phoenix-secondary mb-3 text-wrap">
                   Related to Courtfile {preselectedCf?.case_number || preselectedCourtfileId}
-                  {preselectedCf?.title ? ` — ${preselectedCf.title}` : ""}
+                  {preselectedCf?.title && (
+                    <>
+                      <br className="d-sm-none" /> {/* salto solo en < sm */}
+                      {preselectedCf.title}
+                    </>
+                  )}
                 </span>
                 <input type="hidden" name="courtfile_id" value={preselectedCourtfileId} />
               </>
@@ -522,6 +524,33 @@ export const AddAppointment = () => {
 
 
             </form>
+            {/* Botones solo en mobile */}
+            <div className="d-flex d-md-none gap-2 mt-3 justify-content-end">
+              <Link
+                to={returnTo}
+                className="btn btn-phoenix btn-phoenix-secondary fs-10"
+              >
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                form="appointmentForm"
+                className="btn btn-phoenix btn-phoenix-primary fs-10"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-plus-circle me-2" />
+                    Create Appointment
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div >

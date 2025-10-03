@@ -185,23 +185,23 @@ export const AddPayment = () => {
                 Add New Payment
               </h1>
 
-              {/* Botones */}
-              <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
-                <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary btn-sm fs-10 fs-md-9">
+              {/* Botones solo en desktop */}
+              <div className="d-none d-md-flex gap-2">
+                <Link
+                  to={returnTo}
+                  className="btn btn-phoenix btn-phoenix-secondary btn-sm fs-10 fs-md-9"
+                >
                   Cancel
                 </Link>
                 <button
                   type="submit"
-                  form="paymentForm" // engancha con el id del form
+                  form="paymentForm"
                   className="btn btn-phoenix btn-phoenix-primary btn-sm fs-10 fs-md-9"
                   disabled={loading}
                 >
                   {loading ? (
                     <>
-                      <span
-                        className="spinner-border spinner-border-sm me-2"
-                        role="status"
-                      />
+                      <span className="spinner-border spinner-border-sm me-2" role="status" />
                       Creating...
                     </>
                   ) : (
@@ -312,6 +312,33 @@ export const AddPayment = () => {
               </div>
 
             </form>
+            {/* Botones solo en mobile */}
+            <div className="d-flex d-md-none gap-2 mt-3 justify-content-end">
+              <Link
+                to={returnTo}
+                className="btn btn-phoenix btn-phoenix-secondary btn-sm fs-10"
+              >
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                form="paymentForm"
+                className="btn btn-phoenix btn-phoenix-primary btn-sm fs-10"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-plus-circle me-2" />
+                    Create
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

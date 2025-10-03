@@ -188,6 +188,23 @@ export const ViewCourtfileClient = () => {
     }
   };
 
+  // --- Show More sólo en pantallas < md ---
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [showMore, setShowMore] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsSmallScreen(window.innerWidth < 768); // < md
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Si cambia el courtfile o el tamaño, reseteo el showMore
+  useEffect(() => {
+    setShowMore(false);
+  }, [courtfile?.id, isSmallScreen]);
+
+
   // ------------------- RENDER -------------------
   if (loading) {
     return (
@@ -229,7 +246,7 @@ export const ViewCourtfileClient = () => {
 
   return (
     <AppNavsShell>
-      <div className="container-fluid px-0 px-md-3">
+      <div className="container-fluid page-add pt-10">
 
         {/* ===== Breadcrumbs ===== */}
         <nav aria-label="breadcrumb" className="mb-2">
@@ -321,12 +338,32 @@ export const ViewCourtfileClient = () => {
                 </div>
 
                 {/* Description */}
-                <div className="mt-4">
-                  <div className="text-uppercase text-muted fw-bold small section-title mb-2">Description</div>
-                  <div className="p-3 rounded bg-body-secondary">
-                    {courtfile.description || "—"}
-                  </div>
-                </div>
+<div className="mt-4">
+  <div className="text-uppercase text-muted fw-bold small section-title mb-2">Description</div>
+  {(() => {
+    const fullText = courtfile?.description?.trim() || "—";
+    const needsClamp = fullText.length > 140;
+
+    return (
+      <div className="p-3 rounded bg-body-secondary">
+        {isSmallScreen && needsClamp ? (
+          <>
+            {showMore ? fullText : fullText.slice(0, 140) + "…"}
+            <button
+              type="button"
+              className="btn btn-link btn-sm p-0 ms-2 align-baseline"
+              onClick={() => setShowMore((s) => !s)}
+            >
+              {showMore ? "Show less" : "Show more"}
+            </button>
+          </>
+        ) : (
+          fullText
+        )}
+      </div>
+    );
+  })()}
+</div>
               </div>
             </div>
 
@@ -399,74 +436,73 @@ export const ViewCourtfileClient = () => {
 
                 {!loadingPayments && casePayments.length > 0 && (
                   <div className="table-responsive mt-2">
-  <table className="table table-hover align-middle table-modern mb-0">
-    <thead className="table-light">
-      <tr>
-        <th className="px-3" style={{ width: "20px" }}>ID</th>
-        <th className="px-3">Amount</th>
-        <th className="px-3">Currency</th>
-        <th className="px-3">Status</th>
-        <th className="px-3">Means</th>
-        <th className="px-3">Paid At</th>
-        <th className="text-end px-3" style={{ minWidth: "100px" }}>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {casePayments.map(p => (
-        <tr
-          key={p.relation_id}
-          className="table-row-clickable"
-          style={{ cursor: "pointer" }}
-          onClick={() =>
-            navigate(`/payments/view/${p.id}`, {
-              state: {
-                returnTo: `/courtfiles/ViewCourtfileClient/${courtfile.id}`,
-                courtfileId: courtfile.id,
-                courtfileNumber: courtfile.case_number,
-                courtfileTitle: courtfile.title
-              }
-            })
-          }
-        >
-          <td className="px-3">{p.id}</td>
-          <td className="px-3">${p.amount}</td>
-          <td className="px-3">{p.currency}</td>
-          <td className="px-3">
-            <span
-              className={`badge badge-phoenix ${
-                p.status === "approved"
-                  ? "badge-phoenix-success"
-                  : p.status === "pending"
-                  ? "badge-phoenix-warning"
-                  : "badge-phoenix-danger"
-              }`}
-            >
-              {p.status || "—"}
-            </span>
-          </td>
-          <td className="px-3">{p.means || "—"}</td>
-          <td className="px-3">{p.paid_at ? new Date(p.paid_at).toLocaleString() : "—"}</td>
-          <td className="text-center px-3">
-            {p.status === "pending" ? (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation(); // evita navegar al hacer click
-                  handlePay(p.id);
-                }}
-                className="btn btn-sm btn-success"
-                style={{ minWidth: "80px" }}
-              >
-                <i className="bi bi-cash"></i> Pay
-              </button>
-            ) : (
-              <span className="text-body-tertiary">—</span>
-            )}
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
+                    <table className="table table-hover align-middle table-modern mb-0">
+                      <thead className="table-light">
+                        <tr>
+                          <th className="px-3" style={{ width: "20px" }}>ID</th>
+                          <th className="px-3">Amount</th>
+                          <th className="px-3">Currency</th>
+                          <th className="px-3">Status</th>
+                          <th className="px-3">Means</th>
+                          <th className="px-3">Paid At</th>
+                          <th className="text-end px-3" style={{ minWidth: "100px" }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {casePayments.map(p => (
+                          <tr
+                            key={p.relation_id}
+                            className="table-row-clickable"
+                            style={{ cursor: "pointer" }}
+                            onClick={() =>
+                              navigate(`/payments/view/${p.id}`, {
+                                state: {
+                                  returnTo: `/courtfiles/ViewCourtfileClient/${courtfile.id}`,
+                                  courtfileId: courtfile.id,
+                                  courtfileNumber: courtfile.case_number,
+                                  courtfileTitle: courtfile.title
+                                }
+                              })
+                            }
+                          >
+                            <td className="px-3">{p.id}</td>
+                            <td className="px-3">${p.amount}</td>
+                            <td className="px-3">{p.currency}</td>
+                            <td className="px-3">
+                              <span
+                                className={`badge badge-phoenix ${p.status === "approved"
+                                  ? "badge-phoenix-success"
+                                  : p.status === "pending"
+                                    ? "badge-phoenix-warning"
+                                    : "badge-phoenix-danger"
+                                  }`}
+                              >
+                                {p.status || "—"}
+                              </span>
+                            </td>
+                            <td className="px-3">{p.means || "—"}</td>
+                            <td className="px-3">{p.paid_at ? new Date(p.paid_at).toLocaleString() : "—"}</td>
+                            <td className="text-center px-3">
+                              {p.status === "pending" ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // evita navegar al hacer click
+                                    handlePay(p.id);
+                                  }}
+                                  className="btn btn-sm btn-success"
+                                  style={{ minWidth: "80px" }}
+                                >
+                                  <i className="bi bi-cash"></i> Pay
+                                </button>
+                              ) : (
+                                <span className="text-body-tertiary">—</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
 
                 )}
 

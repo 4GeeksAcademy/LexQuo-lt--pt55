@@ -204,7 +204,8 @@ export const EditPayment = () => {
             {/* Header */}
             <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
               <h1 className="display-5 fw-bold mb-3 mb-md-0">Edit Payment</h1>
-              <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
+              {/* Botones solo en desktop */}
+              <div className="d-none d-md-flex gap-2">
                 <Link
                   to={returnTo}
                   className="btn btn-phoenix btn-phoenix-secondary fs-10 fs-md-9"
@@ -333,6 +334,33 @@ export const EditPayment = () => {
                 <label htmlFor="means">Payment Method</label>
               </div>
             </form>
+            {/* Botones solo en mobile */}
+            <div className="d-flex d-md-none gap-2 mt-3 justify-content-end">
+              <Link
+                to={returnTo}
+                className="btn btn-phoenix btn-phoenix-secondary fs-10"
+              >
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                form="paymentForm"
+                className="btn btn-phoenix btn-phoenix-primary fs-10"
+                disabled={loading || isReadOnly}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-check-circle me-2" />
+                    Update Payment
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

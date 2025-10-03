@@ -221,33 +221,33 @@ export const EditLawyer = () => {
           {/* Header con acciones */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h1 className="display-5 fw-bold mb-0">Edit Lawyer</h1>
-            <div className="d-flex gap-2">
-              <Link
-                to={`/lawyers/view/${lawyerId}`}
-                className="btn btn-phoenix btn-phoenix-secondary"
-              >
-                Cancel
-              </Link>
-              <button
-                type="submit"
-                form="lawyerForm"
-                className="btn btn-phoenix btn-phoenix-primary"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <span className="spinner-border spinner-border-sm me-2" />
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <i className="bi bi-check-circle me-2" />
-                    Update Lawyer
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
+            <div className="d-none d-md-flex gap-2">
+    <Link
+      to={`/lawyers/view/${lawyerId}`}
+      className="btn btn-phoenix btn-phoenix-secondary"
+    >
+      Cancel
+    </Link>
+    <button
+      type="submit"
+      form="lawyerForm"
+      className="btn btn-phoenix btn-phoenix-primary"
+      disabled={loading}
+    >
+      {loading ? (
+        <>
+          <span className="spinner-border spinner-border-sm me-2" />
+          Updating...
+        </>
+      ) : (
+        <>
+          <i className="bi bi-check-circle me-2" />
+          Update Lawyer
+        </>
+      )}
+    </button>
+  </div>
+</div>
 
           {/* Alert de error */}
           {error && (
@@ -366,6 +366,33 @@ export const EditLawyer = () => {
               </label>
             </div>
           </form>
+          {/* Botones abajo (solo visibles en mobile) */}
+<div className="d-flex d-md-none gap-2 justify-content-end mt-4">
+  <Link
+    to={`/lawyers/view/${lawyerId}`}
+    className="btn btn-phoenix btn-phoenix-secondary"
+  >
+    Cancel
+  </Link>
+  <button
+    type="submit"
+    form="lawyerForm"
+    className="btn btn-phoenix btn-phoenix-primary"
+    disabled={loading}
+  >
+    {loading ? (
+      <>
+        <span className="spinner-border spinner-border-sm me-2" />
+        Updating...
+      </>
+    ) : (
+      <>
+        <i className="bi bi-check-circle me-2" />
+        Update Lawyer
+      </>
+    )}
+  </button>
+</div>
         </div>
       </div>
     </div>

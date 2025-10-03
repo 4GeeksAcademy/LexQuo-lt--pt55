@@ -548,31 +548,46 @@ export const LawyerLinkOrInviteLawyer = () => {
                     <code>{`LexQuo${capitalize(createForm.firstname)}${capitalize(createForm.lastname)}`}</code>
                   </div>
 
-                  <div className="d-flex gap-2 justify-content-end mt-4">
-                    <p className="form-text me-3 mb-0 d-inline-flex align-items-center">
-                      <i className="bi bi-envelope me-1"></i>
-                      The lawyer will receive an email invitation once linked to the case.
-                    </p>
-                    <Link to={returnTo} className="btn btn-phoenix-secondary">Cancel</Link>
-                    <button
-                      type="submit"
-                      className="btn btn-primary"
-                      disabled={creating || !(selectedCourtfileId || preselectedCourtfileId)}
-                      title={!(selectedCourtfileId || preselectedCourtfileId) ? "Select a courtfile first" : ""}
-                    >
-                      {creating ? (
-                        <>
-                          <span className="spinner-border spinner-border-sm me-2" role="status" />
-                          Creating & Linking...
-                        </>
-                      ) : (
-                        <>
-                          <i className="bi bi-plus-circle me-2" />
-                          Create & Link
-                        </>
-                      )}
-                    </button>
-                  </div>
+                  <div className="d-flex flex-column flex-md-row justify-content-md-end gap-2 mt-4">
+  {/* Texto */}
+  <p className="form-text mb-2 mb-md-0 me-md-3 d-flex align-items-center">
+    <i className="bi bi-envelope me-1"></i>
+    The lawyer will receive an email invitation once linked to the case.
+  </p>
+
+  {/* Botones */}
+  <div className="d-flex gap-2 justify-content-md-end">
+    <Link to={returnTo} className="btn btn-phoenix-secondary">
+      Cancel
+    </Link>
+    <button
+      type="submit"
+      className="btn btn-primary"
+      disabled={creating || !(selectedCourtfileId || preselectedCourtfileId)}
+      title={
+        !(selectedCourtfileId || preselectedCourtfileId)
+          ? "Select a courtfile first"
+          : ""
+      }
+    >
+      {creating ? (
+        <>
+          <span
+            className="spinner-border spinner-border-sm me-2"
+            role="status"
+          />
+          Creating & Linking...
+        </>
+      ) : (
+        <>
+          <i className="bi bi-plus-circle me-2" />
+          Create & Link
+        </>
+      )}
+    </button>
+  </div>
+</div>
+
                 </form>
               </div>
             )}
