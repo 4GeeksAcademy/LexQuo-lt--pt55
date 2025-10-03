@@ -145,7 +145,7 @@ export const EditPayment = () => {
     return [
       { label: "Dashboard", to: "/dashboard" },
       { label: "Payments", to: "/payments" },
-      { label: `Edit #${paymentId}`, to: null },
+      { label: `Edit`, to: null },
     ];
   }, [paymentId]);
 

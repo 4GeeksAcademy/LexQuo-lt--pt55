@@ -163,7 +163,7 @@ export const EditDeadline = () => {
     const arr = [
       { label: "Dashboard", to: "/dashboard" },
       { label: "Deadlines", to: "/deadlines" },
-      { label: `Edit #${deadlineId}`, to: null },
+      { label: `Edit`, to: null },
     ];
     return arr;
   }, [deadlineId]);
