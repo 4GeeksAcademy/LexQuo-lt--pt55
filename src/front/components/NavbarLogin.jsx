@@ -38,7 +38,7 @@ const NavbarLogin = () => {
 
   return (
     <nav className="navbar navbar-expand navbar-dark bg-dark fixed-top py-2">
-      <div className="container-fluid">
+      <div className="container-fluid p-0 px-md-3">
         {/* Izquierda: toggler + brand */}
         <div className="d-flex align-items-center">
           <button

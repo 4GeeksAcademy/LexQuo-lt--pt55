@@ -367,17 +367,17 @@ export const EditAppointment = () => {
             <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start mb-4">
               <h1 className="display-5 fw-bold mb-2 mb-sm-0">Edit Appointment</h1>
 
-              <div className="d-flex gap-2 justify-content-sm-end w-100 w-sm-auto">
+              <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
                 <Link
                   to={returnTo}
-                  className="btn btn-phoenix btn-phoenix-secondary"
+                  className="btn btn-phoenix btn-phoenix-secondary fs-10 fs-md-9"
                 >
                   Cancel
                 </Link>
                 <button
                   type="submit"
                   form="appointmentForm"
-                  className="btn btn-phoenix btn-phoenix-primary"
+                  className="btn btn-phoenix btn-phoenix-primary fs-10 fs-md-9"
                   disabled={loading}
                 >
                   {loading ? (

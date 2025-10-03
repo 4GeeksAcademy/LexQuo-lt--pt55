@@ -276,17 +276,17 @@ export const AddAppointment = () => {
               <h1 className="display-6 display-sm-5 fw-bold mb-0">Add New Appointment</h1>
 
               {/* Botones */}
-              <div className="d-flex gap-2 mt-2 mt-sm-0">
+              <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
                 <Link
                   to={returnTo}
-                  className="btn btn-phoenix btn-phoenix-secondary"
+                  className="btn btn-phoenix btn-phoenix-secondary fs-10 fs-md-9"
                 >
                   Cancel
                 </Link>
                 <button
                   type="submit"
                   form="appointmentForm"
-                  className="btn btn-phoenix btn-phoenix-primary"
+                  className="btn btn-phoenix btn-phoenix-primary fs-10 fs-md-9"
                   disabled={loading}
                 >
                   {loading ? (

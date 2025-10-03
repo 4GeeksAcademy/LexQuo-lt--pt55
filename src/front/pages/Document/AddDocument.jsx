@@ -228,42 +228,43 @@ export const AddDocument = () => {
               </ol>
             </nav>
 
-            {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <div>
-                <h1 className="display-5 fw-bold mb-0">Add New Document</h1>
-                {preselectedCourtfileId && (
-                  <span className="badge badge-phoenix-secondary mt-2">
-                    Linked to Case {preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
-                    {preselectedCourtfileTitle ? ` — ${preselectedCourtfileTitle}` : ""}
-                  </span>
-                )}
-              </div>
+     {/* Header */}
+<div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4">
+  <div>
+    <h1 className="display-5 fw-bold mb-2 mb-sm-0">Add New Document</h1>
+    {preselectedCourtfileId && (
+      <span className="badge badge-phoenix-secondary mt-1 mb-3 text-wrap text-break">
+        Linked to Case {preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
+        {preselectedCourtfileTitle ? ` — ${preselectedCourtfileTitle}` : ""}
+      </span>
+    )}
+  </div>
 
-              <div className="d-flex gap-2">
-                <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary">
-                  Cancel
-                </Link>
-                <button
-                  type="submit"
-                  form="addDocumentForm"
-                  className="btn btn-phoenix btn-phoenix-primary"
-                  disabled={loading || linking}
-                >
-                  {loading || linking ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" />
-                      {linking ? " Linking..." : " Creating..."}
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-plus-circle me-2" />
-                      Create Document
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+  <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
+    <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary fs-10 fs-md-9">
+      Cancel
+    </Link>
+    <button
+      type="submit"
+      form="addDocumentForm"
+      className="btn btn-phoenix btn-phoenix-primary fs-10 fs-md-9"
+      disabled={loading || linking}
+    >
+      {loading || linking ? (
+        <>
+          <span className="spinner-border spinner-border-sm me-2" role="status" />
+          {linking ? " Linking..." : " Creating..."}
+        </>
+      ) : (
+        <>
+          <i className="bi bi-plus-circle me-2" />
+          Create Document
+        </>
+      )}
+    </button>
+  </div>
+</div>
+
 
             {/* Card contenedora */}
 

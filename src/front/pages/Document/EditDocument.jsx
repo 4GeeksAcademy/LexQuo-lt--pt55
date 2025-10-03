@@ -218,42 +218,44 @@ export const EditDocument = () => {
             </nav>
 
             {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h1 className="display-5 fw-bold mb-0">Edit Case Record</h1>
-              <div className="d-flex gap-2">
-                <Link
-                  to={returnTo}
-                  className="btn btn-phoenix btn-phoenix-secondary"
-                >
-                  Cancel
-                </Link>
-                <button
-                  type="submit"
-                  form="documentForm"
-                  className="btn btn-phoenix btn-phoenix-primary"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2" />
-                      Updating...
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-check-circle me-2" />
-                      Update Record
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
+<div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4">
+  <h1 className="display-5 fw-bold mb-2 mb-sm-0">Edit Case Record</h1>
 
-            {linkedCourtfile && (
-              <span className="badge badge-phoenix-secondary mb-3">
-                Linked to Case {linkedCourtfile.number || `#${linkedCourtfile.id}`}
-                {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
-              </span>
-            )}
+  <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
+    <Link
+      to={returnTo}
+      className="btn btn-phoenix btn-phoenix-secondary fs-10 fs-md-9"
+    >
+      Cancel
+    </Link>
+    <button
+      type="submit"
+      form="documentForm"
+      className="btn btn-phoenix btn-phoenix-primary fs-10 fs-md-9"
+      disabled={loading}
+    >
+      {loading ? (
+        <>
+          <span className="spinner-border spinner-border-sm me-2" />
+          Updating...
+        </>
+      ) : (
+        <>
+          <i className="bi bi-check-circle me-2" />
+          Update Record
+        </>
+      )}
+    </button>
+  </div>
+</div>
+
+{linkedCourtfile && (
+  <span className="badge badge-phoenix-secondary mb-3 text-wrap text-break">
+    Linked to Case {linkedCourtfile.number || `#${linkedCourtfile.id}`}
+    {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
+  </span>
+)}
+
 
             {error && (
               <div className="alert alert-danger d-flex align-items-center">

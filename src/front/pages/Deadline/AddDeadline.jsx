@@ -221,14 +221,14 @@ export const AddDeadline = () => {
             <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4">
               <h1 className="display-5 fw-bold mb-2 mb-sm-0">Add New Deadline</h1>
 
-              <div className="d-flex gap-2">
-                <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary">
+              <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
+                <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary fs-10 fs-md-9">
                   Cancel
                 </Link>
                 <button
                   type="submit"
                   form="addDeadlineForm"
-                  className="btn btn-phoenix btn-phoenix-primary"
+                  className="btn btn-phoenix btn-phoenix-primary fs-10 fs-md-9"
                   disabled={loading}
                 >
                   {loading ? (
