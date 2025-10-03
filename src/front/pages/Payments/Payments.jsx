@@ -200,59 +200,76 @@ export const Payments = () => {
             </p>
           </div>
 
-          {/* Fila 2: search + filtros + Add */}
-          <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
-            {/* Izquierda */}
-            <div className="d-flex align-items-center gap-2 flex-nowrap">
-              {/* Search */}
-              <div className="search-box" style={{ position: "relative", maxWidth: 320, flex: "1 1 auto" }}>
-                <i
-                  className="bi bi-search"
-                  style={{ position: "absolute", top: "50%", left: 10, transform: "translateY(-50%)", color: "#6c757d" }}
-                />
-                <input
-                  type="search"
-                  className="form-control"
-                  placeholder="Search by ID, currency or means"
-                  value={q}
-                  onChange={(e) => setQ(e.target.value)}
-                  style={{ paddingLeft: "2rem" }}
-                />
-                {q && (
-                  <button
-                    className="btn btn-sm position-absolute"
-                    onClick={() => setQ("")}
-                    title="Clear"
-                    style={{ top: "50%", right: 6, transform: "translateY(-50%)", background: "transparent", border: "none", color: "#6c757d" }}
-                  >
-                    <i className="bi bi-x-lg" />
-                  </button>
-                )}
-              </div>
+         {/* Fila 2: search + filtros + Add */}
+<div className="row g-2 align-items-center">
+  {/* Search */}
+  <div className="col-12 col-md">
+    <div className="search-box position-relative" style={{ maxWidth: 320 }}>
+      <i
+        className="bi bi-search position-absolute"
+        style={{
+          top: "50%",
+          left: 10,
+          transform: "translateY(-50%)",
+          color: "#6c757d",
+        }}
+      />
+      <input
+        type="search"
+        className="form-control"
+        placeholder="Search by ID, currency or means"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        style={{ paddingLeft: "2rem" }}
+      />
+      {q && (
+        <button
+          className="btn btn-sm position-absolute"
+          onClick={() => setQ("")}
+          title="Clear"
+          style={{
+            top: "50%",
+            right: 6,
+            transform: "translateY(-50%)",
+            background: "transparent",
+            border: "none",
+            color: "#6c757d",
+          }}
+        >
+          <i className="bi bi-x-lg" />
+        </button>
+      )}
+    </div>
+  </div>
 
-              {/* Filtro status */}
-              <div className="d-flex align-items-center gap-2 flex-nowrap">
-                {["all", "pending", "approved", "processing", "rejected"].map(s => (
-                  <button
-                    key={s}
-                    className={`btn btn-sm ${fStatus === s ? "btn-dark" : "btn-outline-secondary"}`}
-                    onClick={() => setFStatus(s)}
-                  >
-                    {s[0].toUpperCase() + s.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
+  {/* Filtros */}
+  <div className="col-12 col-md-auto d-flex flex-wrap gap-2">
+    {["all", "pending", "approved", "processing", "rejected"].map((s) => (
+      <button
+        key={s}
+        className={`btn btn-sm fs-md-9 fs-10 ${
+          fStatus === s ? "btn-dark" : "btn-outline-secondary"
+        }`}
+        onClick={() => setFStatus(s)}
+      >
+        {s[0].toUpperCase() + s.slice(1)}
+      </button>
+    ))}
+  </div>
 
-            {/* Derecha: Add */}
-            <div className="ms-auto">
-              {canAdd && (
-                <Link to="/payments/addPayment" className="btn btn-phoenix btn-phoenix-primary">
-                  <i className="bi bi-plus-lg me-1" /> Add payment
-                </Link>
-              )}
-            </div>
-          </div>
+  {/* Add */}
+  <div className="col-12 col-md-auto">
+    {canAdd && (
+      <Link
+        to="/payments/addPayment"
+        className="btn btn-phoenix btn-phoenix-primary w-100 w-md-auto"
+      >
+        <i className="bi bi-plus-lg me-1" /> Add payment
+      </Link>
+    )}
+  </div>
+</div>
+
         </div>
 
         {/* ===== Tabla ===== */}

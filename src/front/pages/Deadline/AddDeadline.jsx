@@ -197,7 +197,7 @@ export const AddDeadline = () => {
     <AppNavsShell>
       <div className="container add-page">
         <div className="row">
-          <div className="col-8">
+          <div className="col-12 col-md-8">
 
             <nav aria-label="breadcrumb" className="mb-3">
               <ol className="breadcrumb">
@@ -218,8 +218,9 @@ export const AddDeadline = () => {
             </nav>
 
             {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h1 className="display-5 fw-bold mb-0">Add New Deadline</h1>
+            <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4">
+              <h1 className="display-5 fw-bold mb-2 mb-sm-0">Add New Deadline</h1>
+
               <div className="d-flex gap-2">
                 <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary">
                   Cancel
@@ -244,6 +245,7 @@ export const AddDeadline = () => {
                 </button>
               </div>
             </div>
+
 
             {/* Courtfile context / selector */}
             {preselectedCourtfileId ? (
@@ -292,9 +294,9 @@ export const AddDeadline = () => {
                         <h6 className="mb-1 text-uppercase text-muted fw-bold">Sugerencia IA</h6>
                         {suggestion.urgency && (
                           <span className={`badge badge-phoenix ${String(suggestion.urgency).toLowerCase() === "urgent" ? "badge-phoenix-danger" :
-                              String(suggestion.urgency).toLowerCase() === "high" ? "badge-phoenix-warning" :
-                                String(suggestion.urgency).toLowerCase() === "medium" ? "badge-phoenix-info" :
-                                  "badge-phoenix-secondary"
+                            String(suggestion.urgency).toLowerCase() === "high" ? "badge-phoenix-warning" :
+                              String(suggestion.urgency).toLowerCase() === "medium" ? "badge-phoenix-info" :
+                                "badge-phoenix-secondary"
                             }`}>
                             {String(suggestion.urgency).toUpperCase()}
                           </span>

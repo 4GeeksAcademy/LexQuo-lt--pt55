@@ -71,6 +71,7 @@ const NavbarLogin = () => {
               id="userDropdown"
               role="button"
               data-bs-toggle="dropdown"
+              data-bs-display="static"
               aria-expanded="false"
             >
               <Avatar

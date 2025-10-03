@@ -373,44 +373,56 @@ export default function ChatOnDemand(props) {
   return (
     <div className={embed ? "" : "container mt-4"}>
       {!embed && (
-        <h1 className="mb-3">
+        <h1 className="mb-3 fs-4 fs-md-3">
           {`Chat for Courtfile`}
           {courtfileNumber ? ` #${courtfileNumber}` : ""}
           {courtfileTitle ? ` — ${courtfileTitle}` : ""}
         </h1>
       )}
 
-      <div className="card">
-        <div className="card-header d-flex align-items-center justify-content-between">
-          <h4 className="mb-0 fw-normal">
-            {`Chat for Courtfile`}
-            {courtfileNumber ? ` #${courtfileNumber}` : ""}
-            {courtfileTitle ? ` — ${courtfileTitle}` : ""}
+      <div className="card h-100" style={{ maxHeight: "calc(100dvh - 200px)" }}>
+        {/* HEADER: menos padding y tipografía chica en XS */}
+        <div className="card-header d-flex align-items-center justify-content-between py-2 py-md-3">
+          <h4 className="mb-0 fw-normal fs-9 fs-md-5">
+            Chat for Courtfile
+            {courtfileNumber && (
+              <span className="ms-1">#{courtfileNumber}</span>
+            )}
+            {/* El título solo en sm+ */}
+            {courtfileTitle && (
+              <span className="d-none d-sm-inline"> — {courtfileTitle}</span>
+            )}
           </h4>
 
           {returnTo && (
-            <Link to={returnTo} className="btn btn-phoenix-primary d-flex align-items-center gap-2 fs-10">
+            <Link
+              to={returnTo}
+              className="btn btn-phoenix-primary d-flex align-items-center gap-1 gap-md-2 fs-10 fs-md-9 btn-sm btn-md"
+            >
               <i className="bi bi-folder2-open"></i>
-              View case
+              <span className="d-none d-sm-inline">View case</span>
             </Link>
-
           )}
         </div>
 
-        <div className="card-body" style={{ maxHeight: 400, overflowY: "auto" }} ref={chatContainerRef}>
+        {/* BODY: menos padding en XS */}
+        <div
+          className="card-body py-2 py-md-3"
+          style={{ maxHeight: 400, overflowY: "auto" }}
+          ref={chatContainerRef}
+        >
           {messages.length === 0 && !err && (
-            <p className="text-muted m-0">Sin mensajes aún. Sé el primero en enviar un mensaje.</p>
+            <p className="text-muted m-0 fs-9 fs-md-8">Sin mensajes aún. Sé el primero en enviar un mensaje.</p>
           )}
 
-          {/* Código burbujas  */}
+          {/* Burbujas */}
           {messages.map((m) => {
             const isMine = m.sender_role === senderRole;
             return (
               <div
                 key={m.id}
-                className={`d-flex mb-4 ${m.isOptimistic ? 'opacity-75' : ''} ${isMine ? 'justify-content-end' : 'justify-content-start'}`}
+                className={`d-flex mb-3 mb-md-4 ${m.isOptimistic ? 'opacity-75' : ''} ${isMine ? 'justify-content-end' : 'justify-content-start'}`}
               >
-                {/* Avatar solo para mensajes del otro */}
                 {!isMine && (
                   <div className="d-flex align-items-end me-2 mb-6" style={{ width: '32px' }}>
                     <img
@@ -421,25 +433,21 @@ export default function ChatOnDemand(props) {
                     />
                   </div>
                 )}
+
                 <div className={`position-relative ${isMine ? 'order-2' : 'order-1'}`} style={{ maxWidth: '70%' }}>
-                  {/* Nombre solo para mensajes ajenos */}
                   {!isMine && (
-                    <div className="small text-secondary fw-bold mb-1 ms-3">
+                    <div className="small text-secondary fw-bold mb-1 ms-3 fs-10 fs-md-9">
                       <span>{m.sender_name || m.sender_role}</span>
                       {m.isOptimistic && " (enviando...)"}
                     </div>
                   )}
 
-                  {/* Contenedor de la burbuja + pico (desde CSS) */}
                   <div className="chat-bubble-wrap">
-                    <div
-                      className={`p-3 bubble ${isMine ? 'bubble--right' : 'bubble--left text-dark'}`}
-                    >
-                      <div>{m.text}</div>
+                    <div className={`p-2 p-md-3 bubble ${isMine ? 'bubble--right' : 'bubble--left text-dark'}`}>
+                      <div className="fs-9 fs-md-8">{m.text}</div>
                     </div>
                   </div>
 
-                  {/* Fecha y check */}
                   <div className={`small text-muted mt-1 fs-10 ${isMine ? 'text-end' : ''}`}>
                     {new Date(m.created_at).toLocaleString([], {
                       year: "2-digit",
@@ -454,10 +462,8 @@ export default function ChatOnDemand(props) {
             );
           })}
 
-
-
           {err && (
-            <div className={`alert ${connectionStatus === "reconnecting" ? "alert-warning" : "alert-danger"} my-2`}>
+            <div className={`alert ${connectionStatus === "reconnecting" ? "alert-warning" : "alert-danger"} my-2 py-2 py-md-3 fs-9 fs-md-8`}>
               {err}
               {connectionStatus === "disconnected" && (
                 <button
@@ -471,7 +477,7 @@ export default function ChatOnDemand(props) {
           )}
 
           {!isValidRole && (
-            <div className="alert alert-warning my-2">
+            <div className="alert alert-warning my-2 py-2 py-md-3 fs-9 fs-md-8">
               No pude detectar tu rol. Asegurate de tener <code>auth.role</code> en localStorage
               o de pasar <code>senderRole</code> por props/state.
             </div>
@@ -480,20 +486,22 @@ export default function ChatOnDemand(props) {
           <div ref={bottomRef} />
         </div>
 
-        <form className="card-footer bg-white border-top d-flex" onSubmit={sendMessage} style={{ minHeight: '197px' }}>
+        {/* FOOTER: compacto en XS, igual en grandes */}
+        <form
+          className="card-footer bg-white border-top d-flex py-2 py-md-3"
+          onSubmit={sendMessage}
+        >
           <div className="d-flex flex-column w-100">
-
-            {/* Emoji Picker */}
             {showEmojiPicker && (
               <div className="mb-2">
                 <EmojiPicker onEmojiClick={addEmoji} />
               </div>
             )}
 
-            {/* Fila superior: textarea SOLO */}
+            {/* Textarea más compacta en XS */}
             <div className="flex-grow-1">
               <textarea
-                className="chat-textarea w-100"
+                className="chat-textarea w-100 px-2 py-2 px-md-3 py-md-2 fs-9 fs-md-8"
                 placeholder="Type your message..."
                 value={draft}
                 onChange={(e) => {
@@ -510,40 +518,40 @@ export default function ChatOnDemand(props) {
                 }}
                 rows={1}
                 style={{
-                  minHeight: '42px',
+                  minHeight: '38px',   // un toquecito más bajo en XS
                   maxHeight: '100px',
                   overflowY: 'auto'
                 }}
               />
             </div>
 
-            {/* Fila inferior: botón emoji a la izquierda y enviar a la derecha */}
+            {/* Acciones: botones chicos en XS */}
             <div className="d-flex justify-content-between align-items-center mt-2">
-              {/* Botón emoji a la izquierda */}
               <button
                 type="button"
-                className="btn btn-link text-dark p-0 border-0 ms-3"
+                className="btn btn-link text-dark p-0 border-0 ms-2 ms-md-3"
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                 style={{ background: 'none' }}
+                title="Emoji"
               >
-                <i className="bi bi-emoji-smile fs-9"></i>
+                <i className="bi bi-emoji-smile fs-10 fs-md-9"></i>
               </button>
 
-              {/* Botón enviar a la derecha */}
               <button
-                className="btn btn-primary d-flex gap-2"
+                className="btn btn-primary d-flex align-items-center gap-1 gap-md-2 btn-sm"
                 type="submit"
                 disabled={!courtfileId || !draft.trim() || connectionStatus !== "connected" || !isValidRole}
               >
-                {connectionStatus === "connected" ? "Send" : "Conectando..."}
-                <i className="bi bi-send-fill"></i>
+                <span className="d-none d-sm-inline">
+                  {connectionStatus === "connected" ? "Send" : "Conectando..."}
+                </span>
+                <i className="bi bi-send-fill fs-10 fs-md-9"></i>
               </button>
             </div>
           </div>
         </form>
-
-
       </div>
     </div>
   );
+
 }

@@ -169,79 +169,85 @@ export const ViewAppointment = () => {
           </ol>
         </nav>
 
-        <div className="col-8">
+        <div className="col-sm-8">
           {/* Header (title + actions) */}
-          <div className="d-flex justify-content-between align-items-start mb-3">
-            <h1 className="h2 fw-bolder mb-0 line-clamp-1">
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-start mb-3">
+            {/* Título */}
+            <h1 className="h2 fw-bolder mb-0 line-clamp-1 fs-6 fs-md-5">
               {appointment.title || "Appointment"}
             </h1>
 
+            {/* Botones: en móvil debajo, pero alineados a la derecha */}
             {["lawyer", "admin_user"].includes(role) && (
-              <div className="d-flex gap-2">
+              <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
                 <Link
                   to={`/appointments/${appointment.id}`}
                   state={{ returnTo }}
-                  className="btn btn-phoenix-secondary btn-sm"
+                  className="btn btn-phoenix-secondary btn-sm fs-10 fs-md-9"
                 >
                   <i className="bi bi-pencil"></i> Edit
                 </Link>
-                <button className="btn btn-phoenix-danger btn-sm" onClick={handleDelete}>
+                <button
+                  className="btn btn-phoenix-danger btn-sm fs-10 fs-md-9"
+                  onClick={handleDelete}
+                >
                   <i className="bi bi-trash"></i> Delete
                 </button>
               </div>
             )}
           </div>
 
+
+
           {/* Summary strip */}
-<div className="card mb-3 mt-5">
-  <div className="card-body">
-    <div className="row text-center g-4 align-items-center">
-      {/* Date */}
-      <div className="col-3">
-        <div className="d-inline-flex align-items-center">
-          <div className="d-flex bg-success-subtle rounded flex-center me-3" style={{ width: 32, height: 32 }}>
-            <i className="bi bi-calendar-event text-success" />
-          </div>
-          <div className="text-start">
-            <p className="fw-bold mb-1">Date</p>
-            <h4 className="fw-bolder mb-0 text-nowrap">{appointment.date || "—"}</h4>
-          </div>
-        </div>
-      </div>
+          <div className="card mb-3 mt-5">
+            <div className="card-body">
+              {/* 👇 en XS/SM: izquierda — en MD+: centrado (como lo tenías) */}
+              <div className="row text-start text-md-center g-4 align-items-center">
+                {/* Date */}
+                <div className="col-12 col-md-3">
+                  <div className="d-inline-flex align-items-center">
+                    <div className="d-flex bg-success-subtle rounded flex-center me-3" style={{ width: 32, height: 32 }}>
+                      <i className="bi bi-calendar-event text-success" />
+                    </div>
+                    <div className="text-start">
+                      <p className="fw-bold mb-1">Date</p>
+                      <h4 className="fw-bolder mb-0 text-nowrap">{appointment.date || "—"}</h4>
+                    </div>
+                  </div>
+                </div>
 
-      {/* Time */}
-      <div className="col-4 border-start-md border-translucent ps-md-5">
-        <div className="d-inline-flex align-items-center">
-          <div className="d-flex bg-info-subtle rounded flex-center me-3" style={{ width: 32, height: 32 }}>
-            <i className="bi bi-clock-history text-info" />
-          </div>
-          <div className="text-start">
-            <p className="fw-bold mb-1">Time</p>
-            <h4 className="fw-bolder mb-0 text-nowrap">
-              {appointment.starts_at || "—"}
-              {appointment.ends_at ? ` – ${appointment.ends_at}` : ""}
-            </h4>
-          </div>
-        </div>
-      </div>
+                {/* Time */}
+                <div className="col-12 col-md-4 border-start-md border-translucent ps-md-5">
+                  <div className="d-inline-flex align-items-center">
+                    <div className="d-flex bg-info-subtle rounded flex-center me-3" style={{ width: 32, height: 32 }}>
+                      <i className="bi bi-clock-history text-info" />
+                    </div>
+                    <div className="text-start">
+                      <p className="fw-bold mb-1">Time</p>
+                      <h4 className="fw-bolder mb-0 text-nowrap">
+                        {appointment.starts_at || "—"}
+                        {appointment.ends_at ? ` – ${appointment.ends_at}` : ""}
+                      </h4>
+                    </div>
+                  </div>
+                </div>
 
-      {/* Location (más ancho) */}
-      <div className="col-5 border-start-md border-translucent ps-md-5">
-        <div className="d-inline-flex align-items-center w-100">
-          <div className="d-flex bg-primary-subtle rounded flex-center me-3" style={{ width: 32, height: 32 }}>
-            <i className="bi bi-geo-alt text-primary" />
+                {/* Location */}
+                <div className="col-12 col-md-5 border-start-md border-translucent ps-md-5">
+                  <div className="d-inline-flex align-items-center w-100">
+                    <div className="d-flex bg-primary-subtle rounded flex-center me-3" style={{ width: 32, height: 32 }}>
+                      <i className="bi bi-geo-alt text-primary" />
+                    </div>
+                    <div className="text-start w-100">
+                      <p className="fw-bold mb-1">Location</p>
+                      <h4 className="fw-bolder mb-0 text-truncate">{appointment.location || "—"}</h4>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="text-start w-100">
-            <p className="fw-bold mb-1">Location</p>
-            <h4 className="fw-bolder mb-0 text-truncate">{appointment.location || "—"}</h4>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-
 
 
           {/* Details + map (unstyled) */}

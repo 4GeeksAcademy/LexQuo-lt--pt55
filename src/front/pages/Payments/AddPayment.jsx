@@ -179,16 +179,21 @@ export const AddPayment = () => {
             </nav>
 
             {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h1 className="h2 fw-bold mb-0">Add New Payment</h1>
-              <div className="d-flex gap-2">
-                <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary">
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-start mb-4">
+              {/* Título */}
+              <h1 className="h2 fw-bold mb-0 fs-6 fs-md-5">
+                Add New Payment
+              </h1>
+
+              {/* Botones */}
+              <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
+                <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary btn-sm fs-10 fs-md-9">
                   Cancel
                 </Link>
                 <button
                   type="submit"
-                  form="paymentForm" // importante: engancha con el id del form
-                  className="btn btn-phoenix btn-phoenix-primary"
+                  form="paymentForm" // engancha con el id del form
+                  className="btn btn-phoenix btn-phoenix-primary btn-sm fs-10 fs-md-9"
                   disabled={loading}
                 >
                   {loading ? (
@@ -208,6 +213,7 @@ export const AddPayment = () => {
                 </button>
               </div>
             </div>
+
 
             {/* Courtfile context / selector */}
             {preselectedCourtfileId ? (

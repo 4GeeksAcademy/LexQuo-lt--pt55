@@ -246,7 +246,7 @@ export const AddAppointment = () => {
     <AppNavsShell>
       <div className="container add-page">
         <div className="row">
-          <div className="col-lg-10 col-xl-10 p-0 ps-4 ">
+          <div className="col-md-8">
             {/* Breadcrumb */}
             <nav aria-label="breadcrumb" className="mb-4">
               <ol className="breadcrumb small mb-0">
@@ -271,9 +271,12 @@ export const AddAppointment = () => {
               </ol>
             </nav>
             {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h1 className="display-5 fw-bold mb-0">Add New Appointment</h1>
-              <div className="d-flex gap-2">
+            <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-2">
+              {/* Título */}
+              <h1 className="display-6 display-sm-5 fw-bold mb-0">Add New Appointment</h1>
+
+              {/* Botones */}
+              <div className="d-flex gap-2 mt-2 mt-sm-0">
                 <Link
                   to={returnTo}
                   className="btn btn-phoenix btn-phoenix-secondary"
@@ -282,7 +285,7 @@ export const AddAppointment = () => {
                 </Link>
                 <button
                   type="submit"
-                  form="appointmentForm" // id del form
+                  form="appointmentForm"
                   className="btn btn-phoenix btn-phoenix-primary"
                   disabled={loading}
                 >
@@ -355,9 +358,9 @@ export const AddAppointment = () => {
                         <h6 className="mb-1 text-uppercase text-muted fw-bold">Sugerencia IA</h6>
                         {suggestion.urgency && (
                           <span className={`badge badge-phoenix ${String(suggestion.urgency).toLowerCase() === "urgent" ? "badge-phoenix-danger" :
-                              String(suggestion.urgency).toLowerCase() === "high" ? "badge-phoenix-warning" :
-                                String(suggestion.urgency).toLowerCase() === "medium" ? "badge-phoenix-info" :
-                                  "badge-phoenix-secondary"
+                            String(suggestion.urgency).toLowerCase() === "high" ? "badge-phoenix-warning" :
+                              String(suggestion.urgency).toLowerCase() === "medium" ? "badge-phoenix-info" :
+                                "badge-phoenix-secondary"
                             }`}>
                             {String(suggestion.urgency).toUpperCase()}
                           </span>

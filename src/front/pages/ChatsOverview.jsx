@@ -159,130 +159,141 @@ export default function ChatsOverview() {
 
 
   return (
-    <AppNavsShell>
-      <div className="container add-page">
+  <AppNavsShell>
+    <div className="container add-page">
 
-        {/* ===== Layout Phoenix: sidebar + placeholder ===== */}
+      <div className="chat d-flex gap-3">
+        {/* ===== SIDEBAR ===== */}
+        <div
+          className={`chat-sidebar p-3 p-xl-1 card ${activeId ? "d-none d-sm-block" : "d-block"}`}
+          style={{ minWidth: 320, maxWidth: 372, width: "100%" }}
+        >
+          {/* Search (desktop) */}
+          <div className="form-icon-container mb-4 d-sm-none d-xl-block">
+            <input
+              placeholder="People, Groups and Messages"
+              className="form-icon-input form-control"
+              type="text"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+            <i className="fa-solid fa-user text-body fs-9 form-icon" />
+          </div>
 
-        <div className="chat d-flex gap-3">
-          {/* ===== SIDEBAR ===== */}
-          <div className="chat-sidebar p-3 p-xl-1 card" style={{ minWidth: 320, maxWidth: 372, width: "100%" }}>
-            {/* (Botón y menú responsive del demo existen, pero no hacen falta funcionalmente) */}
+          {/* Tabs All/Read/Unread */}
+          <div className="mb-5 d-sm-none d-xl-flex nav nav-phoenix-pills" role="tablist">
+            {["all", "read", "unread"].map((k) => (
+              <div className="nav-item" key={k}>
+                <a
+                  role="tab"
+                  data-rr-ui-event-key={k}
+                  id={`react-aria-${k}-tab`}
+                  aria-controls={`react-aria-${k}-tabpane`}
+                  aria-selected={tab === k}
+                  className={`nav-link ${tab === k ? "active" : ""}`}
+                  tabIndex={tab === k ? "0" : "-1"}
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setTab(k);
+                  }}
+                >
+                  {k[0].toUpperCase() + k.slice(1)}
+                </a>
+              </div>
+            ))}
+          </div>
 
-            {/* Search (desktop) */}
-            <div className="form-icon-container mb-4 d-sm-none d-xl-block">
-              <input
-                placeholder="People, Groups and Messages"
-                className="form-icon-input form-control"
-                type="text"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
-              <i className="fa-solid fa-user text-body fs-9 form-icon" />
-            </div>
+          {/* Lista de conversaciones */}
+          <div className="scrollbar">
+            <div className="chat-conversation-tab flex-column nav h-200" role="tablist">
+              {loading && <div className="px-3 py-2 text-muted small">Loading chats…</div>}
+              {err && <div className="px-3 py-2 text-danger small">{err}</div>}
+              {!loading && !err && filtered.length === 0 && (
+                <div className="px-3 py-2 text-muted small">No results</div>
+              )}
 
-            {/* Tabs All/Read/Unread */}
-            <div className="mb-5 d-sm-none d-xl-flex nav nav-phoenix-pills" role="tablist">
-              {["all", "read", "unread"].map((k) => (
-                <div className="nav-item" key={k}>
-                  <a
+              {filtered.map((cf) => {
+                const unread = unreadCountFor(cf.id);
+                const lastAt = fmtTime(cf.last_message_at);
+                const name = cf.title || `Courtfile #${cf.id}`;
+                const snippet =
+                  cf._snippet ||
+                  (cf.court ? `${cf.jurisdiction ?? ""} ${cf.court}`.trim() : cf.jurisdiction || "");
+
+                return (
+                  <Link
+                    key={cf.id}
                     role="tab"
-                    data-rr-ui-event-key={k}
-                    id={`react-aria-${k}-tab`}
-                    aria-controls={`react-aria-${k}-tabpane`}
-                    aria-selected={tab === k}
-                    className={`nav-link ${tab === k ? "active" : ""}`}
-                    tabIndex={tab === k ? "0" : "-1"}
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setTab(k);
+                    className={`d-flex align-items-center justify-content-center p-2 nav-link ${
+                      unread > 0 ? "unread" : "read"
+                    }`}
+                    to={`/chats/${cf.id}`}
+                    state={{
+                      courtfileId: cf.id,
+                      courtfileNumber: cf.case_number,
+                      courtfileTitle: cf.title,
+                      senderRole: role,
+                      returnTo: "/chats",
                     }}
+                    data-discover="true"
+                    title="Open conversation"
                   >
-                    {k[0].toUpperCase() + k.slice(1)}
-                  </a>
-                </div>
-              ))}
-            </div>
+                    {/* Avatar */}
+                    <div className="position-relative me-2 me-sm-0 me-xl-2">
+                      <Avatar name={name} size="40" round={true} />
 
-            {/* Lista de conversaciones */}
-            <div className="scrollbar">
-              <div className="chat-conversation-tab flex-column nav h-200" role="tablist">
-                {loading && <div className="px-3 py-2 text-muted small">Loading chats…</div>}
-                {err && <div className="px-3 py-2 text-danger small">{err}</div>}
-                {!loading && !err && filtered.length === 0 && (
-                  <div className="px-3 py-2 text-muted small">No results</div>
-                )}
+                      {/* puntito en mobile cuando hay unread */}
+                      {unread > 0 && (
+                        <span
+                          className="bg-primary rounded-circle top-0 end-0 position-absolute text-white d-flex flex-center fs-10 fw-semibold d-none d-sm-flex d-xl-none lh-1"
+                          style={{ height: "1rem", width: "1rem" }}
+                        >
+                          {unread > 9 ? "" : unread}
+                        </span>
+                      )}
+                    </div>
 
-                {filtered.map((cf) => {
-                  const unread = unreadCountFor(cf.id);
-                  const lastAt = fmtTime(cf.last_message_at);
-                  const name = cf.title || `Courtfile #${cf.id}`;
-                  const snippet =
-                    cf._snippet ||
-                    (cf.court ? `${cf.jurisdiction ?? ""} ${cf.court}`.trim() : cf.jurisdiction || "");
+                    {/* Texto */}
+                    <div className="flex-1 d-sm-none d-xl-block">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <h5 className="text-body fw-normal name text-nowrap mb-0">{name}</h5>
+                        <p className="fs-10 text-body-tertiary text-opacity-85 mb-0 text-nowrap">{lastAt}</p>
+                      </div>
 
-                  return (
-                    <Link
-                      key={cf.id}
-                      role="tab"
-                      className={`d-flex align-items-center justify-content-center p-2 nav-link ${unread > 0 ? "unread" : "read"
-                        }`}
-                      to={`/chats/${cf.id}`}
-                      state={{
-                        courtfileId: cf.id,
-                        courtfileNumber: cf.case_number,
-                        courtfileTitle: cf.title,
-                        senderRole: role,
-                        returnTo: "/chats",
-                      }}
-                      data-discover="true"
-                      title="Open conversation"
-                    >
-                      {/* Avatar */}
-                      <div className="position-relative me-2 me-sm-0 me-xl-2">
-                        <Avatar name={name} size="40" round={true} />
+                      <div className="d-flex justify-content-between">
+                        <p className="fs-9 mb-0 line-clamp-1 text-body-tertiary text-opacity-85 message">
+                          {snippet || "Open chat"}
+                        </p>
 
-                        {/* puntito en mobile cuando hay unread */}
                         {unread > 0 && (
-                          <span
-                            className="bg-primary rounded-circle top-0 end-0 position-absolute text-white d-flex flex-center fs-10 fw-semibold d-none d-sm-flex d-xl-none lh-1"
-                            style={{ height: "1rem", width: "1rem" }}
-                          >
-                            {unread > 9 ? "" : unread}
+                          <span className="px-1 unread-badge ms-1 badge-phoenix badge-phoenix-primary badge">
+                            {unread > 99 ? "99+" : unread}
                           </span>
                         )}
                       </div>
-
-                      {/* Texto */}
-                      <div className="flex-1 d-sm-none d-xl-block">
-                        <div className="d-flex justify-content-between align-items-center">
-                          <h5 className="text-body fw-normal name text-nowrap mb-0">{name}</h5>
-                          <p className="fs-10 text-body-tertiary text-opacity-85 mb-0 text-nowrap">{lastAt}</p>
-                        </div>
-
-                        <div className="d-flex justify-content-between">
-                          <p className="fs-9 mb-0 line-clamp-1 text-body-tertiary text-opacity-85 message">
-                            {snippet || "Open chat"}
-                          </p>
-
-                          {unread > 0 && (
-                            <span className="px-1 unread-badge ms-1 badge-phoenix badge-phoenix-primary badge">
-                              {unread > 99 ? "99+" : unread}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
+        </div>
 
-          {/* ===== PANEL DERECHO ===== */}
-          <div className="h-200 w-100 d-none d-sm-block">
-            {activeId ? (
+        {/* ===== PANEL DERECHO ===== */}
+        <div className={`h-200 w-100 ${activeId ? "d-block" : "d-none"} d-sm-block`}>
+          {activeId ? (
+            <div className="card h-100 chat-card">
+              {/* Barra superior solo en XS para volver a la lista */}
+              <div className="card-header d-sm-none d-flex align-items-center gap-2">
+                <Link to="/chats" className="btn btn-link p-0 me-2" aria-label="Back to list">
+                  <i className="bi bi-arrow-left fs-5" />
+                </Link>
+                <div className="flex-grow-1 text-truncate">
+                  {activeCase?.title || `Courtfile #${activeId}`}
+                </div>
+              </div>
+
               <ChatOnDemand
                 key={`chat-${activeId}`}
                 embed
@@ -290,21 +301,21 @@ export default function ChatsOverview() {
                 courtfileNumber={activeCase?.case_number}
                 courtfileTitle={activeCase?.title}
                 senderRole={role}
-
               />
-            ) : (
-              // Placeholder si no hay chat seleccionado
-              <div className="h-200 w-100 card">
-                <div className="h-100 d-flex flex-column flex-center text-center card-body">
-                  <img alt="chat" className="d-dark-none" src={conversation} />
-
-                  <h3 className="text-body fw-semibold mb-3 fs-7 fs-sm-6">Click to select a Conversation</h3>
-                </div>
+            </div>
+          ) : (
+            // Placeholder si no hay chat seleccionado (visible en sm+)
+            <div className="h-200 w-100 card">
+              <div className="h-100 d-flex flex-column flex-center text-center card-body">
+                <img alt="chat" className="d-dark-none" src={conversation} />
+                <h3 className="text-body fw-semibold mb-3 fs-7 fs-sm-6">Click to select a Conversation</h3>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
-    </AppNavsShell>
-  );
+    </div>
+  </AppNavsShell>
+);
+
 }
