@@ -270,11 +270,13 @@ export default function DashboardCalendarWidget({
 
   return (
     <div className="card border-0 lxq-cal-widget">
-      <div className="card-body">
-        {/* Mini topbar (compacta para dashboard) */}
-        <div className="row g-0 align-items-center mb-3">
+      {/* XS compacto, SM+ normal */}
+      <div className="card-body p-2 p-sm-3">
+
+        {/* Mini topbar */}
+        <div className="row g-1 g-md-0 align-items-center mb-2 mb-md-3">
           <div className="col-12 col-md-6">
-            <h4 className="mb-0 text-body-emphasis fw-bold fs-6">
+            <h4 className="mb-0 text-body-emphasis fw-bold fs-8 fs-md-6">
               <span className="calendar-day d-block d-md-inline mb-1">{dayName}</span>
               <span className="px-3 fw-thin text-body-quaternary d-none d-md-inline">|</span>
               <span className="d-inline-block">{' '}{dayStamp}</span>
@@ -282,31 +284,33 @@ export default function DashboardCalendarWidget({
           </div>
 
           {!isClient && (
-            <div className="col-12 col-md-6 d-flex justify-content-end gap-2 mt-2 mt-md-0">
-              <p className="fs-9">Add appointments and deadlines in just one click</p>
+            <div className="col-12 col-md-6 d-flex justify-content-end mt-1 mt-md-0">
+              <p className="fs-9 mb-0">Add appointments and deadlines in just one click</p>
             </div>
           )}
         </div>
 
-        {/* Sub-toolbar "phoenix-like" compacta */}
-        <div className="mx-n3 px-3 border-y border-translucent">
-          <div className="row gy-2 gx-0 justify-content-between py-2 align-items-center">
+        {/* Sub-toolbar */}
+        {/* En XS achicamos padding lateral y vertical; en SM+ vuelve a la normalidad */}
+        <div className="mx-n2 mx-sm-n3 px-2 px-sm-3 border-y border-translucent">
+          <div className="row gy-1 gy-md-2 gx-0 justify-content-between py-1 py-sm-2 align-items-center">
+
             {/* Left: Today */}
             <div className="col-6 col-md-auto d-flex align-items-center">
-              <button type="button" className="btn btn-phoenix-primary btn-sm px-4" onClick={goToday}>
+              <button type="button" className="btn btn-phoenix-primary btn-sm px-3 px-sm-4" onClick={goToday}>
                 Today
               </button>
             </div>
 
             {/* Center: prev | Month YYYY | next */}
             <div className="col-12 col-md-auto d-flex align-items-center justify-content-center">
-              <button type="button" className="btn btn-icon" onClick={goPrev} aria-label="Previous">
+              <button type="button" className="btn btn-icon btn-sm" onClick={goPrev} aria-label="Previous">
                 <i className="fa-solid fa-chevron-left" />
               </button>
 
-              <h3 className="month-title mb-0 px-2 fw-bold fs-6">{monthTitle}</h3>
+              <h3 className="month-title mb-0 px-2 fw-bold fs-7 fs-md-5">{monthTitle}</h3>
 
-              <button type="button" className="btn btn-icon" onClick={goNext} aria-label="Next">
+              <button type="button" className="btn btn-icon btn-sm" onClick={goNext} aria-label="Next">
                 <i className="fa-solid fa-chevron-right" />
               </button>
             </div>
@@ -333,53 +337,51 @@ export default function DashboardCalendarWidget({
           </div>
         </div>
 
-
         {/* Estado */}
         {loading && <div className="small text-muted mb-2">Cargando eventos…</div>}
-        {err && !loading && <div className="alert alert-warning py-2">{err}</div>}
+        {err && !loading && <div className="alert alert-warning py-2 my-2 my-sm-3">{err}</div>}
 
-        {/* Calendar (compacto) */}
-        <FullCalendar
-          ref={calRef}
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-          initialView={viewName}
-          headerToolbar={false}
-          height={height}
-          contentHeight={contentHeight}
-          firstDay={1}
-          nowIndicator={true}
-          editable={false}
-          selectable={false}
-          navLinks={false}
-          dayHeaderFormat={{ weekday: "short" }}
-          timeZone="local"
-          events={fcEvents}
-          eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
-          datesSet={(arg) => setCurrentDate(arg.start ?? new Date())}
-          eventDisplay="list-item"
-          eventClick={handleEventClick}
-          eventClassNames={(arg) => (arg.event.className ? [arg.event.className] : [])}
-          eventDidMount={(info) => {
-            const ep = info.event.extendedProps || {};
-            const cf = ep.courtfileNumber ? ` · #${ep.courtfileNumber}` : "";
-            info.el.title = `${info.event.title} (${ep.type || "event"})${cf}`;
-          }}
-         dateClick={isClient ? undefined : handleDateClick}
+        {/* Calendar: en XS reducimos tipografía/line-height del wrapper */}
+        <div className="small lh-sm lh-sm">
+          <FullCalendar
+            ref={calRef}
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            initialView={viewName}
+            headerToolbar={false}
+            height={height}
+            contentHeight={contentHeight}
+            firstDay={1}
+            nowIndicator={true}
+            editable={false}
+            selectable={false}
+            navLinks={false}
+            dayHeaderFormat={{ weekday: "short" }}
+            timeZone="local"
+            events={fcEvents}
+            eventTimeFormat={{ hour: "2-digit", minute: "2-digit", hour12: false }}
+            datesSet={(arg) => setCurrentDate(arg.start ?? new Date())}
+            eventDisplay="list-item"
+            eventClick={handleEventClick}
+            eventClassNames={(arg) => (arg.event.className ? [arg.event.className] : [])}
+            eventDidMount={(info) => {
+              const ep = info.event.extendedProps || {};
+              const cf = ep.courtfileNumber ? ` · #${ep.courtfileNumber}` : "";
+              info.el.title = `${info.event.title} (${ep.type || "event"})${cf}`;
+            }}
+            dateClick={isClient ? undefined : handleDateClick}
+            fixedWeekCount={false}
+            showNonCurrentDates={false}
+            dayMaxEventRows={3}
+          />
+        </div>
 
-          /* 🔽 nuevo */
-          fixedWeekCount={false}
-          showNonCurrentDates={false}
-          dayMaxEventRows={3}
-        />
-
-        {/* Modal detalle */}
+        {/* Modals */}
         <CalendarModal
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           event={selectedEvent}
           onDelete={handleDeleteEvent}
         />
-        {/* Modal quick create */}
         <CalendarModalAdd
           isOpen={showNewPicker}
           onClose={() => setShowNewPicker(false)}
@@ -388,5 +390,6 @@ export default function DashboardCalendarWidget({
       </div>
     </div>
   );
+
 }
 

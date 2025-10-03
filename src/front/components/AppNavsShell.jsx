@@ -20,9 +20,9 @@ export default function AppNavsShell({ children }) {
   return (
     <>
       <NavbarLogin />
-      <div className="main d-flex" id="top">
+      <div >
         <SidebarLogin />
-        <div className="content-wrapper d-flex flex-column flex-grow-1" style={{ minHeight: "100dvh" }}>
+        <div style={{ minHeight: "100dvh" }}>
           <main className="content flex-grow-1">{children}</main>
           <Footer />
         </div>

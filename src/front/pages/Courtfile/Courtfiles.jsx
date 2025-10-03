@@ -176,18 +176,23 @@ export const Courtfiles = () => {
           </ol>
         </nav>
 
-        <div className="table-responsive table-wrap">
+        <div className="">
 
           {/* ===== Toolbar ===== */}
-          <div>
+          <div className="toolbar-courtfiles">
             <div className="d-flex gap-3 mb-2">
               <h2 className="mb-5">Courtfiles</h2>
             </div>
 
-            <div className="d-flex align-items-center justify-content-between gap-2 flex-nowrap ">
-              {/* Izquierda: search + chips */}
-              <div className="d-flex align-items-center gap-2 flex-nowrap w-100" style={{ minWidth: 0 }}>
-                <div className="search-box" style={{ width: "clamp(260px, 40vw, 420px)" }}>
+            {/* Fila 2: izq = search + filtros | der = Add */}
+            <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap flex-sm-nowrap">
+              {/* Izquierda */}
+              <div
+                className="d-flex align-items-center gap-2 flex-column flex-sm-row w-100"
+                style={{ minWidth: 0 }}
+              >
+                {/* Search (igual estilo) */}
+                <div className="search-box w-100 w-sm-auto" style={{ width: "clamp(260px, 40vw, 420px)" }}>
                   <i className="bi bi-search search-icon"></i>
                   <input
                     type="search"
@@ -203,21 +208,24 @@ export const Courtfiles = () => {
                   )}
                 </div>
 
-                <div className="d-flex align-items-center gap-2 flex-nowrap flex-shrink-0">
+                {/* Botoncitos de estado */}
+                <div className="d-flex align-items-center gap-2 flex-nowrap flex-shrink-0 w-100 w-sm-auto justify-content-between justify-content-sm-start">
                   <button
-                    className={`btn btn-sm ${status === "all" ? "btn-dark" : "btn-outline-secondary"}`}
+                    className={`btn btn-sm ${status === "all" ? "btn-dark" : "px-3 text-body text-decoration-none btn btn-link"}`}
                     onClick={() => setStatus("all")}
                   >
                     All
                   </button>
+
                   <button
-                    className={`btn btn-sm ${status === "active" ? "btn-dark" : "btn-outline-secondary"}`}
+                    className={`btn btn-sm ${status === "active" ? "btn-dark" : "px-3 text-body text-decoration-none btn btn-link"}`}
                     onClick={() => setStatus("active")}
                   >
                     Active
                   </button>
+
                   <button
-                    className={`btn btn-sm ${status === "inactive" ? "btn-dark" : "btn-outline-secondary"}`}
+                    className={`btn btn-sm ${status === "inactive" ? "btn-dark" : "px-3 text-body text-decoration-none btn btn-link"}`}
                     onClick={() => setStatus("inactive")}
                   >
                     Inactive
@@ -225,22 +233,20 @@ export const Courtfiles = () => {
                 </div>
               </div>
 
-              {/* Derecha: botón nuevo expediente (oculto para clients) */}
-              {!isClient && (
-                <div className="ms-auto flex-shrink-0">
-                  <Link
-                    to="/courtfiles/addcourtfile"
-                    state={{ linkToLawyer: true, returnTo: "/courtfiles" }}
-                    className="btn btn-phoenix-primary"
-                  >
-                    + New Courtfile
-                  </Link>
-                </div>
-              )}
+              {/* Derecha */}
+              <div className="ms-auto flex-shrink-0 w-100 w-sm-auto">
+                <Link
+                  to="/courtfiles/addcourtfile"
+                  state={{ linkToLawyer: true, returnTo: "/DashboardLawyer" }}
+                  className="btn btn-phoenix btn-phoenix-primary w-100 w-sm-auto"
+                >
+                  + New Courtfile
+                </Link>
+              </div>
             </div>
           </div>
 
-          <table className="table table-modern align-middle mb-0 pt-1">
+          <table className="table table-modern align-middle mb-0 pt-1 table-courtfiles">
             <thead>
               <tr>
                 <th className="text-center" role="button" onClick={() => requestSort("id")}>

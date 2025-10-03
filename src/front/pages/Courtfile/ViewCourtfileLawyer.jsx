@@ -802,66 +802,65 @@ export const ViewCourtfileLawyer = () => {
         </nav>
 
         {/* ===== Title + Actions ===== */}
-        <div className="d-flex justify-content-between align-items-center mb-3 py-3">
-          {/* Título */}
-          <h2 className="mb-0 fw-bold">Courtfile details</h2>
+<div className="d-flex justify-content-between align-items-center mb-3 py-3 flex-wrap gap-2">
+  {/* Título */}
+  <h2 className="mb-0 fw-bold">Courtfile details</h2>
 
-          {/* Botones */}
-          <div className="position-relative d-flex gap-2">
-            <button
-              className="px-3 text-body text-decoration-none btn btn-link position-relative"
-              onClick={(e) => onOpenChatClick(e)}
-              title="Open chat"
-            >
-              <span className="position-relative">
-                <i className="bi bi-chat-dots me-2" />
-                {unreadByCase.get(Number(courtfileId))?.hasUnread && (
-                  <span
-                    className="position-absolute bg-danger border border-light rounded-circle"
-                    style={{
-                      top: "-2px",
-                      right: "2px",
-                      width: "10px",
-                      height: "10px"
-                    }}
-                  />
-                )}
-              </span>
-              Chat
-            </button>
+  {/* Botones */}
+  <div className="d-flex flex-wrap gap-2">
+    <button
+      className="px-3 text-body text-decoration-none btn btn-link position-relative"
+      onClick={(e) => onOpenChatClick(e)}
+      title="Open chat"
+    >
+      <i className="bi bi-chat-dots me-1" />
+      <span className="d-none d-sm-inline">Chat</span> {/* texto solo en sm+ */}
+      {unreadByCase.get(Number(courtfileId))?.hasUnread && (
+        <span
+          className="position-absolute bg-danger border border-light rounded-circle"
+          style={{
+            top: "2px",
+            right: "6px",
+            width: "10px",
+            height: "10px"
+          }}
+        />
+      )}
+    </button>
 
-            <Link
-              to="/lawyers/link-or-invite"
-              state={{
-                courtfileId: courtfile.id,
-                courtfileNumber: courtfile.case_number,
-                courtfileTitle: courtfile.title,
-                returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
-              }}
-              className="px-3 text-body text-decoration-none btn btn-link"
-            >
-              <i className="bi bi-person-plus me-1" />
-              Add lawyer
-            </Link>
+    <Link
+      to="/lawyers/link-or-invite"
+      state={{
+        courtfileId: courtfile.id,
+        courtfileNumber: courtfile.case_number,
+        courtfileTitle: courtfile.title,
+        returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+      }}
+      className="px-3 text-body text-decoration-none btn btn-link"
+    >
+      <i className="bi bi-person-plus me-1" />
+      <span className="d-none d-sm-inline">Add lawyer</span>
+    </Link>
 
-            <Link
-              to={`/courtfiles/${courtfile.id}`}
-              state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
-              className="px-3 text-body text-decoration-none btn btn-link"
-            >
-              <i className="bi bi-pencil me-1" />
-              Edit
-            </Link>
+    <Link
+      to={`/courtfiles/${courtfile.id}`}
+      state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+      className="px-3 text-body text-decoration-none btn btn-link"
+    >
+      <i className="bi bi-pencil me-1" />
+      <span className="d-none d-sm-inline">Edit</span>
+    </Link>
 
-            <button
-              className="btn btn-phoenix-danger"
-              onClick={handleLeaveCase}
-              disabled={!myRelationId || leaving}
-            >
-              {leaving ? "Leaving…" : "Leave case"}
-            </button>
-          </div>
-        </div>
+    <button
+      className="btn btn-phoenix-danger"
+      onClick={handleLeaveCase}
+      disabled={!myRelationId || leaving}
+    >
+      <i className="bi bi-box-arrow-right me-1" />
+      <span className="d-none d-sm-inline">{leaving ? "Leaving…" : "Leave case"}</span>
+    </button>
+  </div>
+</div>
 
 
         {/* ===== Layout: main + aside ===== */}
@@ -923,12 +922,41 @@ export const ViewCourtfileLawyer = () => {
                   </div>
                 </div>
 
-                {/* Description ocupando todo */}
+                {/* Description */}
                 <div className="mt-4">
                   <div className="text-uppercase text-muted fw-bold small section-title mb-2">
                     Description
                   </div>
-                  <div className="p-3 rounded bg-light">
+
+                  {/* Mobile: preview + botón para desplegar */}
+                  <div className="d-md-none">
+                    {/* preview truncado */}
+                    <div className="p-3 rounded bg-light desc-preview">
+                      {courtfile.description || "—"}
+                    </div>
+
+                    {/* contenido completo, oculto por defecto */}
+                    <div className="collapse mt-2" id="descCollapse">
+                      <div className="p-3 rounded bg-light">
+                        {courtfile.description || "—"}
+                      </div>
+                    </div>
+
+                    <button
+                      className="btn btn-sm btn-outline-secondary mt-2 collapsed"
+                      type="button"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#descCollapse"
+                      aria-expanded="false"
+                      aria-controls="descCollapse"
+                    >
+                      <span className="label-more">Show more</span>
+                      <span className="label-less">Show less</span>
+                    </button>
+                  </div>
+
+                  {/* Desktop: siempre expandido */}
+                  <div className="d-none d-md-block p-3 rounded bg-light">
                     {courtfile.description || "—"}
                   </div>
                 </div>
@@ -1082,7 +1110,7 @@ export const ViewCourtfileLawyer = () => {
                     {caseDeadlines.map((dl) => (
                       <tr key={dl.relation_id}
                         className="table-row-clickable"
-                       onClick={(e) => handleRowClick(e, 'deadline', dl)}>
+                        onClick={(e) => handleRowClick(e, 'deadline', dl)}>
                         <td className="text-start ps-2">{dl.deadline_id}</td>
                         <td>{dl.deadline_type}</td>
                         <td>{dl.deadline_date}</td>
@@ -1353,7 +1381,7 @@ export const ViewCourtfileLawyer = () => {
                     {caseClients.map((cl) => (
                       <tr key={cl.relation_id}
                         className="table-row-clickable"
-                         onClick={(e) => handleRowClick(e, 'client', cl)}>
+                        onClick={(e) => handleRowClick(e, 'client', cl)}>
                         <td className="text-start ps-2">{cl.client_id}</td>
                         <td>{cl.client_name || "—"}</td>
                         <td>{cl.client_email || "—"}</td>

@@ -29,10 +29,10 @@ export const EditDeadline = () => {
   const initialLinked =
     location.state?.courtfileId
       ? {
-          id: location.state.courtfileId,
-          number: location.state.courtfileNumber,
-          title: location.state.courtfileTitle,
-        }
+        id: location.state.courtfileId,
+        number: location.state.courtfileNumber,
+        title: location.state.courtfileTitle,
+      }
       : null;
 
   const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
@@ -195,7 +195,7 @@ export const EditDeadline = () => {
     <AppNavsShell>
       <div className="container add-page">
         <div className="row">
-          <div className="col-lg-9">
+          <div className="col-12 col-md-8">
             {/* Breadcrumb */}
             <nav aria-label="breadcrumb" className="mb-4">
               <ol className="breadcrumb small mb-0">
@@ -220,20 +220,24 @@ export const EditDeadline = () => {
               </ol>
             </nav>
 
+
             {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h1 className="display-5 fw-bold mb-0">Edit Deadline</h1>
-              <div className="d-flex gap-2">
+            <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start mb-4">
+              {/* Título */}             
+              <h1 className="display-5 fw-bold mb-2 mb-md-0">Edit Deadline</h1>
+            
+              {/* Botones */}
+              <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
                 <Link
                   to={returnTo}
-                  className="btn btn-phoenix btn-phoenix-secondary"
+                  className="btn btn-phoenix btn-phoenix-secondary fs-10 fs-md-9"
                 >
                   Cancel
                 </Link>
                 <button
                   type="submit"
                   form="deadlineForm"
-                  className="btn btn-phoenix btn-phoenix-primary"
+                  className="btn btn-phoenix btn-phoenix-primary fs-10 fs-md-9"
                   disabled={loading}
                 >
                   {loading ? (
@@ -251,19 +255,20 @@ export const EditDeadline = () => {
               </div>
             </div>
 
+
             {linkedCourtfile && (
-              <span className="badge badge-phoenix-secondary mb-3">
+              <span
+                className="
+                  badge badge-phoenix-secondary mb-3
+                  d-block d-sm-inline      /* bloque (ancho 100%) en XS, inline en SM+ */
+                  w-100 w-sm-auto
+                  text-wrap text-break     /* permitir saltos de línea y cortar palabras largas */
+                "
+              >
                 Related to Courtfile {linkedCourtfile.number || "—"}
                 {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
               </span>
             )}
-
-            {error && (
-              <div className="alert alert-danger d-flex align-items-center">
-                <i className="bi bi-exclamation-triangle me-2" /> {error}
-              </div>
-            )}
-
             {/* Form */}
             <form id="deadlineForm" onSubmit={handleSubmit}>
               {/* Deadline Type */}

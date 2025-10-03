@@ -14,7 +14,7 @@ export default function PrivateRoute() {
   if (!token) {
     return (
       <Navigate
-        to="/login"
+        to="/sign-in"
         replace
         state={{ returnTo: location.pathname + location.search }}
       />
@@ -62,7 +62,7 @@ export default function PrivateRoute() {
   if (invalid == true) {
     return (
       <Navigate
-        to="/login"
+        to="/sign-in"
         replace
         state={{ returnTo: location.pathname + location.search }}
       />

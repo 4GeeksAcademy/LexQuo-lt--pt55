@@ -20,7 +20,7 @@ const NavbarLogin = () => {
       ? (id ? `/lawyers/view/${id}` : "/lawyers/view")
       : role === "client"
         ? (id ? `/clients/view/${id}` : "/clients/view")
-        : "/login";
+        : "/sign-in";
 
   const passwordPath =
     role === "lawyer"
@@ -38,7 +38,7 @@ const NavbarLogin = () => {
 
   return (
     <nav className="navbar navbar-expand navbar-dark bg-dark fixed-top py-2">
-      <div className="container-fluid">
+      <div className="container-fluid p-0 px-md-3">
         {/* Izquierda: toggler + brand */}
         <div className="d-flex align-items-center">
           <button
@@ -71,6 +71,7 @@ const NavbarLogin = () => {
               id="userDropdown"
               role="button"
               data-bs-toggle="dropdown"
+              data-bs-display="static"
               aria-expanded="false"
             >
               <Avatar

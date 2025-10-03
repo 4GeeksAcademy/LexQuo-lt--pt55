@@ -339,292 +339,292 @@ export const ViewDocument = () => {
   const createdAt = documentData.created_at || documentData.create_at;
 
   return (
-    <AppNavsShell>
-      <div className="container add-page">
-        {/* Header */}
-        <div className="d-flex justify-content-between align-items-end mb-4">
+  <AppNavsShell>
+    <div className="container add-page">
+      {/* Header */}
+      <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-end mb-4">
 
-          <div>
-            <nav aria-label="breadcrumb" className="mb-2">
-              <ol className="breadcrumb">
-                <li className="breadcrumb-item">
-                  <Link to={returnTo || "/documents"}>Documents</Link>
-                </li>
-                <li className="breadcrumb-item active" aria-current="page">
-                  Details
-                </li>
-              </ol>
-            </nav>
-            <h1 className="h2 fw-bolder mb-0 line-clamp-1">
-              {documentData.name || "Document"}
-            </h1>
-          </div>
-
-          
-          {["lawyer", "admin_user"].includes((store?.me?.role || "").toLowerCase()) && (
-            <div className="d-flex gap-2">
-              <Link
-                to={`/documents/${documentData.id}`}
-                state={{ returnTo }}
-                className="btn btn-phoenix-secondary btn-sm"
-              >
-                <i className="bi bi-pencil" /> Edit
-              </Link>
-              <button className="btn btn-phoenix-danger btn-sm" onClick={handleDelete}>
-                <i className="bi bi-trash" /> Delete
-              </button>
-            </div>
-          )}
+        <div>
+          <nav aria-label="breadcrumb" className="mb-2">
+            <ol className="breadcrumb">
+              <li className="breadcrumb-item">
+                <Link to={returnTo || "/documents"}>Documents</Link>
+              </li>
+              <li className="breadcrumb-item active" aria-current="page">
+                Details
+              </li>
+            </ol>
+          </nav>
+          <h1 className="h2 fw-bolder mb-0 line-clamp-1">
+            {documentData.name || "Document"}
+          </h1>
         </div>
 
-        {/* Row con las dos cards */}
-        <div className="row g-4">
-          {/* Card de información del documento */}
-          <div className="col-6">
-            <div className="card mb-4">
-              <div className="card-body">
-                {/* Download */}
-                <div className="d-flex justify-content-between align-items-center py-2">
-                  <span className="fw-semibold text-muted">Download</span>
-                  <button
-                    onClick={() => handleDownload(documentData)}
-                    className="btn btn-phoenix btn-phoenix-success"
-                    title={`Download ${documentData.name || ""}`}
-                  >
-                    <i className="bi bi-download" />{" "}
-                    {documentData.original_filename || documentData.name || "File"}
-                  </button>
-                </div>
-                <hr className="my-2" />
+        {["lawyer", "admin_user"].includes((store?.me?.role || "").toLowerCase()) && (
+          <div className="d-flex gap-2 mt-2 mt-sm-0 align-self-end align-self-sm-center">
+            <Link
+              to={`/documents/${documentData.id}`}
+              state={{ returnTo }}
+              className="btn btn-phoenix-secondary btn-sm"
+            >
+              <i className="bi bi-pencil" /> Edit
+            </Link>
+            <button className="btn btn-phoenix-danger btn-sm" onClick={handleDelete}>
+              <i className="bi bi-trash" /> Delete
+            </button>
+          </div>
+        )}
+      </div>
 
-                {/* Document Date */}
-                <div className="d-flex justify-content-between align-items-center py-2">
-                  <span className="fw-semibold text-muted">Document Date</span>
-                  <span className="fw-bold">
-                    {documentData.document_date ? dateYMDToDMY(documentData.document_date) : "—"}
+      {/* Row con las dos cards */}
+      <div className="row g-4">
+        {/* Card de información del documento */}
+        <div className="col-12 col-lg-6">
+          <div className="card mb-4">
+            <div className="card-body">
+              {/* Download */}
+              <div className="d-flex justify-content-between align-items-center py-2">
+                <span className="fw-semibold text-muted">Download</span>
+                <button
+                  onClick={() => handleDownload(documentData)}
+                  className="btn btn-phoenix btn-phoenix-success"
+                  title={`Download ${documentData.name || ""}`}
+                >
+                  <i className="bi bi-download" />{" "}
+                  {documentData.original_filename || documentData.name || "File"}
+                </button>
+              </div>
+              <hr className="my-2" />
+
+              {/* Document Date */}
+              <div className="d-flex justify-content-between align-items-center py-2">
+                <span className="fw-semibold text-muted">Document Date</span>
+                <span className="fw-bold">
+                  {documentData.document_date ? dateYMDToDMY(documentData.document_date) : "—"}
+                </span>
+              </div>
+
+              <hr className="my-2" />
+
+              {/* Category */}
+              <div className="d-flex justify-content-between align-items-center py-2">
+                <span className="fw-semibold text-muted">Category</span>
+                {documentData.category ? (
+                  <span className="badge badge-phoenix badge-phoenix-secondary">
+                    {documentData.category}
                   </span>
-                </div>
+                ) : (
+                  <span className="text-body">—</span>
+                )}
+              </div>
+              <hr className="my-2" />
 
-                <hr className="my-2" />
+              {/* Created At */}
+              <div className="d-flex justify-content-between align-items-center py-2">
+                <span className="fw-semibold text-muted">Created At</span>
+                <span className="fw-bold">{safeDateTime(createdAt) || "—"}</span>
+              </div>
+              <hr className="my-2" />
 
-                {/* Category */}
-                <div className="d-flex justify-content-between align-items-center py-2">
-                  <span className="fw-semibold text-muted">Category</span>
-                  {documentData.category ? (
-                    <span className="badge badge-phoenix badge-phoenix-secondary">
-                      {documentData.category}
-                    </span>
+              {/* Case File */}
+              <div className="d-flex justify-content-between align-items-center py-2">
+                <span className="fw-semibold text-muted">Case File</span>
+                {linkedCourtfile ? (
+                  <Link
+                    to={`/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`}
+                    className="badge badge-phoenix badge-phoenix-secondary fs-8"
+                    title={linkedCourtfile.title || ""}
+                    state={{ returnTo: `/documents/view/${documentData.id}` }}
+                  >
+                    {linkedCourtfile.number || `#${linkedCourtfile.id}`}
+                  </Link>
+                ) : (
+                  <span className="text-body-secondary">—</span>
+                )}
+              </div>
+
+              {/* Description */}
+              <hr className="my-2" />
+              <div className="py-2">
+                <span className="fw-semibold text-muted d-block mb-2">Description</span>
+                <div className="border rounded bg-light p-3">
+                  {documentData.description && documentData.description.trim() ? (
+                    <p className="mb-0" style={{ whiteSpace: "pre-wrap" }}>
+                      {documentData.description}
+                    </p>
                   ) : (
-                    <span className="text-body">—</span>
+                    <span className="text-body-secondary">No description provided</span>
                   )}
-                </div>
-                <hr className="my-2" />
-
-                {/* Created At */}
-                <div className="d-flex justify-content-between align-items-center py-2">
-                  <span className="fw-semibold text-muted">Created At</span>
-                  <span className="fw-bold">{safeDateTime(createdAt) || "—"}</span>
-                </div>
-                <hr className="my-2" />
-
-                {/* Case File */}
-                <div className="d-flex justify-content-between align-items-center py-2">
-                  <span className="fw-semibold text-muted">Case File</span>
-                  {linkedCourtfile ? (
-                    <Link
-                      to={`/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`}
-                      className="badge badge-phoenix badge-phoenix-secondary fs-8"
-                      title={linkedCourtfile.title || ""}
-                      state={{ returnTo: `/documents/view/${documentData.id}` }}
-                    >
-                      {linkedCourtfile.number || `#${linkedCourtfile.id}`}
-                    </Link>
-                  ) : (
-                    <span className="text-body-secondary">—</span>
-                  )}
-                </div>
-
-                {/* Description */}
-                <hr className="my-2" />
-                <div className="py-2">
-                  <span className="fw-semibold text-muted d-block mb-2">Description</span>
-                  <div className="border rounded bg-light p-3">
-                    {documentData.description && documentData.description.trim() ? (
-                      <p className="mb-0" style={{ whiteSpace: "pre-wrap" }}>
-                        {documentData.description}
-                      </p>
-                    ) : (
-                      <span className="text-body-secondary">No description provided</span>
-                    )}
-                  </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* ======== ASIDE: AI Suggestions para este documento ======== */}
-          <div className="col-6">
-            <div className="card">
-              <div className="card-body">
-                {/* Header igual a Payments / Courtfile AI */}
-                <div className="d-flex align-items-center justify-content-between">
-                  <h2 className="h3 mb-0 fw-bold">AI Suggestions</h2>
-                  <button
-                    className="btn btn-phoenix-secondary ms-2"
-                    onClick={runDocumentAnalysis}
-                    disabled={aiLoading}
-                  >
-                    {aiLoading ? (
-                      <span className="spinner-border spinner-border-sm" role="status" />
-                    ) : (
-                      <>
-                        <i className="bi bi-arrow-repeat me-1"></i> Reload
-                      </>
-                    )}
-                  </button>
+        {/* ======== ASIDE: AI Suggestions para este documento ======== */}
+        <div className="col-12 col-lg-6">
+          <div className="card">
+            <div className="card-body">
+              {/* Header igual a Payments / Courtfile AI */}
+              <div className="d-flex align-items-center justify-content-between">
+                <h2 className="h3 mb-0 fw-bold">AI Suggestions</h2>
+                <button
+                  className="btn btn-phoenix-secondary ms-2"
+                  onClick={runDocumentAnalysis}
+                  disabled={aiLoading}
+                >
+                  {aiLoading ? (
+                    <span className="spinner-border spinner-border-sm" role="status" />
+                  ) : (
+                    <>
+                      <i className="bi bi-arrow-repeat me-1"></i> Reload
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="border-top my-3"></div>
+
+              {/* Contenido */}
+              {aiError && <div className="alert alert-danger mb-0">{aiError}</div>}
+
+              {!aiError && aiLoading && (
+                <div className="text-muted d-flex align-items-center">
+                  <span className="spinner-border spinner-border-sm me-2" />
+                  Analizando el contenido del documento…
                 </div>
+              )}
 
-                <div className="border-top my-3"></div>
+              {!aiLoading && !aiError && (!aiSuggestions || aiSuggestions.length === 0) && (
+                <div className="alert text-secondary bg-transparent border-0 mt-2">Sin sugerencias por ahora.</div>
+              )}
 
-                {/* Contenido */}
-                {aiError && <div className="alert alert-danger mb-0">{aiError}</div>}
+              {!aiLoading && !aiError && Array.isArray(aiSuggestions) && aiSuggestions.length > 0 && (
+                <div className="list-group list-group-flush">
+                  {aiSuggestions.map((sug, idx) => {
+                    const urg = String(sug.urgency || "medium").toLowerCase();
+                    const urgClass =
+                      urg === "urgent" ? "badge-phoenix-danger" :
+                      urg === "high" ? "badge-phoenix-warning" :
+                      urg === "medium" ? "badge-phoenix-info" :
+                      "badge-phoenix-secondary";
 
-                {!aiError && aiLoading && (
-                  <div className="text-muted d-flex align-items-center">
-                    <span className="spinner-border spinner-border-sm me-2" />
-                    Analizando el contenido del documento…
-                  </div>
-                )}
-
-                {!aiLoading && !aiError && (!aiSuggestions || aiSuggestions.length === 0) && (
-                  <div className="alert text-secondary bg-transparent border-0 mt-2">Sin sugerencias por ahora.</div>
-                )}
-
-                {!aiLoading && !aiError && Array.isArray(aiSuggestions) && aiSuggestions.length > 0 && (
-                  <div className="list-group list-group-flush">
-                    {aiSuggestions.map((sug, idx) => {
-                      const urg = String(sug.urgency || "medium").toLowerCase();
-                      const urgClass =
-                        urg === "urgent" ? "badge-phoenix-danger" :
-                          urg === "high" ? "badge-phoenix-warning" :
-                            urg === "medium" ? "badge-phoenix-info" :
-                              "badge-phoenix-secondary";
-
-                      return (
-                        <div key={sug.id || idx} className="list-group-item">
-                          {/* Header item: título + urgencia + kebab */}
-                          <div className="d-flex justify-content-between align-items-start">
-                            <div>
-                              <h5 className="mb-1 fw-semibold">{sug.title || "Sugerencia"}</h5>
-                              <span className={`fs-10 badge-phoenix badge ${urgClass}`}>
-                                {String(sug.urgency || "MEDIUM").toUpperCase()}
-                              </span>
-                            </div>
-
-                            <div className="dropdown">
-                              <button
-                                className="btn btn-sm btn-link text-body-tertiary p-0"
-                                type="button"
-                                data-bs-toggle="dropdown"
-                                aria-expanded="false"
-                              >
-                                <i className="bi bi-three-dots fs-8"></i>
-                              </button>
-                              <ul className="dropdown-menu dropdown-menu-end shadow-sm">
-                                {/* Crear Deadline desde sugerencia */}
-                                <li>
-                                  <Link
-                                    className="dropdown-item"
-                                    to="/deadlines/addDeadline"
-                                    state={{
-                                      courtfileId: linkedCourtfile?.id || cfDetails?.id || null,
-                                      courtfileNumber: linkedCourtfile?.number || cfDetails?.case_number || null,
-                                      courtfileTitle: linkedCourtfile?.title || null,
-                                      prefill: { type: "Other", description: sug.title || "" },
-                                      suggestion: sug,
-                                      returnTo: `/documents/view/${documentData.id}`,
-                                    }}
-                                  >
-                                    <i className="bi bi-calendar2-plus me-2"></i> Deadline
-                                  </Link>
-                                </li>
-
-                                {/* Crear Appointment desde sugerencia */}
-                                <li>
-                                  <Link
-                                    className="dropdown-item"
-                                    to="/appointments/addAppointment"
-                                    state={{
-                                      courtfileId: linkedCourtfile?.id || cfDetails?.id || null,
-                                      courtfileNumber: linkedCourtfile?.number || cfDetails?.case_number || null,
-                                      courtfileTitle: linkedCourtfile?.title || null,
-                                      prefill: { title: sug.title || "", details: sug.reasoning || "" },
-                                      suggestion: sug,
-                                      returnTo: `/documents/view/${documentData.id}`,
-                                    }}
-                                  >
-                                    <i className="bi bi-clock me-2"></i> Appointment
-                                  </Link>
-                                </li>
-
-                                {/* Crear Document (nota) desde sugerencia */}
-                                <li>
-                                  <Link
-                                    className="dropdown-item"
-                                    to="/documents/addDocument"
-                                    state={{
-                                      courtfileId: linkedCourtfile?.id || cfDetails?.id || null,
-                                      courtfileNumber: linkedCourtfile?.number || cfDetails?.case_number || null,
-                                      courtfileTitle: linkedCourtfile?.title || null,
-                                      prefill: { title: sug.title || "", content: sug.reasoning || "" },
-                                      suggestion: sug,
-                                      returnTo: `/documents/view/${documentData.id}`,
-                                    }}
-                                  >
-                                    <i className="bi bi-file-earmark-plus me-2"></i> Document
-                                  </Link>
-                                </li>
-
-                                {/* Archivar si la sugerencia viene persistida con id */}
-                                {sug.id && (
-                                  <>
-                                    <li><hr className="dropdown-divider" /></li>
-                                    <li>
-                                      <button
-                                        className="dropdown-item text-danger"
-                                        onClick={() => handleArchiveSuggestion(sug.id)}
-                                      >
-                                        <i className="bi bi-archive me-2"></i> Archivar
-                                      </button>
-                                    </li>
-                                  </>
-                                )}
-                              </ul>
-                            </div>
+                    return (
+                      <div key={sug.id || idx} className="list-group-item">
+                        {/* Header item: título + urgencia + kebab */}
+                        <div className="d-flex justify-content-between align-items-start">
+                          <div>
+                            <h5 className="mb-1 fw-semibold">{sug.title || "Sugerencia"}</h5>
+                            <span className={`fs-10 badge-phoenix badge ${urgClass}`}>
+                              {String(sug.urgency || "MEDIUM").toUpperCase()}
+                            </span>
                           </div>
 
-                          {sug.reasoning && (
-                            <p className="mt-2 mb-2 text-body-secondary small">{sug.reasoning}</p>
-                          )}
-                          {Array.isArray(sug.next_steps) && sug.next_steps.length > 0 && (
-                            <ul className="mb-2 small ps-3">
-                              {sug.next_steps.map((step, i) => <li key={i}>{step}</li>)}
+                          <div className="dropdown">
+                            <button
+                              className="btn btn-sm btn-link text-body-tertiary p-0"
+                              type="button"
+                              data-bs-toggle="dropdown"
+                              aria-expanded="false"
+                            >
+                              <i className="bi bi-three-dots fs-8"></i>
+                            </button>
+                            <ul className="dropdown-menu dropdown-menu-end shadow-sm">
+                              {/* Crear Deadline desde sugerencia */}
+                              <li>
+                                <Link
+                                  className="dropdown-item"
+                                  to="/deadlines/addDeadline"
+                                  state={{
+                                    courtfileId: linkedCourtfile?.id || cfDetails?.id || null,
+                                    courtfileNumber: linkedCourtfile?.number || cfDetails?.case_number || null,
+                                    courtfileTitle: linkedCourtfile?.title || null,
+                                    prefill: { type: "Other", description: sug.title || "" },
+                                    suggestion: sug,
+                                    returnTo: `/documents/view/${documentData.id}`,
+                                  }}
+                                >
+                                  <i className="bi bi-calendar2-plus me-2"></i> Deadline
+                                </Link>
+                              </li>
+
+                              {/* Crear Appointment desde sugerencia */}
+                              <li>
+                                <Link
+                                  className="dropdown-item"
+                                  to="/appointments/addAppointment"
+                                  state={{
+                                    courtfileId: linkedCourtfile?.id || cfDetails?.id || null,
+                                    courtfileNumber: linkedCourtfile?.number || cfDetails?.case_number || null,
+                                    courtfileTitle: linkedCourtfile?.title || null,
+                                    prefill: { title: sug.title || "", details: sug.reasoning || "" },
+                                    suggestion: sug,
+                                    returnTo: `/documents/view/${documentData.id}`,
+                                  }}
+                                >
+                                  <i className="bi bi-clock me-2"></i> Appointment
+                                </Link>
+                              </li>
+
+                              {/* Crear Document (nota) desde sugerencia */}
+                              <li>
+                                <Link
+                                  className="dropdown-item"
+                                  to="/documents/addDocument"
+                                  state={{
+                                    courtfileId: linkedCourtfile?.id || cfDetails?.id || null,
+                                    courtfileNumber: linkedCourtfile?.number || cfDetails?.case_number || null,
+                                    courtfileTitle: linkedCourtfile?.title || null,
+                                    prefill: { title: sug.title || "", content: sug.reasoning || "" },
+                                    suggestion: sug,
+                                    returnTo: `/documents/view/${documentData.id}`,
+                                  }}
+                                >
+                                  <i className="bi bi-file-earmark-plus me-2"></i> Document
+                                </Link>
+                              </li>
+
+                              {/* Archivar si la sugerencia viene persistida con id */}
+                              {sug.id && (
+                                <>
+                                  <li><hr className="dropdown-divider" /></li>
+                                  <li>
+                                    <button
+                                      className="dropdown-item text-danger"
+                                      onClick={() => handleArchiveSuggestion(sug.id)}
+                                    >
+                                      <i className="bi bi-archive me-2"></i> Archivar
+                                    </button>
+                                  </li>
+                                </>
+                              )}
                             </ul>
-                          )}
-                          <small className="text-body-tertiary">
-                            {sug.legal_basis ? `Fundamento: ${sug.legal_basis}` : ""}
-                            {typeof sug.confidence === "number" ? ` • Conf.: ${(sug.confidence * 100).toFixed(0)}%` : ""}
-                          </small>
+                          </div>
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+
+                        {sug.reasoning && (
+                          <p className="mt-2 mb-2 text-body-secondary small">{sug.reasoning}</p>
+                        )}
+                        {Array.isArray(sug.next_steps) && sug.next_steps.length > 0 && (
+                          <ul className="mb-2 small ps-3">
+                            {sug.next_steps.map((step, i) => <li key={i}>{step}</li>)}
+                          </ul>
+                        )}
+                        <small className="text-body-tertiary">
+                          {sug.legal_basis ? `Fundamento: ${sug.legal_basis}` : ""}
+                          {typeof sug.confidence === "number" ? ` • Conf.: ${(sug.confidence * 100).toFixed(0)}%` : ""}
+                        </small>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
-    </AppNavsShell>
-  );
+    </div>
+  </AppNavsShell>
+);
+
 };
