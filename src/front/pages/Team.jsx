@@ -14,187 +14,66 @@ export const Team = () => {
                             <h4 className="text-primary fw-bolder mb-3">Team</h4>
                             <h2>Our small team behind our success</h2>
                         </div>
-
-                        <div className="text-center text-sm-start col-md-6">
-                            <p>We have a small but strong development team to follow up on the development process. Reach out to us for further information.</p>
-                        </div>
-
-                        <div className="text-center text-sm-start col-md-6">
-                            <p>The team is ready to answer all your questions within minutes. The efficient team is always at your beck and call.</p>
+                        <div className="text-center text-sm-start col-12">
+                            <p className="lead mb-4">
+                                We have a compact but highly skilled development team that meticulously follows every stage of the development process.
+                                Our approach combines technical expertise with agile methodologies to deliver robust, scalable solutions that exceed expectations.
+                            </p>
+                            <p className="mb-4">
+                                Our developers are not just coders - they're problem solvers who understand business objectives and user needs.
+                                We maintain transparent communication throughout the project lifecycle, ensuring you're always informed and involved in key decisions.
+                            </p>
+                            <p>
+                                The team is ready to answer all your technical questions within minutes and provide comprehensive support.
+                                Our efficient team is always at your beck and call, dedicated to turning your vision into reality with precision and innovation.
+                            </p>
                         </div>
                     </div>
 
-                    <div className="align-items-center ps-lg-11 pe-lg-9 row">
-                        <div className="col-lg-3 col-md-4 col-sm-6">
+                    <div className="row justify-content-center">
+                        <div className="col-lg-3 col-md-4 col-sm-6 mb-4">
                             <div className="text-center mt-5 position-relative">
                                 <div className="team-avatar-container d-inline-block position-relative">
                                     <div className="bg-holder" style={{ backgroundImage: "url(https://res.cloudinary.com/doxdmmj1o/image/upload/v1759342951/image_1_oj80dn.png)", backgroundSize: "contain" }}></div>
-                                    <img className="img-fluid rounded mb-3 position-relative" alt="John Smith" src="https://res.cloudinary.com/doxdmmj1o/image/upload/v1759343424/5_zrvrcp.jpg" />
+                                    <img
+                                        className="img-fluid rounded mb-3 position-relative"
+                                        alt="Ayelen Lecman"
+                                        src="https://res.cloudinary.com/doxdmmj1o/image/upload/v1759457004/18061cf5-1f22-4066-83a3-37bdfd2054e3.png"
+                                        style={{ width: "200px", height: "200px", objectFit: "cover" }}
+                                    />
                                 </div>
-                                <h4>John Smith</h4>
-                                <h6 className="mb-3 fw-semibold">CEO, Global Cheat</h6>
+                                <h4>Ayelen Lecman</h4>
+                                <h6 className="mb-3 fw-semibold">Developer</h6>
                                 <div>
-                                    <Link to="#!" className="text-primary me-3">
-                                        <i className="fab fa-facebook-f"></i>
+                                    <Link to="https://github.com/AyeLec" className="text-primary me-3" target="_blank" rel="noopener noreferrer">
+                                        <i className="fab fa-github fa-lg"></i>
                                     </Link>
-                                    <Link to="#!" className="text-primary me-3">
-                                        <i className="fab fa-twitter"></i>
-                                    </Link>
-                                    <Link to="#!" className="text-primary">
-                                        <i className="fab fa-linkedin-in"></i>
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="col-lg-3 col-md-4 col-sm-6">
-                            <div className="text-center mt-5 position-relative">
-                                <div className="team-avatar-container d-inline-block position-relative">
-                                    <div className="bg-holder" style={{ backgroundImage: "url(https://res.cloudinary.com/doxdmmj1o/image/upload/v1759342951/image_1_oj80dn.png)", backgroundSize: "contain" }}></div>
-                                    <img className="img-fluid rounded mb-3 position-relative" alt="Marc Chiasson" src="https://res.cloudinary.com/doxdmmj1o/image/upload/v1759343433/6_oyp1l1.png" />
-                                </div>
-                                <h4>Marc Chiasson</h4>
-                                <h6 className="mb-3 fw-semibold">Vice President</h6>
-                                <div>
-                                    <Link to="#!" className="text-primary me-3">
-                                        <i className="fab fa-facebook-f"></i>
-                                    </Link>
-                                    <Link to="#!" className="text-primary me-3">
-                                        <i className="fab fa-twitter"></i>
-                                    </Link>
-                                    <Link to="#!" className="text-primary">
-                                        <i className="fab fa-linkedin-in"></i>
+                                    <Link to="https://www.linkedin.com/in/ayelecman" className="text-primary" target="_blank" rel="noopener noreferrer">
+                                        <i className="fab fa-linkedin-in fa-lg"></i>
                                     </Link>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="col-lg-3 col-md-4 col-sm-6">
+                        <div className="col-lg-3 col-md-4 col-sm-6 mb-4">
                             <div className="text-center mt-5 position-relative">
                                 <div className="team-avatar-container d-inline-block position-relative">
                                     <div className="bg-holder" style={{ backgroundImage: "url(https://res.cloudinary.com/doxdmmj1o/image/upload/v1759342951/image_1_oj80dn.png)", backgroundSize: "contain" }}></div>
-                                    <img className="img-fluid rounded mb-3 position-relative" alt="Lilah Lola" src="https://res.cloudinary.com/doxdmmj1o/image/upload/v1759343431/3_quriso.png" />
+                                    <img
+                                        className="img-fluid rounded mb-3 position-relative"
+                                        alt="Yilfri Salave"
+                                        src="https://res.cloudinary.com/doxdmmj1o/image/upload/v1759457031/d8f8e45e-9b5b-433b-a84b-f6f5a30d67f0.png"
+                                        style={{ width: "200px", height: "200px", objectFit: "cover" }}
+                                    />
                                 </div>
-                                <h4>Lilah Lola</h4>
-                                <h6 className="mb-3 fw-semibold">Marketing Manager</h6>
+                                <h4>Yilfri Salave</h4>
+                                <h6 className="mb-3 fw-semibold">Developer</h6>
                                 <div>
-                                    <Link to="#!" className="text-primary me-3">
-                                        <i className="fab fa-facebook-f"></i>
+                                    <Link to="https://github.com/yilfri" className="text-primary me-3" target="_blank" rel="noopener noreferrer">
+                                        <i className="fab fa-github fa-lg"></i>
                                     </Link>
-                                    <Link to="#!" className="text-primary me-3">
-                                        <i className="fab fa-twitter"></i>
-                                    </Link>
-                                    <Link to="#!" className="text-primary">
-                                        <i className="fab fa-linkedin-in"></i>
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="col-lg-3 col-md-4 col-sm-6">
-                            <div className="text-center mt-5 position-relative">
-                                <div className="team-avatar-container d-inline-block position-relative">
-                                    <div className="bg-holder" style={{ backgroundImage: "url(https://res.cloudinary.com/doxdmmj1o/image/upload/v1759342951/image_1_oj80dn.png)", backgroundSize: "contain" }}></div>
-                                    <img className="img-fluid rounded mb-3 position-relative" alt="Carol Trump" src="https://res.cloudinary.com/doxdmmj1o/image/upload/v1759343431/4_kjzfgd.png" />
-                                </div>
-                                <h4>Carol Trump</h4>
-                                <h6 className="mb-3 fw-semibold">UX Designer</h6>
-                                <div>
-                                    <Link to="#!" className="text-primary me-3">
-                                        <i className="fab fa-facebook-f"></i>
-                                    </Link>
-                                    <Link to="#!" className="text-primary me-3">
-                                        <i className="fab fa-twitter"></i>
-                                    </Link>
-                                    <Link to="#!" className="text-primary">
-                                        <i className="fab fa-linkedin-in"></i>
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="col-lg-3 col-md-4 col-sm-6">
-                            <div className="text-center mt-5 position-relative">
-                                <div className="team-avatar-container d-inline-block position-relative">
-                                    <div className="bg-holder" style={{ backgroundImage: "url(https://res.cloudinary.com/doxdmmj1o/image/upload/v1759342951/image_1_oj80dn.png)", backgroundSize: "contain" }}></div>
-                                    <img className="img-fluid rounded mb-3 position-relative" alt="Alan Casey" src="https://res.cloudinary.com/doxdmmj1o/image/upload/v1759343423/1_jaqjtf.png" />
-                                </div>
-                                <h4>Alan Casey</h4>
-                                <h6 className="mb-3 fw-semibold">Front End Developer</h6>
-                                <div>
-                                    <Link to="#!" className="text-primary me-3">
-                                        <i className="fab fa-facebook-f"></i>
-                                    </Link>
-                                    <Link to="#!" className="text-primary me-3">
-                                        <i className="fab fa-twitter"></i>
-                                    </Link>
-                                    <Link to="#!" className="text-primary">
-                                        <i className="fab fa-linkedin-in"></i>
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="col-lg-3 col-md-4 col-sm-6">
-                            <div className="text-center mt-5 position-relative">
-                                <div className="team-avatar-container d-inline-block position-relative">
-                                    <div className="bg-holder" style={{ backgroundImage: "url(https://res.cloudinary.com/doxdmmj1o/image/upload/v1759342951/image_1_oj80dn.png)", backgroundSize: "contain" }}></div>
-                                    <img className="img-fluid rounded mb-3 position-relative" alt="Narokin Hijita" src="https://res.cloudinary.com/doxdmmj1o/image/upload/v1759343430/2_lye0ni.png" />
-                                </div>
-                                <h4>Narokin Hijita</h4>
-                                <h6 className="mb-3 fw-semibold">CEO, Global Cheat</h6>
-                                <div>
-                                    <Link to="#!" className="text-primary me-3">
-                                        <i className="fab fa-facebook-f"></i>
-                                    </Link>
-                                    <Link to="#!" className="text-primary me-3">
-                                        <i className="fab fa-twitter"></i>
-                                    </Link>
-                                    <Link to="#!" className="text-primary">
-                                        <i className="fab fa-linkedin-in"></i>
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="col-lg-3 col-md-4 col-sm-6">
-                            <div className="text-center mt-5 position-relative">
-                                <div className="team-avatar-container d-inline-block position-relative">
-                                    <div className="bg-holder" style={{ backgroundImage: "url(https://res.cloudinary.com/doxdmmj1o/image/upload/v1759342951/image_1_oj80dn.png)", backgroundSize: "contain" }}></div>
-                                    <img className="img-fluid rounded mb-3 position-relative" alt="Patrick Fonz" src="https://res.cloudinary.com/doxdmmj1o/image/upload/v1759343781/7_sw6hik.png" />
-                                </div>
-                                <h4>Patrick Fonz</h4>
-                                <h6 className="mb-3 fw-semibold">CEO, Global Cheat</h6>
-                                <div>
-                                    <Link to="#!" className="text-primary me-3">
-                                        <i className="fab fa-facebook-f"></i>
-                                    </Link>
-                                    <Link to="#!" className="text-primary me-3">
-                                        <i className="fab fa-twitter"></i>
-                                    </Link>
-                                    <Link to="#!" className="text-primary">
-                                        <i className="fab fa-linkedin-in"></i>
-                                    </Link>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="col-lg-3 col-md-4 col-sm-6">
-                            <div className="text-center mt-5 position-relative">
-                                <div className="team-avatar-container d-inline-block position-relative">
-                                    <div className="bg-holder" style={{ backgroundImage: "url(https://res.cloudinary.com/doxdmmj1o/image/upload/v1759342951/image_1_oj80dn.png)", backgroundSize: "contain" }}></div>
-                                    <img className="img-fluid rounded mb-3 position-relative" alt="Alex Johnson" src="https://res.cloudinary.com/doxdmmj1o/image/upload/v1759343788/8_f7dke3.png" />
-                                </div>
-                                <h4>Alex Johnson</h4>
-                                <h6 className="mb-3 fw-semibold">CEO, Global Cheat</h6>
-                                <div>
-                                    <Link to="#!" className="text-primary me-3">
-                                        <i className="fab fa-facebook-f"></i>
-                                    </Link>
-                                    <Link to="#!" className="text-primary me-3">
-                                        <i className="fab fa-twitter"></i>
-                                    </Link>
-                                    <Link to="#!" className="text-primary">
-                                        <i className="fab fa-linkedin-in"></i>
+                                    <Link to="https://www.linkedin.com/in/yilfris" className="text-primary" target="_blank" rel="noopener noreferrer">
+                                        <i className="fab fa-linkedin-in fa-lg"></i>
                                     </Link>
                                 </div>
                             </div>
