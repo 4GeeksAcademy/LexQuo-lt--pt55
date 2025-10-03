@@ -140,8 +140,8 @@ AVATARS = [
 
 def seed_admins(session):
     rows = [
-        dict(firstname="Carlos", lastname="Ramirez", email="carlos.r@example.com", password="1234", is_active=True),
-        dict(firstname="Laura",  lastname="Mendez",  email="laura.m@example.com",  password="1234", is_active=True),
+        dict(firstname="Carlos", lastname="Ramirez", email="carlos.r@example.com", password="12345678", is_active=True),
+        dict(firstname="Laura",  lastname="Mendez",  email="laura.m@example.com",  password="12345678", is_active=True),
     ]
     created = 0
     for r in rows:
@@ -154,13 +154,13 @@ def seed_admins(session):
 def seed_lawyers(session):
     rows = [
         dict(firstname="María", lastname="González", email="maria.g@example.com",
-             phone="+54 11 5555-1001", password="1234", is_active=True,
+             phone="+54 11 5555-1001", password="12345678", is_active=True,
              url_img=AVATARS[0]),
         dict(firstname="Juan",  lastname="Pérez",    email="juan.p@example.com",
-             phone="+54 11 5555-1002", password="1234", is_active=True,
+             phone="+54 11 5555-1002", password="12345678", is_active=True,
              url_img=AVATARS[1]),
         dict(firstname="Lucía", lastname="Martínez", email="lucia.m@example.com",
-             phone="+54 11 5555-1003", password="1234", is_active=True,
+             phone="+54 11 5555-1003", password="12345678", is_active=True,
              url_img=AVATARS[2]),
     ]
     created = 0
@@ -174,17 +174,17 @@ def seed_lawyers(session):
 def seed_clients(session):
     rows = [
         dict(firstname="Ana",    lastname="Suarez",    email="ana.s@example.com",
-             phone="+54 11 5555-2001", password="1234", is_active=True, url_img=AVATARS[3]),
+             phone="+54 11 5555-2001", password="12345678", is_active=True, url_img=AVATARS[3]),
         dict(firstname="Pedro",  lastname="Lopez",     email="pedro.l@example.com",
-             phone="+54 11 5555-2002", password="1234", is_active=True, url_img=AVATARS[4]),
+             phone="+54 11 5555-2002", password="12345678", is_active=True, url_img=AVATARS[4]),
         dict(firstname="Sofía",  lastname="Diaz",      email="sofia.d@example.com",
-             phone="+54 11 5555-2003", password="1234", is_active=True, url_img=AVATARS[5]),
+             phone="+54 11 5555-2003", password="12345678", is_active=True, url_img=AVATARS[5]),
         dict(firstname="Diego",  lastname="Ruiz",      email="diego.r@example.com",
-             phone="+54 11 5555-2004", password="1234", is_active=True, url_img=AVATARS[6]),
+             phone="+54 11 5555-2004", password="12345678", is_active=True, url_img=AVATARS[6]),
         dict(firstname="Camila", lastname="Fernández", email="camila.f@example.com",
-             phone="+54 11 5555-2005", password="1234", is_active=True, url_img=AVATARS[7]),
+             phone="+54 11 5555-2005", password="12345678", is_active=True, url_img=AVATARS[7]),
         dict(firstname="Martin", lastname="Rossi",     email="martin.r@example.com",
-             phone="+54 11 5555-2006", password="1234", is_active=True, url_img=AVATARS[8]),
+             phone="+54 11 5555-2006", password="12345678", is_active=True, url_img=AVATARS[8]),
     ]
     created = 0
     for r in rows:
