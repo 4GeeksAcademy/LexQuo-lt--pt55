@@ -20,7 +20,7 @@ const NavbarLogin = () => {
       ? (id ? `/lawyers/view/${id}` : "/lawyers/view")
       : role === "client"
         ? (id ? `/clients/view/${id}` : "/clients/view")
-        : "/login";
+        : "/sign-in";
 
   const passwordPath =
     role === "lawyer"

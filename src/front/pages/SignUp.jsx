@@ -68,7 +68,7 @@ export default function SignUp() {
 
       setOkMsg("User created successfully. You can now log in.");
       setForm((f) => ({ ...f, password: "", confirm: "" }));
-      setTimeout(() => navigate("/login"), 1200);
+      setTimeout(() => navigate("/sign-in"), 1200);
     } catch (err) {
       setErrMsg(err.message || "Unexpected error");
     } finally {
@@ -257,7 +257,7 @@ export default function SignUp() {
                 </button>
 
                 <div className="text-center">
-                  <Link className="fs-9 fw-bold" to="/login">
+                  <Link className="fs-9 fw-bold" to="/sign-in">
                     Sign in to an existing account
                   </Link>
                 </div>
