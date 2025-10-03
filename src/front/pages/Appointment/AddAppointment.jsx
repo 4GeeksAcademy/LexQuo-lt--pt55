@@ -288,6 +288,7 @@ export const AddAppointment = () => {
                   form="appointmentForm"
                   className="btn btn-phoenix btn-phoenix-primary fs-10 fs-md-9"
                   disabled={loading}
+                  onClick={handleSubmit}
                 >
                   {loading ? (
                     <>
@@ -537,6 +538,7 @@ export const AddAppointment = () => {
                 form="appointmentForm"
                 className="btn btn-phoenix btn-phoenix-primary fs-10"
                 disabled={loading}
+                onClick={handleSubmit}
               >
                 {loading ? (
                   <>
