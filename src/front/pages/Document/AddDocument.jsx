@@ -208,7 +208,7 @@ export const AddDocument = () => {
     <AppNavsShell>
       <div className="container add-page">
         <div className="row">
-          <div className="col-8">
+          <div className="col-12 col-md-8">
 
             <nav aria-label="breadcrumb" className="mb-3">
               <ol className="breadcrumb">

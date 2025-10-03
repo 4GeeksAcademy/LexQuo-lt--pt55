@@ -164,7 +164,7 @@ export const AddPayment = () => {
     <AppNavsShell>
       <div className="container mt-4 add-page">
         <div className="row">
-          <div className="col-12 col-lg-8">
+          <div className="col-12 col-md-8">
 
             {/* Breadcrumb */}
             <nav aria-label="breadcrumb" className="mb-3">

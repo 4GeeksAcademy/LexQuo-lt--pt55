@@ -334,7 +334,7 @@ export const EditAppointment = () => {
     <AppNavsShell>
       <div className="container add-page">
         <div className="row">
-          <div className="col-md-8">
+          <div className="col-12 col-md-8">
             {/* Breadcrumb */}
             <nav aria-label="breadcrumb" className="mb-4">
               <ol className="breadcrumb small mb-0">
