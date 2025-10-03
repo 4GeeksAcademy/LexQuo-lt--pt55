@@ -193,29 +193,30 @@ export const EditCourtfile = () => {
             {/* Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
               <h1 className="display-5 fw-bold mb-0">Edit Courtfile</h1>
-              <div className="d-flex gap-2">
-                <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary">
-                  Cancel
-                </Link>
-                <button
-                  type="submit"
-                  form="courtfileForm"
-                  className="btn btn-phoenix btn-phoenix-primary"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2" />
-                      Updating...
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-check-circle me-2" />
-                      Update Courtfile
-                    </>
-                  )}
-                </button>
-              </div>
+              {/* Botones solo en md+ */}
+  <div className="d-none d-md-flex gap-2">
+    <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary">
+      Cancel
+    </Link>
+    <button
+      type="submit"
+      form="courtfileForm"
+      className="btn btn-phoenix btn-phoenix-primary"
+      disabled={loading}
+    >
+      {loading ? (
+        <>
+          <span className="spinner-border spinner-border-sm me-2" />
+          Updating...
+        </>
+      ) : (
+        <>
+          <i className="bi bi-check-circle me-2" />
+          Update Courtfile
+        </>
+      )}
+    </button>
+  </div>
             </div>
 
             {/* Error */}
@@ -328,6 +329,30 @@ export const EditCourtfile = () => {
                 </label>
               </div>
             </form>
+            {/* Botones solo en mobile */}
+  <div className="d-flex d-md-none gap-2 mt-3 justify-content-end">
+    <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary text-nowrap">
+      Cancel
+    </Link>
+    <button
+      type="submit"
+      form="courtfileForm"
+      className="btn btn-phoenix btn-phoenix-primary text-nowrap"
+      disabled={loading}
+    >
+      {loading ? (
+        <>
+          <span className="spinner-border spinner-border-sm me-2" role="status" />
+          Updating...
+        </>
+      ) : (
+        <>
+          <i className="bi bi-check-circle me-2" />
+          Update Courtfile
+        </>
+      )}
+    </button>
+  </div>
           </div>
         </div>
       </div>

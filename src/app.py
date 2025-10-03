@@ -14,9 +14,7 @@ from flask_jwt_extended import JWTManager
 from api.ai import bp_ai
 
 # === 1) Definí el origen del FRONT (EXACTO, el de tu 3000) ===
-FRONTEND_ORIGIN = os.getenv(
-    "FRONTEND_ORIGIN"
-)
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN")
 
 ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
 static_file_dir = os.path.join(os.path.dirname(
@@ -26,20 +24,24 @@ static_file_dir = os.path.join(os.path.dirname(
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 
+FRONTEND_ORIGINS = [
+    o.rstrip("/") for o in (os.getenv("FRONTEND_ORIGIN") or "").split(",") if o.strip()
+] or ["http://localhost:3000", "http://127.0.0.1:3000"]
+
 CORS(
     app,
     resources={
-        r"/api/*": {"origins": [FRONTEND_ORIGIN]},
-        r"/socket.io/*": {"origins": [FRONTEND_ORIGIN]},
+        r"/api/*": {"origins": FRONTEND_ORIGINS},
+        r"/socket.io/*": {"origins": FRONTEND_ORIGINS},
     },
     supports_credentials=True,
     allow_headers=["Content-Type", "Authorization"],
-    methods=["GET", "POST", "OPTIONS"],
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 )
 
 socketio = SocketIO(
     app,
-    cors_allowed_origins=[FRONTEND_ORIGIN],
+    cors_allowed_origins=FRONTEND_ORIGINS,
     async_mode="threading",
     allow_upgrades=False,
     transports=["polling"],

@@ -16,13 +16,15 @@ from sqlalchemy import select, func, and_, or_, literal, case
 from flask import Flask, request, jsonify, url_for, Blueprint
 from api.models import Courtfile, PaymentCourtfile, PaymentStatus, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, Message, ChatRead
 from api.utils import generate_sitemap, APIException
-from datetime import datetime, UTC, timedelta, timezone
+from datetime import datetime, timedelta, timezone
+UTC = timezone.utc
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from sqlalchemy.orm import joinedload
 from api.mails_utils import render_email_template, send_email
+import logging
 
 from api.validators import parse_iso_date, parse_24h_time, is_valid_24h_time, validate_required_fields, validate_time_order, create_error_response
 
@@ -41,7 +43,11 @@ stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
 os.getenv("FLASK_DEBUG")
 
-FRONTEND_BASE_URL = os.getenv("FRONTEND_ORIGIN")
+FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL") or os.getenv("FRONTEND_ORIGIN")
+
+def _base_url():
+    b = FRONTEND_BASE_URL or request.url_root
+    return b.rstrip("/")
 
 
 @api.route('/hello', methods=['POST', 'GET'])
@@ -407,6 +413,16 @@ def get_lawyer_detail(lawyer_id):
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+def _mini_user(u):
+    if not u:
+        return None
+    return {
+        "id": u.id,
+        "firstname": getattr(u, "firstname", None),
+        "lastname": getattr(u, "lastname", None),
+        "email": getattr(u, "email", None),
+    }
 
 def _mini_user(u):
     if not u:
@@ -3318,7 +3334,10 @@ def webhook():
     return jsonify(success=True)
 
 
-# =====================RUTAS PARA MAILS======================
+# ===================== RUTAS PARA MAILS ======================
+from urllib.parse import quote as _urlq
+from flask import current_app
+
 def _cap(s: str) -> str:
     return s[:1].upper() + s[1:] if s else s
 
@@ -3331,7 +3350,7 @@ def send_invite_email():
     firstname = (data.get("firstname") or "").strip()
     lastname = (data.get("lastname") or "").strip()
     cf_number = data.get("courtfile_number")  # opcional
-    cf_id = data.get("courtfile_id")      # opcional
+    cf_id = data.get("courtfile_id")          # opcional
 
     if not email or not firstname or not lastname:
         return jsonify({"error": "email, firstname y lastname son obligatorios"}), 400
@@ -3350,7 +3369,8 @@ def send_invite_email():
 
     default_pwd = f"LexQuo{_cap(firstname)}{_cap(lastname)}"
 
-    invite_url = f"{FRONTEND_BASE_URL}/accept-invite?email={email}"
+    base = _base_url()
+    invite_url = f"{base}/accept-invite?email={_urlq(email)}"
     if cf_id:
         invite_url += f"&courtfile_id={cf_id}"
 
@@ -3367,15 +3387,16 @@ def send_invite_email():
         courtfile_number=cf_number or ""
     )
 
-    # El util genera texto plano de fallback si no lo pasás
     try:
         send_email(
             to_email=email,
             subject=subject,
-            html_body=html
+            html_body=html,
+            timeout_seconds=12,  # evita colgar el worker si el SMTP no responde
         )
         return jsonify({"ok": True, "sent_to": email})
     except Exception as e:
+        current_app.logger.exception("Error al enviar correo (invite)")
         return jsonify({"error": str(e)}), 500
 
 
@@ -3387,7 +3408,7 @@ def send_linked_email():
     firstname = (data.get("firstname") or "").strip()
     lastname = (data.get("lastname") or "").strip()
     cf_number = data.get("courtfile_number")  # opcional
-    cf_id = data.get("courtfile_id")      # opcional
+    cf_id = data.get("courtfile_id")          # opcional
 
     if not email or not firstname or not lastname:
         return jsonify({"error": "email, firstname y lastname son obligatorios"}), 400
@@ -3404,7 +3425,8 @@ def send_linked_email():
             if not linked:
                 return jsonify({"error": "forbidden"}), 403
 
-    case_url = f"{FRONTEND_BASE_URL}/courtfiles/{cf_id}" if cf_id else FRONTEND_BASE_URL
+    base = _base_url()
+    case_url = f"{base}/courtfiles/{cf_id}" if cf_id else base
     subject = f"Acceso habilitado en LexQuo{f' – Expediente #{cf_number}' if cf_number else ''}"
 
     html = render_email_template(
@@ -3419,11 +3441,14 @@ def send_linked_email():
         send_email(
             to_email=email,
             subject=subject,
-            html_body=html
+            html_body=html,
+            timeout_seconds=12,  # igual que arriba
         )
         return jsonify({"ok": True, "sent_to": email})
     except Exception as e:
+        current_app.logger.exception("Error al enviar correo (linked)")
         return jsonify({"error": str(e)}), 500
+
 
 # =================LOGIN GENERAL =====================================
 

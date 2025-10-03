@@ -34,10 +34,10 @@ export const EditDocument = () => {
   const initialLinked =
     location.state?.courtfileId
       ? {
-          id: location.state.courtfileId,
-          number: location.state.courtfileNumber,
-          title: location.state.courtfileTitle,
-        }
+        id: location.state.courtfileId,
+        number: location.state.courtfileNumber,
+        title: location.state.courtfileTitle,
+      }
       : null;
 
   const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
@@ -218,43 +218,44 @@ export const EditDocument = () => {
             </nav>
 
             {/* Header */}
-<div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4">
-  <h1 className="display-5 fw-bold mb-2 mb-sm-0">Edit Case Record</h1>
+            <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4">
+              <h1 className="display-5 fw-bold mb-2 mb-sm-0">Edit Case Record</h1>
 
-  <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
-    <Link
-      to={returnTo}
-      className="btn btn-phoenix btn-phoenix-secondary fs-10 fs-md-9"
-    >
-      Cancel
-    </Link>
-    <button
-      type="submit"
-      form="documentForm"
-      className="btn btn-phoenix btn-phoenix-primary fs-10 fs-md-9"
-      disabled={loading}
-    >
-      {loading ? (
-        <>
-          <span className="spinner-border spinner-border-sm me-2" />
-          Updating...
-        </>
-      ) : (
-        <>
-          <i className="bi bi-check-circle me-2" />
-          Update Record
-        </>
-      )}
-    </button>
-  </div>
-</div>
+              {/* Botones solo en md+ */}
+              <div className="d-none d-md-flex gap-2">
+                <Link
+                  to={returnTo}
+                  className="btn btn-phoenix btn-phoenix-secondary fs-10 fs-md-9"
+                >
+                  Cancel
+                </Link>
+                <button
+                  type="submit"
+                  form="documentForm"
+                  className="btn btn-phoenix btn-phoenix-primary fs-10 fs-md-9"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-check-circle me-2" />
+                      Update Record
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
 
-{linkedCourtfile && (
-  <span className="badge badge-phoenix-secondary mb-3 text-wrap text-break">
-    Linked to Case {linkedCourtfile.number || `#${linkedCourtfile.id}`}
-    {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
-  </span>
-)}
+            {linkedCourtfile && (
+              <span className="badge badge-phoenix-secondary mb-3 text-wrap text-break">
+                Linked to Case {linkedCourtfile.number || `#${linkedCourtfile.id}`}
+                {linkedCourtfile.title ? ` — ${linkedCourtfile.title}` : ""}
+              </span>
+            )}
 
 
             {error && (
@@ -350,6 +351,33 @@ export const EditDocument = () => {
                 <label htmlFor="description">Description</label>
               </div>
             </form>
+            {/* Botones solo en mobile */}
+            <div className="d-flex d-md-none gap-2 mt-3 justify-content-end">
+              <Link
+                to={returnTo}
+                className="btn btn-phoenix btn-phoenix-secondary fs-10"
+              >
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                form="documentForm"
+                className="btn btn-phoenix btn-phoenix-primary fs-10"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-check-circle me-2" />
+                    Update Record
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

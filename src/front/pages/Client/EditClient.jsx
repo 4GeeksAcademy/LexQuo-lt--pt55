@@ -1,6 +1,7 @@
 import { Link, useNavigate, useParams, Navigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import AppNavsShell from "../../components/AppNavsShell";
 
 export const EditClient = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -175,15 +176,13 @@ export const EditClient = () => {
   }
 
   return (
-    <div className="container mt-4">
-      <div className="row justify-content-center">
+    <AppNavsShell>
+    <div className="container add-page">
+      <div className="row">
         <div className="col-md-8">
           {/* Header */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h1>Edit Client</h1>
-            <Link to="/clients" className="btn btn-outline-secondary">
-              <i className="bi bi-arrow-left"></i> Back to List
-            </Link>
           </div>
 
           {/* Form */}
@@ -316,5 +315,6 @@ export const EditClient = () => {
         </div>
       </div>
     </div>
-  );
+    </AppNavsShell>
+  );  
 };

@@ -982,3 +982,116 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
     margin-top: -2rem; /* sube solo esta card en XS */
   }
 }
+
+
+ /* ==================BARRA BUSCADOR==================================================== */
+
+/* Input pill oscuro, borde sutil */
+.phoenix-input {
+  background: #141824 !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  color: #e9ecef !important;
+  height: 33px;
+  padding-left: 2.2rem;   /* espacio para la lupa */
+  padding-right: 2.1rem;  /* espacio para clear */
+}
+
+.phoenix-input::placeholder { color: rgba(233,236,239,0.6); }
+
+/* Lupa dentro del input, con "me" visual */
+.search-box-icon {
+  position: absolute;
+  left: 0.9rem;              /* mueve la lupa a la derecha */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  color: rgba(255,255,255,0.7);
+  pointer-events: none;
+}
+
+/* Botón clear (X) */
+.phoenix-clear {
+  position: absolute;
+  right: .35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: rgba(255,255,255,0.75);
+  padding: .15rem .35rem;
+}
+
+
+/* Dropdown Phoenix */
+.phoenix-menu {
+  top: calc(100% + .4rem);
+  border: 0;
+  background: #141922;
+  color: #e9ecef;
+  border-radius: .75rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,.35);
+  max-height: 360px;
+  overflow-y: auto;
+  z-index: 1070;
+}
+
+.phoenix-item { padding: .6rem .9rem; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.phoenix-item:last-child { border-bottom: 0; }
+
+.phoenix-input:focus {
+  outline: none !important;
+  box-shadow: none !important;             /* ❌ sin glow */
+  border-color: transparent !important;    /* ❌ sin borde focus */
+  background: #1b2029 !important;          /* mantiene color */
+}
+/* elimina la cruz nativa de inputs type="search" */
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
+  display: none;
+}
+
+
+.phoenix-menu {
+  top: 100%;                       /* 👈 lo pegamos justo debajo */
+  margin-top: 0;   
+  border: 1px solid rgba(0,0,0,.1);
+  background: #fff;               /* 👈 fondo blanco */
+  color: #212529;                 /* texto oscuro */
+  border-radius: .75rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,.12);
+  max-height: 360px;
+  overflow-y: auto;
+  z-index: 1070;
+}
+
+.phoenix-item {
+  padding: .6rem .9rem;
+  border-bottom: 1px solid rgba(0,0,0,.05);
+  background: #fff;               /* asegura blanco en items */
+}
+
+.phoenix-item:last-child {
+  border-bottom: 0;
+}
+
+.phoenix-item.active,
+.phoenix-item:hover {
+  background: #f1f5f9;            /* hover gris claro */
+  color: #000;                    /* texto oscuro */
+}
+
+/* menú de resultados */
+.phoenix-menu {
+  top: calc(100% + 6px);          /* separación del input */
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(16,24,40,.18);
+}
+
+/* desplazar a la derecha sin desbordar por la derecha */
+.phx-pad-right {
+  margin-left: 12px;              /* <- corrimiento hacia la derecha */
+  width: calc(100% - 12px);       /* mantener alineado el borde derecho */
+}

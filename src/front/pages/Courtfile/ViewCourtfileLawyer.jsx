@@ -753,6 +753,47 @@ export const ViewCourtfileLawyer = () => {
     };
   };
 
+  // ===== SORT CONFIG GENERAL =====
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+
+  const requestSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  // Función comparadora genérica
+  const sortData = (items) => {
+    if (!sortConfig.key) return items;
+
+    return [...items].sort((a, b) => {
+      let valA = a[sortConfig.key];
+      let valB = b[sortConfig.key];
+
+      // normalizar fechas
+      if (sortConfig.key.toLowerCase().includes("date") || sortConfig.key.includes("_at")) {
+        valA = valA ? new Date(valA) : new Date(0);
+        valB = valB ? new Date(valB) : new Date(0);
+      }
+
+      // normalizar strings
+      if (typeof valA === "string") valA = valA.toLowerCase();
+      if (typeof valB === "string") valB = valB.toLowerCase();
+
+      if (valA < valB) return sortConfig.direction === "asc" ? -1 : 1;
+      if (valA > valB) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+  };
+
+  // Datos ordenados según sortConfig
+  const sortedDocuments = useMemo(() => sortData(caseDocuments), [caseDocuments, sortConfig]);
+  const sortedDeadlines = useMemo(() => sortData(caseDeadlines), [caseDeadlines, sortConfig]);
+  const sortedAppointments = useMemo(() => sortData(caseAppointments), [caseAppointments, sortConfig]);
+  const sortedClients = useMemo(() => sortData(caseClients), [caseClients, sortConfig]);
+  const sortedLawyers = useMemo(() => sortData(caseLawyers), [caseLawyers, sortConfig]);
 
 
   // ------------------- RENDER -------------------
@@ -802,65 +843,65 @@ export const ViewCourtfileLawyer = () => {
         </nav>
 
         {/* ===== Title + Actions ===== */}
-<div className="d-flex justify-content-between align-items-center mb-3 py-3 flex-wrap gap-2">
-  {/* Título */}
-  <h2 className="mb-0 fw-bold">Courtfile details</h2>
+        <div className="d-flex justify-content-between align-items-center mb-3 py-3 flex-wrap gap-2">
+          {/* Título */}
+          <h2 className="mb-0 fw-bold">Courtfile details</h2>
 
-  {/* Botones */}
-  <div className="d-flex flex-wrap gap-2">
-    <button
-      className="px-3 text-body text-decoration-none btn btn-link position-relative"
-      onClick={(e) => onOpenChatClick(e)}
-      title="Open chat"
-    >
-      <i className="bi bi-chat-dots me-1" />
-      <span className="d-none d-sm-inline">Chat</span> {/* texto solo en sm+ */}
-      {unreadByCase.get(Number(courtfileId))?.hasUnread && (
-        <span
-          className="position-absolute bg-danger border border-light rounded-circle"
-          style={{
-            top: "2px",
-            right: "6px",
-            width: "10px",
-            height: "10px"
-          }}
-        />
-      )}
-    </button>
+          {/* Botones */}
+          <div className="d-flex flex-wrap gap-2">
+            <button
+              className="px-3 text-body text-decoration-none btn btn-link position-relative"
+              onClick={(e) => onOpenChatClick(e)}
+              title="Open chat"
+            >
+              <i className="bi bi-chat-dots me-1" />
+              <span className="d-none d-sm-inline">Chat</span> {/* texto solo en sm+ */}
+              {unreadByCase.get(Number(courtfileId))?.hasUnread && (
+                <span
+                  className="position-absolute bg-danger border border-light rounded-circle"
+                  style={{
+                    top: "2px",
+                    right: "6px",
+                    width: "10px",
+                    height: "10px"
+                  }}
+                />
+              )}
+            </button>
 
-    <Link
-      to="/lawyers/link-or-invite"
-      state={{
-        courtfileId: courtfile.id,
-        courtfileNumber: courtfile.case_number,
-        courtfileTitle: courtfile.title,
-        returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
-      }}
-      className="px-3 text-body text-decoration-none btn btn-link"
-    >
-      <i className="bi bi-person-plus me-1" />
-      <span className="d-none d-sm-inline">Add lawyer</span>
-    </Link>
+            <Link
+              to="/lawyers/link-or-invite"
+              state={{
+                courtfileId: courtfile.id,
+                courtfileNumber: courtfile.case_number,
+                courtfileTitle: courtfile.title,
+                returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+              }}
+              className="px-3 text-body text-decoration-none btn btn-link"
+            >
+              <i className="bi bi-person-plus me-1" />
+              <span className="d-none d-sm-inline">Add lawyer</span>
+            </Link>
 
-    <Link
-      to={`/courtfiles/${courtfile.id}`}
-      state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
-      className="px-3 text-body text-decoration-none btn btn-link"
-    >
-      <i className="bi bi-pencil me-1" />
-      <span className="d-none d-sm-inline">Edit</span>
-    </Link>
+            <Link
+              to={`/courtfiles/${courtfile.id}`}
+              state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+              className="px-3 text-body text-decoration-none btn btn-link"
+            >
+              <i className="bi bi-pencil me-1" />
+              <span className="d-none d-sm-inline">Edit</span>
+            </Link>
 
-    <button
-      className="btn btn-phoenix-danger"
-      onClick={handleLeaveCase}
-      disabled={!myRelationId || leaving}
-    >
-      <i className="bi bi-box-arrow-right me-1" />
-      <span className="d-none d-sm-inline">{leaving ? "Leaving…" : "Leave case"}</span>
-    </button>
-  </div>
-</div>
+            <button
+              className="btn btn-phoenix-danger"
+              onClick={handleLeaveCase}
+              disabled={!myRelationId || leaving}
+            >
+              <i className="bi bi-box-arrow-right me-1" />
+              <span className="d-none d-sm-inline">{leaving ? "Leaving…" : "Leave case"}</span>
+            </button>
+          </div>
+        </div>
 
 
         {/* ===== Layout: main + aside ===== */}
@@ -965,462 +1006,626 @@ export const ViewCourtfileLawyer = () => {
 
 
             {/* ===== Documents ===== */}
-            <div className="d-flex align-items-center justify-content-between mt-4">
-              <h2 className="h5 text-uppercase text-muted mb-0 fw-bold">Notes & Documents</h2>
-              <Link
-                to="/documents/addDocument"
-                state={{
-                  courtfileId: courtfile.id,
-                  courtfileNumber: courtfile.case_number,
-                  courtfileTitle: courtfile.title,
-                  returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
-                }}
-                className="btn btn-phoenix-primary ms-2"
-              >
-                + Case Record
-              </Link>
-            </div>
+<div className="d-flex align-items-center justify-content-between mt-4">
+  <h2 className="h5 text-uppercase text-muted mb-0 fw-bold">Notes & Documents</h2>
+  <Link
+    to="/documents/addDocument"
+    state={{
+      courtfileId: courtfile.id,
+      courtfileNumber: courtfile.case_number,
+      courtfileTitle: courtfile.title,
+      returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+    }}
+    className="btn btn-phoenix-primary ms-2"
+  >
+    + Case Record
+  </Link>
+</div>
 
-            {loadingDocuments && <p className="mt-2">Loading documents…</p>}
-            {documentsErr && (
-              <div className="alert alert-danger mt-2">{documentsErr}</div>
-            )}
-            {!loadingDocuments && !documentsErr && caseDocuments.length === 0 && (
-              <div className="alert text-secondary bg-transparent border-0 mt-2">No documents yet.</div>
-            )}
+{loadingDocuments && <p className="mt-2">Loading documents…</p>}
+{documentsErr && (
+  <div className="alert alert-danger mt-2">{documentsErr}</div>
+)}
+{!loadingDocuments && !documentsErr && caseDocuments.length === 0 && (
+  <div className="alert text-secondary bg-transparent border-0 mt-2">No documents yet.</div>
+)}
 
-            {!loadingDocuments && caseDocuments.length > 0 && (
-              <div className="table-responsive mt-2">
-                <table className="table table-hover align-middle table-modern">
-                  <thead className="table-light">
-                    <tr>
-                      <th style={{ width: 120 }}>Date</th>
-                      <th>Name</th>
-                      <th>Category</th>
-                      <th>File</th>
-                      <th style={{ width: 48 }} className="text-end">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...caseDocuments]
-                      .sort((a, b) => parseDate(b) - parseDate(a))
-                      .map((doc) => (
-                        <tr key={doc.relation_id}
-                          className="table-row-clickable"
-                          onClick={(e) => handleRowClick(e, 'document', doc)}>
-                          <td>{parseDate(doc).toLocaleDateString()}</td>
-                          <td>{doc.name || doc.document_name || "—"}</td>
-                          <td>{doc.category || doc.document_type || "—"}</td>
-                          <td>
-                            {doc.url_route || doc.document_url ? (
-                              <a
-                                href={doc.url_route || doc.document_url}
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                Open
-                              </a>
-                            ) : (
-                              "—"
-                            )}
-                          </td>
-                          <td className="text-center">
-                            <KebabMenu>
-                              <li>
-                                <Link
-                                  className="dropdown-item"
-                                  to={`/documents/view/${doc.document_id || doc.id}`}
-                                  state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
-                                >
-                                  <i className="bi bi-eye me-2" /> View
-                                </Link>
-                              </li>
-                              <li>
-                                <Link
-                                  className="dropdown-item"
-                                  to={`/documents/${doc.document_id || doc.id}`}
-                                  state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
-                                >
-                                  <i className="bi bi-pencil me-2" /> Edit
-                                </Link>
-                              </li>
-                              <li><hr className="dropdown-divider" /></li>
-                              <li>
-                                <button
-                                  className="dropdown-item text-danger"
-                                  disabled={!doc.relation_id || deletingDocRelId === doc.relation_id}
-                                  onClick={() => handleDeleteDocumentRelation(doc.relation_id)}
-                                >
-                                  {deletingDocRelId === doc.relation_id ? (
-                                    <span className="spinner-border spinner-border-sm me-2" />
-                                  ) : (
-                                    <i className="bi bi-trash me-2" />
-                                  )}
-                                  Unlink
-                                </button>
-                              </li>
-                            </KebabMenu>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+{!loadingDocuments && caseDocuments.length > 0 && (
+  <div className="table-responsive mt-2">
+    <table className="table table-hover align-middle table-modern">
+      <thead className="table-light">
+        <tr>
+          <th
+            role="button"
+            onClick={() => requestSort("document_date")}
+          >
+            Date{" "}
+            <i
+              className={`bi ${
+                sortConfig.key === "document_date"
+                  ? sortConfig.direction === "asc"
+                    ? "bi-arrow-up"
+                    : "bi-arrow-down"
+                  : "bi-arrow-down-up text-muted"
+              }`}
+            />
+          </th>
+          <th
+            role="button"
+            onClick={() => requestSort("name")}
+          >
+            Name{" "}
+            <i
+              className={`bi ${
+                sortConfig.key === "name"
+                  ? sortConfig.direction === "asc"
+                    ? "bi-arrow-up"
+                    : "bi-arrow-down"
+                  : "bi-arrow-down-up text-muted"
+              }`}
+            />
+          </th>
+          <th
+            role="button"
+            onClick={() => requestSort("category")}
+          >
+            Category{" "}
+            <i
+              className={`bi ${
+                sortConfig.key === "category"
+                  ? sortConfig.direction === "asc"
+                    ? "bi-arrow-up"
+                    : "bi-arrow-down"
+                  : "bi-arrow-down-up text-muted"
+              }`}
+            />
+          </th>
+          <th>File</th>
+          <th style={{ width: 48 }} className="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {sortedDocuments.map((doc) => (
+          <tr
+            key={doc.relation_id}
+            className="table-row-clickable"
+            onClick={(e) => handleRowClick(e, "document", doc)}
+          >
+            <td>
+              {doc.document_date
+                ? new Date(doc.document_date).toLocaleDateString()
+                : "—"}
+            </td>
+            <td>{doc.name || doc.document_name || "—"}</td>
+            <td>{doc.category || doc.document_type || "—"}</td>
+            <td>
+              {doc.url_route || doc.document_url ? (
+                <a
+                  href={doc.url_route || doc.document_url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open
+                </a>
+              ) : (
+                "—"
+              )}
+            </td>
+            <td className="text-center">
+              <KebabMenu>
+                <li>
+                  <Link
+                    className="dropdown-item"
+                    to={`/documents/view/${doc.document_id || doc.id}`}
+                    state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                  >
+                    <i className="bi bi-eye me-2" /> View
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    className="dropdown-item"
+                    to={`/documents/${doc.document_id || doc.id}`}
+                    state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                  >
+                    <i className="bi bi-pencil me-2" /> Edit
+                  </Link>
+                </li>
+                <li><hr className="dropdown-divider" /></li>
+                <li>
+                  <button
+                    className="dropdown-item text-danger"
+                    disabled={!doc.relation_id || deletingDocRelId === doc.relation_id}
+                    onClick={() => handleDeleteDocumentRelation(doc.relation_id)}
+                  >
+                    {deletingDocRelId === doc.relation_id ? (
+                      <span className="spinner-border spinner-border-sm me-2" />
+                    ) : (
+                      <i className="bi bi-trash me-2" />
+                    )}
+                    Unlink
+                  </button>
+                </li>
+              </KebabMenu>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
+
 
 
             {/* ===== Deadlines ===== */}
-            <div className="d-flex align-items-center justify-content-between mt-4">
-              <h2 className="h5 text-uppercase text-muted mb-0 fw-bold">Deadlines</h2>
-              <Link
-                to="/deadlines/addDeadline"
-                state={{
-                  courtfileId: courtfile.id,
-                  courtfileNumber: courtfile.case_number,
-                  courtfileTitle: courtfile.title,
-                  returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
-                }}
-                className="btn btn-phoenix-primary ms-2"
-              >
-                + New deadline
-              </Link>
-            </div>
+<div className="d-flex align-items-center justify-content-between mt-4">
+  <h2 className="h5 text-uppercase text-muted mb-0 fw-bold">Deadlines</h2>
+  <Link
+    to="/deadlines/addDeadline"
+    state={{
+      courtfileId: courtfile.id,
+      courtfileNumber: courtfile.case_number,
+      courtfileTitle: courtfile.title,
+      returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+    }}
+    className="btn btn-phoenix-primary ms-2"
+  >
+    + New deadline
+  </Link>
+</div>
 
-            {loadingDeadlines && <p className="mt-2">Loading deadlines…</p>}
-            {deadlinesErr && (
-              <div className="alert alert-danger mt-2">{deadlinesErr}</div>
-            )}
-            {!loadingDeadlines && !deadlinesErr && caseDeadlines.length === 0 && (
-              <div className="alert text-secondary bg-transparent border-0 mt-2">No deadlines yet.</div>
-            )}
-            {!loadingDeadlines && caseDeadlines.length > 0 && (
-              <div className="table-responsive mt-2">
-                <table className="table table-hover align-middle table-modern">
-                  <thead className="table-light">
-                    <tr>
-                      <th style={{ width: "20px" }}>ID</th>
-                      <th>Type</th>
-                      <th>Date</th>
-                      <th>Hour</th>
-                      <th>Priority</th>
-                      <th style={{ width: 48 }} className="text-end">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {caseDeadlines.map((dl) => (
-                      <tr key={dl.relation_id}
-                        className="table-row-clickable"
-                        onClick={(e) => handleRowClick(e, 'deadline', dl)}>
-                        <td className="text-start ps-2">{dl.deadline_id}</td>
-                        <td>{dl.deadline_type}</td>
-                        <td>{dl.deadline_date}</td>
-                        <td>{dl.deadline_hour}</td>
-                        <td>
-                          <DeadlineBadge priority={dl.priority} outline />
-                        </td>
-                        <td className="text-center">
-                          <KebabMenu>
-                            <li>
-                              <Link
-                                className="dropdown-item"
-                                to={`/deadlines/view/${dl.deadline_id}`}
-                                state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
-                              >
-                                <i className="bi bi-eye me-2" /> View
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                className="dropdown-item"
-                                to={`/deadlines/${dl.deadline_id}`}
-                                state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
-                              >
-                                <i className="bi bi-pencil me-2" /> Edit
-                              </Link>
-                            </li>
-                            <li><hr className="dropdown-divider" /></li>
-                            <li>
-                              <button
-                                className="dropdown-item text-danger"
-                                disabled={!dl.relation_id || deletingDeadlineRelId === dl.relation_id}
-                                onClick={() => handleDeleteDeadlineRelation(dl.relation_id)}
-                              >
-                                {deletingDeadlineRelId === dl.relation_id ? (
-                                  <span className="spinner-border spinner-border-sm me-2" />
-                                ) : (
-                                  <i className="bi bi-trash me-2" />
-                                )}
-                                Unlink
-                              </button>
-                            </li>
-                          </KebabMenu>
-                        </td>
+{loadingDeadlines && <p className="mt-2">Loading deadlines…</p>}
+{deadlinesErr && (
+  <div className="alert alert-danger mt-2">{deadlinesErr}</div>
+)}
+{!loadingDeadlines && !deadlinesErr && caseDeadlines.length === 0 && (
+  <div className="alert text-secondary bg-transparent border-0 mt-2">No deadlines yet.</div>
+)}
+{!loadingDeadlines && caseDeadlines.length > 0 && (
+  <div className="table-responsive mt-2">
+    <table className="table table-hover align-middle table-modern">
+      <thead className="table-light">
+        <tr>
+          <th style={{ width: "20px" }}>ID</th>
+          <th role="button" onClick={() => requestSort("deadline_type")}>
+            Type{" "}
+            <i
+              className={`bi ${
+                sortConfig.key === "deadline_type"
+                  ? sortConfig.direction === "asc"
+                    ? "bi-arrow-up"
+                    : "bi-arrow-down"
+                  : "bi-arrow-down-up text-muted"
+              }`}
+            />
+          </th>
+          <th role="button" onClick={() => requestSort("deadline_date")}>
+            Date{" "}
+            <i
+              className={`bi ${
+                sortConfig.key === "deadline_date"
+                  ? sortConfig.direction === "asc"
+                    ? "bi-arrow-up"
+                    : "bi-arrow-down"
+                  : "bi-arrow-down-up text-muted"
+              }`}
+            />
+          </th>
+          <th role="button" onClick={() => requestSort("deadline_hour")}>
+            Hour{" "}
+            <i
+              className={`bi ${
+                sortConfig.key === "deadline_hour"
+                  ? sortConfig.direction === "asc"
+                    ? "bi-arrow-up"
+                    : "bi-arrow-down"
+                  : "bi-arrow-down-up text-muted"
+              }`}
+            />
+          </th>
+          <th role="button" onClick={() => requestSort("priority")}>
+            Priority{" "}
+            <i
+              className={`bi ${
+                sortConfig.key === "priority"
+                  ? sortConfig.direction === "asc"
+                    ? "bi-arrow-up"
+                    : "bi-arrow-down"
+                  : "bi-arrow-down-up text-muted"
+              }`}
+            />
+          </th>
+          <th style={{ width: 48 }} className="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {sortedDeadlines.map((dl) => (
+          <tr
+            key={dl.relation_id}
+            className="table-row-clickable"
+            onClick={(e) => handleRowClick(e, "deadline", dl)}
+          >
+            <td className="text-start ps-2">{dl.deadline_id}</td>
+            <td>{dl.deadline_type}</td>
+            <td>{dl.deadline_date}</td>
+            <td>{dl.deadline_hour}</td>
+            <td>
+              <DeadlineBadge priority={dl.priority} outline />
+            </td>
+            <td className="text-center">
+              <KebabMenu>
+                <li>
+                  <Link
+                    className="dropdown-item"
+                    to={`/deadlines/view/${dl.deadline_id}`}
+                    state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                  >
+                    <i className="bi bi-eye me-2" /> View
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    className="dropdown-item"
+                    to={`/deadlines/${dl.deadline_id}`}
+                    state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                  >
+                    <i className="bi bi-pencil me-2" /> Edit
+                  </Link>
+                </li>
+                <li><hr className="dropdown-divider" /></li>
+                <li>
+                  <button
+                    className="dropdown-item text-danger"
+                    disabled={!dl.relation_id || deletingDeadlineRelId === dl.relation_id}
+                    onClick={() => handleDeleteDeadlineRelation(dl.relation_id)}
+                  >
+                    {deletingDeadlineRelId === dl.relation_id ? (
+                      <span className="spinner-border spinner-border-sm me-2" />
+                    ) : (
+                      <i className="bi bi-trash me-2" />
+                    )}
+                    Unlink
+                  </button>
+                </li>
+              </KebabMenu>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
 
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
 
-            {/* ===== Appointments ===== */}
-            <div className="d-flex align-items-center justify-content-between mt-4">
-              <h2 className="h5 text-uppercase text-muted mb-0 fw-bold">Appointments</h2>
-              <Link
-                to="/appointments/addAppointment"
-                state={{
-                  courtfileId: courtfile.id,
-                  courtfileNumber: courtfile.case_number,
-                  courtfileTitle: courtfile.title,
-                  returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
-                }}
-                className="btn btn-phoenix-primary ms-2"
-              >
-                + New appointment
-              </Link>
-            </div>
+           {/* ===== Appointments ===== */}
+<div className="d-flex align-items-center justify-content-between mt-4">
+  <h2 className="h5 text-uppercase text-muted mb-0 fw-bold">Appointments</h2>
+  <Link
+    to="/appointments/addAppointment"
+    state={{
+      courtfileId: courtfile.id,
+      courtfileNumber: courtfile.case_number,
+      courtfileTitle: courtfile.title,
+      returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+    }}
+    className="btn btn-phoenix-primary ms-2"
+  >
+    + New appointment
+  </Link>
+</div>
 
-            {loadingAppointments && <p className="mt-2">Loading appointments…</p>}
-            {appointmentsErr && (
-              <div className="alert alert-danger mt-2">{appointmentsErr}</div>
-            )}
-            {!loadingAppointments && !appointmentsErr && caseAppointments.length === 0 && (
-              <div className="alert text-secondary bg-transparent border-0 mt-2">No appointments yet.</div>
-            )}
-            {!loadingAppointments && caseAppointments.length > 0 && (
-              <div className="table-responsive mt-2">
-                <table className="table table-hover align-middle table-modern">
-                  <thead className="table-light">
-                    <tr>
-                      <th style={{ width: "20px" }}>ID</th>
-                      <th>Title</th>
-                      <th>Date</th>
-                      <th>Starts</th>
-                      <th>Ends</th>
-                      <th>Location</th>
-                      <th style={{ width: 48 }} className="text-end">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {caseAppointments.map((ap) => (
-                      <tr key={ap.relation_id}
-                        className="table-row-clickable"
-                        onClick={(e) => handleRowClick(e, 'appointment', ap)}>
-                        <td className="text-start ps-2">{ap.appointment_id}</td>
-                        <td>{ap.appointment_title}</td>
-                        <td>{ap.appointment_date}</td>
-                        <td>{ap.starts_at}</td>
-                        <td>{ap.ends_at}</td>
-                        <td>{ap.appointment_location}</td>
-                        <td className="text-center">
-                          <KebabMenu>
-                            <li>
-                              <Link
-                                className="dropdown-item"
-                                to={`/appointments/view/${ap.appointment_id}`}
-                                state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
-                              >
-                                <i className="bi bi-eye me-2" /> View
-                              </Link>
-                            </li>
-                            <li>
-                              <Link
-                                className="dropdown-item"
-                                to={`/appointments/${ap.appointment_id}`}
-                                state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
-                              >
-                                <i className="bi bi-pencil me-2" /> Edit
-                              </Link>
-                            </li>
-                            <li><hr className="dropdown-divider" /></li>
-                            <li>
-                              <button
-                                className="dropdown-item text-danger"
-                                disabled={!ap.relation_id || deletingApptRelId === ap.relation_id}
-                                onClick={() => handleDeleteAppointmentRelation(ap.relation_id)}
-                              >
-                                {deletingApptRelId === ap.relation_id ? (
-                                  <span className="spinner-border spinner-border-sm me-2" />
-                                ) : (
-                                  <i className="bi bi-trash me-2" />
-                                )}
-                                Unlink
-                              </button>
-                            </li>
-                          </KebabMenu>
-                        </td>
+{loadingAppointments && <p className="mt-2">Loading appointments…</p>}
+{appointmentsErr && (
+  <div className="alert alert-danger mt-2">{appointmentsErr}</div>
+)}
+{!loadingAppointments && !appointmentsErr && caseAppointments.length === 0 && (
+  <div className="alert text-secondary bg-transparent border-0 mt-2">No appointments yet.</div>
+)}
+{!loadingAppointments && caseAppointments.length > 0 && (
+  <div className="table-responsive mt-2">
+    <table className="table table-hover align-middle table-modern">
+      <thead className="table-light">
+        <tr>
+          <th style={{ width: "20px" }}>ID</th>
+          <th role="button" onClick={() => requestSort("appointment_title")}>
+            Title{" "}
+            <i
+              className={`bi ${
+                sortConfig.key === "appointment_title"
+                  ? sortConfig.direction === "asc"
+                    ? "bi-arrow-up"
+                    : "bi-arrow-down"
+                  : "bi-arrow-down-up text-muted"
+              }`}
+            />
+          </th>
+          <th role="button" onClick={() => requestSort("appointment_date")}>
+            Date{" "}
+            <i
+              className={`bi ${
+                sortConfig.key === "appointment_date"
+                  ? sortConfig.direction === "asc"
+                    ? "bi-arrow-up"
+                    : "bi-arrow-down"
+                  : "bi-arrow-down-up text-muted"
+              }`}
+            />
+          </th>
+          <th role="button" onClick={() => requestSort("starts_at")}>
+            Starts{" "}
+            <i
+              className={`bi ${
+                sortConfig.key === "starts_at"
+                  ? sortConfig.direction === "asc"
+                    ? "bi-arrow-up"
+                    : "bi-arrow-down"
+                  : "bi-arrow-down-up text-muted"
+              }`}
+            />
+          </th>
+          <th>Ends</th>
+          <th role="button" onClick={() => requestSort("appointment_location")}>
+            Location{" "}
+            <i
+              className={`bi ${
+                sortConfig.key === "appointment_location"
+                  ? sortConfig.direction === "asc"
+                    ? "bi-arrow-up"
+                    : "bi-arrow-down"
+                  : "bi-arrow-down-up text-muted"
+              }`}
+            />
+          </th>
+          <th style={{ width: 48 }} className="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {sortedAppointments.map((ap) => (
+          <tr
+            key={ap.relation_id}
+            className="table-row-clickable"
+            onClick={(e) => handleRowClick(e, "appointment", ap)}
+          >
+            <td className="text-start ps-2">{ap.appointment_id}</td>
+            <td>{ap.appointment_title}</td>
+            <td>{ap.appointment_date}</td>
+            <td>{ap.starts_at}</td>
+            <td>{ap.ends_at}</td>
+            <td>{ap.appointment_location}</td>
+            <td className="text-center">
+              <KebabMenu>
+                <li>
+                  <Link
+                    className="dropdown-item"
+                    to={`/appointments/view/${ap.appointment_id}`}
+                    state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                  >
+                    <i className="bi bi-eye me-2" /> View
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    className="dropdown-item"
+                    to={`/appointments/${ap.appointment_id}`}
+                    state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                  >
+                    <i className="bi bi-pencil me-2" /> Edit
+                  </Link>
+                </li>
+                <li><hr className="dropdown-divider" /></li>
+                <li>
+                  <button
+                    className="dropdown-item text-danger"
+                    disabled={!ap.relation_id || deletingApptRelId === ap.relation_id}
+                    onClick={() => handleDeleteAppointmentRelation(ap.relation_id)}
+                  >
+                    {deletingApptRelId === ap.relation_id ? (
+                      <span className="spinner-border spinner-border-sm me-2" />
+                    ) : (
+                      <i className="bi bi-trash me-2" />
+                    )}
+                    Unlink
+                  </button>
+                </li>
+              </KebabMenu>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
 
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
 
-            {/* ===== Lawyers ===== */}
-            <div className="d-flex align-items-center justify-content-between mt-4">
-              <h2 className="h5 text-uppercase text-muted mb-0 fw-bold">Lawyers</h2>
-              <Link
-                to="/lawyers/link-or-invite"
-                state={{
-                  courtfileId: courtfile.id,
-                  courtfileNumber: courtfile.case_number,
-                  courtfileTitle: courtfile.title,
-                  returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
-                }}
-                className="btn btn-phoenix-primary ms-2"
-              >
-                + New lawyer
-              </Link>
-            </div>
-            {loadingLawyers && <p className="mt-2">Loading lawyers…</p>}
-            {lawyersErr && <div className="alert alert-danger mt-2">{lawyersErr}</div>}
-            {!loadingLawyers && !lawyersErr && caseLawyers.length === 0 && (
-              <div className="alert text-secondary bg-transparent border-0 mt-2">No lawyers linked.</div>
-            )}
-            {!loadingLawyers && caseLawyers.length > 0 && (
-              <div className="table-responsive mt-2">
-                <table className="table table-hover align-middle table-modern">
-                  <thead className="table-light">
-                    <tr>
-                      <th style={{ width: "20px" }}>ID</th>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Phone</th>
-                      <th style={{ width: 48 }} className="text-end">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {caseLawyers.map((lw) => (
-                      <tr key={lw.relation_id}
-                        className="table-row-clickable"
-                        onClick={(e) => handleRowClick(e, 'lawyer', lw)}>
-                        <td className="text-start ps-2">{lw.lawyer_id}</td>
-                        <td>{lw.lawyer_name || "—"}</td>
-                        <td>{lw.lawyer_email || "—"}</td>
-                        <td>{lw.lawyer_phone || "—"}</td>
-                        <td className="text-center">
-                          <KebabMenu>
-                            <li>
-                              <Link
-                                className="dropdown-item"
-                                to={`/lawyers/view/${lw.lawyer_id}`}
-                                state={{
-                                  returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
-                                }}
-                              >
-                                <i className="bi bi-eye me-2" />
-                                View
-                              </Link>
-                            </li>
-                            <li>
-                              <button
-                                className="dropdown-item text-danger"
-                                disabled={
-                                  !lw.relation_id ||
-                                  deletingLawyerRelId === lw.relation_id ||
-                                  lw.lawyer_id !== currentLawyerId
-                                }
-                                onClick={() => handleDeleteLawyerRelation(lw.relation_id)}
-                              >
-                                {deletingLawyerRelId === lw.relation_id ? (
-                                  <span className="spinner-border spinner-border-sm me-2" />
-                                ) : (
-                                  <i className="bi bi-trash me-2" />
-                                )}
-                                Unlink
-                              </button>
-                            </li>
-                          </KebabMenu>
-                        </td>
-
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+           {/* ===== Lawyers ===== */}
+<div className="d-flex align-items-center justify-content-between mt-4">
+  <h2 className="h5 text-uppercase text-muted mb-0 fw-bold">Lawyers</h2>
+  <Link
+    to="/lawyers/link-or-invite"
+    state={{
+      courtfileId: courtfile.id,
+      courtfileNumber: courtfile.case_number,
+      courtfileTitle: courtfile.title,
+      returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+    }}
+    className="btn btn-phoenix-primary ms-2"
+  >
+    + New lawyer
+  </Link>
+</div>
+{loadingLawyers && <p className="mt-2">Loading lawyers…</p>}
+{lawyersErr && <div className="alert alert-danger mt-2">{lawyersErr}</div>}
+{!loadingLawyers && !lawyersErr && caseLawyers.length === 0 && (
+  <div className="alert text-secondary bg-transparent border-0 mt-2">No lawyers linked.</div>
+)}
+{!loadingLawyers && caseLawyers.length > 0 && (
+  <div className="table-responsive mt-2">
+    <table className="table table-hover align-middle table-modern">
+      <thead className="table-light">
+        <tr>
+          <th style={{ width: "20px" }}>ID</th>
+          <th role="button" onClick={() => requestSort("lawyer_name")}>
+            Name{" "}
+            <i
+              className={`bi ${
+                sortConfig.key === "lawyer_name"
+                  ? sortConfig.direction === "asc"
+                    ? "bi-arrow-up"
+                    : "bi-arrow-down"
+                  : "bi-arrow-down-up text-muted"
+              }`}
+            />
+          </th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th style={{ width: 48 }} className="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {sortedLawyers.map((lw) => (
+          <tr
+            key={lw.relation_id}
+            className="table-row-clickable"
+            onClick={(e) => handleRowClick(e, "lawyer", lw)}
+          >
+            <td className="text-start ps-2">{lw.lawyer_id}</td>
+            <td>{lw.lawyer_name || "—"}</td>
+            <td>{lw.lawyer_email || "—"}</td>
+            <td>{lw.lawyer_phone || "—"}</td>
+            <td className="text-center">
+              <KebabMenu>
+                <li>
+                  <Link
+                    className="dropdown-item"
+                    to={`/lawyers/view/${lw.lawyer_id}`}
+                    state={{
+                      returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+                    }}
+                  >
+                    <i className="bi bi-eye me-2" />
+                    View
+                  </Link>
+                </li>
+                <li>
+                  <button
+                    className="dropdown-item text-danger"
+                    disabled={
+                      !lw.relation_id ||
+                      deletingLawyerRelId === lw.relation_id ||
+                      lw.lawyer_id !== currentLawyerId
+                    }
+                    onClick={() => handleDeleteLawyerRelation(lw.relation_id)}
+                  >
+                    {deletingLawyerRelId === lw.relation_id ? (
+                      <span className="spinner-border spinner-border-sm me-2" />
+                    ) : (
+                      <i className="bi bi-trash me-2" />
+                    )}
+                    Unlink
+                  </button>
+                </li>
+              </KebabMenu>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
 
             {/* ===== Clients ===== */}
-            <div className="d-flex align-items-center justify-content-between mt-4">
-              <h2 className="h5 text-uppercase text-muted mb-0 fw-bold">Clients</h2>
-              <Link
-                to="/clients/link-or-create"
-                state={{
-                  courtfileId: courtfile.id,
-                  courtfileNumber: courtfile.case_number,
-                  courtfileTitle: courtfile.title,
-                  returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
-                }}
-                className="btn btn-phoenix-primary ms-2"
-              >
-                + New client
-              </Link>
-            </div>
+<div className="d-flex align-items-center justify-content-between mt-4">
+  <h2 className="h5 text-uppercase text-muted mb-0 fw-bold">Clients</h2>
+  <Link
+    to="/clients/link-or-create"
+    state={{
+      courtfileId: courtfile.id,
+      courtfileNumber: courtfile.case_number,
+      courtfileTitle: courtfile.title,
+      returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}`,
+    }}
+    className="btn btn-phoenix-primary ms-2"
+  >
+    + New client
+  </Link>
+</div>
 
-            {loadingClients && <p className="mt-2">Loading clients…</p>}
-            {clientsErr && (
-              <div className="alert alert-danger mt-2">{clientsErr}</div>
-            )}
-            {!loadingClients && !clientsErr && caseClients.length === 0 && (
-              <div className="alert text-secondary bg-transparent border-0 mt-2">No clients linked.</div>
-            )}
-            {!loadingClients && caseClients.length > 0 && (
-              <div className="table-responsive mt-2">
-                <table className="table table-hover align-middle table-modern">
-                  <thead className="table-light">
-                    <tr>
-                      <th style={{ width: "20px" }}>ID</th>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Phone</th>
-                      <th style={{ width: 48 }} className="text-end">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {caseClients.map((cl) => (
-                      <tr key={cl.relation_id}
-                        className="table-row-clickable"
-                        onClick={(e) => handleRowClick(e, 'client', cl)}>
-                        <td className="text-start ps-2">{cl.client_id}</td>
-                        <td>{cl.client_name || "—"}</td>
-                        <td>{cl.client_email || "—"}</td>
-                        <td>{cl.client_phone || "—"}</td>
-                        <td className="text-center">
-                          <KebabMenu>
-                            <li>
-                              <Link
-                                className="dropdown-item"
-                                to={`/clients/view/${cl.client_id}`}
-                                state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
-                              >
-                                <i className="bi bi-eye me-2" /> View
-                              </Link>
-                            </li>
-                            <li><hr className="dropdown-divider" /></li>
-                            <li>
-                              <button
-                                className="dropdown-item text-danger"
-                                disabled={!cl.relation_id || deletingClientRelId === cl.relation_id}
-                                onClick={() => handleDeleteClientRelation(cl.relation_id)}
-                              >
-                                {deletingClientRelId === cl.relation_id ? (
-                                  <span className="spinner-border spinner-border-sm me-2" />
-                                ) : (
-                                  <i className="bi bi-trash me-2" />
-                                )}
-                                Unlink
-                              </button>
-                            </li>
-                          </KebabMenu>
-                        </td>
+{loadingClients && <p className="mt-2">Loading clients…</p>}
+{clientsErr && <div className="alert alert-danger mt-2">{clientsErr}</div>}
+{!loadingClients && !clientsErr && caseClients.length === 0 && (
+  <div className="alert text-secondary bg-transparent border-0 mt-2">
+    No clients linked.
+  </div>
+)}
+{!loadingClients && caseClients.length > 0 && (
+  <div className="table-responsive mt-2">
+    <table className="table table-hover align-middle table-modern">
+      <thead className="table-light">
+        <tr>
+          <th style={{ width: "20px" }}>ID</th>
+          <th role="button" onClick={() => requestSort("client_name")}>
+            Name{" "}
+            <i
+              className={`bi ${
+                sortConfig.key === "client_name"
+                  ? sortConfig.direction === "asc"
+                    ? "bi-arrow-up"
+                    : "bi-arrow-down"
+                  : "bi-arrow-down-up text-muted"
+              }`}
+            />
+          </th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th style={{ width: 48 }} className="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {sortedClients.map((cl) => (
+          <tr
+            key={cl.relation_id}
+            className="table-row-clickable"
+            onClick={(e) => handleRowClick(e, "client", cl)}
+          >
+            <td className="text-start ps-2">{cl.client_id}</td>
+            <td>{cl.client_name || "—"}</td>
+            <td>{cl.client_email || "—"}</td>
+            <td>{cl.client_phone || "—"}</td>
+            <td className="text-center">
+              <KebabMenu>
+                <li>
+                  <Link
+                    className="dropdown-item"
+                    to={`/clients/view/${cl.client_id}`}
+                    state={{ returnTo: `/courtfiles/ViewCourtfileLawyer/${courtfile.id}` }}
+                  >
+                    <i className="bi bi-eye me-2" /> View
+                  </Link>
+                </li>
+                <li><hr className="dropdown-divider" /></li>
+                <li>
+                  <button
+                    className="dropdown-item text-danger"
+                    disabled={!cl.relation_id || deletingClientRelId === cl.relation_id}
+                    onClick={() => handleDeleteClientRelation(cl.relation_id)}
+                  >
+                    {deletingClientRelId === cl.relation_id ? (
+                      <span className="spinner-border spinner-border-sm me-2" />
+                    ) : (
+                      <i className="bi bi-trash me-2" />
+                    )}
+                    Unlink
+                  </button>
+                </li>
+              </KebabMenu>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
 
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </div>
 
           {/* ASIDE */}

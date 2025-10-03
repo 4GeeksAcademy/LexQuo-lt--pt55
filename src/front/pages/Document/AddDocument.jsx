@@ -228,42 +228,46 @@ export const AddDocument = () => {
               </ol>
             </nav>
 
-     {/* Header */}
-<div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4">
-  <div>
-    <h1 className="display-5 fw-bold mb-2 mb-sm-0">Add New Document</h1>
-    {preselectedCourtfileId && (
-      <span className="badge badge-phoenix-secondary mt-1 mb-3 text-wrap text-break">
-        Linked to Case {preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
-        {preselectedCourtfileTitle ? ` — ${preselectedCourtfileTitle}` : ""}
-      </span>
-    )}
-  </div>
+            {/* Header */}
+            <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4">
+              <div>
+                <h1 className="display-5 fw-bold mb-2 mb-sm-0">Add New Document</h1>
+                {preselectedCourtfileId && (
+                  <span className="badge badge-phoenix-secondary mt-1 mb-3 text-wrap text-break">
+                    Linked to Case {preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
+                    {preselectedCourtfileTitle ? ` — ${preselectedCourtfileTitle}` : ""}
+                  </span>
+                )}
+              </div>
 
-  <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
-    <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary fs-10 fs-md-9">
-      Cancel
-    </Link>
-    <button
-      type="submit"
-      form="addDocumentForm"
-      className="btn btn-phoenix btn-phoenix-primary fs-10 fs-md-9"
-      disabled={loading || linking}
-    >
-      {loading || linking ? (
-        <>
-          <span className="spinner-border spinner-border-sm me-2" role="status" />
-          {linking ? " Linking..." : " Creating..."}
-        </>
-      ) : (
-        <>
-          <i className="bi bi-plus-circle me-2" />
-          Create Document
-        </>
-      )}
-    </button>
-  </div>
-</div>
+              {/* Botones solo en md+ */}
+              <div className="d-none d-md-flex gap-2">
+                <Link
+                  to={returnTo}
+                  className="btn btn-phoenix btn-phoenix-secondary fs-10 fs-md-9"
+                >
+                  Cancel
+                </Link>
+                <button
+                  type="submit"
+                  form="addDocumentForm"
+                  className="btn btn-phoenix btn-phoenix-primary fs-10 fs-md-9"
+                  disabled={loading || linking}
+                >
+                  {loading || linking ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" />
+                      {linking ? " Linking..." : " Creating..."}
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-plus-circle me-2" />
+                      Create Document
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
 
 
             {/* Card contenedora */}
@@ -284,9 +288,9 @@ export const AddDocument = () => {
                         <h6 className="mb-1 text-uppercase text-muted fw-bold">Sugerencia IA</h6>
                         {suggestion.urgency && (
                           <span className={`badge badge-phoenix ${String(suggestion.urgency).toLowerCase() === "urgent" ? "badge-phoenix-danger" :
-                              String(suggestion.urgency).toLowerCase() === "high" ? "badge-phoenix-warning" :
-                                String(suggestion.urgency).toLowerCase() === "medium" ? "badge-phoenix-info" :
-                                  "badge-phoenix-secondary"
+                            String(suggestion.urgency).toLowerCase() === "high" ? "badge-phoenix-warning" :
+                              String(suggestion.urgency).toLowerCase() === "medium" ? "badge-phoenix-info" :
+                                "badge-phoenix-secondary"
                             }`}>
                             {String(suggestion.urgency).toUpperCase()}
                           </span>
@@ -428,6 +432,33 @@ export const AddDocument = () => {
                 <label htmlFor="description">Description</label>
               </div>
             </form>
+            {/* Botones solo en mobile */}
+            <div className="d-flex d-md-none gap-2 mt-3 justify-content-end">
+              <Link
+                to={returnTo}
+                className="btn btn-phoenix btn-phoenix-secondary fs-10"
+              >
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                form="addDocumentForm"
+                className="btn btn-phoenix btn-phoenix-primary fs-10"
+                disabled={loading || linking}
+              >
+                {loading || linking ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" />
+                    {linking ? " Linking..." : " Creating..."}
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-plus-circle me-2" />
+                    Create Document
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

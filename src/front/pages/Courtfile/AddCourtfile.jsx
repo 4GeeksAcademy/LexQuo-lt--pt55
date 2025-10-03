@@ -133,7 +133,8 @@ export const AddCourtfile = () => {
                     {/* Header */}
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <h1 className="display-5 fw-bold mb-0">Add New Courtfile</h1>
-                        <div className="d-flex gap-2">
+                        {/* Botones solo en md+ */}
+                        <div className="d-none d-md-flex gap-2">
                             <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary">
                                 Cancel
                             </Link>
@@ -265,6 +266,30 @@ export const AddCourtfile = () => {
 
 
                     </form>
+                    {/* Botones solo en mobile */}
+                    <div className="d-flex d-md-none gap-2 mt-3 justify-content-end">
+                        <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary">
+                            Cancel
+                        </Link>
+                        <button
+                            type="submit"
+                            form="addCourtfileForm"
+                            className="btn btn-phoenix btn-phoenix-primary"
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm me-2" role="status" />
+                                    Creating...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="bi bi-plus-circle me-2" />
+                                    Create Courtfile
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </div>
         </AppNavsShell>
