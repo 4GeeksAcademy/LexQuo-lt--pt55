@@ -4,6 +4,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import AppNavsShell from "../../components/AppNavsShell";
 import PaymentBadge from "../../components/PaymentBadge";
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+} from "recharts";
+
+import {
+  PieChart, Pie, Cell, 
+} from "recharts";
+
 
 export const Payments = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -22,6 +30,7 @@ export const Payments = () => {
   const [q, setQ] = useState("");                       // search (id, currency, means)
   const [fStatus, setFStatus] = useState("all");        // all | pending | approved | processing | rejected
   const [loading, setLoading] = useState(false);
+  const [selectedMonth, setSelectedMonth] = useState(null);
 
   // ---------- Fetch ----------
   const fetchPayments = async () => {
@@ -168,6 +177,215 @@ export const Payments = () => {
         ? "/DashboardClient"
         : "/DashboardLawyer";
 
+  // ===== Monthly chart helpers =====
+
+// keep your selectedMonth state outside (you already have it)
+// const [selectedMonth, setSelectedMonth] = useState(null);
+
+const isValidDate = (d) => d instanceof Date && !Number.isNaN(d.getTime());
+
+const monthKey = (d) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`; // e.g., 2025-10
+};
+
+const monthLabel = (d) =>
+  d.toLocaleString("en-US", { month: "short", year: "numeric" });
+
+// Last 12 months (including current)
+const last12Months = (() => {
+  const arr = [];
+  const today = new Date();
+  const base = new Date(today.getFullYear(), today.getMonth(), 1);
+  for (let i = 11; i >= 0; i--) {
+    const dt = new Date(base.getFullYear(), base.getMonth() - i, 1);
+    arr.push(new Date(dt));
+  }
+  return arr;
+})();
+
+// 12-month overview (for building dropdown options; line chart is per selected month)
+const monthlyData = useMemo(() => {
+  const index = new Map(); // YYYY-MM -> { key, label, pendingCount, approvedCount }
+  last12Months.forEach((d) => {
+    index.set(monthKey(d), {
+      key: monthKey(d),
+      label: monthLabel(d),
+      pendingCount: 0,
+      approvedCount: 0,
+    });
+  });
+
+  const inWindow = (d) => {
+    if (!isValidDate(d)) return false;
+    const first = last12Months[0];
+    const last = last12Months[last12Months.length - 1];
+    const start = new Date(first.getFullYear(), first.getMonth(), 1);  // inclusive
+    const end   = new Date(last.getFullYear(),  last.getMonth() + 1, 1); // exclusive
+    return d >= start && d < end;
+  };
+
+  for (const p of payments) {
+    const status = String(p?.status || "").toLowerCase();
+
+    // pending -> created_at
+    if (status.includes("pending")) {
+      const d = p?.created_at ? new Date(p.created_at) : null;
+      if (isValidDate(d) && inWindow(d)) {
+        const k = monthKey(new Date(d.getFullYear(), d.getMonth(), 1));
+        const b = index.get(k);
+        if (b) b.pendingCount += 1;
+      }
+    }
+
+    // approved -> paid_at (fallback created_at)
+    if (status.includes("approved")) {
+      const paid = p?.paid_at ? new Date(p.paid_at) : null;
+      const useDate = isValidDate(paid) ? paid : (p?.created_at ? new Date(p.created_at) : null);
+      if (isValidDate(useDate) && inWindow(useDate)) {
+        const k = monthKey(new Date(useDate.getFullYear(), useDate.getMonth(), 1));
+        const b = index.get(k);
+        if (b) b.approvedCount += 1;
+      }
+    }
+  }
+
+  return Array.from(index.values());
+}, [payments]);
+
+// Month options for selects
+const monthOptions = useMemo(
+  () => monthlyData.map((d) => ({ key: d.key, label: d.label })),
+  [monthlyData]
+);
+
+// Default selected = most recent month
+useEffect(() => {
+  if (monthOptions.length > 0 && !selectedMonth) {
+    setSelectedMonth(monthOptions[monthOptions.length - 1].key);
+  }
+}, [monthOptions, selectedMonth]);
+
+// ----- Daily data for selected month (line chart) -----
+const { dailyData, lastDayOfMonth } = useMemo(() => {
+  if (!selectedMonth) return { dailyData: [], lastDayOfMonth: 31 };
+
+  const [yStr, mStr] = selectedMonth.split("-");
+  const y = Number(yStr), m = Number(mStr);
+  if (!y || !m) return { dailyData: [], lastDayOfMonth: 31 };
+
+  const lastDay = new Date(y, m, 0).getDate();
+  const index = new Map();
+  for (let d = 1; d <= lastDay; d++) {
+    index.set(d, { dayNum: d, pendingCount: 0, approvedCount: 0 });
+  }
+
+  for (const p of payments) {
+    const status = String(p?.status || "").toLowerCase();
+
+    if (status.includes("pending")) {
+      const created = p?.created_at ? new Date(p.created_at) : null;
+      if (isValidDate(created) && created.getFullYear() === y && (created.getMonth() + 1) === m) {
+        const d = created.getDate();
+        index.get(d).pendingCount += 1;
+      }
+    }
+
+    if (status.includes("approved")) {
+      const paid = p?.paid_at ? new Date(p.paid_at) : null;
+      const useDate = isValidDate(paid) ? paid : (p?.created_at ? new Date(p.created_at) : null);
+      if (isValidDate(useDate) && useDate.getFullYear() === y && (useDate.getMonth() + 1) === m) {
+        const d = useDate.getDate();
+        index.get(d).approvedCount += 1;
+      }
+    }
+  }
+
+  return { dailyData: Array.from(index.values()), lastDayOfMonth: lastDay };
+}, [selectedMonth, payments]);
+
+// ----- Monthly pies (status & means) -----
+
+// Bounds for selected month
+const monthBounds = useMemo(() => {
+  if (!selectedMonth) return null;
+  const [yStr, mStr] = selectedMonth.split("-");
+  const y = Number(yStr), m = Number(mStr);
+  if (!y || !m) return null;
+  return { start: new Date(y, m - 1, 1), end: new Date(y, m, 1) }; // [start, end)
+}, [selectedMonth]);
+
+// Which date to use per payment (same rule as line):
+const dateForPayment = (p) => {
+  const s = String(p?.status || "").toLowerCase();
+  if (s.includes("approved")) {
+    const paid = p?.paid_at ? new Date(p.paid_at) : null;
+    return isValidDate(paid) ? paid : (p?.created_at ? new Date(p.created_at) : null);
+  }
+  return p?.created_at ? new Date(p.created_at) : null;
+};
+
+// Filter payments within month
+const monthlyPayments = useMemo(() => {
+  if (!monthBounds) return [];
+  const { start, end } = monthBounds;
+  return payments.filter((p) => {
+    const d = dateForPayment(p);
+    return isValidDate(d) && d >= start && d < end;
+  });
+}, [payments, monthBounds]);
+
+// Status counts (monthly)
+const statusData = useMemo(() => {
+  const counts = { Approved: 0, Pending: 0, Processing: 0, Rejected: 0 };
+  for (const p of monthlyPayments) {
+    const s = String(p?.status || "").toLowerCase();
+    if (s.includes("approved")) counts.Approved += 1;
+    else if (s.includes("pending")) counts.Pending += 1;
+    else if (s.includes("processing")) counts.Processing += 1;
+    else if (s.includes("rejected")) counts.Rejected += 1;
+  }
+  return Object.entries(counts).map(([name, value]) => ({ name, value }));
+}, [monthlyPayments]);
+
+const totalStatus = useMemo(
+  () => statusData.reduce((sum, s) => sum + (Number(s.value) || 0), 0),
+  [statusData]
+);
+
+// Means counts (monthly)
+const prettyMeansName = (raw = "") => {
+  const k = String(raw).trim().toLowerCase();
+  if (!k) return "Unknown";
+  if (["tdc", "tarjeta", "credit_card", "credit card"].includes(k)) return "Credit card";
+  if (["transferencia", "bank_transfer", "transfer"].includes(k)) return "Bank transfer";
+  if (["link de pago", "payment_link", "link"].includes(k)) return "Payment link";
+  if (["cash", "efectivo"].includes(k)) return "Cash";
+  return raw || "Unknown";
+};
+
+const meansData = useMemo(() => {
+  const map = {};
+  for (const p of monthlyPayments) {
+    const key = prettyMeansName(p.means || "Unknown");
+    map[key] = (map[key] || 0) + 1;
+  }
+  return Object.entries(map)
+    .map(([name, value]) => ({ name, value }))
+    .filter((d) => d.value > 0)
+    .sort((a, b) => b.value - a.value);
+}, [monthlyPayments]);
+
+const totalMeans = useMemo(
+  () => meansData.reduce((s, d) => s + (Number(d.value) || 0), 0),
+  [meansData]
+);
+
+// Phoenix palette (keep yours)
+const COLORS_STATUS = ["#27ae60", "#f6c343", "#3874ff", "#e63757"];
+const COLORS_MEANS  = ["#3874ff", "#00c9db", "#f6c343", "#6c757d", "#27ae60", "#e63757"];
+
 
   return (
     <AppNavsShell>
@@ -200,15 +418,161 @@ export const Payments = () => {
             </p>
           </div>
 
+<div className="row gap-5">
+          {/* ===== Monthly view (line) ===== */}
+<div className="card mb-4 col-12 col-md-5">
+  <div className="card-body">
+    <div className="d-flex justify-content-between align-items-center mb-2">
+      <div>
+        <h2 className="h5 mb-0">Total payments</h2>
+        <small className="text-muted">Payments received across all channels</small>
+      </div>
+      <select
+        className="form-select form-select-sm"
+        style={{ maxWidth: 220 }}
+        value={selectedMonth || ""}
+        onChange={(e) => setSelectedMonth(e.target.value)}
+      >
+        {monthOptions.map((opt) => (
+          <option key={opt.key} value={opt.key}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <div style={{ width: "100%", height: 320 }}>
+      <ResponsiveContainer>
+        <LineChart data={dailyData} margin={{ top: 10, right: 16, bottom: 8, left: 8 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey="dayNum"
+            type="number"
+            domain={[1, lastDayOfMonth]}
+            ticks={[1, Math.min(15, lastDayOfMonth), lastDayOfMonth]}
+            padding={{ left: 12, right: 12 }}
+            allowDataOverflow
+            tickFormatter={(dayNum) => {
+              if (!selectedMonth) return dayNum;
+              const [yStr, mStr] = selectedMonth.split("-");
+              const d = new Date(Number(yStr), Number(mStr) - 1, Number(dayNum));
+              return d.toLocaleString("en-US", { month: "short" }) + "-" + String(d.getDate()).padStart(2, "0");
+            }}
+            tick={{ fontSize: 12 }}
+          />
+          <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+          <Tooltip
+            labelFormatter={(dayNum) => {
+              if (!selectedMonth) return dayNum;
+              const [yStr, mStr] = selectedMonth.split("-");
+              const d = new Date(Number(yStr), Number(mStr) - 1, Number(dayNum));
+              return d.toLocaleString("en-US", { month: "short" }) + "-" + String(d.getDate()).padStart(2, "0");
+            }}
+          />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
+          <Line type="monotone" dataKey="approvedCount" name="Approved" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} />
+          <Line type="monotone" dataKey="pendingCount"  name="Pending"  strokeWidth={2.5} strokeDasharray="6 6" dot={false} activeDot={{ r: 4 }} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  </div>
+</div>
+
+
+ {/* ===== pie-chart (Means) ===== */}
+<div className="card mb-4 col-12 col-md-5">
+  <div className="card-body">
+    {/* Header con título y selector */}
+    <div className="d-flex justify-content-between align-items-center mb-2">
+      <h5 className="fw-bold mb-0">Payment Means</h5>
+      <select
+        className="form-select form-select-sm"
+        style={{ maxWidth: 180 }}
+        value={selectedMonth || ""}
+        onChange={(e) => setSelectedMonth(e.target.value)}
+      >
+        {monthOptions.map((opt) => (
+          <option key={opt.key} value={opt.key}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <div className="d-flex flex-column flex-md-row align-items-center pt-5">
+      {/* Donut */}
+      <div className="flex-grow-1" style={{ height: 260 }}>
+        <ResponsiveContainer>
+          <PieChart>
+            <Pie
+              data={meansData}
+              dataKey="value"
+              nameKey="name"
+              innerRadius={70}
+              outerRadius={100}
+              paddingAngle={2}
+              labelLine={false}
+              label={false}
+            >
+              {meansData.map((entry, index) => (
+                <Cell
+                  key={`cell-means-${index}`}
+                  fill={COLORS_MEANS[index % COLORS_MEANS.length]}
+                />
+              ))}
+            </Pie>
+            <Tooltip />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Tabla lateral */}
+      <div className="ms-md-4 mt-3 mt-md-0" style={{ minWidth: 180 }}>
+        <p className="text-muted small mb-2">
+          Total count {meansData.reduce((sum, m) => sum + m.value, 0)}
+        </p>
+        <ul className="list-unstyled small">
+          {meansData.map((m, i) => (
+            <li
+              key={m.name}
+              className="d-flex justify-content-between align-items-center mb-1"
+            >
+              <span className="d-flex align-items-center">
+                <span
+                  className="me-2 d-inline-block rounded-circle"
+                  style={{
+                    width: 10,
+                    height: 10,
+                    backgroundColor: COLORS_MEANS[i % COLORS_MEANS.length],
+                  }}
+                />
+                {m.name.charAt(0).toUpperCase() + m.name.slice(1)}
+              </span>
+              <span className="fw-semibold">{m.value}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+
           {/* Fila 2: search + filtros + Add */}
-          <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
-            {/* Izquierda */}
-            <div className="d-flex align-items-center gap-2 flex-nowrap">
-              {/* Search */}
-              <div className="search-box" style={{ position: "relative", maxWidth: 320, flex: "1 1 auto" }}>
+          <div className="row g-2 align-items-center">
+            {/* Search */}
+            <div className="col-12 col-md">
+              <div className="search-box position-relative" style={{ maxWidth: 320 }}>
                 <i
-                  className="bi bi-search"
-                  style={{ position: "absolute", top: "50%", left: 10, transform: "translateY(-50%)", color: "#6c757d" }}
+                  className="bi bi-search position-absolute"
+                  style={{
+                    top: "50%",
+                    left: 10,
+                    transform: "translateY(-50%)",
+                    color: "#6c757d",
+                  }}
                 />
                 <input
                   type="search"
@@ -223,36 +587,48 @@ export const Payments = () => {
                     className="btn btn-sm position-absolute"
                     onClick={() => setQ("")}
                     title="Clear"
-                    style={{ top: "50%", right: 6, transform: "translateY(-50%)", background: "transparent", border: "none", color: "#6c757d" }}
+                    style={{
+                      top: "50%",
+                      right: 6,
+                      transform: "translateY(-50%)",
+                      background: "transparent",
+                      border: "none",
+                      color: "#6c757d",
+                    }}
                   >
                     <i className="bi bi-x-lg" />
                   </button>
                 )}
               </div>
-
-              {/* Filtro status */}
-              <div className="d-flex align-items-center gap-2 flex-nowrap">
-                {["all", "pending", "approved", "processing", "rejected"].map(s => (
-                  <button
-                    key={s}
-                    className={`btn btn-sm ${fStatus === s ? "btn-dark" : "btn-outline-secondary"}`}
-                    onClick={() => setFStatus(s)}
-                  >
-                    {s[0].toUpperCase() + s.slice(1)}
-                  </button>
-                ))}
-              </div>
             </div>
 
-            {/* Derecha: Add */}
-            <div className="ms-auto">
+            {/* Filtros */}
+            <div className="col-12 col-md-auto d-flex flex-wrap gap-2">
+              {["all", "pending", "approved", "processing", "rejected"].map((s) => (
+                <button
+                  key={s}
+                  className={`btn btn-sm fs-md-9 fs-10 ${fStatus === s ? "btn-dark" : "btn-outline-secondary"
+                    }`}
+                  onClick={() => setFStatus(s)}
+                >
+                  {s[0].toUpperCase() + s.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            {/* Add */}
+            <div className="col-12 col-md-auto">
               {canAdd && (
-                <Link to="/payments/addPayment" className="btn btn-phoenix btn-phoenix-primary">
+                <Link
+                  to="/payments/addPayment"
+                  className="btn btn-phoenix btn-phoenix-primary w-100 w-md-auto"
+                >
                   <i className="bi bi-plus-lg me-1" /> Add payment
                 </Link>
               )}
             </div>
           </div>
+
         </div>
 
         {/* ===== Tabla ===== */}

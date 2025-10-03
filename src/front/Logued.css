@@ -253,12 +253,6 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   background: rgba(255,255,255,0.06);
 }
 
-/* Evitar scroll horizontal en la parte scrolleable ==================================================================================*/
-#navbarVerticalOffcanvas .navbar-vertical-content{
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
 /* Colapso real en escritorio ==================================================================================*/
 @media (min-width: 992px){
   html.navbar-vertical-collapsed #navbarVerticalOffcanvas.offcanvas-lg{
@@ -440,13 +434,6 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
    React-Calendar — fila estable al hover
    (normalizamos <abbr> para TODOS los estados)
    ========================================= ======================================================*/
-
-/* Base calendario */
-.react-calendar { 
-  width: 100%; 
-  border: none; 
-}
-
 /* Navegación */
 .react-calendar__navigation button { 
   border-radius: 8px; 
@@ -570,6 +557,13 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   padding-right: 1.5rem !important;
 }
 
+/* En celulares (<576px) menos margen izquierdo */
+@media (max-width: 575.98px) {
+  .add-page {
+    margin-left: 0 !important; /* ajustá a gusto */
+    padding-right: 0 !important;
+  }
+}
 
 /* =============parche tabla============================= */
 .juris-clip {
@@ -580,11 +574,6 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 }
 
 /* =============view clients/lawyers============================= */
-/* avatar tamaño Shopify-like sin romper nada más */
-.avatar-xl { width: 96px; height: 96px; }
-
-/* util para imágenes de perfil */
-.object-fit-cover { object-fit: cover; }
 
 .card-roomy .card-body { padding: 1.5rem; }
 @media (min-width: 992px) { .card-roomy .card-body { padding: 2rem; } }
@@ -831,11 +820,6 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
   padding: 2px 6px;       /* compensa el texto chico */
 }
 
-/* Si querés diferenciar tipos: */
-.lxq-cal-widget .lxq-deadline {
-  font-size: 0.7rem;      /* deadlines aún más chicos */
-}
-
 .lxq-cal-widget .lxq-appointment {
   font-size: 0.75rem;
 }
@@ -888,5 +872,113 @@ button[data-bs-toggle="collapse"] .bi-caret-right-fill {
 .lxq-cal-widget .lxq-deadline { font-size: 0.65625rem; }   /* ~10.5px */
 .lxq-cal-widget .lxq-appointment { font-size: 0.6875rem; } /* ~11px */
 
+/* ============================================================ FIXES PARA RESPONSIVE ========================================================================= */
 
-/* ==================fix navbar ===========================*/
+/* ===============TABLAS=====================*/
+/* XS: <576px, solo Case (2) y Actions (6) */
+@media (max-width: 400px) {
+  .table-courtfiles th:nth-child(1), /* ID */
+  .table-courtfiles td:nth-child(1),
+  .table-courtfiles th:nth-child(3), /* Jurisdiction */
+  .table-courtfiles td:nth-child(3),
+  .table-courtfiles th:nth-child(4), /* Court */
+  .table-courtfiles td:nth-child(4),
+  .table-courtfiles th:nth-child(5), /* Status */
+  .table-courtfiles td:nth-child(5) {
+    display: none;
+  }
+
+  .table-courtfiles > .table{
+    table-layout: fixed;   /* clave */
+    width: 100%;
+  }
+
+   /* Columna Case - ocupa la mayor parte del espacio */
+  .table-courtfiles th:nth-child(2),
+  .table-courtfiles td:nth-child(2) {
+    padding-right: 10px;
+  }
+
+  /* Columna Actions - tamaño fijo para los botones */
+  .table-courtfiles th:nth-child(6),
+  .table-courtfiles td:nth-child(6) {
+    width: 20%;
+    white-space: nowrap;
+    text-align: right;
+  }
+
+  /* Texto más chico para caber mejor */
+  .table-courtfiles td,
+  .table-courtfiles th {
+    font-size: 0.875rem; /* ~14px */
+    padding: .4rem .3rem;
+  }
+
+  /* Título y subtítulo del Case */
+  .table-courtfiles .cell-main .title {
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .table-courtfiles .cell-main .subtitle {
+    font-size: 0.75rem;
+    color: #6c757d;
+  }
+}
+
+/* Por defecto ocupa todo */
+.toolbar-courtfiles {
+  width: 100%;
+}
+
+
+/* ===============DASHBOARD LAWYER=====================*/
+/* En pantallas chicas (<576px) limitar a 90% */
+@media (max-width: 575.98px) {
+  .toolbar-courtfiles {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .top-stats h2 {
+    font-size: 1.25rem; /* más chico que el default */
+  }
+  .top-stats span,
+  .top-stats p {
+    font-size: 0.75rem;
+  }
+  .top-stats i {
+    font-size: 1.25rem !important; /* ícono más chico */
+  }
+  .top-stats [style*="width: 40px"] {
+    width: 30px !important;
+    height: 30px !important;
+  }
+}
+
+
+
+
+/* XS: preview con 3 líneas y cambio de texto del botón */
+@media (max-width: 767.98px){
+  .desc-preview{
+    display: -webkit-box;
+    -webkit-line-clamp: 3;    /* cantidad de líneas que querés mostrar */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+
+    /* estándar (cuando lo soporten más browsers) */
+    line-clamp: 3;
+  }
+
+  /* Texto del botón según estado de .collapsed que agrega Bootstrap */
+  button[data-bs-toggle="collapse"] .label-less{ display:none; }
+  button[data-bs-toggle="collapse"]:not(.collapsed) .label-more{ display:none; }
+  button[data-bs-toggle="collapse"]:not(.collapsed) .label-less{ display:inline; }
+}
+
+@media (max-width: 575.98px) {
+  .chat-card {
+    margin-top: -2rem; /* sube solo esta card en XS */
+  }
+}

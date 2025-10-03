@@ -406,7 +406,7 @@ export const DashboardLawyer = () => {
                         <h2 className="mb-1">Lawyer Dashboard</h2>
                         <p className="text-body-secondary mb-0">What’s going on today</p>
                     </div>
-                    <div className="col-md-3 col-auto">
+                    <div className="col-md-3 col-auto d-none d-sm-block">
                         <div className="position-relative">
                             <i
                                 className="bi bi-calendar3 text-body-tertiary position-absolute top-50 start-0 translate-middle-y ms-3"
@@ -429,10 +429,10 @@ export const DashboardLawyer = () => {
                 </div>
 
                 {/* ===== TOP STATS: floating (no cards) ===== */}
-                <div className="row align-items-center g-4 mb-3 mt-3">
+                <div className="row align-items-center g-4 mb-3 mt-3 top-stats">
 
                     {/* Courtfiles */}
-                    <div className="col-12 col-sm-6 col-md-3">
+                    <div className="col-6 col-md-3">
                         <div className="d-flex align-items-center">
                             <div
                                 className="flex-shrink-0 d-inline-flex align-items-center justify-content-center me-2"
@@ -440,7 +440,6 @@ export const DashboardLawyer = () => {
                             >
                                 <i className="bi bi-folder2-open text-primary fs-4" />
                             </div>
-
                             <div className="ms-1">
                                 <div className="d-flex align-items-baseline">
                                     <h2 className="mb-0 me-2 lh-1">{courtfilesCount}</h2>
@@ -452,7 +451,7 @@ export const DashboardLawyer = () => {
                     </div>
 
                     {/* Upcoming (week) */}
-                    <div className="col-12 col-sm-6 col-md-3">
+                    <div className="col-6 col-md-3">
                         <div className="d-flex align-items-center">
                             <div
                                 className="flex-shrink-0 d-inline-flex align-items-center justify-content-center me-2"
@@ -472,7 +471,7 @@ export const DashboardLawyer = () => {
                     </div>
 
                     {/* Payments pending */}
-                    <div className="col-12 col-sm-6 col-md-3">
+                    <div className="col-6 col-md-3">
                         <div className="d-flex align-items-center">
                             <div
                                 className="flex-shrink-0 d-inline-flex align-items-center justify-content-center me-2"
@@ -492,7 +491,7 @@ export const DashboardLawyer = () => {
                     </div>
 
                     {/* Unread messages */}
-                    <div className="col-12 col-sm-6 col-md-3">
+                    <div className="col-6 col-md-3">
                         <div className="d-flex align-items-center">
                             <div
                                 className="flex-shrink-0 d-inline-flex align-items-center justify-content-center me-2"
@@ -518,7 +517,7 @@ export const DashboardLawyer = () => {
                 <div className="row g-4">
                     <div className="col-12">
                         {/* ===== Toolbar COURTFILES ===== */}
-                        <div>
+                        <div className="toolbar-courtfiles">
                             {/* Fila 1: título + contador (arriba) */}
                             <div className="d-flex align-items-center gap-3 mb-2">
                                 <div className="mb-2 mt-5">
@@ -527,12 +526,15 @@ export const DashboardLawyer = () => {
                                 </div>
                             </div>
 
-                            {/* Fila 2: izq = search + filtros | der = Add (misma línea) */}
-                            <div className="d-flex align-items-center justify-content-between gap-2 flex-nowrap">
+                            {/* Fila 2: izq = search + filtros | der = Add */}
+                            <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap flex-sm-nowrap">
                                 {/* Izquierda */}
-                                <div className="d-flex align-items-center gap-2 flex-nowrap w-100" style={{ minWidth: 0 }}>
-                                    {/* Search (tu mismo estilo) */}
-                                    <div className="search-box" style={{ width: "clamp(260px, 40vw, 420px)" }}>
+                                <div
+                                    className="d-flex align-items-center gap-2 flex-column flex-sm-row w-100"
+                                    style={{ minWidth: 0 }}
+                                >
+                                    {/* Search (igual estilo) */}
+                                    <div className="search-box w-100 w-sm-auto" style={{ width: "clamp(260px, 40vw, 420px)" }}>
                                         <i className="bi bi-search search-icon"></i>
                                         <input
                                             type="search"
@@ -549,7 +551,7 @@ export const DashboardLawyer = () => {
                                     </div>
 
                                     {/* Botoncitos de estado */}
-                                    <div className="d-flex align-items-center gap-2 flex-nowrap flex-shrink-0">
+                                    <div className="d-flex align-items-center gap-2 flex-nowrap flex-shrink-0 w-100 w-sm-auto justify-content-between justify-content-sm-start">
                                         <button
                                             className={`btn btn-sm ${status === "all" ? "btn-dark" : "px-3 text-body text-decoration-none btn btn-link"}`}
                                             onClick={() => setStatus("all")}
@@ -574,17 +576,18 @@ export const DashboardLawyer = () => {
                                 </div>
 
                                 {/* Derecha */}
-                                <div className="ms-auto flex-shrink-0">
+                                <div className="ms-auto flex-shrink-0 w-100 w-sm-auto">
                                     <Link
                                         to="/courtfiles/addcourtfile"
                                         state={{ linkToLawyer: true, returnTo: "/DashboardLawyer" }}
-                                        className="btn btn-phoenix btn-phoenix-primary"
+                                        className="btn btn-phoenix btn-phoenix-primary w-100 w-sm-auto"
                                     >
                                         + New Courtfile
                                     </Link>
                                 </div>
                             </div>
                         </div>
+
 
 
                         {/* tabla */}
@@ -595,7 +598,7 @@ export const DashboardLawyer = () => {
                         )}
 
                         {!loadingCases && filteredCases.length > 0 && (
-                            <div className="table-responsive table-wrap">
+                            <div className="table-responsive table-wrap table-courtfiles">
                                 <table className="table table-modern align-middle mb-0">
                                     <thead>
                                         <tr>
@@ -654,8 +657,8 @@ export const DashboardLawyer = () => {
                                                         }`}
                                                 />
                                             </th>
-                                            <th>
-                                                {/* Actions column */}
+                                            <th className="text-center">
+                                                Actions
                                             </th>
                                         </tr>
                                     </thead>
@@ -703,7 +706,7 @@ export const DashboardLawyer = () => {
                                                     </td>
 
                                                     {/* Actions compactas a la derecha (tus mismos botones) */}
-                                                    <td className="col-actions">
+                                                    <td className="col-actions text-center">
                                                         <div className="dropdown position-static">
                                                             {/* Botón kebab */}
                                                             <button
@@ -786,7 +789,7 @@ export const DashboardLawyer = () => {
                 </div>
 
                 {/* ==== FILA 2: CALENDAR (8) + PAYMENTS (4) ==== */}
-                <div className="row g-4 mt-5">
+                <div className="row g-2 g-lg-4 mt-4">
                     <div className="col-12 col-lg-8">
                         <DashboardCalendar
                             apiBase={import.meta.env.VITE_BACKEND_URL}
@@ -799,120 +802,69 @@ export const DashboardLawyer = () => {
 
                     <div className="col-12 col-lg-4">
                         <div className="card">
-                            <div className="card-header pb-1">
-                                {/* Fila 1: título + fecha */}
+                            <div className="card-header py-2 py-sm-3">
                                 <div className="d-flex justify-content-between align-items-center">
-                                    <h3 className="mb-0 fw-bold">Payments status</h3>
+                                    <h3 className="mb-0 fw-bold fs-6 fs-sm-5">Payments status</h3>
                                     <small className="text-muted">{new Date().toLocaleDateString()}</small>
                                 </div>
 
-                                {/* Fila 2: botón, alineado a la derecha */}
-                                <div className="text-end mt-3">
-                                    <Link to="/payments" className="btn btn-phoenix-primary">
+                                <div className="text-end mt-2 mt-sm-3">
+                                    <Link to="/payments" className="btn btn-phoenix-primary btn-sm btn-sm">
                                         View all payments
                                     </Link>
                                 </div>
                             </div>
 
-                            <div className="card-body">
+                            <div className="card-body p-2 p-sm-3">
+                                <h6 className="mb-2 fs-7 fw-bold text-muted">Upcoming / Pending</h6>
 
-                                {/* Pending */}
-                                <h6 className="mb-2 fs-8 fw-bold text-muted">Upcoming / Pending</h6>
                                 {pending.length === 0 ? (
-                                    <p className="text-muted small">No pending or processing payments.</p>
+                                    <p className="text-muted small mb-2 mb-sm-3">No pending or processing payments.</p>
                                 ) : (
-                                    <ul className="list-unstyled payment-detail-text">
-                                        {pending.slice(0, 6).map((p) => {
-                                            const st = String(p?.status || "").toLowerCase().trim();
-
-                                            const cfIds = pcMap.get(p.id) || [];
-                                            const cfLinks = cfIds.map((cid, idx) => {
-                                                const meta = caseMap.get(cid);
-                                                const txt = meta?.case_number || `Courtfile #${cid}`;
-                                                return (
-                                                    <React.Fragment key={`p-${p.id}-cf-${cid}`}>
-                                                        <Link to={`/courtfiles/ViewCourtfileLawyer/${cid}`} className="courtfile-link">
-                                                            {txt}
-                                                        </Link>
-                                                        {idx < cfIds.length - 1 ? ", " : ""}
-                                                    </React.Fragment>
-                                                );
-                                            });
-
-                                            return (
-                                                <li
-                                                    key={`pend-${p.id}`}
-                                                    className="d-flex align-items-center justify-content-between border-bottom py-3 payment-item"
-                                                >
-                                                    <div className="fw-semibold text-truncate" style={{ minWidth: 120 }}>
-                                                        ${fmtMoney(p.amount, p.currency || "USD")}
-                                                    </div>
-                                                    <div className="flex-grow-1 px-2 text-truncate">{cfLinks}</div>
-
-                                                    {/* Badge con texto 10px */}
-                                                    <PaymentBadge status={st} outline className="fs-10" />
-                                                </li>
-                                            );
-                                        })}
+                                    <ul className="list-unstyled payment-detail-text mb-2 mb-sm-3">
+                                        {pending.slice(0, 6).map((p) => (
+                                            <li
+                                                key={`pend-${p.id}`}
+                                                className="d-flex align-items-center justify-content-between border-bottom py-2 py-sm-3"
+                                            >
+                                                <div className="fw-semibold text-truncate me-2" style={{ minWidth: 100 }}>
+                                                    ${fmtMoney(p.amount, p.currency || "USD")}
+                                                </div>
+                                                <div className="flex-grow-1 px-2 text-truncate">{/* links */}</div>
+                                                <PaymentBadge status={(p.status || '').toLowerCase().trim()} outline className="fs-10" />
+                                            </li>
+                                        ))}
                                     </ul>
                                 )}
 
-
-                                {/* Paid this month */}
-                                <div className="d-flex justify-content-between align-items-center pt-5">
-                                    <h6 className="mb-2 fs-8 fw-bold text-muted">Paid this month</h6>
-                                    <span className="badge bg-success">
-                                        Total: $ {fmtMoney(sumPaidThisMonth, paidThisMonth[0]?.currency || "USD")}
-                                    </span>
+                                <div className="d-flex justify-content-between align-items-center pt-3 pt-sm-4">
+                                    <h6 className="mb-2 fs-7 fw-bold text-muted">Paid this month</h6>
+                                    <span className="badge bg-success fs-10 fs-sm-9">Total: ${fmtMoney(sumPaidThisMonth, paidThisMonth[0]?.currency || "USD")}</span>
                                 </div>
 
                                 {paidThisMonth.length === 0 ? (
-                                    <p className="text-muted small">No approved payments this month.</p>
+                                    <p className="text-muted small mb-0">No approved payments this month.</p>
                                 ) : (
-                                    <ul className="list-unstyled payment-detail-text">
-                                        {paidThisMonth.slice(0, 6).map((p) => {
-                                            const cfIds = pcMap.get(p.id) || [];
-                                            const cfLinks = cfIds.map((cid, idx) => {
-                                                const meta = caseMap.get(cid);
-                                                const txt = meta?.case_number || `Courtfile #${cid}`;
-                                                return (
-                                                    <React.Fragment key={`paid-${p.id}-cf-${cid}`}>
-                                                        <Link
-                                                            to={`/courtfiles/ViewCourtfileLawyer/${cid}`}
-                                                            className="courtfile-link"
-                                                        >
-                                                            {txt}
-                                                        </Link>
-                                                        {idx < cfIds.length - 1 ? ", " : ""}
-                                                    </React.Fragment>
-                                                );
-                                            });
-
-                                            return (
-                                                <li
-                                                    key={`paid-${p.id}`}
-                                                    className="d-flex align-items-center justify-content-between border-bottom py-3 payment-item payment-detail-text"
-                                                >
-                                                    <div className="fw-semibold text-truncate" style={{ minWidth: 120 }}>
-                                                        ${fmtMoney(p.amount, p.currency || "USD")}
-                                                    </div>
-                                                    <div className="flex-grow-1 px-2 text-truncate">{cfLinks}</div>
-                                                    <small className="text-muted">
-                                                        {p.paid_at ? new Date(p.paid_at).toLocaleDateString() : ""}
-                                                    </small>
-                                                </li>
-                                            );
-                                        })}
+                                    <ul className="list-unstyled payment-detail-text mb-0">
+                                        {paidThisMonth.slice(0, 6).map((p) => (
+                                            <li
+                                                key={`paid-${p.id}`}
+                                                className="d-flex align-items-center justify-content-between border-bottom py-2 py-sm-3"
+                                            >
+                                                <div className="fw-semibold text-truncate me-2" style={{ minWidth: 100 }}>
+                                                    ${fmtMoney(p.amount, p.currency || "USD")}
+                                                </div>
+                                                <div className="flex-grow-1 px-2 text-truncate">{/* links */}</div>
+                                                <small className="text-muted">{p.paid_at ? new Date(p.paid_at).toLocaleDateString() : ""}</small>
+                                            </li>
+                                        ))}
                                     </ul>
                                 )}
                             </div>
                         </div>
-
-
                     </div>
-
-
                 </div>
+
 
 
             </div>

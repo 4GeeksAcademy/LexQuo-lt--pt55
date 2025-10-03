@@ -284,10 +284,10 @@ export const Appointments = () => {
                     ID{" "}
                     <i
                       className={`bi ${sortConfig.key === "id"
-                          ? sortConfig.direction === "asc"
-                            ? "bi-arrow-up"
-                            : "bi-arrow-down"
-                          : "bi-arrow-down-up text-muted"
+                        ? sortConfig.direction === "asc"
+                          ? "bi-arrow-up"
+                          : "bi-arrow-down"
+                        : "bi-arrow-down-up text-muted"
                         }`}
                     />
                   </th>
@@ -297,10 +297,10 @@ export const Appointments = () => {
                     Title{" "}
                     <i
                       className={`bi ${sortConfig.key === "title"
-                          ? sortConfig.direction === "asc"
-                            ? "bi-arrow-up"
-                            : "bi-arrow-down"
-                          : "bi-arrow-down-up text-muted"
+                        ? sortConfig.direction === "asc"
+                          ? "bi-arrow-up"
+                          : "bi-arrow-down"
+                        : "bi-arrow-down-up text-muted"
                         }`}
                     />
                   </th>
@@ -309,10 +309,10 @@ export const Appointments = () => {
                     Location{" "}
                     <i
                       className={`bi ${sortConfig.key === "location"
-                          ? sortConfig.direction === "asc"
-                            ? "bi-arrow-up"
-                            : "bi-arrow-down"
-                          : "bi-arrow-down-up text-muted"
+                        ? sortConfig.direction === "asc"
+                          ? "bi-arrow-up"
+                          : "bi-arrow-down"
+                        : "bi-arrow-down-up text-muted"
                         }`}
                     />
                   </th>
@@ -321,10 +321,10 @@ export const Appointments = () => {
                     Date{" "}
                     <i
                       className={`bi ${sortConfig.key === "date"
-                          ? sortConfig.direction === "asc"
-                            ? "bi-arrow-up"
-                            : "bi-arrow-down"
-                          : "bi-arrow-down-up text-muted"
+                        ? sortConfig.direction === "asc"
+                          ? "bi-arrow-up"
+                          : "bi-arrow-down"
+                        : "bi-arrow-down-up text-muted"
                         }`}
                     />
                   </th>
@@ -333,10 +333,10 @@ export const Appointments = () => {
                     Starts{" "}
                     <i
                       className={`bi ${sortConfig.key === "starts_at"
-                          ? sortConfig.direction === "asc"
-                            ? "bi-arrow-up"
-                            : "bi-arrow-down"
-                          : "bi-arrow-down-up text-muted"
+                        ? sortConfig.direction === "asc"
+                          ? "bi-arrow-up"
+                          : "bi-arrow-down"
+                        : "bi-arrow-down-up text-muted"
                         }`}
                     />
                   </th>
@@ -345,10 +345,10 @@ export const Appointments = () => {
                     Ends{" "}
                     <i
                       className={`bi ${sortConfig.key === "ends_at"
-                          ? sortConfig.direction === "asc"
-                            ? "bi-arrow-up"
-                            : "bi-arrow-down"
-                          : "bi-arrow-down-up text-muted"
+                        ? sortConfig.direction === "asc"
+                          ? "bi-arrow-up"
+                          : "bi-arrow-down"
+                        : "bi-arrow-down-up text-muted"
                         }`}
                     />
                   </th>
@@ -369,17 +369,19 @@ export const Appointments = () => {
                     className="table-row-clickable"
                     onClick={() => navigate(`/appointments/view/${a.id}`)}
                     role="button"
-                  >                    
+                  >
                     <td className="text-start ps-2">{a.id}</td>
-                    <td onClick={(e) => e.stopPropagation()}>
+                    <td style={{ maxWidth: "80px" }} onClick={(e) => e.stopPropagation()}>
                       {a.courtfile_id ? (
                         <Link to={`/courtfiles/view/${a.courtfile_id}`}>
                           {a.courtfile_number || `#${a.courtfile_id}`}
                         </Link>
                       ) : "—"}
                     </td>
-                    <td>{a.title}</td>
-                    <td style={{ maxWidth: "200px" }}>{a.location}</td>
+                    <td style={{ maxWidth: "100px" }}>{a.title}</td>
+                    <td className="text-truncate d-block d-sm-table-cell" style={{ maxWidth: "150px" }}>
+                      {a.location}
+                    </td>
                     <td>{formatDate(a.date)}</td>
                     <td>{formatTime(a.starts_at)}</td>
                     <td>{formatTime(a.ends_at)}</td>

@@ -57,6 +57,8 @@ export default function SidebarLogin() {
         }`}
       tabIndex="-1"
       aria-labelledby="navbarVerticalOffcanvasLabel"
+      data-bs-backdrop="true"     // <— aquí
+      data-bs-scroll="true"
     >
       {/* Header solo en < lg */}
       <div className="offcanvas-header d-lg-none">

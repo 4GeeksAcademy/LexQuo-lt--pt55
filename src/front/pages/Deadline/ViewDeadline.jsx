@@ -200,21 +200,26 @@ export const ViewDeadline = () => {
 
         <div className="col-md-8 col-lg-8">
           {/* Header (title + actions) */}
-          <div className="d-flex justify-content-between align-items-start mb-3">
-            <h1 className="h2 fw-bolder mb-0 line-clamp-1">
+          <div className="d-flex flex-column flex-md-row justify-content-between align-items-start mb-3">
+            {/* Título siempre a la izquierda */}
+            <h1 className="h2 fw-bolder mb-0 line-clamp-1 fs-8 fs-md-5">
               {deadline.deadline_type || "Deadline"}
             </h1>
 
+            {/* Botones: debajo en móvil, a la derecha en desktop */}
             {["lawyer", "admin_user"].includes(role) && (
-              <div className="d-flex gap-2">
+              <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
                 <Link
                   to={`/deadlines/${deadline.id}`}
                   state={{ returnTo }}
-                  className="btn btn-phoenix-secondary btn-sm"
+                  className="btn btn-phoenix-secondary btn-sm fs-10 fs-md-9"
                 >
                   <i className="bi bi-pencil" /> Edit
                 </Link>
-                <button className="btn btn-phoenix-danger btn-sm" onClick={handleDelete}>
+                <button
+                  className="btn btn-phoenix-danger btn-sm fs-10 fs-md-9"
+                  onClick={handleDelete}
+                >
                   <i className="bi bi-trash" /> Delete
                 </button>
               </div>
@@ -224,8 +229,7 @@ export const ViewDeadline = () => {
           {/* Summary strip */}
           <div className="card mb-3 mt-5">
             <div className="card-body">
-              <div className="row text-center g-4">
-
+              <div className="row text-start text-sm-center g-4">
                 {/* Date */}
                 <div className="col-sm-4">
                   <div className="d-inline-flex align-items-center">
@@ -279,10 +283,10 @@ export const ViewDeadline = () => {
                     </div>
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
+
 
 
           {/* Case File abajo */}
@@ -290,22 +294,24 @@ export const ViewDeadline = () => {
             <div className="col-12">
               {linkedCourtfile && (
                 <div className="mb-4 ms-2">
-                  <h3 className="fw-bold mb-1 text-muted">Case File</h3>
-                  <Link
-                    to={`/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`}
-                    className="badge badge-phoenix badge-phoenix-secondary fs-8 mt-2"
-                    title={linkedCourtfile.title || ""}
-                  >
-                    {linkedCourtfile.number || `#${linkedCourtfile.id}`}
-                  </Link>
+                  <div className="d-flex flex-column align-items-end align-items-sm-start">
+                    <h3 className="fw-bold mb-1 text-muted fs-6 fs-sm-5 text-end text-sm-start">
+                      Case File
+                    </h3>
+                    <Link
+                      to={`/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`}
+                      className="badge badge-phoenix badge-phoenix-secondary fs-9 fs-sm-8 mt-2"
+                      title={linkedCourtfile.title || ""}
+                    >
+                      {linkedCourtfile.number || `#${linkedCourtfile.id}`}
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
-        
-
+          </div>
         </div>
       </div>
-    </div>
     </AppNavsShell >
   );
 

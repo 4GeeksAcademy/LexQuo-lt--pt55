@@ -334,7 +334,7 @@ export const EditAppointment = () => {
     <AppNavsShell>
       <div className="container add-page">
         <div className="row">
-          <div className="col-lg-10 col-xl-10 p-0 ps-4">
+          <div className="col-12 col-md-8">
             {/* Breadcrumb */}
             <nav aria-label="breadcrumb" className="mb-4">
               <ol className="breadcrumb small mb-0">
@@ -364,19 +364,20 @@ export const EditAppointment = () => {
             </nav>
 
             {/* Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h1 className="display-5 fw-bold mb-0">Edit Appointment</h1>
-              <div className="d-flex gap-2">
+            <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start mb-4">
+              <h1 className="display-5 fw-bold mb-2 mb-sm-0">Edit Appointment</h1>
+
+              <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
                 <Link
                   to={returnTo}
-                  className="btn btn-phoenix btn-phoenix-secondary"
+                  className="btn btn-phoenix btn-phoenix-secondary fs-10 fs-md-9"
                 >
                   Cancel
                 </Link>
                 <button
                   type="submit"
-                  form="appointmentForm" // id del form
-                  className="btn btn-phoenix btn-phoenix-primary"
+                  form="appointmentForm"
+                  className="btn btn-phoenix btn-phoenix-primary fs-10 fs-md-9"
                   disabled={loading}
                 >
                   {loading ? (
@@ -397,9 +398,13 @@ export const EditAppointment = () => {
               </div>
             </div>
 
+
             {(linkedCourtfile?.id || preselectedCourtfileId) ? (
               <>
-                <span className="badge badge-phoenix-secondary mb-3">
+                <span
+                  className="badge badge-phoenix-secondary mb-3 text-wrap text-break fs-9 fs-sm-8"
+                  style={{ whiteSpace: "normal" }}
+                >
                   Related to Courtfile{" "}
                   {(linkedCourtfile?.number || preselectedCourtfileNumber || "—")}
                   {(linkedCourtfile?.title || preselectedCourtfileTitle)

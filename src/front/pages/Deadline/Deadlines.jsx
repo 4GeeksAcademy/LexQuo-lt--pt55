@@ -199,14 +199,18 @@ export const Deadlines = () => {
           </div>
 
           {/* Fila 2: search + filtros + Add */}
-          <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
-            {/* Izquierda */}
-            <div className="d-flex align-items-center gap-2 flex-nowrap">
-              {/* Search */}
-              <div className="search-box" style={{ position: "relative", maxWidth: 320, flex: "1 1 auto" }}>
+          <div className="row g-2 align-items-center">
+            {/* Search */}
+            <div className="col-12 col-sm">
+              <div className="search-box position-relative" style={{ maxWidth: 320 }}>
                 <i
-                  className="bi bi-search"
-                  style={{ position: "absolute", top: "50%", left: 10, transform: "translateY(-50%)", color: "#6c757d" }}
+                  className="bi bi-search position-absolute"
+                  style={{
+                    top: "50%",
+                    left: 10,
+                    transform: "translateY(-50%)",
+                    color: "#6c757d",
+                  }}
                 />
                 <input
                   type="search"
@@ -221,34 +225,46 @@ export const Deadlines = () => {
                     className="btn btn-sm position-absolute"
                     onClick={() => setQ("")}
                     title="Clear"
-                    style={{ top: "50%", right: 6, transform: "translateY(-50%)", background: "transparent", border: "none", color: "#6c757d" }}
+                    style={{
+                      top: "50%",
+                      right: 6,
+                      transform: "translateY(-50%)",
+                      background: "transparent",
+                      border: "none",
+                      color: "#6c757d",
+                    }}
                   >
                     <i className="bi bi-x-lg" />
                   </button>
                 )}
               </div>
-
-              {/* Filtro priority */}
-              <div className="d-flex align-items-center gap-2 flex-nowrap">
-                {["all", "low", "medium", "high", "urgent"].map((p) => (
-                  <button
-                    key={p}
-                    className={`btn btn-sm ${fPriority === p ? "btn-dark" : "btn-outline-secondary"}`}
-                    onClick={() => setFPriority(p)}
-                  >
-                    {p[0].toUpperCase() + p.slice(1)}
-                  </button>
-                ))}
-              </div>
             </div>
 
-            {/* Derecha: Add */}
-            <div className="ms-auto">
-              <Link to="/deadlines/addDeadline" className="btn btn-phoenix btn-phoenix-primary">
+            {/* Filtros */}
+            <div className="col-12 col-sm-auto d-flex flex-wrap gap-2">
+              {["all", "low", "medium", "high", "urgent"].map((p) => (
+                <button
+                  key={p}
+                  className={`btn btn-sm ${fPriority === p ? "btn-dark" : "btn-outline-secondary"
+                    } fs-9 px-2 px-sm-3 py-1 py-sm-2`}
+                  onClick={() => setFPriority(p)}
+                >
+                  {p[0].toUpperCase() + p.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            {/* Botón Add */}
+            <div className="col-12 col-sm-auto">
+              <Link
+                to="/deadlines/addDeadline"
+                className="btn btn-phoenix btn-phoenix-primary w-100 w-sm-auto"
+              >
                 <i className="bi bi-plus-lg me-1" /> Add deadline
               </Link>
             </div>
           </div>
+
         </div>
 
         {/* ===== Tabla ===== */}
