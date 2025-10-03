@@ -20,7 +20,7 @@ const NavbarLogin = () => {
       ? (id ? `/lawyers/view/${id}` : "/lawyers/view")
       : role === "client"
         ? (id ? `/clients/view/${id}` : "/clients/view")
-        : "/login";
+        : "/sign-in";
 
   const passwordPath =
     role === "lawyer"
@@ -123,7 +123,7 @@ const NavbarLogin = () => {
                     localStorage.removeItem("auth");
                     localStorage.removeItem("user_name");
                     dispatch({ type: "CLEAR_AUTH" });
-                    navigate("/login");
+                    navigate("/sign-in");
                   }}
                 >
                   <i className="bi bi-box-arrow-right me-2" /> Sign out

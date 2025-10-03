@@ -22,7 +22,7 @@ export const ViewAdmin = () => {
           headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
         });
         if (response.status === 401) {
-          navigate("/login", { replace: true, state: { returnTo: location.pathname } });
+          navigate("/sign-in", { replace: true, state: { returnTo: location.pathname } });
           return;
         }
         if (response.status === 403) {
@@ -57,7 +57,7 @@ export const ViewAdmin = () => {
         },
       });
       if (response.status === 401) {
-        navigate("/login", { replace: true, state: { returnTo: location.pathname } });
+        navigate("/sign-in", { replace: true, state: { returnTo: location.pathname } });
         return;
       }
       if (response.status === 403) {

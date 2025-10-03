@@ -14,7 +14,7 @@ export const Home = () => {
 										<img className="pt-7 pt-md-0 w-100" src="https://prium.github.io/phoenix/v1.23.0/assets/img/bg/bg-1-2.png" alt="hero-header" />
 									</div>
 									<div className="position-absolute h-100 top-0 d-flex align-items-center end-0">
-										{<img className="pt-7 pt-md-0 w-100 shadow-lg d-dark-none rounded-2" src="https://res.cloudinary.com/doxdmmj1o/image/upload/v1759091544/c2f9c42d-7ee1-4674-aa19-1511f595097e.png" alt="hero-header" />}
+										{<img className="pt-7 pt-md-0 w-100 shadow-lg d-dark-none rounded-2" src="https://res.cloudinary.com/doxdmmj1o/image/upload/v1759459479/745e9741-93df-42a0-b850-b8cb47333318.png" alt="hero-header" />}
 									</div>
 								</div>
 							</div>
