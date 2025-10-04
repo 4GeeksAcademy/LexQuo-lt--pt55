@@ -196,7 +196,7 @@ export const LawyerLinkOrCreateClient = () => {
             courtfileId: targetCourtfileId,
             courtfileNumber: preselectedCf?.case_number || myCases.find(c => c.id === targetCourtfileId)?.number || null,
           });
-          toast.success("Client linked to case and invitation email sent ✅");
+          toast.success("Client linked to case and invitation email sent");
         } catch (e) {
           toast.warn(`Client linked, but invite email failed: ${e.message}`);
         }
