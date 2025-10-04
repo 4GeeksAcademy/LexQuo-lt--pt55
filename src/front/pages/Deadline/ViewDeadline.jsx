@@ -3,6 +3,7 @@ import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect, useMemo } from "react";
 import AppNavsShell from "../../components/AppNavsShell";
 import DeadlineBadge from "../../components/DeadlineBadge";
+import { toast } from 'react-toastify';
 
 
 // ----------------- Helpers -----------------
@@ -48,7 +49,7 @@ export const ViewDeadline = () => {
   const [deadline, setDeadline] = useState(null);
   const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+ 
 
   // Fetch principal
   useEffect(() => {
@@ -63,12 +64,11 @@ export const ViewDeadline = () => {
         const data = await resp.json();
         if (!abort) {
           setDeadline(data);
-          setError(null);
         }
       } catch (e) {
         if (!abort) {
           console.error("Error fetching deadline:", e);
-          setError("Failed to load deadline data");
+          toast.error("Failed to load deadline data");
         }
       } finally {
         if (!abort) setLoading(false);
@@ -146,11 +146,11 @@ export const ViewDeadline = () => {
         throw new Error(e.error || `HTTP ${resp.status}`);
       }
       dispatch({ type: "DELETE_DEADLINE", payload: Number(deadlineId) || deadlineId });
-      alert("Deadline deleted successfully!");
+      toast.success("Deadline deleted successfully!");
       navigate(returnTo, { replace: true });
     } catch (err) {
       console.error("Error deleting deadline:", err);
-      alert(`Error deleting deadline: ${err.message}`);
+      toast.error(`Error deleting deadline: ${err.message}`);
     }
   };
 
@@ -163,21 +163,6 @@ export const ViewDeadline = () => {
             <span className="visually-hidden">Loading…</span>
           </div>
           <p className="mt-2">Loading deadline…</p>
-        </div>
-      </AppNavsShell>
-    );
-  }
-
-  if (error || !deadline) {
-    return (
-      <AppNavsShell>
-        <div className="container add-page">
-          <div className="alert alert-danger">
-            <i className="bi bi-exclamation-triangle"></i> {error || "Deadline not found"}
-          </div>
-          <Link to={returnTo} className="btn btn-outline-secondary">
-            <i className="bi bi-arrow-left"></i> Back
-          </Link>
         </div>
       </AppNavsShell>
     );

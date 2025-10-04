@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { enUS } from "date-fns/locale";
 import CalendarModal from './CalendarModal';
 import CalendarModalAdd from "./CalendarModalAdd";
+import { toast } from 'react-toastify';
 
 // FullCalendar
 import FullCalendar from "@fullcalendar/react";
@@ -180,12 +181,13 @@ export default function Calendar() {
         setDeadlines(dl);
         setAppointments(ap);
         handleCloseModal();
+        toast.success('Event deleted successfully'); // ✅
       } else {
         throw new Error('Failed to delete event');
       }
     } catch (error) {
       console.error('Error deleting event:', error);
-      alert('Error deleting event');
+      toast.error('Error deleting event');
     }
   };
 
@@ -313,6 +315,12 @@ export default function Calendar() {
     setCurrentDate(api()?.getDate() ?? new Date());
   };
 
+  useEffect(() => {
+    if (!loading && err) {
+      toast.error(err);
+    }
+  }, [loading, err]);
+
   return (
     <AppNavsShell>
       <div className="container add-page">
@@ -384,9 +392,6 @@ export default function Calendar() {
         {loading && (
           <div className="alert text-secondary bg-transparent border-0 mt-2">Cargando eventos…</div>
         )}
-        {err && !loading && (
-          <div className="alert alert-warning mt-3 py-2 mb-0">{err}</div>
-        )}
 
         {/* Calendar */}
         <div className="mt-6 mb-9">
@@ -433,7 +438,7 @@ export default function Calendar() {
             dateISO={newDateISO}
           />
         </div>
-         </div>
+      </div>
     </AppNavsShell>
   );
 }

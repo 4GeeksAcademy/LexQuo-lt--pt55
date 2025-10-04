@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import AppNavsShell from "../../components/AppNavsShell";
 import StatusPill from "../../components/StatusPill";
+import { toast } from 'react-toastify';
 
 
 export const Clients = () => {
@@ -61,13 +62,14 @@ export const Clients = () => {
       });
       if (response.ok) {
         dispatch({ type: "DELETE_CLIENT", payload: id });
+        toast.success("Client deleted successfully ✅");
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
     } catch (error) {
       console.error("Error deleting client:", error);
-      alert(`Error deleting client: ${error.message}`);
+      toast.error(`Error deleting client: ${error.message}`);
     }
   };
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react"
 import useGlobalReducer from "../../hooks/useGlobalReducer.jsx";
 import { useNavigate, Link } from "react-router-dom";
 import { LogoutButton } from "../../components/LogoutButton";
+import { toast } from 'react-toastify';
 
 export const LoginLawyer = () => {
 

@@ -2,6 +2,7 @@ import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 import AppNavsShell from "../../components/AppNavsShell";
+import { toast } from 'react-toastify';
 
 export const AddPayment = () => {
   const { dispatch, store } = useGlobalReducer();
@@ -41,7 +42,6 @@ export const AddPayment = () => {
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   // Para dropdown cuando NO viene preseleccionado
   const [myCases, setMyCases] = useState([]);
@@ -96,7 +96,7 @@ export const AddPayment = () => {
 
         setMyCases(mapped);
       } catch (err) {
-        setError(err.message || "Error fetching courtfiles");
+        toast.error(err.message || "Error fetching courtfiles");
       } finally {
         setLoadingCases(false);
       }
@@ -113,8 +113,7 @@ export const AddPayment = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
-
+    
     try {
       if (!formData.courtfile_id) throw new Error("Please select a courtfile to link this payment.");
       if (!formData.currency) throw new Error("Please select a currency.");
@@ -142,7 +141,7 @@ export const AddPayment = () => {
       const newPayment = await response.json();
       dispatch({ type: "ADD_PAYMENT", payload: newPayment });
 
-      alert("Payment created and linked successfully!");
+      toast.success("Payment created and linked successfully!");
       navigate(`/payments/view/${newPayment.id}`, {
         replace: true,
         state: {
@@ -154,7 +153,7 @@ export const AddPayment = () => {
       });
     } catch (err) {
       console.error("Error creating Payment:", err);
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -243,13 +242,7 @@ export const AddPayment = () => {
               </div>
             )}
 
-            {/* Form */}
-            {error && (
-              <div className="alert alert-danger d-flex align-items-center" role="alert">
-                <i className="bi bi-exclamation-triangle me-2" /> {error}
-              </div>
-            )}
-
+           
             <form id="paymentForm" onSubmit={handleSubmit}>
               {/* Amount */}
               <div className="form-floating mb-3">

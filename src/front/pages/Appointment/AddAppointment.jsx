@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import MapComponent from "../../components/Map/MapComponent";
 import LocationAutocomplete from "../../components/Map/LocationAutocomplete";
 import AppNavsShell from "../../components/AppNavsShell";
+import { toast } from 'react-toastify';
 
 export const AddAppointment = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -45,7 +46,6 @@ export const AddAppointment = () => {
 
   const [loading, setLoading] = useState(false);
   const [linking, setLinking] = useState(false);
-  const [error, setError] = useState(null);
 
   const [myCases, setMyCases] = useState([]);
   const [loadingCases, setLoadingCases] = useState(false);
@@ -101,7 +101,7 @@ export const AddAppointment = () => {
 
         setMyCases(mapped.filter(x => x?.id));
       } catch (err) {
-        setError(err.message || "Error fetching courtfiles");
+        toast.error(err.message || "Error fetching courtfiles");
       } finally {
         setLoadingCases(false);
       }
@@ -137,10 +137,9 @@ export const AddAppointment = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
 
     if (!formData.courtfile_id) {
-      setError("Please select a courtfile to link this appointment.");
+      toast.error("Please select a courtfile to link this appointment.");
       return;
     }
 
@@ -175,11 +174,11 @@ export const AddAppointment = () => {
       dispatch?.({ type: "ADD_APPOINTMENT", payload: newAppointment });
 
 
-      alert("Appointment created and linked successfully!");
+      toast.success("Appointment created and linked successfully!");
       navigate(returnTo, { replace: true });
     } catch (err) {
       console.error("Error creating/linking appointment:", err);
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLinking(false);
       setLoading(false);
@@ -394,11 +393,6 @@ export const AddAppointment = () => {
               </div>
             )}
 
-            {error && (
-              <div className="alert alert-danger d-flex align-items-center" role="alert">
-                <i className="bi bi-exclamation-triangle me-2" /> {error}
-              </div>
-            )}
 
             <form onSubmit={handleSubmit}>
               {/* TITLE */}

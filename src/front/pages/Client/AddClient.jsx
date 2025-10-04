@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState } from "react";
+import { toast } from 'react-toastify';
 
 export const AddClient = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -79,7 +80,7 @@ export const AddClient = () => {
         }
       }
 
-      alert(preselectedCourtfileId ? "Client created and linked!" : "Client created successfully!");
+      toast.success(preselectedCourtfileId ? "Client created and linked!" : "Client created successfully!");
       navigate(returnTo); 
     } catch (err) {
       console.error("Error creating Client:", err);

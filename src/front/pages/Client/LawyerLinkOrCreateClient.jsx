@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import AppNavsShell from "../../components/AppNavsShell";
+import { toast } from 'react-toastify';
 
 export const LawyerLinkOrCreateClient = () => {
   const RAW_API =
@@ -39,7 +40,7 @@ export const LawyerLinkOrCreateClient = () => {
   // Lista de casos del abogado (si NO viene preseleccionado)
   const [myCases, setMyCases] = useState([]);
   const [loadingCases, setLoadingCases] = useState(false);
-  const [casesErr, setCasesErr] = useState("");
+
 
   // URL para ver el courtfile si vino preseleccionado
   const cfViewUrl = preselectedCourtfileId
@@ -66,7 +67,7 @@ export const LawyerLinkOrCreateClient = () => {
     // sólo traigo el combo si NO hay courtfile preseleccionado
     const fetchCases = async () => {
       if (preselectedCourtfileId) return;
-      setCasesErr("");
+
       try {
         setLoadingCases(true);
         const resp = await fetch(`${API}/api/lawyers-courtfiles`, {
@@ -81,7 +82,7 @@ export const LawyerLinkOrCreateClient = () => {
         }));
         setMyCases(mapped);
       } catch (e) {
-        setCasesErr(e.message || "Error fetching courtfiles");
+        toast.error(e.message || "Error fetching courtfiles");
       } finally {
         setLoadingCases(false);
       }
@@ -92,20 +93,18 @@ export const LawyerLinkOrCreateClient = () => {
   // -------- Buscar por email --------
   const [email, setEmail] = useState("");
   const [searching, setSearching] = useState(false);
-  const [searchErr, setSearchErr] = useState("");
   const [foundClient, setFoundClient] = useState(null);
   const [notFound, setNotFound] = useState(false);
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    setSearchErr("");
     setFoundClient(null);
     setNotFound(false);
     setLawyerConflict(null);
 
     const emailTrim = (email || "").trim().toLowerCase();
     if (!emailTrim) {
-      setSearchErr("Enter an email");
+      toast.warn("Enter an email");
       return;
     }
 
@@ -139,7 +138,7 @@ export const LawyerLinkOrCreateClient = () => {
         setLawyerConflict(null);
       }
     } catch (err) {
-      setSearchErr(err.message || "Search error");
+      toast.error(err.message || "Search error");
     } finally {
       setSearching(false);
     }
@@ -174,7 +173,7 @@ export const LawyerLinkOrCreateClient = () => {
   const linkClientToCase = async (clientOrId) => {
     const targetCourtfileId = Number(selectedCourtfileId || preselectedCourtfileId);
     if (!targetCourtfileId) {
-      alert("Please select a courtfile to link.");
+      toast.success("Please select a courtfile to link.");
       return;
     }
     const client = typeof clientOrId === "object" ? clientOrId : null;
@@ -197,16 +196,16 @@ export const LawyerLinkOrCreateClient = () => {
             courtfileId: targetCourtfileId,
             courtfileNumber: preselectedCf?.case_number || myCases.find(c => c.id === targetCourtfileId)?.number || null,
           });
-          alert("Client linked to case and invitation email sent ✅");
+          toast.success("Client linked to case and invitation email sent ✅");
         } catch (e) {
-          alert(`Client linked, but invite email failed: ${e.message}`);
+          toast.warn(`Client linked, but invite email failed: ${e.message}`);
         }
       } else {
-        alert("Client linked to case!");
+        toast.success("Client linked to case!");
       }
       navigate(returnTo, { replace: true });
     } catch (err) {
-      alert(err.message || "Error linking client");
+      toast.error(err.message || "Error linking client");
     }
   };
 
@@ -268,7 +267,7 @@ export const LawyerLinkOrCreateClient = () => {
         throw new Error(inviteJson?.error || `Falló el envío de invitación (HTTP ${inviteResp.status})`);
       }
 
-      alert("Cliente creado, linkeado y mail de invitación enviado ✅");
+      toast.success("Cliente creado, linkeado y mail de invitación enviado ✅");
       navigate(returnTo, { replace: true });
     } catch (err) {
       setCreateErr(err.message || "Error creating client");
@@ -350,13 +349,6 @@ export const LawyerLinkOrCreateClient = () => {
                     <label htmlFor="courtfile_id">Link to Courtfile *</label>
                   </div>
                 </div>
-                {casesErr && (
-                  <div className="col-12 mt-2">
-                    <div className="alert alert-danger d-flex align-items-center" role="alert">
-                      <i className="bi bi-exclamation-triangle me-2" /> {casesErr}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
@@ -393,13 +385,7 @@ export const LawyerLinkOrCreateClient = () => {
                     )}
                   </button>
                 </div>
-                {searchErr && (
-                  <div className="col-12 mt-2">
-                    <div className="alert alert-danger d-flex align-items-center" role="alert">
-                      <i className="bi bi-exclamation-triangle me-2" /> {searchErr}
-                    </div>
-                  </div>
-                )}
+
               </div>
             </form>
 
@@ -469,15 +455,12 @@ export const LawyerLinkOrCreateClient = () => {
 
                 {/* Alerta si falta courtfile */}
                 {!(selectedCourtfileId || preselectedCourtfileId) && (
-                  <div className="alert alert-danger d-flex align-items-center" role="alert">
+                  <div
+                    className="alert alert-danger d-flex align-items-center bg-white border border-danger text-danger"
+                    role="alert"
+                  >
                     <i className="bi bi-exclamation-triangle me-2" />
                     Please select a courtfile to link.
-                  </div>
-                )}
-
-                {createErr && (
-                  <div className="alert alert-danger d-flex align-items-center" role="alert">
-                    <i className="bi bi-exclamation-triangle me-2" /> {createErr}
                   </div>
                 )}
 
@@ -538,44 +521,44 @@ export const LawyerLinkOrCreateClient = () => {
                   </div>
 
                   <div className="d-flex flex-column flex-md-row gap-2 justify-content-md-end mt-4">
-  {/* Texto */}
-  <p className="form-text mb-2 mb-md-0 me-md-3 d-flex align-items-center">
-    <i className="bi bi-envelope me-1"></i>
-    The client will receive an email invitation once linked to the case.
-  </p>
+                    {/* Texto */}
+                    <p className="form-text mb-2 mb-md-0 me-md-3 d-flex align-items-center">
+                      <i className="bi bi-envelope me-1"></i>
+                      The client will receive an email invitation once linked to the case.
+                    </p>
 
-  {/* Botones */}
-  <div className="d-flex gap-2 justify-content-md-end">
-    <Link to={returnTo} className="btn btn-phoenix-secondary">
-      Cancel
-    </Link>
-    <button
-      type="submit"
-      className="btn btn-primary"
-      disabled={creating || !(selectedCourtfileId || preselectedCourtfileId)}
-      title={
-        !(selectedCourtfileId || preselectedCourtfileId)
-          ? "Select a courtfile first"
-          : ""
-      }
-    >
-      {creating ? (
-        <>
-          <span
-            className="spinner-border spinner-border-sm me-2"
-            role="status"
-          />
-          Creating & Linking...
-        </>
-      ) : (
-        <>
-          <i className="bi bi-plus-circle me-2" />
-          Create & Link
-        </>
-      )}
-    </button>
-  </div>
-</div>
+                    {/* Botones */}
+                    <div className="d-flex gap-2 justify-content-md-end">
+                      <Link to={returnTo} className="btn btn-phoenix-secondary">
+                        Cancel
+                      </Link>
+                      <button
+                        type="submit"
+                        className="btn btn-primary"
+                        disabled={creating || !(selectedCourtfileId || preselectedCourtfileId)}
+                        title={
+                          !(selectedCourtfileId || preselectedCourtfileId)
+                            ? "Select a courtfile first"
+                            : ""
+                        }
+                      >
+                        {creating ? (
+                          <>
+                            <span
+                              className="spinner-border spinner-border-sm me-2"
+                              role="status"
+                            />
+                            Creating & Linking...
+                          </>
+                        ) : (
+                          <>
+                            <i className="bi bi-plus-circle me-2" />
+                            Create & Link
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
 
                 </form>
               </div>

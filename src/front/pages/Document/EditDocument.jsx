@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams, useLocation, Navigate } from "react-route
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect, useMemo } from "react";
 import AppNavsShell from "../../components/AppNavsShell";
+import { toast } from 'react-toastify';
 
 export const EditDocument = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -29,7 +30,7 @@ export const EditDocument = () => {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-  const [error, setError] = useState(null);
+
 
   const initialLinked =
     location.state?.courtfileId
@@ -70,10 +71,10 @@ export const EditDocument = () => {
         category: data.category || "",
         document_date: data.document_date || "",
       });
-      setError(null);
+
     } catch (err) {
       console.error("Error fetching document:", err);
-      setError("Failed to load document data");
+      toast.error("Failed to load document data");
     } finally {
       setFetching(false);
     }
@@ -118,13 +119,12 @@ export const EditDocument = () => {
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     setFile(selectedFile);
-    if (selectedFile) setError(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
+
     try {
       const data = new FormData();
       data.append("name", formData.name);
@@ -147,10 +147,10 @@ export const EditDocument = () => {
       const updatedDoc = await response.json();
       dispatch({ type: "UPDATE_DOCUMENT", payload: updatedDoc });
       navigate(returnTo, { replace: true });
-      alert("Document updated successfully!");
+      toast.success("Document updated successfully!");
     } catch (err) {
       console.error("Error updating document:", err);
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -175,19 +175,7 @@ export const EditDocument = () => {
     );
   }
 
-  if (error && !formData.name) {
-    return (
-      <div className="container mt-4">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle"></i> {error}
-        </div>
-        <Link to={returnTo} className="btn btn-primary">
-          Back
-        </Link>
-      </div>
-    );
-  }
-
+  
   return (
     <AppNavsShell>
       <div className="container add-page">
@@ -258,12 +246,7 @@ export const EditDocument = () => {
             )}
 
 
-            {error && (
-              <div className="alert alert-danger d-flex align-items-center">
-                <i className="bi bi-exclamation-triangle me-2" /> {error}
-              </div>
-            )}
-
+            
             {/* Form */}
             <form id="documentForm" onSubmit={handleSubmit}>
               {/* Name */}

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import React, { useEffect } from "react";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
+import { toast } from 'react-toastify';
 
 export const Documents = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -55,14 +56,14 @@ export const Documents = () => {
 
       if (response.ok) {
         dispatch({ type: "DELETE_DOCUMENT", payload: id });
-        alert("Document deleted successfully!");
+        toast.success("Document deleted successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
     } catch (error) {
       console.error("Error deleting document:", error);
-      alert(`Error deleting document: ${error.message}`);
+      toast.error(`Error deleting document: ${error.message}`);
     }
   };
 
@@ -84,7 +85,7 @@ export const Documents = () => {
       }
     } catch (error) {
       console.error('Error handling file:', error);
-      alert('Error al manejar el archivo');
+      toast.error('Error al manejar el archivo');
     }
   };
 

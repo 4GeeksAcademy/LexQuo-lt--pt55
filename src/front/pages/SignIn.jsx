@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import { PublicLayout } from "../components/PublicLayout";
+import { toast } from 'react-toastify';
 
 export default function SigIn() {
   const API = import.meta.env.VITE_BACKEND_URL;
@@ -13,13 +14,18 @@ export default function SigIn() {
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errMsg, setErrMsg] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrMsg("");
-    if (!API) return setErrMsg("VITE_BACKEND_URL no está definido.");
-    if (!email || !password) return setErrMsg("Complete email and password");
+
+    if (!API) {
+      toast.error("VITE_BACKEND_URL is not defined.");
+      return;
+    }
+    if (!email || !password) {
+      toast.warn("Please enter email and password");
+      return;
+    }
 
     setLoading(true);
     try {
@@ -29,14 +35,14 @@ export default function SigIn() {
         body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
       });
       const data = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(data?.error || "Credenciales inválidas");
+      if (!resp.ok) throw new Error(data?.error || "Invalid credentials");
 
       const token = data?.token;
       const user = data?.user;
       const role = user?.role || data?.role || null;
 
-      if (!token) throw new Error("Respuesta inválida (falta token)");
-      if (!role) throw new Error("Respuesta inválida (falta role)");
+      if (!token) throw new Error("Invalid response (missing token)");
+      if (!role) throw new Error("Invalid response (missing role)");
 
       localStorage.setItem("auth", JSON.stringify({ token, role }));
 
@@ -49,9 +55,10 @@ export default function SigIn() {
             role === "admin_user" ? "/admins/dashboard" : "/";
 
       const returnTo = location.state?.returnTo || byRole;
+      toast.success("Signed in successfully");
       navigate(returnTo, { replace: true });
     } catch (e) {
-      setErrMsg(e.message || "Error inesperado");
+      toast.error(e.message || "Unexpected error");
     } finally {
       setLoading(false);
     }
@@ -116,8 +123,6 @@ export default function SigIn() {
                     </button>
                   </div>
                 </div>
-
-                {errMsg && <div className="alert alert-danger py-2">{errMsg}</div>}
 
                 <div className="row flex-between-center mb-7">
                   <div className="col-auto">

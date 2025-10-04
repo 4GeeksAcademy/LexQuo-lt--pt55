@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import DashboardCalendar from "../../components/DashboardCalendar";
 import AppNavsShell from "../../components/AppNavsShell";
 import PaymentBadge from "../../components/PaymentBadge";
-
+import { toast } from 'react-toastify';
 
 export const DashboardLawyer = () => {
     const API = import.meta.env.VITE_BACKEND_URL;
@@ -26,12 +26,11 @@ export const DashboardLawyer = () => {
     // ---------------- COURTFILES ----------------
     const [cases, setCases] = useState([]);
     const [loadingCases, setLoadingCases] = useState(false);
-    const [casesErr, setCasesErr] = useState("");
+
 
     const fetchCases = async () => {
         try {
             setLoadingCases(true);
-            setCasesErr("");
             const resp = await fetch(`${API}/api/lawyers-courtfiles`, {
                 headers: { Authorization: `Bearer ${token}` },
             });
@@ -42,7 +41,7 @@ export const DashboardLawyer = () => {
             const data = await resp.json();
             setCases(data.map((r) => ({ relation_id: r.id, ...(r.courtfile || r) })));
         } catch (e) {
-            setCasesErr(e.message || "Error fetching courtfiles");
+            toast.error(e.message || "Error fetching courtfiles");
         } finally {
             setLoadingCases(false);
         }
@@ -64,7 +63,7 @@ export const DashboardLawyer = () => {
             }
             await fetchCases();
         } catch (err) {
-            alert(err.message || "Error deleting relation");
+            toast.error(err.message || "Error deleting relation");
         } finally {
             setDeletingId(null);
         }
@@ -200,13 +199,11 @@ export const DashboardLawyer = () => {
 
     const [payments, setPayments] = useState([]);
     const [loadingPayments, setLoadingPayments] = useState(false);
-    const [paymentsErr, setPaymentsErr] = useState("");
 
     // fetch igual que en la vista general (pero guardo en estado local del Dashboard)
     const fetchPayments = async () => {
         try {
             setLoadingPayments(true);
-            setPaymentsErr("");
 
             const endpoint =
                 role === "admin_user"
@@ -219,7 +216,7 @@ export const DashboardLawyer = () => {
 
             if (!response.ok) {
                 setPayments([]);
-                setPaymentsErr(`HTTP ${response.status}`);
+                toast.error(`HTTP ${response.status}`);
                 return;
             }
 
@@ -234,7 +231,7 @@ export const DashboardLawyer = () => {
         } catch (error) {
             console.error("Error fetching payments:", error);
             setPayments([]);
-            setPaymentsErr(error.message || "Error fetching payments");
+            toast.error(error.message || "Error fetching payments");
         } finally {
             setLoadingPayments(false);
         }
@@ -592,8 +589,8 @@ export const DashboardLawyer = () => {
 
                         {/* tabla */}
                         {loadingCases && <p className="mt-3">Loading courtfiles...</p>}
-                        {casesErr && <div className="alert alert-danger mt-3">{casesErr}</div>}
-                        {!loadingCases && !casesErr && filteredCases.length === 0 && (
+                       
+                        {!loadingCases && filteredCases.length === 0 && (
                             <div className="alert text-secondary bg-transparent border-0 mt-2">No courtfiles found.</div>
                         )}
 

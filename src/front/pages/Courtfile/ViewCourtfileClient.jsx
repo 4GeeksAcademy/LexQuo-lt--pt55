@@ -1,6 +1,7 @@
 import { Link, useParams, useNavigate, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import React, { useState, useEffect, useMemo } from "react";
+import { toast } from 'react-toastify';
 
 import useUnreadBadges from "../../hooks/useUnreadBadges";
 import { markNow } from "../../hooks/chatUnread";
@@ -25,17 +26,16 @@ export const ViewCourtfileClient = () => {
   // ------------------- COURTFILE -------------------
   const [courtfile, setCourtfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   // ------------------- APPOINTMENTS (YA FILTRADOS) -------------------
   const [caseAppointments, setCaseAppointments] = useState([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
-  const [appointmentsErr, setAppointmentsErr] = useState("");
+
 
   // ------------------- PAYMENTS (YA FILTRADOS) -------------------
   const [casePayments, setCasePayments] = useState([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
-  const [paymentsErr, setPaymentsErr] = useState("");
+
 
   // ------------------- FETCHERS -------------------
   const fetchCourtfile = async () => {
@@ -47,10 +47,10 @@ export const ViewCourtfileClient = () => {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       setCourtfile(data);
-      setError(null);
+
     } catch (err) {
       console.error("Error fetching courtfile:", err);
-      setError("Failed to load courtfile data");
+      toast.error("Failed to load courtfile data");
     } finally {
       setLoading(false);
     }
@@ -59,7 +59,7 @@ export const ViewCourtfileClient = () => {
   const fetchAppointments = async () => {
     try {
       setLoadingAppointments(true);
-      setAppointmentsErr("");
+
       const resp = await fetch(
         `${API}/api/appointments-courtfiles`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -76,7 +76,7 @@ export const ViewCourtfileClient = () => {
       );
       setCaseAppointments(filtered);
     } catch (e) {
-      setAppointmentsErr(e.message || "Error fetching appointments");
+      toast.error(e.message || "Error fetching appointments");
     } finally {
       setLoadingAppointments(false);
     }
@@ -85,7 +85,7 @@ export const ViewCourtfileClient = () => {
   const fetchPayments = async () => {
     try {
       setLoadingPayments(true);
-      setPaymentsErr("");
+
       const idNum = Number(courtfileId);
       const resp = await fetch(
         `${API}/api/payments-courtfile?courtfile_id=${idNum}&expand=payment`,
@@ -98,7 +98,7 @@ export const ViewCourtfileClient = () => {
       const rows = await resp.json(); // [{ id (relation), courtfile_id, payment: {...} }]
       setCasePayments(rows.map(r => ({ relation_id: r.id, ...(r.payment || {}) })));
     } catch (e) {
-      setPaymentsErr(e.message || "Error fetching payments");
+      toast.error(e.message || "Error fetching payments");
     } finally {
       setLoadingPayments(false);
     }
@@ -181,10 +181,10 @@ export const ViewCourtfileClient = () => {
         throw new Error(e.error || `HTTP ${resp.status}`);
       }
       await fetchPayments(); // refrescar lista
-      alert("Payment approved successfully!");
+      toast.success("Payment approved successfully!");
     } catch (err) {
       console.error("Error approving payment:", err);
-      alert(err.message || "Error approving payment");
+      toast.error(err.message || "Error approving payment");
     }
   };
 
@@ -225,25 +225,7 @@ export const ViewCourtfileClient = () => {
     );
   }
 
-  if (error || !courtfile) {
-    return (
-      <AppNavsShell>
-        <div className="container-fluid px-0 px-md-3">
-          <div className="row">
-            <div className="col-12 col-xl-8 col-xxl-7 mx-auto">
-              <div className="alert alert-danger mt-4">
-                <i className="bi bi-exclamation-triangle"></i> {error || "Courtfile not found"}
-              </div>
-              <Link to="/DashboardClient" className="btn btn-primary">
-                <i className="bi bi-arrow-left"></i> Back to Dashboard
-              </Link>
-            </div>
-          </div>
-        </div>
-      </AppNavsShell>
-    );
-  }
-
+  
   return (
     <AppNavsShell>
       <div className="container-fluid page-add pt-10">
@@ -373,7 +355,7 @@ export const ViewCourtfileClient = () => {
             </div>
 
             {loadingAppointments && <p className="mt-2">Loading appointments…</p>}
-            {appointmentsErr && <div className="alert alert-danger mt-2">{appointmentsErr}</div>}
+           
             {!loadingAppointments && !appointmentsErr && caseAppointments.length === 0 && (
               <div className="alert text-secondary bg-transparent border-0 mt-2">No appointments scheduled for this case.</div>
             )}
@@ -429,7 +411,7 @@ export const ViewCourtfileClient = () => {
                 </div>
 
                 {loadingPayments && <p className="mt-2">Loading payments…</p>}
-                {paymentsErr && <div className="alert alert-danger mt-2">{paymentsErr}</div>}
+                
                 {!loadingPayments && !paymentsErr && casePayments.length === 0 && (
                   <div className="alert text-secondary bg-transparent border-0 mt-2">No payments for this case.</div>
                 )}

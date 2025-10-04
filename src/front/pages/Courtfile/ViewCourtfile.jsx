@@ -1,6 +1,7 @@
 import { Link, useParams, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
+import { toast } from 'react-toastify';
 
 export const ViewCourtfile = () => {
     const { store, dispatch } = useGlobalReducer();
@@ -13,7 +14,6 @@ export const ViewCourtfile = () => {
 
     const [courtfile, setCourtfile] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
 
 
     useEffect(() => {
@@ -34,10 +34,9 @@ export const ViewCourtfile = () => {
 
                 const data = await response.json();
                 setCourtfile(data);
-                setError(null);
             } catch (error) {
                 console.error('Error fetching courtfile:', error);
-                setError('Failed to load courtfile data');
+                toast.error('Failed to load courtfile data');
             } finally {
                 setLoading(false);
             }

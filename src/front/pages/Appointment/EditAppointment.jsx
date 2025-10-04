@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import MapComponent from "../../components/Map/MapComponent";
 import LocationAutocomplete from "../../components/Map/LocationAutocomplete";
 import AppNavsShell from "../../components/AppNavsShell";
+import { toast } from 'react-toastify';
 
 export const EditAppointment = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -54,7 +55,6 @@ export const EditAppointment = () => {
   const [mapPosition, setMapPosition] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-  const [error, setError] = useState(null);
 
   const fetchAppointment = async () => {
     try {
@@ -83,10 +83,9 @@ export const EditAppointment = () => {
         setMapPosition([data.latitud, data.longitud]);
       }
 
-      setError(null);
     } catch (err) {
       console.error("Error fetching appointment:", err);
-      setError("Failed to load appointment data");
+      toast.error("Failed to load appointment data");
     } finally {
       setFetching(false);
     }
@@ -191,7 +190,7 @@ export const EditAppointment = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
+
     try {
       const payload = { ...formData };
       if (!payload.password) delete payload.password;
@@ -209,14 +208,14 @@ export const EditAppointment = () => {
         const updatedAppointment = await response.json();
         dispatch({ type: "UPDATE_APPOINTMENT", payload: updatedAppointment });
         navigate(returnTo, { replace: true });
-        alert("Appointment updated successfully!");
+        toast.success("Appointment updated successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to update Appointment");
       }
     } catch (err) {
       console.error("Error updating Appointment:", err);
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -319,17 +318,6 @@ export const EditAppointment = () => {
     );
   }
 
-  if (error && !formData.title) {
-    return (
-      <div className="container mt-4">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle"></i> {error}
-        </div>
-        <Link to={returnTo} className="btn btn-primary">Back</Link>
-      </div>
-    );
-  }
-
   return (
     <AppNavsShell>
       <div className="container add-page">
@@ -428,17 +416,6 @@ export const EditAppointment = () => {
                   ))}
                 </select>
                 <label htmlFor="courtfile_id">Link to Courtfile *</label>
-              </div>
-            )}
-
-
-            {/* Error */}
-            {error && (
-              <div
-                className="alert alert-danger d-flex align-items-center"
-                role="alert"
-              >
-                <i className="bi bi-exclamation-triangle me-2" /> {error}
               </div>
             )}
 

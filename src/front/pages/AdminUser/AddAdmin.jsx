@@ -18,7 +18,6 @@ export const AddAdmin = () => {
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleInputChange = (e) => {
@@ -32,7 +31,6 @@ export const AddAdmin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
       const response = await fetch(`${API}/api/admins`, {
@@ -45,14 +43,14 @@ export const AddAdmin = () => {
         const newAdmin = await response.json();
         dispatch({ type: "ADD_ADMIN", payload: newAdmin });
         navigate("/admins");
-        alert("Admin created successfully!");
+        toast.success("Admin created successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to create admin");
       }
     } catch (err) {
       console.error("Error creating Admin:", err);
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }

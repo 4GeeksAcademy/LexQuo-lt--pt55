@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import AppNavsShell from "../../components/AppNavsShell";
 import StatusPill from "../../components/StatusPill";
+import { toast } from 'react-toastify';
 
 export const Lawyers = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -62,10 +63,10 @@ export const Lawyers = () => {
         throw new Error(errorData.error || `HTTP ${resp.status}`);
       }
       dispatch({ type: "DELETE_LAWYER", payload: id });
-      alert("Lawyer deleted successfully!");
+      toast.success("Lawyer deleted successfully!");
     } catch (err) {
       console.error("Error deleting lawyer:", err);
-      alert(`Error deleting lawyer: ${err.message}`);
+      toast.error(`Error deleting lawyer: ${err.message}`);
     }
   };
 

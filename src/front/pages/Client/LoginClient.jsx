@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import useGlobalReducer from "../../hooks/useGlobalReducer.jsx";
 import { useNavigate, Link, useLocation } from "react-router-dom";
+import { toast } from 'react-toastify';
 
 export const LoginClient = () => {
   const navigate = useNavigate();
@@ -12,8 +13,7 @@ export const LoginClient = () => {
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errMsg, setErrMsg] = useState("");
-  const [okMsg, setOkMsg] = useState("");
+  
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -21,11 +21,11 @@ export const LoginClient = () => {
     setOkMsg("");
 
     if (!API) {
-      setErrMsg("VITE_BACKEND_URL no está definido.");
+      toast.error("VITE_BACKEND_URL no está definido.");
       return;
     }
     if (!email || !password) {
-      setErrMsg("Complete email and password");
+      toast.warn("Complete email and password");
       return;
     }
 
@@ -58,7 +58,7 @@ export const LoginClient = () => {
         // guardamos el usuario en memoria con rol
         dispatch({ type: "SET_ME", payload: { ...client, role: "client" } });
 
-        setOkMsg("Session started successfully");
+        toast.success("Session started successfully");
 
         const returnTo = location.state?.returnTo || "/DashboardClient";
         navigate(returnTo, { replace: true });
@@ -116,9 +116,6 @@ export const LoginClient = () => {
             </div>
           </div>
         </div>
-
-        {errMsg && <div className="alert alert-danger py-2">{errMsg}</div>}
-        {okMsg && <div className="alert alert-success py-2">{okMsg}</div>}
 
         <div className="d-flex gap-2 mt-5 justify-content-center">
           <button type="submit" className="btn btn-success" disabled={loading}>

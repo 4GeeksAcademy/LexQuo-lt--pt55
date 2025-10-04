@@ -3,6 +3,7 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import React, { useEffect, useMemo, useState } from "react";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import AppNavsShell from "../../components/AppNavsShell";
+import { toast } from 'react-toastify';
 
 export const Appointments = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -102,10 +103,10 @@ export const Appointments = () => {
         dispatch({ type: "DELETE_APPOINTMENT", payload: appointment.relation_id });
       }
 
-      alert("Appointment deleted successfully!");
+      toast.success("Appointment deleted successfully!");
     } catch (err) {
       console.error("Error deleting appointment:", err);
-      alert(`Error deleting appointment: ${err.message}`);
+      toast.error(`Error deleting appointment: ${err.message}`);
     }
   };
 

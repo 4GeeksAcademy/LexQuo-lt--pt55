@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams, Navigate, useLocation } from "react-route
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 import AppNavsShell from "../../components/AppNavsShell";
+import { toast } from 'react-toastify';
 
 export const EditClient = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -37,7 +38,7 @@ export const EditClient = () => {
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-  const [error, setError] = useState(null);
+
 
   const fetchClient = async () => {
     try {
@@ -61,7 +62,7 @@ export const EditClient = () => {
 
     } catch (err) {
       console.error("Error fetching client:", err);
-      setError("Failed to load client data");
+      toast.error("Failed to load client data");
     } finally {
       setFetching(false);
     }
@@ -79,16 +80,15 @@ export const EditClient = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     if (!formData.firstname?.trim() || !formData.lastname?.trim() || !formData.phone?.trim()) {
-      setError("Firstname, Lastname and Phone are required.");
+      toast.error("Firstname, Lastname and Phone are required.");
       setLoading(false);
       return;
     }
 
     if (formData.password && formData.password.length < 8) {
-      setError("Password must have at least 8 characters.");
+      toast.error("Password must have at least 8 characters.");
       setLoading(false);
       return;
     }
@@ -117,7 +117,7 @@ export const EditClient = () => {
       if (response.ok) {
         const updatedClient = await response.json();
         dispatch({ type: "UPDATE_CLIENT", payload: updatedClient });
-        alert("Client updated successfully!");
+        toast.success("Client updated successfully!");
         navigate(`/clients/view/${clientId}`);
       } else if (response.status === 409) {
         const errorData = await response.json().catch(() => ({}));
@@ -128,7 +128,7 @@ export const EditClient = () => {
       }
     } catch (err) {
       console.error("Error updating Client:", err);
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -144,10 +144,10 @@ export const EditClient = () => {
           ...prev,
           file: selectedFile
         }));
-        setError(null);
+
       } else {
         setFormData(prev => ({ ...prev, file: null }));
-        setError("Only image formats (JPEG, PNG, GIF, WEBP) are allowed.");
+        toast.error("Only image formats (JPEG, PNG, GIF, WEBP) are allowed.");
         e.target.value = null;
       }
     }
@@ -164,17 +164,7 @@ export const EditClient = () => {
     );
   }
 
-  if (error && !formData.firstname) {
-    return (
-      <div className="container mt-4">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle"></i> {error}
-        </div>
-        <Link to="/clients" className="btn btn-primary">Back to Clients</Link>
-      </div>
-    );
-  }
-
+  
   return (
     <AppNavsShell>
     <div className="container add-page">
@@ -188,11 +178,6 @@ export const EditClient = () => {
           {/* Form */}
           <div className="card">
             <div className="card-body">
-              {error && (
-                <div className="alert alert-danger" role="alert">
-                  <i className="bi bi-exclamation-triangle"></i> {error}
-                </div>
-              )}
 
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">

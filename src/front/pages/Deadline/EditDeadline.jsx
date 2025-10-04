@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams, useLocation, Navigate } from "react-route
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect, useMemo } from "react";
 import AppNavsShell from "../../components/AppNavsShell";
+import { toast } from 'react-toastify';
 
 export const EditDeadline = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -38,7 +39,6 @@ export const EditDeadline = () => {
   const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-  const [error, setError] = useState(null);
 
   // Fetch Deadline
   const fetchDeadline = async () => {
@@ -55,10 +55,9 @@ export const EditDeadline = () => {
         deadline_hour: data.deadline_hour,
         priority: data.priority,
       });
-      setError(null);
     } catch (err) {
       console.error("Error fetching deadline:", err);
-      setError("Failed to load deadline data");
+      toast.error("Failed to load deadline data");
     } finally {
       setFetching(false);
     }
@@ -126,7 +125,6 @@ export const EditDeadline = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
     try {
       const resp = await fetch(`${API}/api/deadlines/${deadlineId}`, {
         method: "PUT",
@@ -143,10 +141,10 @@ export const EditDeadline = () => {
       const updated = await resp.json();
       dispatch({ type: "UPDATE_DEADLINE", payload: updated });
       navigate(returnTo, { replace: true });
-      alert("Deadline updated successfully!");
+      toast.success("Deadline updated successfully!");
     } catch (err) {
       console.error("Error updating deadline:", err);
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -178,18 +176,7 @@ export const EditDeadline = () => {
     );
   }
 
-  if (error && !formData.deadline_type) {
-    return (
-      <div className="container mt-4">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle"></i> {error}
-        </div>
-        <Link to={returnTo} className="btn btn-primary">
-          Back
-        </Link>
-      </div>
-    );
-  }
+  
 
   return (
     <AppNavsShell>

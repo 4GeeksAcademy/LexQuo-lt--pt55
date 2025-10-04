@@ -11,7 +11,7 @@ import {
 import {
   PieChart, Pie, Cell,
 } from "recharts";
-
+import { toast } from 'react-toastify';
 
 export const Payments = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -147,10 +147,10 @@ export const Payments = () => {
         payload: role === "admin_user" ? payment.id : payment.relation_id
       });
 
-      alert("Payment deleted successfully!");
+      toast.success("Payment deleted successfully!");
     } catch (err) {
       console.error("Error deleting payment:", err);
-      alert(`Error deleting payment: ${err.message}`);
+      toast.error(`Error deleting payment: ${err.message}`);
     }
   };
 

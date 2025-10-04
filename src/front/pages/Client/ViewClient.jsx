@@ -3,6 +3,7 @@ import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 import AppNavsShell from "../../components/AppNavsShell";
 import StatusPill from "../../components/StatusPill";
+import { toast } from 'react-toastify';
 
 export const ViewClient = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -42,7 +43,6 @@ export const ViewClient = () => {
   const [linkedRelations, setLinkedRelations] = useState([]);
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [unlinking, setUnlinking] = useState(false);
 
   // 1) Traer cliente
@@ -56,10 +56,9 @@ export const ViewClient = () => {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
         setClient(data);
-        setError(null);
       } catch (err) {
         console.error("Error fetching client:", err);
-        setError("Failed to load client data");
+        toast.error("Failed to load client data");
       } finally {
         setLoading(false);
       }
@@ -147,14 +146,14 @@ export const ViewClient = () => {
       if (response.ok) {
         dispatch({ type: "DELETE_CLIENT", payload: Number(clientId) || clientId });
         navigate(returnTo, { replace: true });
-        alert("Client deleted successfully!");
+        toast.success("Client deleted successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to delete client");
       }
     } catch (err) {
       console.error("Error deleting client:", err);
-      alert(`Error deleting client: ${err.message}`);
+      token.error(`Error deleting client: ${err.message}`);
     }
   };
 
@@ -162,7 +161,7 @@ export const ViewClient = () => {
   const handleUnlink = async () => {
     if (role !== "lawyer") return;
     if (!relationId) {
-      alert("No relation to unlink. Open this client from a case context.");
+      toast.warn("No relation to unlink. Open this client from a case context.");
       return;
     }
     if (!window.confirm("Unlink this client from the case?")) return;
@@ -176,10 +175,10 @@ export const ViewClient = () => {
         const e = await resp.json().catch(() => ({}));
         throw new Error(e.error || `HTTP ${resp.status}`);
       }
-      alert("Client unlinked from case.");
+      toast.success("Client unlinked from case.");
       navigate(returnTo, { replace: true });
     } catch (e) {
-      alert(e.message || "Error unlinking client");
+      toast.error(e.message || "Error unlinking client");
     } finally {
       setUnlinking(false);
     }
@@ -202,9 +201,9 @@ export const ViewClient = () => {
       // refrescar localmente
       setLinkedRelations((prev) => prev.filter((x) => x.relation_id !== relId));
       if (relationId === relId) setRelationId(null);
-      alert("Client unlinked from case.");
+      toast.success("Client unlinked from case.");
     } catch (e) {
-      alert(e.message || "Error unlinking client");
+      toast.error(e.message || "Error unlinking client");
     }
   };
 
@@ -229,19 +228,7 @@ export const ViewClient = () => {
     );
   }
 
-  if (error || !client) {
-    return (
-      <div className="container mt-4">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle"></i> {error || "Client not found"}
-        </div>
-        <Link to={returnTo} className="btn btn-outline-secondary">
-          <i className="bi bi-arrow-left"></i> Back to Clients
-        </Link>
-      </div>
-    );
-  }
-
+ 
   return (
     <AppNavsShell>
       <div className="container-fluid add-page">

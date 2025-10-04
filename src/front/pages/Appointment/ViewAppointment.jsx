@@ -3,6 +3,7 @@ import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 import MapComponent from "../../components/Map/MapComponent";
 import AppNavsShell from "../../components/AppNavsShell";
+import { toast } from 'react-toastify';
 
 export const ViewAppointment = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -107,14 +108,14 @@ export const ViewAppointment = () => {
       if (response.ok) {
         dispatch({ type: "DELETE_APPOINTMENT", payload: Number(appointmentId) || appointmentId });
         navigate(returnTo, { replace: true });
-        alert("Turno eliminado correctamente");
+        toast.success("Turno eliminado correctamente");
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "No se pudo eliminar el turno");
       }
     } catch (err) {
       console.error("Error deleting appointment:", err);
-      alert(`Error al eliminar: ${err.message}`);
+      toast.error(`Error al eliminar: ${err.message}`);
     }
   };
 
@@ -128,27 +129,6 @@ export const ViewAppointment = () => {
           </div>
           <p>Loading appointment...</p>
         </div>
-      </div>
-    );
-  }
-
-  if (error || !appointment) {
-    return (
-      <div className="container add-page">
-        <nav aria-label="breadcrumb" className="mb-3">
-          <ol className="breadcrumb">
-            <li className="breadcrumb-item"><Link to="/">Inicio</Link></li>
-            <li className="breadcrumb-item"><Link to="/appointments">Appointments</Link></li>
-            <li className="breadcrumb-item active" aria-current="page">View</li>
-          </ol>
-        </nav>
-
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle"></i> {error || "appointment not found"}
-        </div>
-        <Link to={returnTo} className="btn btn-outline-secondary">
-          <i className="bi bi-arrow-left"></i> Back
-        </Link>
       </div>
     );
   }

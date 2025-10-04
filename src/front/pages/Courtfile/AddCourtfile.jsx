@@ -2,6 +2,7 @@ import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 import AppNavsShell from "../../components/AppNavsShell";
+import { toast } from 'react-toastify';
 
 export const AddCourtfile = () => {
     const { store, dispatch } = useGlobalReducer();
@@ -27,7 +28,6 @@ export const AddCourtfile = () => {
     });
 
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
     const [linking, setLinking] = useState(false);
 
     const JURISDICCIONES_PJN = [
@@ -52,7 +52,6 @@ export const AddCourtfile = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-        setError(null);
 
         try {
 
@@ -98,14 +97,14 @@ export const AddCourtfile = () => {
 
                 navigate(viewPath, { replace: true, state: { returnTo: backTo } });
 
-                alert('Courtfile created successfully!');
+                toast.success('Courtfile created successfully!');
             } else {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Failed to create courtfile');
             }
         } catch (error) {
             console.error('Error creating courtfile:', error);
-            setError(error.message);
+            toast.error(error.message);
         } finally {
             setLinking(false);
             setLoading(false);
@@ -159,11 +158,6 @@ export const AddCourtfile = () => {
                         </div>
                     </div>
 
-                    {error && (
-                        <div className="alert alert-danger d-flex align-items-center" role="alert">
-                            <i className="bi bi-exclamation-triangle me-2" /> {error}
-                        </div>
-                    )}
 
                     <form onSubmit={handleSubmit} id="addCourtfileForm">
 

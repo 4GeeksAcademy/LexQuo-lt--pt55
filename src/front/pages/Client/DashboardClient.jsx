@@ -3,6 +3,7 @@ import { LogoutButton } from "../../components/LogoutButton";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import React, { useEffect, useState, useMemo } from "react";
 import AppNavsShell from "../../components/AppNavsShell";
+import { toast } from 'react-toastify';
 
 import useUnreadBadges from "../../hooks/useUnreadBadges";
 import { markNow } from "../../hooks/chatUnread";
@@ -26,7 +27,7 @@ export const DashboardClient = () => {
   // ===== COURTFILES =====
   const [cases, setCases] = useState([]);
   const [loadingCases, setLoadingCases] = useState(false);
-  const [casesErr, setCasesErr] = useState("");
+ 
 
   const fetchClientData = async () => {
     try {
@@ -85,7 +86,7 @@ export const DashboardClient = () => {
 
       setCases(normalized);
     } catch (error) {
-      setCasesErr(error.message);
+      toast.error(error.message);
     } finally {
       setLoadingCases(false);
     }
@@ -236,7 +237,7 @@ export const DashboardClient = () => {
           <div className="col-12">
             <h3 className="mb-1">Courtfiles</h3>
             {loadingCases && <p className="mt-3">Loading courtfiles...</p>}
-            {casesErr && <div className="alert alert-danger mt-3">{casesErr}</div>}
+            
             {!loadingCases && cases.length === 0 && (
               <div className="alert text-secondary bg-transparent border-0 mt-2">No courtfiles found.</div>
             )}
