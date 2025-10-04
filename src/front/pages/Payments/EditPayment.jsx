@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams, Navigate, useLocation } from "react-route
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect, useMemo } from "react";
 import AppNavsShell from "../../components/AppNavsShell";
+import { toast } from 'react-toastify';
 
 export const EditPayment = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -59,7 +60,6 @@ export const EditPayment = () => {
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-  const [error, setError] = useState(null);
 
   // Fetch Payment
   const fetchPayment = async () => {
@@ -78,10 +78,9 @@ export const EditPayment = () => {
         status: data.status ?? "",
       });
       setServerStatus(String(data.status || "").toLowerCase());
-      setError(null);
     } catch (err) {
       console.error("Error fetching payment:", err);
-      setError("Failed to load payment data");
+      toast.error("Failed to load payment data");
     } finally {
       setFetching(false);
     }
@@ -101,7 +100,6 @@ export const EditPayment = () => {
     if (isReadOnly) return;
 
     setLoading(true);
-    setError(null);
 
     try {
       const basePayload = {
@@ -131,11 +129,11 @@ export const EditPayment = () => {
 
       const updated = await resp.json();
       dispatch({ type: "UPDATE_PAYMENT", payload: updated });
-      alert("Payment updated successfully!");
+      toast.success("Payment updated successfully!");
       navigate(returnTo, { replace: true });
     } catch (err) {
       console.error("Error updating Payment:", err);
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -159,19 +157,7 @@ export const EditPayment = () => {
     );
   }
 
-  if (error && !formData.amount) {
-    return (
-      <div className="container mt-4">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle"></i> {error}
-        </div>
-        <Link to={returnTo} className="btn btn-primary">
-          Back
-        </Link>
-      </div>
-    );
-  }
-
+  
   return (
     <AppNavsShell>
       <div className="container add-page">
@@ -246,12 +232,7 @@ export const EditPayment = () => {
               </div>
             )}
 
-            {error && (
-              <div className="alert alert-danger d-flex align-items-center">
-                <i className="bi bi-exclamation-triangle me-2" /> {error}
-              </div>
-            )}
-
+           
             {/* Form */}
             <form id="paymentForm" onSubmit={handleSubmit}>
               {/* Amount */}

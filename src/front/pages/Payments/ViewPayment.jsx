@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate, useLocation, Navigate } from "react-route
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import AppNavsShell from "../../components/AppNavsShell";
 import PaymentBadge from "../../components/PaymentBadge";
+import { toast } from 'react-toastify';
 
 export const ViewPayment = () => {
   const { paymentId } = useParams();
@@ -24,7 +25,6 @@ export const ViewPayment = () => {
 
   const [payment, setPayment] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [isProcessingStripe, setIsProcessingStripe] = useState(false);
 
   // helpers
@@ -55,10 +55,10 @@ export const ViewPayment = () => {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         const data = await response.json();
         setPayment(data);
-        setError(null);
+        
       } catch (err) {
         console.error("Error fetching payment:", err);
-        setError("Failed to load payment data");
+        toast.error("Failed to load payment data");
       } finally {
         setLoading(false);
       }
@@ -188,7 +188,7 @@ export const ViewPayment = () => {
       : (relationId ? `${API}/api/payments-courtfile/${relationId}` : null);
 
     if (!endpoint) {
-      alert("Missing relation id to unlink this payment.");
+      toast.error("Missing relation id to unlink this payment.");
       return;
     }
 
@@ -210,11 +210,11 @@ export const ViewPayment = () => {
 
       dispatch({ type: "DELETE_PAYMENT", payload: isAdmin ? payment.id : relationId });
 
-      alert(isAdmin ? "Payment deleted successfully!" : "Payment unlinked successfully!");
+      toast.success(isAdmin ? "Payment deleted successfully!" : "Payment unlinked successfully!");
       navigate(returnTo, { replace: true });
     } catch (err) {
       console.error("Error deleting/unlinking payment:", err);
-      alert(`Error: ${err.message}`);
+      toast.error(`Error: ${err.message}`);
     }
   };
 
@@ -248,7 +248,7 @@ export const ViewPayment = () => {
       window.location.href = url;
     } catch (err) {
       console.error("Error during Stripe checkout:", err);
-      alert(`Error iniciando el pago: ${err.message}`);
+      toast.error(`Error iniciando el pago: ${err.message}`);
       setIsProcessingStripe(false);
     }
   };
@@ -262,21 +262,6 @@ export const ViewPayment = () => {
             <span className="visually-hidden">Loading...</span>
           </div>
           <p className="mt-2">Loading payment...</p>
-        </div>
-      </AppNavsShell>
-    );
-  }
-
-  if (error || !payment) {
-    return (
-      <AppNavsShell>
-        <div className="container mt-4">
-          <div className="alert alert-danger">
-            <i className="bi bi-exclamation-triangle"></i> {error || "Payment not found"}
-          </div>
-          <Link to={returnTo} className="btn btn-outline-secondary">
-            <i className="bi bi-arrow-left"></i> Back
-          </Link>
         </div>
       </AppNavsShell>
     );

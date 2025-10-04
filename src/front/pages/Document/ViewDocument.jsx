@@ -2,6 +2,7 @@ import { Link, useParams, useNavigate, useLocation, Navigate } from "react-route
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 import AppNavsShell from "../../components/AppNavsShell";
+import { toast } from 'react-toastify';
 
 export const ViewDocument = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -29,11 +30,11 @@ export const ViewDocument = () => {
     return null;
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+
 
   // ===== AI (para este documento) =====
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState("");
+
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const [cfDetails, setCfDetails] = useState(null); // descripción / jurisdicción / court
 
@@ -82,10 +83,10 @@ export const ViewDocument = () => {
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
         setDocumentData(data);
-        setError(null);
+        
       } catch (err) {
         console.error("Error fetching document:", err);
-        setError("Failed to load document data");
+        toast.error("Failed to load document data");
       } finally {
         setLoading(false);
       }
@@ -177,13 +178,12 @@ export const ViewDocument = () => {
 
     if (!documentUrl) {
       console.log("❌ No document URL found");
-      setAiError("No document URL found to analyze.");
+      toast.error("No document URL found to analyze.");
       return;
     }
 
     try {
       setAiLoading(true);
-      setAiError("");
       setAiSuggestions([]);
 
       const body = {
@@ -243,7 +243,7 @@ export const ViewDocument = () => {
 
     } catch (e) {
       console.error("❌ AI Analysis error:", e);
-      setAiError(e.message || "Error analyzing document");
+      toast.error(e.message || "Error analyzing document");
     } finally {
       setAiLoading(false);
     }
@@ -280,11 +280,10 @@ export const ViewDocument = () => {
   useEffect(() => {
     console.log("📊 AI State update:", {
       aiLoading,
-      aiError,
       aiSuggestionsCount: aiSuggestions?.length,
       hasCfDetails: !!cfDetails
     });
-  }, [aiLoading, aiError, aiSuggestions, cfDetails]);
+  }, [aiLoading, aiSuggestions, cfDetails]);
 
 
   // ---------- Delete ----------
@@ -301,10 +300,10 @@ export const ViewDocument = () => {
       }
       dispatch({ type: "DELETE_DOCUMENT", payload: Number(documentId) || documentId });
       navigate(returnTo, { replace: true });
-      alert("Document deleted successfully!");
+      toast.success("Document deleted successfully!");
     } catch (err) {
       console.error(err);
-      alert(`Error deleting document: ${err.message}`);
+      toast.error(`Error deleting document: ${err.message}`);
     }
   };
 
@@ -322,21 +321,7 @@ export const ViewDocument = () => {
     );
   }
 
-  if (error || !documentData) {
-    return (
-      <AppNavsShell>
-        <div className="container mt-4">
-          <div className="alert alert-danger">
-            <i className="bi bi-exclamation-triangle"></i> {error || "Document not found"}
-          </div>
-          <Link to={returnTo} className="btn btn-outline-secondary">
-            <i className="bi bi-arrow-left"></i> Back
-          </Link>
-        </div>
-      </AppNavsShell>
-    );
-  }
-
+ 
   // prefer created_at but keep backward compat with create_at
   const createdAt = documentData.created_at || documentData.create_at;
 
@@ -488,20 +473,19 @@ export const ViewDocument = () => {
                 <div className="border-top my-3"></div>
 
                 {/* Contenido */}
-                {aiError && <div className="alert alert-danger mb-0">{aiError}</div>}
 
-                {!aiError && aiLoading && (
+                {aiLoading && (
                   <div className="text-muted d-flex align-items-center">
                     <span className="spinner-border spinner-border-sm me-2" />
                     Analizando el contenido del documento…
                   </div>
                 )}
 
-                {!aiLoading && !aiError && (!aiSuggestions || aiSuggestions.length === 0) && (
+                {!aiLoading && (!aiSuggestions || aiSuggestions.length === 0) && (
                   <div className="alert text-secondary bg-transparent border-0 mt-2">Sin sugerencias por ahora.</div>
                 )}
 
-                {!aiLoading && !aiError && Array.isArray(aiSuggestions) && aiSuggestions.length > 0 && (
+                {!aiLoading && Array.isArray(aiSuggestions) && aiSuggestions.length > 0 && (
                   <div className="list-group list-group-flush">
                     {aiSuggestions.map((sug, idx) => {
                       const urg = String(sug.urgency || "medium").toLowerCase();

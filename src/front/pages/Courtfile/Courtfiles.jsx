@@ -3,6 +3,7 @@ import useGlobalReducer from "../../hooks/useGlobalReducer";
 import React, { useEffect, useState, useMemo } from "react"
 import AppNavsShell from "../../components/AppNavsShell";
 import StatusPill from "../../components/StatusPill";
+import { toast } from 'react-toastify';
 
 export const Courtfiles = () => {
 
@@ -62,14 +63,14 @@ export const Courtfiles = () => {
 
       if (response.ok) {
         dispatch({ type: 'DELETE_COURTFILE', payload: id });
-        alert('Courtfile deleted successfully!');
+        toast.success('Courtfile deleted successfully!');
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
     } catch (error) {
       console.error('Error deleting courtfile:', error);
-      alert(`Error deleting courtfile: ${error.message}`);
+      toast.error(`Error deleting courtfile: ${error.message}`);
     }
   };
 

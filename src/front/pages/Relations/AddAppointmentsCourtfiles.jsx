@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useEffect, useState } from "react";
+import { toast } from 'react-toastify';
 
 export const AddAppointmentsCourtfiles = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -15,7 +16,6 @@ export const AddAppointmentsCourtfiles = () => {
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   // Usar datos del store
   const appointments = store.appointments || [];
@@ -66,7 +66,7 @@ export const AddAppointmentsCourtfiles = () => {
           }
         }
       } catch (err) {
-        if (alive) setError("Error loading data");
+        if (alive) toast.error("Error loading data");
         console.error(err);
       }
     };
@@ -84,7 +84,6 @@ export const AddAppointmentsCourtfiles = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
       const payload = {
@@ -119,10 +118,10 @@ export const AddAppointmentsCourtfiles = () => {
         dispatch({ type: "SET_APPOINTMENT_COURTFILES", payload: allRelations });
       }
 
-      alert("Relationship created successfully!");
+      toast.success("Relationship created successfully!");
       navigate("/AppointmentsCourtfiles");
     } catch (err) {
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -141,12 +140,7 @@ export const AddAppointmentsCourtfiles = () => {
 
           <div className="card">
             <div className="card-body">
-              {error && (
-                <div className="alert alert-danger">
-                  <i className="bi bi-exclamation-triangle"></i> {error}
-                </div>
-              )}
-
+              
               <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                   <label htmlFor="appointment_id" className="form-label">Appointment *</label>

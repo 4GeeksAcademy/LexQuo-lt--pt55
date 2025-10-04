@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { PublicLayout } from "../components/PublicLayout";
+import { toast } from 'react-toastify';
 
 export default function SignUp() {
   const API = import.meta.env.VITE_BACKEND_URL;
@@ -18,8 +19,7 @@ export default function SignUp() {
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errMsg, setErrMsg] = useState("");
-  const [okMsg, setOkMsg] = useState("");
+ 
 
   const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
@@ -38,8 +38,6 @@ export default function SignUp() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrMsg("");
-    setOkMsg("");
 
     const v = validate();
     if (v) return setErrMsg(v);
@@ -66,11 +64,11 @@ export default function SignUp() {
         throw new Error(data?.error || data?.msg || "The user could not be created.");
       }
 
-      setOkMsg("User created successfully. You can now log in.");
+      toast.success("User created successfully. You can now log in.");
       setForm((f) => ({ ...f, password: "", confirm: "" }));
       setTimeout(() => navigate("/sign-in"), 1200);
     } catch (err) {
-      setErrMsg(err.message || "Unexpected error");
+      toast.error(err.message || "Unexpected error");
     } finally {
       setLoading(false);
     }
@@ -245,9 +243,7 @@ export default function SignUp() {
                   </div>
                 </div>
 
-                {errMsg && <div className="alert alert-danger py-2">{errMsg}</div>}
-                {okMsg && <div className="alert alert-success py-2">{okMsg}</div>}
-
+               
                 <button
                   type="submit"
                   className="btn btn-primary w-100 mb-3"

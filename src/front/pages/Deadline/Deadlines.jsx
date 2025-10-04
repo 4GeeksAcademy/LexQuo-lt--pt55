@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import AppNavsShell from "../../components/AppNavsShell";
 import DeadlineBadge from "../../components/DeadlineBadge";
+import { toast } from 'react-toastify';
 
 export const Deadlines = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -75,10 +76,10 @@ export const Deadlines = () => {
         throw new Error(errorData.error || `HTTP ${resp.status}`);
       }
       dispatch({ type: "DELETE_DEADLINE", payload: id });
-      alert("Deadline deleted successfully!");
+      toast.success("Deadline deleted successfully!");
     } catch (err) {
       console.error("Error deleting deadline:", err);
-      alert(`Error deleting deadline: ${err.message}`);
+      toast.error(`Error deleting deadline: ${err.message}`);
     }
   };
 

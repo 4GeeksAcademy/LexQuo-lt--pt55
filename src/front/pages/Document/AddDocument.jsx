@@ -2,6 +2,7 @@ import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 import AppNavsShell from "../../components/AppNavsShell";
+import { toast } from 'react-toastify';
 
 export const AddDocument = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -36,7 +37,6 @@ export const AddDocument = () => {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [linking, setLinking] = useState(false);
-  const [error, setError] = useState(null);
 
   const [myCases, setMyCases] = useState([]);
   const [loadingCases, setLoadingCases] = useState(false);
@@ -89,7 +89,7 @@ export const AddDocument = () => {
 
         setMyCases(mapped);
       } catch (err) {
-        setError(err.message || "Error fetching courtfiles");
+        toast.error(err.message || "Error fetching courtfiles");
       } finally {
         setLoadingCases(false);
       }
@@ -124,19 +124,17 @@ export const AddDocument = () => {
     const selectedFile = e.target.files[0];
     setFile(selectedFile);
     if (selectedFile) {
-      setError(null);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
 
     if (!preselectedCourtfileId && !formData.courtfile_id) {
       setLoading(false);
-      setError("Please select a courtfile to link this document.");
+      toast.error("Please select a courtfile to link this document.");
       return;
     }
 
@@ -188,11 +186,11 @@ export const AddDocument = () => {
         }
       }
 
-      alert("Document created and linked successfully!");
+      toast.success("Document created and linked successfully!");
       navigate(returnTo, { replace: true });
     } catch (err) {
       console.error("Error creating Document:", err);
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLinking(false);
       setLoading(false);
@@ -318,12 +316,6 @@ export const AddDocument = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-
-            {error && (
-              <div className="alert alert-danger d-flex align-items-center" role="alert">
-                <i className="bi bi-exclamation-triangle me-2" /> {error}
               </div>
             )}
 

@@ -3,6 +3,7 @@ import React, { useMemo, useRef, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { enUS } from "date-fns/locale";
+import { toast } from 'react-toastify';
 
 import CalendarModal from "../pages/CalendarModal";
 import CalendarModalAdd from "../pages/CalendarModalAdd";
@@ -158,7 +159,7 @@ export default function DashboardCalendarWidget({
       }
     } catch (error) {
       console.error("Error deleting event:", error);
-      alert("Error deleting event");
+      toast.error("Error deleting event");
     }
   };
 
@@ -268,6 +269,12 @@ export default function DashboardCalendarWidget({
     setCurrentDate(api()?.getDate() ?? new Date());
   };
 
+  useEffect(() => {
+    if (err && !loading) {
+      toast.error(err);
+    }
+  }, [err, loading]);
+
   return (
     <div className="card border-0 lxq-cal-widget">
       {/* XS compacto, SM+ normal */}
@@ -339,7 +346,6 @@ export default function DashboardCalendarWidget({
 
         {/* Estado */}
         {loading && <div className="small text-muted mb-2">Cargando eventos…</div>}
-        {err && !loading && <div className="alert alert-warning py-2 my-2 my-sm-3">{err}</div>}
 
         {/* Calendar: en XS reducimos tipografía/line-height del wrapper */}
         <div className="small lh-sm lh-sm">

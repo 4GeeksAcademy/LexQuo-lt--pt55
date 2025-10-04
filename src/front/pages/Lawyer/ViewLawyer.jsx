@@ -4,6 +4,7 @@ import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useEffect, useState } from "react";
 import AppNavsShell from "../../components/AppNavsShell";
 import StatusPill from "../../components/StatusPill";
+import { toast } from 'react-toastify';
 
 export const ViewLawyer = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -31,7 +32,6 @@ export const ViewLawyer = () => {
   const [lawyer, setLawyer] = useState(null);
   const [linkedRelations, setLinkedRelations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchLawyer = async () => {
@@ -43,10 +43,9 @@ export const ViewLawyer = () => {
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
         setLawyer(data);
-        setError(null);
       } catch (e) {
         console.error("Error fetching lawyer:", e);
-        setError("Failed to load lawyer data");
+        toast.error("Failed to load lawyer data");
       } finally {
         setLoading(false);
       }
@@ -112,14 +111,14 @@ export const ViewLawyer = () => {
       if (response.ok) {
         dispatch({ type: "DELETE_LAWYER", payload: Number(lawyerId) || lawyerId });
         navigate(returnTo, { replace: true });
-        alert("Lawyer deleted successfully!");
+        toast.success("Lawyer deleted successfully!");
       } else {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to delete lawyer");
       }
     } catch (err) {
       console.error("Error deleting lawyer:", err);
-      alert(`Error deleting lawyer: ${err.message}`);
+      toast.error(`Error deleting lawyer: ${err.message}`);
     }
   };
 
@@ -136,9 +135,9 @@ export const ViewLawyer = () => {
         throw new Error(e.error || `HTTP ${resp.status}`);
       }
       setLinkedRelations((prev) => prev.filter((x) => x.relation_id !== relId));
-      alert("Lawyer unlinked from case.");
+      toast.success("Lawyer unlinked from case.");
     } catch (e) {
-      alert(e.message || "Error unlinking lawyer");
+      toast.error(e.message || "Error unlinking lawyer");
     }
   };
 
@@ -157,18 +156,6 @@ export const ViewLawyer = () => {
     );
   }
 
-  if (error || !lawyer) {
-    return (
-      <div className="container mt-4">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle"></i> {error || "Lawyer not found"}
-        </div>
-        <Link to={returnTo} className="btn btn-outline-secondary">
-          <i className="bi bi-arrow-left"></i> Back to Lawyers
-        </Link>
-      </div>
-    );
-  }
 
 return (
   <AppNavsShell>

@@ -396,7 +396,7 @@ export default function ChatOnDemand(props) {
 
           {returnTo && (
             <Link
-              to={returnTo}
+              to={`/courtfiles/ViewCourtfileLawyer/${courtfileId}`}
               className="btn btn-phoenix-primary d-flex align-items-center gap-1 gap-md-2 fs-10 fs-md-9 btn-sm btn-md"
             >
               <i className="bi bi-folder2-open"></i>
@@ -476,12 +476,6 @@ export default function ChatOnDemand(props) {
             </div>
           )}
 
-          {!isValidRole && (
-            <div className="alert alert-warning my-2 py-2 py-md-3 fs-9 fs-md-8">
-              No pude detectar tu rol. Asegurate de tener <code>auth.role</code> en localStorage
-              o de pasar <code>senderRole</code> por props/state.
-            </div>
-          )}
 
           <div ref={bottomRef} />
         </div>

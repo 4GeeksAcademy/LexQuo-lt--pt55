@@ -2,6 +2,7 @@ import { Link, useNavigate, useLocation, Navigate } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect } from "react";
 import AppNavsShell from "../../components/AppNavsShell";
+import { toast } from 'react-toastify';
 
 export const AddDeadline = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -42,7 +43,6 @@ export const AddDeadline = () => {
 
   const [loading, setLoading] = useState(false);
   const [linking, setLinking] = useState(false);
-  const [error, setError] = useState(null);
 
   const [myCases, setMyCases] = useState([]);
   const [loadingCases, setLoadingCases] = useState(false);
@@ -98,7 +98,7 @@ export const AddDeadline = () => {
 
         setMyCases(mapped);
       } catch (err) {
-        setError(err.message || "Error fetching courtfiles");
+        toast.error(err.message || "Error fetching courtfiles");
       } finally {
         setLoadingCases(false);
       }
@@ -114,7 +114,6 @@ export const AddDeadline = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
 
     try {
       if (!formData.courtfile_id) {
@@ -164,11 +163,11 @@ export const AddDeadline = () => {
         throw new Error(e.error || `Failed to link deadline (HTTP ${relResp.status})`);
       }
 
-      alert("Deadline created and linked successfully!");
+      toast.success("Deadline created and linked successfully!");
       navigate(returnTo, { replace: true })
     } catch (err) {
       console.error("Error creating/linking Deadline:", err);
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLinking(false);
       setLoading(false);
@@ -328,12 +327,6 @@ export const AddDeadline = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-
-            {error && (
-              <div className="alert alert-danger d-flex align-items-center" role="alert">
-                <i className="bi bi-exclamation-triangle me-2" /> {error}
               </div>
             )}
 

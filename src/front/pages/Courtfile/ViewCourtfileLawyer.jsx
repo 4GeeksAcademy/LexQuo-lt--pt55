@@ -6,6 +6,7 @@ import { markNow } from "../../hooks/chatUnread";
 import AppNavsShell from "../../components/AppNavsShell";
 import DeadlineBadge from "../../components/DeadlineBadge";
 import PaymentBadge from "../../components/PaymentBadge";
+import { toast } from 'react-toastify';
 
 function KebabMenu({ children }) {
   const stop = (e) => { e.preventDefault(); e.stopPropagation(); };
@@ -51,7 +52,7 @@ export const ViewCourtfileLawyer = () => {
   // ------------------- COURTFILE -------------------
   const [courtfile, setCourtfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  
 
   const [myRelationId, setMyRelationId] = useState(null);
   const [leaving, setLeaving] = useState(false);
@@ -59,41 +60,41 @@ export const ViewCourtfileLawyer = () => {
   // ------------------- DEADLINES (YA FILTRADOS) -------------------
   const [caseDeadlines, setCaseDeadlines] = useState([]);
   const [loadingDeadlines, setLoadingDeadlines] = useState(false);
-  const [deadlinesErr, setDeadlinesErr] = useState("");
+ 
   const [deletingDeadlineRelId, setDeletingDeadlineRelId] = useState(null);
 
   // ------------------- APPOINTMENTS (YA FILTRADOS) -------------------
   const [caseAppointments, setCaseAppointments] = useState([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
-  const [appointmentsErr, setAppointmentsErr] = useState("");
+
   const [deletingApptRelId, setDeletingApptRelId] = useState(null);
 
   // ------------------- DOCUMENTS (YA FILTRADOS) -------------------
   const [caseDocuments, setCaseDocuments] = useState([]);
   const [loadingDocuments, setLoadingDocuments] = useState(false);
-  const [documentsErr, setDocumentsErr] = useState("");
+
   const [deletingDocRelId, setDeletingDocRelId] = useState(null);
   // ------------------- AI DOCUMENT ANALYSIS -------------------
   const [analyzingDocId, setAnalyzingDocId] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null);
-  const [analysisError, setAnalysisError] = useState("");
+
 
   // ------------------- CLIENTS (YA FILTRADOS) -------------------
   const [caseClients, setCaseClients] = useState([]);
   const [loadingClients, setLoadingClients] = useState(false);
-  const [clientsErr, setClientsErr] = useState("");
+
   const [deletingClientRelId, setDeletingClientRelId] = useState(null);
 
   // ------------------- LAWYERS (NUEVO) -------------------
   const [caseLawyers, setCaseLawyers] = useState([]);
   const [loadingLawyers, setLoadingLawyers] = useState(false);
-  const [lawyersErr, setLawyersErr] = useState("");
+
   const [deletingLawyerRelId, setDeletingLawyerRelId] = useState(null);
 
   // ------------------- PAYMENTS (YA FILTRADOS) -------------------
   const [casePayments, setCasePayments] = useState([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
-  const [paymentsErr, setPaymentsErr] = useState("");
+
   const [deletingPaymentRelId, setDeletingPaymentRelId] = useState(null);
 
   // ------------------- FETCHERS -------------------
@@ -106,10 +107,10 @@ export const ViewCourtfileLawyer = () => {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       setCourtfile(data);
-      setError(null);
+
     } catch (err) {
       console.error("Error fetching courtfile:", err);
-      setError("Failed to load courtfile data");
+      toast.error("Failed to load courtfile data");
     } finally {
       setLoading(false);
     }
@@ -118,7 +119,7 @@ export const ViewCourtfileLawyer = () => {
   const fetchDeadlines = async () => {
     try {
       setLoadingDeadlines(true);
-      setDeadlinesErr("");
+
       const resp = await fetch(
         `${API}/api/deadlines-courtfiles`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -135,7 +136,7 @@ export const ViewCourtfileLawyer = () => {
       );
       setCaseDeadlines(filtered);
     } catch (e) {
-      setDeadlinesErr(e.message || "Error fetching deadlines");
+      toast.error(e.message || "Error fetching deadlines");
     } finally {
       setLoadingDeadlines(false);
     }
@@ -144,7 +145,7 @@ export const ViewCourtfileLawyer = () => {
   const fetchAppointments = async () => {
     try {
       setLoadingAppointments(true);
-      setAppointmentsErr("");
+
       const resp = await fetch(
         `${API}/api/appointments-courtfiles`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -161,7 +162,7 @@ export const ViewCourtfileLawyer = () => {
       );
       setCaseAppointments(filtered);
     } catch (e) {
-      setAppointmentsErr(e.message || "Error fetching appointments");
+      toast.error(e.message || "Error fetching appointments");
     } finally {
       setLoadingAppointments(false);
     }
@@ -170,7 +171,7 @@ export const ViewCourtfileLawyer = () => {
   const fetchDocuments = async () => {
     try {
       setLoadingDocuments(true);
-      setDocumentsErr("");
+      
       const resp = await fetch(
         `${API}/api/courtfile-document?courtfile_id=${Number(courtfileId)}`,
         {
@@ -204,7 +205,7 @@ export const ViewCourtfileLawyer = () => {
       }));
       setCaseDocuments(normalized);
     } catch (e) {
-      setDocumentsErr(e.message || "Error fetching documents");
+      toast.error(e.message || "Error fetching documents");
     } finally {
       setLoadingDocuments(false);
     }
@@ -213,7 +214,7 @@ export const ViewCourtfileLawyer = () => {
   const fetchClients = async () => {
     try {
       setLoadingClients(true);
-      setClientsErr("");
+      
       const resp = await fetch(
         `${API}/api/clients-courtfiles?courtfile_id=${Number(courtfileId)}`,
         {
@@ -236,7 +237,7 @@ export const ViewCourtfileLawyer = () => {
       }));
       setCaseClients(normalized);
     } catch (e) {
-      setClientsErr(e.message || "Error fetching clients");
+      toast.error(e.message || "Error fetching clients");
     } finally {
       setLoadingClients(false);
     }
@@ -247,7 +248,7 @@ export const ViewCourtfileLawyer = () => {
   const fetchCaseLawyers = async () => {
     try {
       setLoadingLawyers(true);
-      setLawyersErr("");
+      
       const resp = await fetch(
         `${API}/api/lawyers-courtfiles?courtfile_id=${Number(courtfileId)}`,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -270,7 +271,7 @@ export const ViewCourtfileLawyer = () => {
         }))
       );
     } catch (e) {
-      setLawyersErr(e.message || "Error fetching lawyers");
+      toast.error(e.message || "Error fetching lawyers");
     } finally {
       setLoadingLawyers(false);
     }
@@ -279,7 +280,7 @@ export const ViewCourtfileLawyer = () => {
   const fetchPayments = async () => {
     try {
       setLoadingPayments(true);
-      setPaymentsErr("");
+
       const idNum = Number(courtfileId);
 
       const resp = await fetch(
@@ -295,7 +296,7 @@ export const ViewCourtfileLawyer = () => {
       const rows = await resp.json(); // [{ id, payment: { ... } }]
       setCasePayments(rows.map(r => ({ relation_id: r.id, ...(r.payment || {}) })));
     } catch (e) {
-      setPaymentsErr(e.message || "Error fetching payments");
+      toast.error(e.message || "Error fetching payments");
     } finally {
       setLoadingPayments(false);
     }
@@ -303,7 +304,7 @@ export const ViewCourtfileLawyer = () => {
 
   // ===== AI SUGGESTIONS =====
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiError, setAiError] = useState("");
+  
   const [aiSuggestions, setAiSuggestions] = useState([]);
 
   const loadSavedSuggestions = async () => {
@@ -328,7 +329,7 @@ export const ViewCourtfileLawyer = () => {
   const handleGenerateSuggestions = async () => {
     try {
       setAiLoading(true);
-      setAiError("");
+
       const resp = await fetch(`${API}/api/ai/suggest-actions`, {
         method: "POST",
         headers: {
@@ -366,7 +367,7 @@ export const ViewCourtfileLawyer = () => {
 
       await loadSavedSuggestions(); // refrescar lista en UI
     } catch (e) {
-      setAiError(e.message || "Error generando sugerencias");
+      toast.error(e.message || "Error generando sugerencias");
     } finally {
       setAiLoading(false);
     }
@@ -382,7 +383,7 @@ export const ViewCourtfileLawyer = () => {
       if (!r.ok) throw new Error("No se pudo archivar");
       await loadSavedSuggestions();
     } catch (e) {
-      setAiError(e.message);
+      toast.error(e.message);
     }
   };
 
@@ -442,7 +443,7 @@ export const ViewCourtfileLawyer = () => {
 
   const handleLeaveCase = async () => {
     if (!myRelationId) {
-      alert("No relation found for this lawyer and case.");
+      toast.warn("No relation found for this lawyer and case.");
       return;
     }
     if (!window.confirm("Leave this case? You will be unlinked from this courtfile.")) return;
@@ -456,11 +457,11 @@ export const ViewCourtfileLawyer = () => {
         const e = await resp.json().catch(() => ({}));
         throw new Error(e.error || `HTTP ${resp.status}`);
       }
-      alert("You have left this case.");
+      toast.success("You have left this case.");
       navigate("/DashboardLawyer", { replace: true });
     } catch (err) {
       console.error("Error unlinking lawyer from courtfile:", err);
-      alert(err.message || "Error unlinking relation");
+      toast.error(err.message || "Error unlinking relation");
     } finally {
       setLeaving(false);
     }
@@ -481,7 +482,7 @@ export const ViewCourtfileLawyer = () => {
       }
       await fetchDeadlines();
     } catch (err) {
-      alert(err.message || "Error deleting relation");
+      toast.error(err.message || "Error deleting relation");
     } finally {
       setDeletingDeadlineRelId(null);
     }
@@ -501,7 +502,7 @@ export const ViewCourtfileLawyer = () => {
       }
       await fetchAppointments();
     } catch (err) {
-      alert(err.message || "Error deleting relation");
+      toast.error(err.message || "Error deleting relation");
     } finally {
       setDeletingApptRelId(null);
     }
@@ -521,7 +522,7 @@ export const ViewCourtfileLawyer = () => {
       }
       await fetchDocuments();
     } catch (err) {
-      alert(err.message || "Error unlinking document");
+      toast.error(err.message || "Error unlinking document");
     } finally {
       setDeletingDocRelId(null);
     }
@@ -541,7 +542,7 @@ export const ViewCourtfileLawyer = () => {
       }
       await fetchClients();
     } catch (err) {
-      alert(err.message || "Error unlinking client");
+      toast.error(err.message || "Error unlinking client");
     } finally {
       setDeletingClientRelId(null);
     }
@@ -560,7 +561,7 @@ export const ViewCourtfileLawyer = () => {
       if (!resp.ok) throw new Error(data.error || `HTTP ${resp.status}`);
       await fetchCaseLawyers();
     } catch (err) {
-      alert(err.message || "Error deleting relation");
+      toast.error(err.message || "Error deleting relation");
     } finally {
       setDeletingLawyerRelId(null);
     }
@@ -580,7 +581,7 @@ export const ViewCourtfileLawyer = () => {
       }
       await fetchPayments();
     } catch (e) {
-      alert(e.message || "Error unlinking payment");
+      toast.error(e.message || "Error unlinking payment");
     } finally {
       setDeletingPaymentRelId(null);
     }
@@ -715,7 +716,7 @@ export const ViewCourtfileLawyer = () => {
   const analyzeDocument = async (documentUrl, documentName, documentId) => {
     try {
       setAnalyzingDocId(documentId);
-      setAnalysisError("");
+
       setAnalysisResult(null);
 
       const resp = await fetch(`${API}/api/ai/analyze-document`, {
@@ -746,7 +747,7 @@ export const ViewCourtfileLawyer = () => {
         analysis: data.analysis
       });
     } catch (err) {
-      setAnalysisError(err.message || "Error analyzing document");
+      toast.error(err.message || "Error analyzing document");
       console.error("Analysis error:", err);
     } finally {
       setAnalyzingDocId(null);
@@ -810,19 +811,7 @@ export const ViewCourtfileLawyer = () => {
     );
   }
 
-  if (error || !courtfile) {
-    return (
-      <div className="container mt-4">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle"></i> {error || "Courtfile not found"}
-        </div>
-        <Link to="/courtfiles" className="btn btn-primary">
-          <i className="bi bi-arrow-left"></i> Back to Courtfiles
-        </Link>
-      </div>
-    );
-  }
-
+ 
   return (
     <AppNavsShell>
       <div className="container add-page">
@@ -1023,10 +1012,8 @@ export const ViewCourtfileLawyer = () => {
 </div>
 
 {loadingDocuments && <p className="mt-2">Loading documents…</p>}
-{documentsErr && (
-  <div className="alert alert-danger mt-2">{documentsErr}</div>
-)}
-{!loadingDocuments && !documentsErr && caseDocuments.length === 0 && (
+
+{!loadingDocuments && caseDocuments.length === 0 && (
   <div className="alert text-secondary bg-transparent border-0 mt-2">No documents yet.</div>
 )}
 
@@ -1175,10 +1162,8 @@ export const ViewCourtfileLawyer = () => {
 </div>
 
 {loadingDeadlines && <p className="mt-2">Loading deadlines…</p>}
-{deadlinesErr && (
-  <div className="alert alert-danger mt-2">{deadlinesErr}</div>
-)}
-{!loadingDeadlines && !deadlinesErr && caseDeadlines.length === 0 && (
+
+{!loadingDeadlines && caseDeadlines.length === 0 && (
   <div className="alert text-secondary bg-transparent border-0 mt-2">No deadlines yet.</div>
 )}
 {!loadingDeadlines && caseDeadlines.length > 0 && (
@@ -1315,10 +1300,8 @@ export const ViewCourtfileLawyer = () => {
 </div>
 
 {loadingAppointments && <p className="mt-2">Loading appointments…</p>}
-{appointmentsErr && (
-  <div className="alert alert-danger mt-2">{appointmentsErr}</div>
-)}
-{!loadingAppointments && !appointmentsErr && caseAppointments.length === 0 && (
+
+{!loadingAppointments && caseAppointments.length === 0 && (
   <div className="alert text-secondary bg-transparent border-0 mt-2">No appointments yet.</div>
 )}
 {!loadingAppointments && caseAppointments.length > 0 && (
@@ -1454,8 +1437,8 @@ export const ViewCourtfileLawyer = () => {
   </Link>
 </div>
 {loadingLawyers && <p className="mt-2">Loading lawyers…</p>}
-{lawyersErr && <div className="alert alert-danger mt-2">{lawyersErr}</div>}
-{!loadingLawyers && !lawyersErr && caseLawyers.length === 0 && (
+
+{!loadingLawyers && caseLawyers.length === 0 && (
   <div className="alert text-secondary bg-transparent border-0 mt-2">No lawyers linked.</div>
 )}
 {!loadingLawyers && caseLawyers.length > 0 && (
@@ -1551,8 +1534,8 @@ export const ViewCourtfileLawyer = () => {
 </div>
 
 {loadingClients && <p className="mt-2">Loading clients…</p>}
-{clientsErr && <div className="alert alert-danger mt-2">{clientsErr}</div>}
-{!loadingClients && !clientsErr && caseClients.length === 0 && (
+
+{!loadingClients && caseClients.length === 0 && (
   <div className="alert text-secondary bg-transparent border-0 mt-2">
     No clients linked.
   </div>
@@ -1656,21 +1639,20 @@ export const ViewCourtfileLawyer = () => {
 
                   <div className="border-top my-3"></div>
 
-                  {/* Contenido */}
-                  {aiError && <div className="alert alert-danger mb-0">{aiError}</div>}
 
-                  {!aiError && aiLoading && (
+
+                  {aiLoading && (
                     <div className="text-muted d-flex align-items-center">
                       <span className="spinner-border spinner-border-sm me-2" />
                       Analizando descripción y jurisdicción…
                     </div>
                   )}
 
-                  {!aiLoading && !aiError && (!aiSuggestions || aiSuggestions.length === 0) && (
+                  {!aiLoading && (!aiSuggestions || aiSuggestions.length === 0) && (
                     <div className="alert text-secondary bg-transparent border-0 mt-2">Sin sugerencias por ahora.</div>
                   )}
 
-                  {!aiLoading && !aiError && Array.isArray(aiSuggestions) && aiSuggestions.length > 0 && (
+                  {!aiLoading && Array.isArray(aiSuggestions) && aiSuggestions.length > 0 && (
                     <div className="list-group list-group-flush">
                       {aiSuggestions.map((sug, idx) => {
                         const urg = String(sug.urgency || "medium").toLowerCase();
@@ -1808,8 +1790,8 @@ export const ViewCourtfileLawyer = () => {
                   </div>
 
                   {loadingPayments && <p className="mt-2">Loading payments…</p>}
-                  {paymentsErr && <div className="alert alert-danger mt-2">{paymentsErr}</div>}
-                  {!loadingPayments && !paymentsErr && casePayments.length === 0 && (
+
+                  {!loadingPayments && casePayments.length === 0 && (
                     <div className="alert text-secondary bg-transparent border-0 mt-2">No payments linked.</div>
                   )}
 

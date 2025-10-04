@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams, useLocation, Navigate } from "react-route
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import { useState, useEffect, useMemo } from "react";
 import AppNavsShell from "../../components/AppNavsShell";
+import { toast } from 'react-toastify';
 
 export const EditCourtfile = () => {
   const { store, dispatch } = useGlobalReducer();
@@ -66,7 +67,7 @@ export const EditCourtfile = () => {
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-  const [error, setError] = useState(null);
+
 
   // ---- Fetch ----
   useEffect(() => {
@@ -82,10 +83,10 @@ export const EditCourtfile = () => {
           ...data,
           status: data.status === true || data.status === "true",
         });
-        setError(null);
+
       } catch (err) {
         console.error("Error fetching courtfile:", err);
-        setError("Failed to load courtfile data");
+        toast.error("Failed to load courtfile data");
       } finally {
         setFetching(false);
       }
@@ -104,7 +105,7 @@ export const EditCourtfile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
+
     try {
       const response = await fetch(`${API}/api/courtfiles/${courtfileId}`, {
         method: "PUT",
@@ -121,10 +122,10 @@ export const EditCourtfile = () => {
       const updatedCourtfile = await response.json();
       dispatch({ type: "UPDATE_COURTFILE", payload: updatedCourtfile });
       navigate(returnTo, { replace: true });
-      alert("Courtfile updated successfully!");
+      toast.success("Courtfile updated successfully!");
     } catch (err) {
       console.error("Error updating courtfile:", err);
-      setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -150,22 +151,13 @@ export const EditCourtfile = () => {
     );
   }
 
-  if (error && !formData.case_number) {
-    return (
-      <div className="container mt-4">
-        <div className="alert alert-danger">
-          <i className="bi bi-exclamation-triangle"></i> {error}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <AppNavsShell>
       <div className="container add-page">
         <div className="row">
           <div className="col-lg-9">
-           
+
             {/* Breadcrumb */}
             <nav aria-label="breadcrumb" className="mb-4">
               <ol className="breadcrumb small mb-0">
@@ -194,37 +186,32 @@ export const EditCourtfile = () => {
             <div className="d-flex justify-content-between align-items-center mb-4">
               <h1 className="display-5 fw-bold mb-0">Edit Courtfile</h1>
               {/* Botones solo en md+ */}
-  <div className="d-none d-md-flex gap-2">
-    <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary">
-      Cancel
-    </Link>
-    <button
-      type="submit"
-      form="courtfileForm"
-      className="btn btn-phoenix btn-phoenix-primary"
-      disabled={loading}
-    >
-      {loading ? (
-        <>
-          <span className="spinner-border spinner-border-sm me-2" />
-          Updating...
-        </>
-      ) : (
-        <>
-          <i className="bi bi-check-circle me-2" />
-          Update Courtfile
-        </>
-      )}
-    </button>
-  </div>
+              <div className="d-none d-md-flex gap-2">
+                <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary">
+                  Cancel
+                </Link>
+                <button
+                  type="submit"
+                  form="courtfileForm"
+                  className="btn btn-phoenix btn-phoenix-primary"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <i className="bi bi-check-circle me-2" />
+                      Update Courtfile
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
-            {/* Error */}
-            {error && (
-              <div className="alert alert-danger d-flex align-items-center">
-                <i className="bi bi-exclamation-triangle me-2" /> {error}
-              </div>
-            )}
+
 
             {/* Form */}
             <form id="courtfileForm" onSubmit={handleSubmit}>
@@ -330,29 +317,29 @@ export const EditCourtfile = () => {
               </div>
             </form>
             {/* Botones solo en mobile */}
-  <div className="d-flex d-md-none gap-2 mt-3 justify-content-end">
-    <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary text-nowrap">
-      Cancel
-    </Link>
-    <button
-      type="submit"
-      form="courtfileForm"
-      className="btn btn-phoenix btn-phoenix-primary text-nowrap"
-      disabled={loading}
-    >
-      {loading ? (
-        <>
-          <span className="spinner-border spinner-border-sm me-2" role="status" />
-          Updating...
-        </>
-      ) : (
-        <>
-          <i className="bi bi-check-circle me-2" />
-          Update Courtfile
-        </>
-      )}
-    </button>
-  </div>
+            <div className="d-flex d-md-none gap-2 mt-3 justify-content-end">
+              <Link to={returnTo} className="btn btn-phoenix btn-phoenix-secondary text-nowrap">
+                Cancel
+              </Link>
+              <button
+                type="submit"
+                form="courtfileForm"
+                className="btn btn-phoenix btn-phoenix-primary text-nowrap"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-check-circle me-2" />
+                    Update Courtfile
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
