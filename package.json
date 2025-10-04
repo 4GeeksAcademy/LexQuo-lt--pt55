@@ -69,6 +69,7 @@
 		"date-fns": "^4.1.0",
 		"emoji-picker-react": "^4.13.3",
 		"firebase": "^12.2.1",
+		"framer-motion": "^12.23.22",
 		"leaflet": "^1.9.4",
 		"multer": "^2.0.2",
 		"multer-storage-cloudinary": "^4.0.0",

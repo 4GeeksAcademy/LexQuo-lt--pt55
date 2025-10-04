@@ -1105,7 +1105,7 @@ export const ViewCourtfileLawyer = () => {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Open
+                  Download
                 </a>
               ) : (
                 "—"
