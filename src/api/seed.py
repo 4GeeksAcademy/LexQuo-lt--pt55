@@ -15,6 +15,41 @@ from api.models import (
     AppointmentCourtfile, CourtfileDocument, PaymentCourtfile
 )
 
+# ===== Categorías de documentos (deben coincidir con el frontend) =====
+DOC_CATEGORIES = [
+    "Resolution / Ruling",
+    "Party Filing",
+    "Evidence",
+    "Precautionary Measure / Urgent Request",
+    "Public Prosecutor's Office Action",
+    "Relevant Judicial Proceeding",
+    "Official Letter / Communication",
+    "Judgment",
+    "Costs and Fees",
+    "Internal Note / Reminder",
+    "Others"
+]
+
+# ===== Tipos de deadlines (alineados a tu UI) =====
+DEADLINE_TYPES = [
+    "Contestación de demanda",
+    "Traslado / Vista",
+    "Ofrecimiento de prueba",
+    "Producción de prueba",
+    "Audiencia",
+    "Recurso / Apelación",
+    "Ejecución / Cumplimiento",
+    "Caducidad de instancia",
+    "Plazo penal (excarcelación, preventiva, etc.)",
+    "Mediación obligatoria",
+    "Vencimiento de contrato",
+    "Pago de tasa de justicia / aportes",
+    "Vencimiento administrativo (AFIP, IGJ, etc.)",
+    "Documentación del cliente",
+    "Recordatorio interno / reunión con cliente",
+    "Otros"
+]
+
 # =============================== utilidades =============================== #
 
 def get_or_create(session, model, unique_fields: dict, defaults: dict | None = None):
@@ -266,18 +301,21 @@ def seed_appointments(session):
 
 def seed_deadlines(session):
     today = date.today()
-    # 10 deadlines variados
+    # 12 deadlines variados, usando exclusivamente los tipos de DEADLINE_TYPES
     templates = [
-        ("Presentación de descargo", 5, 12, 0, "alta"),
-        ("Oferta de prueba", 12, 13, 0, "media"),
-        ("Acompañar documental", 20, 10, 30, "baja"),
-        ("Impugnación de pericia", 15, 11, 0, "media"),
-        ("Ampliación de denuncia", 7, 9, 30, "alta"),
-        ("Descargo de informe bancario", 18, 14, 0, "media"),
-        ("Planteo de nulidad", 9, 10, 0, "alta"),
-        ("Recurso de apelación", 22, 12, 30, "alta"),
-        ("Solicitud de sobreseimiento", 25, 9, 0, "media"),
-        ("Medidas de protección", 3, 8, 30, "alta"),
+        # (tipo, días_desde_hoy, hh, mm, prioridad)
+        ("Contestación de demanda",                         5,  12,  0, "alta"),
+        ("Traslado / Vista",                               12,  13,  0, "media"),
+        ("Ofrecimiento de prueba",                         20,  10, 30, "baja"),
+        ("Producción de prueba",                           15,  11,  0, "media"),
+        ("Audiencia",                                       7,   9, 30, "alta"),
+        ("Recurso / Apelación",                            22,  12, 30, "alta"),
+        ("Mediación obligatoria",                           9,  10,  0, "alta"),
+        ("Documentación del cliente",                      18,  14,  0, "media"),
+        ("Vencimiento administrativo (AFIP, IGJ, etc.)",   25,   9,  0, "media"),
+        ("Pago de tasa de justicia / aportes",              3,   8, 30, "alta"),
+        ("Recordatorio interno / reunión con cliente",     10,  16,  0, "baja"),
+        ("Otros",                                          28,  12,  0, "baja"),
     ]
     created = 0
     for title, dplus, hh, mm, prio in templates:
@@ -294,34 +332,107 @@ def seed_deadlines(session):
 def seed_documents(session):
     today = date.today()
 
-    # Detectar si el modelo Document tiene columna de texto largo (p.ej. 'content' o 'text_body')
+    # Detección de columnas de texto largo en tu modelo Document
     has_content = hasattr(Document, "content")
     has_text_body = hasattr(Document, "text_body")
 
+    # ======= Plantillas de contenido más realistas =======
+
+    def demanda_inicial(case_number: str, actor: str, demandado: str):
+        return (
+            f"DEMANDA INICIAL\n\n"
+            f"Carátula: {actor} c/ {demandado} s/ Cumplimiento contractual\n"
+            f"Expediente: {case_number}\n\n"
+            "I) PERSONERÍA Y DOMICILIOS\n"
+            "Que vengo por mi propio derecho, constituyendo domicilio procesal en la calle Talcahuano 550, CABA, "
+            "y domicilio electrónico en …, a promover demanda contra la parte demandada conforme se indicará.\n\n"
+            "II) OBJETO\n"
+            "Iniciar demanda por incumplimiento contractual por la suma de $ 4.500.000, con más intereses y costas, "
+            "en virtud del contrato de prestación de servicios celebrado el 05/04/2023.\n\n"
+            "III) HECHOS\n"
+            "Se celebró contrato escrito en la fecha indicada, obligándose la demandada a realizar desarrollos técnicos "
+            "conforme alcance y plazos establecidos en Anexo I. Pese a múltiples intimaciones (CD 41234/23 y 52711/24), "
+            "incumplió hitos críticos, generando severos perjuicios económicos.\n\n"
+            "IV) DERECHO\n"
+            "Fundo en los arts. 730, 731, 768 y ccdtes. del CCyCN (responsabilidad por incumplimiento), y doctrina "
+            "y jurisprudencia aplicables. Se solicita resarcimiento integral.\n\n"
+            "V) PRUEBA\n"
+            "Documental: contrato, anexos, cartas documento, facturas. Informativa: AFIP, Bancos. Pericial: contable. "
+            "Testimonial: se ofrecerán en su oportunidad.\n\n"
+            "VI) MEDIDA CAUTELAR (en subsidio)\n"
+            "Se solicita embargo preventivo hasta cubrir el monto reclamado, demostrados verosimilitud del derecho y "
+            "peligro en la demora.\n\n"
+            "VII) PETITORIO\n"
+            "a) Téngase por presentada la demanda; b) Traslado a la demandada; c) Oportunamente se haga lugar con costas.\n"
+        )
+
+    def contestacion_demanda(case_number: str, demandado: str, actor: str):
+        return (
+            f"CONTESTACIÓN DE DEMANDA\n\n"
+            f"Carátula: {actor} c/ {demandado} s/ Cumplimiento contractual\n"
+            f"Expediente: {case_number}\n\n"
+            "I) NEGATIVAS GENERALES\n"
+            "Se niega en forma expresa y categórica todos y cada uno de los hechos, daños y montos reclamados "
+            "que no fueren objeto de reconocimiento expreso.\n\n"
+            "II) DEFENSAS\n"
+            "Excepción de incumplimiento del actor (art. 1031 CCyCN): el actor omitió aportar requerimientos "
+            "técnicos esenciales, y demoró aprobaciones, tornando imposible el cumplimiento tempestivo.\n\n"
+            "III) PRUEBA\n"
+            "Documental: intercambio de correos, actas de avance, tickets técnicos. Pericial informática: "
+            "para reconstruir cronograma y dependencias. Informativa a proveedores.\n\n"
+            "IV) PETITORIO\n"
+            "Se rechace la demanda en todas sus partes con costas al actor.\n"
+        )
+
+    def oficio_bancario(banco: str):
+        return (
+            "OFICIO BANCARIO\n\n"
+            f"Al {banco}\n\n"
+            "Se solicita, en el marco de las actuaciones, informe en el plazo de cinco (5) días: a) titularidades "
+            "vigentes e históricas de cuentas y tarjetas; b) movimientos entre 01/01/2024 y la actualidad, con detalle "
+            "de origen/destino; c) saldos al cierre de cada mes; d) legajos KYC, domicilios y firmas.\n\n"
+            "Hágase saber que la información será destinada exclusivamente al presente proceso, bajo confidencialidad.\n"
+        )
+
+    def resolucion_interlocutoria():
+        return (
+            "RESOLUCIÓN INTERLOCUTORIA\n\n"
+            "I) VISTOS: Las presentaciones de fecha 10/08/2025 y 15/08/2025 y la documentación acompañada.\n\n"
+            "II) CONSIDERANDO: Corresponde admitir parcialmente la prueba ofrecida por la actora, en tanto resulta "
+            "útil y conducente, rechazando la restante por impertinente.\n\n"
+            "III) RESUELVO: 1) Líbrese oficio a la entidad bancaria; 2) Fíjase audiencia de vista de causa para el "
+            "día 22/10/2025 a las 10:00 hs; 3) Costas por su orden.\n"
+        )
+
+    def pericia_informatica():
+        return (
+            "INFORME PERICIAL INFORMÁTICO\n\n"
+            "Objeto: Analizar dispositivos y repositorios aportados (hashes, cadena de custodia, logs de acceso).\n\n"
+            "Metodología: Adquisición forense con write-blocker, cálculo de hashes SHA-256, extracción lógica, "
+            "parsing de metadatos y reconstrucción de cronología.\n\n"
+            "Conclusiones: Se verifican cambios en ramas principales sin aprobación, y tickets en estado 'blocked' "
+            "por falta de requisitos de negocio; correlación temporal con las cartas documento aportadas.\n"
+        )
+
+    def acta_mediacion():
+        return (
+            "ACTA DE MEDIACIÓN\n\n"
+            "En la Ciudad de Buenos Aires, a los 12 días del mes de septiembre de 2025, comparecen las partes con sus "
+            "letrados. Se intercambian propuestas parciales de pago y esquema de entregables. Se fija nueva reunión "
+            "para dentro de 10 días. Sin perjuicio, se deja constancia de reservas de derechos.\n"
+        )
+
+    # ======= Definición de (nombre base, categoría, generador de texto) =======
     textos = [
-        ("Demanda inicial", "presentaciones",
-         "Se interpone demanda por incumplimiento contractual. "
-         "Se solicita reparación integral, intereses y costas. "
-         + legal_paragraphs("Pretensión principal y hechos")),
-        ("Contestación de demanda", "presentaciones",
-         "La parte demandada niega hechos y objeta la cuantía del reclamo. "
-         "Ofrece prueba documental, pericial y testimonial. "
-         + legal_paragraphs("Defensa técnica")),
-        ("Oficio bancario", "oficios",
-         "Se libra oficio a entidad bancaria para que informe movimientos y saldos, titularidades y tarjetas asociadas, "
-         "en el marco de investigación por lavado. "
-         + legal_paragraphs("Medida de prueba y tutela de datos")),
-        ("Resolución interlocutoria", "resoluciones",
-         "Se admite parcialmente la prueba ofrecida y se fija audiencia. Se rechazan medidas impertinentes por falta de "
-         "conducencia. " + legal_paragraphs("Fundamentos y alcances")),
-        ("Informe pericial informático", "pericias",
-         "Análisis de dispositivos secuestrados: hashes, cadena de custodia y técnicas forenses utilizadas. "
-         + legal_paragraphs("Hallazgos técnicos")),
-        ("Acta de mediación", "mediación",
-         "Consta la comparecencia de partes, propuestas de acuerdo y reservas. "
-         + legal_paragraphs("Contexto del conflicto")),
+        ("Demanda inicial",             "Party Filing",                      demanda_inicial("CF-2025-1001", "Romero H. A.", "Pérez J. M.")),
+        ("Contestación de demanda",     "Party Filing",                      contestacion_demanda("CF-2025-1001", "Pérez J. M.", "Romero H. A.")),
+        ("Oficio bancario",             "Official Letter / Communication",   oficio_bancario("Banco de la Ciudad de Buenos Aires")),
+        ("Resolución interlocutoria",   "Resolution / Ruling",               resolucion_interlocutoria()),
+        ("Informe pericial informático","Evidence",                           pericia_informatica()),
+        ("Acta de mediación",           "Relevant Judicial Proceeding",      acta_mediacion()),
     ]
 
+    # URLs demo (podés cambiarlas por tus propios assets)
     urls = [
         # PDF
         "https://res.cloudinary.com/doxdmmj1o/image/upload/v1758256377/documents/file_yndlpo.pdf",
@@ -335,10 +446,12 @@ def seed_documents(session):
     tipos = ["pdf", "docx", "png", "txt"]
 
     rows = []
-    # ~24 documentos (4 por cada uno de los 6 tipos)
+    # ~24 documentos (4 iteraciones de las 6 plantillas)
     for i in range(24):
-        base = textos[i % len(textos)]
-        name_base, category, texto_largo = base
+        name_base, category, texto_largo = textos[i % len(textos)]
+        # Validación defensiva: si cambiaron las categorías en el frontend, caemos en "Others"
+        category = category if category in DOC_CATEGORIES else "Others"
+
         name = f"{name_base} #{i+1}"
         url_route = urls[i % len(urls)]
         doc_type = tipos[i % len(tipos)]
@@ -348,7 +461,7 @@ def seed_documents(session):
             name=name,
             type=doc_type,
             url_route=url_route,
-            description=texto_largo,   # 🔥 texto largo utilizable por IA
+            description=texto_largo,   # texto “real” utilizable por IA
             category=category,
             document_date=doc_date
         )
@@ -366,6 +479,7 @@ def seed_documents(session):
         _, was_created = get_or_create(session, Document, unique, defaults)
         if was_created: created += 1
     print(f"Documents: agregados {created} (total deseado: {len(rows)})")
+
 
 def seed_payments(session):
     # Usá naive UTC para ser consistente con tus columnas DateTime (sin tz)
@@ -462,12 +576,12 @@ def seed_relations(session):
     lucia = session.query(Lawyer).filter_by(email="lucia.m@example.com").first()
 
     # Clients
-    ana   = session.query(Client).filter_by(email="ana.s@example.com").first()
-    pedro = session.query(Client).filter_by(email="pedro.l@example.com").first()
-    sofia = session.query(Client).filter_by(email="sofia.d@example.com").first()
-    diego = session.query(Client).filter_by(email="diego.r@example.com").first()
-    camila= session.query(Client).filter_by(email="camila.f@example.com").first()
-    martin= session.query(Client).filter_by(email="martin.r@example.com").first()
+    ana    = session.query(Client).filter_by(email="ana.s@example.com").first()
+    pedro  = session.query(Client).filter_by(email="pedro.l@example.com").first()
+    sofia  = session.query(Client).filter_by(email="sofia.d@example.com").first()
+    diego  = session.query(Client).filter_by(email="diego.r@example.com").first()
+    camila = session.query(Client).filter_by(email="camila.f@example.com").first()
+    martin = session.query(Client).filter_by(email="martin.r@example.com").first()
 
     today = date.today()
 
@@ -478,18 +592,19 @@ def seed_relations(session):
         if ana:   get_or_create_client_courtfile(session, ana.id,   cf1.id)
         if pedro: get_or_create_client_courtfile(session, pedro.id, cf1.id)
 
-        # deadlines clave
+        # deadlines clave (ajustados a tu nueva taxonomía)
         for dtype, dplus, hh, mm in [
-            ("Presentación de descargo", 5, 12, 0),
-            ("Oferta de prueba",         12, 13, 0),
-            ("Planteo de nulidad",       9, 10, 0),
+            ("Contestación de demanda", 5, 12, 0),
+            ("Ofrecimiento de prueba",  12, 13, 0),
+            ("Recurso / Apelación",      9, 10, 0),
         ]:
             dl = session.query(Deadlines).filter_by(
                 deadline_type=dtype,
                 deadline_date=today + timedelta(days=dplus),
                 deadline_hour=time(hh, mm)
             ).first()
-            if dl: get_or_create_deadline_courtfile(session, dl.id, cf1.id)
+            if dl:
+                get_or_create_deadline_courtfile(session, dl.id, cf1.id)
 
         # citas
         for title, dplus, hh, mm in [
@@ -502,7 +617,8 @@ def seed_relations(session):
                 date=today + timedelta(days=dplus),
                 starts_at=time(hh, mm)
             ).first()
-            if ap: get_or_create_appointment_courtfile(session, ap.id, cf1.id)
+            if ap:
+                get_or_create_appointment_courtfile(session, ap.id, cf1.id)
 
         # documentos (primeros 6)
         docs = session.query(Document).order_by(Document.id.asc()).all()
@@ -515,13 +631,14 @@ def seed_relations(session):
         if sofia: get_or_create_client_courtfile(session, sofia.id, cf2.id)
         if diego: get_or_create_client_courtfile(session, diego.id, cf2.id)
 
-        # 1 deadline
+        # 1 deadline (ajustado: "Documentación del cliente")
         dl = session.query(Deadlines).filter_by(
-            deadline_type="Acompañar documental",
+            deadline_type="Documentación del cliente",
             deadline_date=today + timedelta(days=20),
             deadline_hour=time(10, 30)
         ).first()
-        if dl: get_or_create_deadline_courtfile(session, dl.id, cf2.id)
+        if dl:
+            get_or_create_deadline_courtfile(session, dl.id, cf2.id)
 
         # 1 appointment
         ap = session.query(Appointment).filter_by(
@@ -529,17 +646,19 @@ def seed_relations(session):
             date=today + timedelta(days=7),
             starts_at=time(9, 30)
         ).first()
-        if ap: get_or_create_appointment_courtfile(session, ap.id, cf2.id)
+        if ap:
+            get_or_create_appointment_courtfile(session, ap.id, cf2.id)
 
         # 3 documentos específicos (si existen)
         pick_names = ["Acta de mediación #1", "Demanda inicial #2", "Oficio bancario #3"]
         for nm in pick_names:
             doc = session.query(Document).filter_by(name=nm).first()
-            if doc: get_or_create_courtfile_document(session, cf2.id, doc.id)
+            if doc:
+                get_or_create_courtfile_document(session, cf2.id, doc.id)
 
     # ------------ CF3: ligero (Lucía) ------------
     if cf3:
-        if lucia: get_or_create_lawyer_courtfile(session, lucia.id, cf3.id)  # por ejemplo, Lucía
+        if lucia:  get_or_create_lawyer_courtfile(session, lucia.id, cf3.id)
         if camila: get_or_create_client_courtfile(session, camila.id, cf3.id)
         if martin: get_or_create_client_courtfile(session, martin.id, cf3.id)
 
@@ -592,6 +711,7 @@ def seed_relations(session):
             get_or_create_payment_courtfile(session, pays[9].id, cf4.id)
 
     print("Relaciones: listas (pagos distribuidos 5-3-1-1).")
+
 
 # ================================ runner ================================ #
 

@@ -478,7 +478,7 @@ def create_lawyer():
             email=email,
             phone=data.get('phone'),
             password=generate_password_hash(data['password']),
-            url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png",
+            url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758256779/documents/profile_jprfp2.png",
             is_active=True if data.get('is_active', True) else False
         )
 
@@ -710,7 +710,7 @@ def create_client():
             lastname=data['lastname'],
             email=data['email'],
             phone=data['phone'],
-            url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758082452/tqwaum1f1i2fso5kwhms.png",
+            url_img="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758256779/documents/profile_jprfp2.png",
             password=generate_password_hash(data['password']),
         )
 
