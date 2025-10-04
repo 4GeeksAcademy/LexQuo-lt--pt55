@@ -25,6 +25,9 @@ export const LawyerLinkOrInviteLawyer = () => {
   const preselectedCourtfileTitle = location.state?.courtfileTitle || null;
   const returnTo = location.state?.returnTo || "/DashboardLawyer";
   const [clientConflict, setClientConflict] = useState(null);
+  // errores de formularios
+  const [searchErr, setSearchErr] = useState("");
+  const [createErr, setCreateErr] = useState("");
 
   // SIEMPRE usamos selectedCourtfileId (preseleccionado o elegido del combo)
   const [selectedCourtfileId, setSelectedCourtfileId] = useState(
@@ -67,7 +70,7 @@ export const LawyerLinkOrInviteLawyer = () => {
   useEffect(() => {
     const fetchCases = async () => {
       if (preselectedCourtfileId) return;
-      
+
       try {
         setLoadingCases(true);
         const resp = await fetch(`${API}/api/lawyers-courtfiles`, {
@@ -99,14 +102,13 @@ export const LawyerLinkOrInviteLawyer = () => {
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    setSearchErr("");
     setFoundLawyer(null);
     setNotFound(false);
     setClientConflict(null);
 
     const emailTrim = (email || "").trim().toLowerCase();
     if (!emailTrim) {
-      setSearchErr("Enter an email");
+      toast.error("Enter an email");
       return;
     }
 
@@ -198,12 +200,12 @@ export const LawyerLinkOrInviteLawyer = () => {
             courtfileNumber:
               preselectedCf?.case_number || myCases.find(c => c.id === targetCourtfileId)?.number || preselectedCourtfileNumber || null
           });
-          toast.success("Lawyer linked to case and notification email sent ✅");
+          toast.success("Lawyer linked to case and notification email sent");
         } catch (e) {
           toast.success(`Lawyer linked, but email failed: ${e.message}`);
         }
       } else {
-        toast.success("Lawyer linked to case! ✅");
+        toast.success("Lawyer linked to case!");
       }
       navigate(returnTo, { replace: true });
     } catch (err) {
@@ -213,7 +215,7 @@ export const LawyerLinkOrInviteLawyer = () => {
 
   // -------- Crear + Link + Invitar --------
   const [creating, setCreating] = useState(false);
-  
+
   const [createForm, setCreateForm] = useState({ firstname: "", lastname: "", phone: "" });
 
   const handleCreateChange = (e) => {
