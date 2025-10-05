@@ -19,7 +19,7 @@ from sqlalchemy import and_
 bp_ai = Blueprint("ai", __name__, url_prefix="/api/ai")
 
 # Crea cliente una sola vez
-client = OpenAI()
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
 
 SYSTEM = """Eres un asistente jurídico para Argentina. 
