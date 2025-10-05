@@ -29,7 +29,6 @@ import logging
 from api.validators import parse_iso_date, parse_24h_time, is_valid_24h_time, validate_required_fields, validate_time_order, create_error_response
 
 api = Blueprint('api', __name__)
-stripe_bp = Blueprint("stripe_bp", __name__)
 
 # Allow CORS requests to this API
 CORS(api)

@@ -5,7 +5,14 @@ import PyPDF2
 from flask import Blueprint, request, jsonify
 from openai import OpenAI
 import google.generativeai as genai
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
+from api.models import Courtfile, PaymentCourtfile, PaymentStatus, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, Message, ChatRead, AISuggestion
+# api_ai_routes.py (o en tu mismo bp_ai)
+from hashlib import sha256
+from sqlalchemy import and_
+
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+
 # Modelos candidatos (podés forzar con GEMINI_MODEL en env)
 GEMINI_CANDIDATES = [
     os.getenv("GEMINI_MODEL"),   # ej: "gemini-1.5-flash-001"
@@ -35,11 +42,7 @@ def _pick_gemini_model():
     except Exception as e:
         print(f"[Gemini] list_models failed: {e}")
         return os.getenv("GEMINI_MODEL") or "gemini-1.5-flash-001"
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
-from api.models import Courtfile, PaymentCourtfile, PaymentStatus, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, Message, ChatRead, AISuggestion
-# api_ai_routes.py (o en tu mismo bp_ai)
-from hashlib import sha256
-from sqlalchemy import and_
+
 
 bp_ai = Blueprint("ai", __name__, url_prefix="/api/ai")
 
