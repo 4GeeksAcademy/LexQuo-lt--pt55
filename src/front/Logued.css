@@ -1095,3 +1095,8 @@ input[type="search"]::-webkit-search-results-decoration {
   margin-left: 12px;              /* <- corrimiento hacia la derecha */
   width: calc(100% - 12px);       /* mantener alineado el borde derecho */
 }
+
+
+.Toastify:empty {
+  display: none;
+}
