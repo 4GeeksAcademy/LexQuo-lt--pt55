@@ -5,10 +5,11 @@ import PyPDF2
 from flask import Blueprint, request, jsonify
 from openai import OpenAI
 
-from google import genai  
-GENAI = genai.Client(api_key=os.environ["GEMINI_API_KEY"])  
 
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-lite-001") 
+from google import genai
+GENAI = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-lite-001")
+
 
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, get_jwt
 from api.models import Courtfile, PaymentCourtfile, PaymentStatus, db, Lawyer, Client, AdminUser, Deadlines, Appointment, Document, ClientCourtfile, DeadlineCourtfile, LawyerCourtfile, AppointmentCourtfile, LawyerClient, CourtfileDocument, Payment, Message, ChatRead, AISuggestion
@@ -19,7 +20,7 @@ from sqlalchemy import and_
 bp_ai = Blueprint("ai", __name__, url_prefix="/api/ai")
 
 # Crea cliente una sola vez
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+client = OpenAI()
 MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
 
 SYSTEM = """Eres un asistente jurídico para Argentina. 
@@ -158,7 +159,6 @@ def download_and_extract_pdf(document_url):
 
 def call_gemini_api(pdf_text, case_description, doc_name):
     """Llama a la API de Gemini y devuelve análisis estructurado"""
-
     try:
         prompt = f"""
 Eres un abogado experto en derecho argentino. Analiza el siguiente documento y proporciona un análisis estructurado en formato JSON.
@@ -187,14 +187,13 @@ INSTRUCCIONES:
 }}
 
 Sé conciso y enfocado en aspectos prácticos. Máximo 5 puntos principales.
-""".strip()
-
+"""
 
         resp = GENAI.models.generate_content(
             model=GEMINI_MODEL,
             contents=prompt,
-        )
-        result_text = (resp.text or "").strip()
+            )
+        result_text = (resp.text or "")
 
         import json
         i, j = result_text.find("{"), result_text.rfind("}") + 1
@@ -327,3 +326,4 @@ def replace_suggestions():
         "saved": [c.id for c in created],
         "count": len(created)
     }), 201
+
