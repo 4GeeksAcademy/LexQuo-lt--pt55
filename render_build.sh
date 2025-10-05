@@ -37,7 +37,7 @@ pip install requests==2.31.0
 pip install cloudinary==1.41.0
 pip install openai==1.40.0
 pip install httpx==0.27.2
-pip install google-generativeai==0.8.3
+pip install --upgrade google-genai
 pip install PyPDF2==3.0.1
 
 # Forms
