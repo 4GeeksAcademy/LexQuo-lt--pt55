@@ -408,7 +408,7 @@ export default function ChatOnDemand(props) {
         {/* BODY: menos padding en XS */}
         <div
           className="card-body py-2 py-md-3"
-          style={{ maxHeight: 400, overflowY: "auto" }}
+          style={{ minHeight: 465, overflowY: "auto" }}
           ref={chatContainerRef}
         >
           {messages.length === 0 && !err && (

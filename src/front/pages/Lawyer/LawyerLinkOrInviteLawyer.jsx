@@ -277,7 +277,6 @@ export const LawyerLinkOrInviteLawyer = () => {
         throw new Error(inviteJson?.error || `Invite failed (HTTP ${inviteResp.status})`);
       }
 
-      toast.success("Lawyer created, linked and invitation email sent ✅");
       navigate(returnTo, { replace: true });
     } catch (err) {
       toast.error(err.message || "Error creating lawyer");

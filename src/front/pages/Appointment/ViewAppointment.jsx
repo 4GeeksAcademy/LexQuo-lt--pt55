@@ -122,14 +122,16 @@ export const ViewAppointment = () => {
   // ---------- UI states ----------
   if (loading) {
     return (
-      <div className="container mt-4">
-        <div className="text-center">
-          <div className="spinner-border" role="status">
-            <span className="visually-hidden">Loading...</span>
+      <AppNavsShell>
+        <div className="container add-page">
+          <div className="text-center">
+            <div className="spinner-border" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading appointment...</p>
           </div>
-          <p>Loading appointment...</p>
         </div>
-      </div>
+      </AppNavsShell>
     );
   }
 
