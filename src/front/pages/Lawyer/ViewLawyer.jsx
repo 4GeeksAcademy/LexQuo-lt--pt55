@@ -147,12 +147,14 @@ export const ViewLawyer = () => {
 
   if (loading) {
     return (
-      <div className="container mt-4 text-center">
+      <AppNavsShell>
+      <div className="container add-page text-center">
         <div className="spinner-border" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
         <p>Loading lawyer...</p>
       </div>
+      </AppNavsShell>
     );
   }
 

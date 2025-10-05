@@ -62,7 +62,7 @@ export default function ChangePassword({ kind }) {
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok || data?.error) throw new Error(data?.error || `HTTP ${resp.status}`);
 
-      toast.success("Password updated ✅");
+      toast.success("Password updated!");
       navigate(returnTo, { replace: true });
     } catch (e) {
       toast.error(e.message || "Error updating password");

@@ -243,7 +243,6 @@ export const ViewDocument = () => {
 
     } catch (e) {
       console.error("❌ AI Analysis error:", e);
-      toast.error(e.message || "Error analyzing document");
     } finally {
       setAiLoading(false);
     }
@@ -311,7 +310,7 @@ export const ViewDocument = () => {
   if (loading) {
     return (
       <AppNavsShell>
-        <div className="d-flex flex-column justify-content-center align-items-center min-vh-100">
+        <div className="container add-page text-center">
           <div className="spinner-border" role="status">
             <span className="visually-hidden">Loading…</span>
           </div>
@@ -566,7 +565,7 @@ export const ViewDocument = () => {
                                       returnTo: `/documents/view/${documentData.id}`,
                                     }}
                                   >
-                                    <i className="bi bi-file-earmark-plus me-2"></i> Document
+                                    <i className="bi bi-file-earmark-plus me-2"></i> Case record
                                   </Link>
                                 </li>
 

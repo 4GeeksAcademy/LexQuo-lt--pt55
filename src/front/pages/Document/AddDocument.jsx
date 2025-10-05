@@ -186,7 +186,7 @@ export const AddDocument = () => {
         }
       }
 
-      toast.success("Document created and linked successfully!");
+      toast.success("Case record created and linked successfully!");
       navigate(returnTo, { replace: true });
     } catch (err) {
       console.error("Error creating Document:", err);
@@ -218,7 +218,7 @@ export const AddDocument = () => {
                   </li>
                 )}
                 <li className="breadcrumb-item">
-                  <Link to={returnTo || "/documents"}>Documents</Link>
+                  <Link to={returnTo || "/DashboardLawyer"}>Dashboard</Link>
                 </li>
                 <li className="breadcrumb-item active" aria-current="page">
                   Add
@@ -229,7 +229,7 @@ export const AddDocument = () => {
             {/* Header */}
             <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4">
               <div>
-                <h1 className="display-5 fw-bold mb-2 mb-sm-0">Add New Document</h1>
+                <h1 className="display-5 fw-bold mb-2 mb-sm-0">Add Case Record</h1>
                 {preselectedCourtfileId && (
                   <span className="badge badge-phoenix-secondary mt-1 mb-3 text-wrap text-break">
                     Linked to Case {preselectedCourtfileNumber || `#${preselectedCourtfileId}`}
@@ -260,7 +260,7 @@ export const AddDocument = () => {
                   ) : (
                     <>
                       <i className="bi bi-plus-circle me-2" />
-                      Create Document
+                      Create
                     </>
                   )}
                 </button>
