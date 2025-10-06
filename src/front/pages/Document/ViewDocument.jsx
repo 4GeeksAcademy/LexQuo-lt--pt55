@@ -314,7 +314,7 @@ export const ViewDocument = () => {
           <div className="spinner-border" role="status">
             <span className="visually-hidden">Loading…</span>
           </div>
-          <p className="mt-2">Loading courtfile…</p>
+          <p className="mt-2">Loading document…</p>
         </div>
       </AppNavsShell>
     );
@@ -334,11 +334,15 @@ export const ViewDocument = () => {
             <nav aria-label="breadcrumb" className="mb-2">
               <ol className="breadcrumb">
                 <li className="breadcrumb-item">
-                  <Link to={`/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`}>{linkedCourtfile.number}</Link>
+                  {linkedCourtfile?.id ? (
+                    <Link to={`/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`}>
+                      {linkedCourtfile.number || `#${linkedCourtfile.id}`}
+                    </Link>
+                  ) : (
+                    <span className="text-body-secondary">Case File</span>
+                  )}
                 </li>
-                <li className="breadcrumb-item active" aria-current="page">
-                  Details
-                </li>
+                <li className="breadcrumb-item active" aria-current="page">Details</li>
               </ol>
             </nav>
             <h1 className="h2 fw-bolder mb-0 line-clamp-1">
