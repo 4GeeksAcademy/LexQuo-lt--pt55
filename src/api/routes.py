@@ -2022,12 +2022,13 @@ def get_deadlines_courtfiles():
     try:
         requested_lawyer_id = request.args.get('lawyer_id', type=int)
         requested_courtfile_id = request.args.get('courtfile_id', type=int)
+        requested_deadline_id = request.args.get('deadline_id', type=int)  # <-- NUEVO
 
         role, current_id = _get_role_and_identity()
         query = DeadlineCourtfile.query
 
         if role == "admin_user":
-            pass  # Admin ve todo
+            pass
         elif role == "lawyer":
             if requested_lawyer_id is None:
                 requested_lawyer_id = int(current_id)
@@ -2038,8 +2039,16 @@ def get_deadlines_courtfiles():
         else:
             return jsonify({'error': 'forbidden'}), 403
 
+        # Filtros existentes
         if requested_courtfile_id is not None:
             query = query.filter_by(courtfile_id=requested_courtfile_id)
+
+        # 🔧 Filtro que faltaba
+        if requested_deadline_id is not None:
+            query = query.filter(DeadlineCourtfile.deadline_id == requested_deadline_id)
+
+        # (Opcional) orden estable por si hubiera múltiples relaciones
+        query = query.order_by(DeadlineCourtfile.id.asc())
 
         deadlines_courtfiles = query.all()
         return jsonify([{
@@ -2047,8 +2056,10 @@ def get_deadlines_courtfiles():
             'deadline_id': dc.deadline_id,
             'courtfile_id': dc.courtfile_id,
             'deadline_type': dc.deadlines.deadline_type,
-            'deadline_date': dc.deadlines.deadline_date.isoformat(),
-            'deadline_hour': dc.deadlines.deadline_hour.strftime('%H:%M'),
+            'deadline_date': (dc.deadlines.deadline_date.isoformat()
+                              if dc.deadlines.deadline_date else None),
+            'deadline_hour': (dc.deadlines.deadline_hour.strftime('%H:%M')
+                              if dc.deadlines.deadline_hour else None),
             'priority': dc.deadlines.priority,
             'courtfile_number': dc.courtfile.case_number,
             'courtfile_title': dc.courtfile.title
@@ -2056,6 +2067,7 @@ def get_deadlines_courtfiles():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 
 @api.route('/deadlines-courtfiles', methods=['POST'])
@@ -2148,6 +2160,7 @@ def get_appointments_courtfiles():
     try:
         requested_lawyer_id = request.args.get('lawyer_id', type=int)
         requested_courtfile_id = request.args.get('courtfile_id', type=int)
+        requested_appointment_id = request.args.get('appointment_id', type=int)  # <-- NUEVO
 
         role, current_id = _get_role_and_identity()
         query = AppointmentCourtfile.query
@@ -2169,8 +2182,16 @@ def get_appointments_courtfiles():
         else:
             return jsonify({'error': 'forbidden'}), 403
 
+        # Filtros existentes
         if requested_courtfile_id is not None:
             query = query.filter_by(courtfile_id=requested_courtfile_id)
+
+        # 🔧 Filtro que faltaba
+        if requested_appointment_id is not None:
+            query = query.filter(AppointmentCourtfile.appointment_id == requested_appointment_id)
+
+        # (Opcional) orden estable
+        query = query.order_by(AppointmentCourtfile.id.asc())
 
         appointments_courtfiles = query.all()
         return jsonify([{
@@ -2178,11 +2199,11 @@ def get_appointments_courtfiles():
             'appointment_id': ac.appointment_id,
             'courtfile_id': ac.courtfile_id,
             'appointment_title': ac.appointment.title,
-            'appointment_date': ac.appointment.date.isoformat(),
+            'appointment_date': (ac.appointment.date.isoformat() if ac.appointment.date else None),
             'appointment_location': ac.appointment.location,
             'appointment_details': ac.appointment.details,
-            'starts_at': ac.appointment.starts_at.strftime('%H:%M'),
-            'ends_at': ac.appointment.ends_at.strftime('%H:%M'),
+            'starts_at': (ac.appointment.starts_at.strftime('%H:%M') if ac.appointment.starts_at else None),
+            'ends_at': (ac.appointment.ends_at.strftime('%H:%M') if ac.appointment.ends_at else None),
             'courtfile_number': ac.courtfile.case_number,
             'courtfile_title': ac.courtfile.title
         } for ac in appointments_courtfiles]), 200

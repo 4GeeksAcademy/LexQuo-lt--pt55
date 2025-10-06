@@ -51,6 +51,7 @@ export const AddDeadline = () => {
     preselectedCourtfileNumber ? { case_number: preselectedCourtfileNumber, title: preselectedCourtfileTitle } : null
   );
 
+
   useEffect(() => {
     const fetchCases = async () => {
       try {
@@ -164,8 +165,10 @@ export const AddDeadline = () => {
       }
 
       toast.success("Deadline created and linked successfully!");
-      navigate(returnTo, { replace: true })
-    } catch (err) {
+      navigate(
+        courtfileViewPath(role, formData.courtfile_id || preselectedCourtfileId),
+        { replace: true }
+      );
       console.error("Error creating/linking Deadline:", err);
       toast.error(err.message);
     } finally {
@@ -191,6 +194,22 @@ export const AddDeadline = () => {
     preselectedCourtfileNumber ||
     preselectedCourtfileTitle ||
     (preselectedCourtfileId ? `#${preselectedCourtfileId}` : null);
+
+  // helper arriba del componente (o dentro, antes del return)
+  const courtfileViewPath = (role, id) => {
+    if (!id) return "/courtfiles";
+    switch ((role || "").toLowerCase()) {
+      case "lawyer":
+        return `/courtfiles/ViewCourtfileLawyer/${id}`;
+      case "client":
+        return `/courtfiles/viewclient/${id}`;
+      case "admin_user":
+        // si tenés una vista propia para admin, cambiá acá:
+        return `/courtfiles/ViewCourtfileLawyer/${id}`;
+      default:
+        return `/courtfiles/view/${id}`;
+    }
+  };
 
   return (
     <AppNavsShell>
