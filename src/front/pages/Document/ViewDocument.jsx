@@ -334,7 +334,7 @@ export const ViewDocument = () => {
             <nav aria-label="breadcrumb" className="mb-2">
               <ol className="breadcrumb">
                 <li className="breadcrumb-item">
-                  <Link to={`/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`}>Documents</Link>
+                  <Link to={`/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`}>{linkedCourtfile.number}</Link>
                 </li>
                 <li className="breadcrumb-item active" aria-current="page">
                   Details
