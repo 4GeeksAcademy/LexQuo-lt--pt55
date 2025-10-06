@@ -22,15 +22,15 @@ const NavbarLogin = () => {
     role === "lawyer"
       ? (id ? `/lawyers/view/${id}` : "/lawyers/view")
       : role === "client"
-      ? (id ? `/clients/view/${id}` : "/clients/view")
-      : "/sign-in";
+        ? (id ? `/clients/view/${id}` : "/clients/view")
+        : "/sign-in";
 
   const passwordPath =
     role === "lawyer"
       ? (id ? `/lawyers/${id}/password` : "/lawyers/password")
       : role === "client"
-      ? (id ? `/clients/${id}/password` : "/clients/password")
-      : "/login";
+        ? (id ? `/clients/${id}/password` : "/clients/password")
+        : "/login";
 
   // ==================== SEARCH BOX ====================
   const [q, setQ] = useState("");
@@ -100,8 +100,7 @@ const NavbarLogin = () => {
       date: a.date ?? row.appointment_date ?? "",
       starts_at: a.starts_at ?? row.starts_at ?? "",
       ends_at: a.ends_at ?? row.ends_at ?? "",
-      location: a.location ?? row.appointment_location ?? "",
-      details: a.details ?? row.details ?? "",
+      courtfile_number: row.courtfile_number || row.case_number || "", // << nuevo
     };
   };
 
@@ -112,9 +111,10 @@ const NavbarLogin = () => {
       type: d.deadline_type ?? row.deadline_type ?? "",
       date: d.deadline_date ?? row.deadline_date ?? "",
       hour: d.deadline_hour ?? row.deadline_hour ?? "",
-      priority: d.priority ?? row.priority ?? "",
+      courtfile_number: row.courtfile_number || row.case_number || "", // << nuevo
     };
   };
+
 
   const toDocument = (row = {}) => {
     const d = row.document || row;
@@ -127,9 +127,12 @@ const NavbarLogin = () => {
       date:
         d.document_date ??
         row.document_date ??
+        d.created_at ??
+        row.created_at ??
         d.create_at ??
         row.create_at ??
         "",
+      courtfile_number: row.courtfile_number || row.case_number || "", // << nuevo
     };
   };
 
@@ -138,8 +141,8 @@ const NavbarLogin = () => {
     role === "lawyer"
       ? `${API}/api/lawyers-courtfiles`
       : role === "client"
-      ? `${API}/api/clients-courtfiles`
-      : `${API}/api/courtfiles`;
+        ? `${API}/api/clients-courtfiles`
+        : `${API}/api/courtfiles`;
 
   const lawyersEndpoint = `${API}/api/lawyers`;
   const clientsEndpoint = `${API}/api/clients`;
@@ -237,46 +240,43 @@ const NavbarLogin = () => {
         // Appointments
         const apList = (Array.isArray(apRaw) ? apRaw : [])
           .map(toAppointment)
-          .filter((a) =>
-            match([a.title, a.details, a.location, a.date, a.starts_at, a.ends_at].filter(Boolean).join(" "))
-          )
+          .filter(a => match([a.title, a.date, a.starts_at, a.ends_at, a.courtfile_number].filter(Boolean).join(" ")))
           .slice(0, 5)
-          .map((a) => ({
+          .map(a => ({
             type: "appointment",
             id: a.id,
             left: a.title || "—",
-            main: a.location || a.details || "",
-            right: [a.date, a.starts_at].filter(Boolean).join(" "),
+            main: [a.date, a.starts_at].filter(Boolean).join(" "), // fecha debajo
+            right: a.courtfile_number || "",                      // nro. expte a la derecha
           }));
 
         // Deadlines
         const dlList = (Array.isArray(dlRaw) ? dlRaw : [])
           .map(toDeadline)
-          .filter((d) =>
-            match([d.type, d.priority, d.date, d.hour].filter(Boolean).join(" "))
-          )
+          .filter(d => match([d.type, d.date, d.hour, d.courtfile_number].filter(Boolean).join(" ")))
           .slice(0, 5)
-          .map((d) => ({
+          .map(d => ({
             type: "deadline",
             id: d.id,
             left: d.type || "—",
-            main: d.priority ? `Priority: ${d.priority}` : "",
-            right: [d.date, d.hour].filter(Boolean).join(" "),
+            main: [d.date, d.hour].filter(Boolean).join(" "),     // fecha debajo
+            right: d.courtfile_number || "",                      // nro. expte a la derecha
           }));
 
         // Documents
         const docList = (Array.isArray(docRaw) ? docRaw : [])
           .map(toDocument)
-          .filter((d) =>
-            match([d.name, d.category, d.type, d.description, d.date].filter(Boolean).join(" "))
+          .filter(d =>
+            match([d.name, d.category, d.type, d.description, d.date, d.courtfile_number]
+              .filter(Boolean).join(" "))
           )
           .slice(0, 5)
-          .map((d) => ({
+          .map(d => ({
             type: "document",
             id: d.id,
             left: d.name || "—",
-            main: d.category || d.description || "",
-            right: d.date || d.type || "",
+            main: d.date || "",                 // fecha debajo del título
+            right: d.courtfile_number || "",    // nro. de expte a la derecha
           }));
 
         const combined = [...cfList, ...lwList, ...clList, ...apList, ...dlList, ...docList];
@@ -306,32 +306,32 @@ const NavbarLogin = () => {
   ]);
 
   const goFromItem = (it) => {
-  if (!it) return;
-  setOpen(false);
-  setQ("");
-  setItems([]);
+    if (!it) return;
+    setOpen(false);
+    setQ("");
+    setItems([]);
 
-  if (it.type === "courtfile") {
-    if ((store?.me?.role || "").toLowerCase() === "client") {
-      navigate(`/courtfiles/viewclient/${it.id}`);
-    } else if ((store?.me?.role || "").toLowerCase() === "lawyer") {
-      navigate(`/courtfiles/ViewCourtfileLawyer/${it.id}`);
-    } else {
-      // fallback por si el rol es admin_user u otro
-      navigate(`/courtfiles/${it.id}`);
+    if (it.type === "courtfile") {
+      if ((store?.me?.role || "").toLowerCase() === "client") {
+        navigate(`/courtfiles/viewclient/${it.id}`);
+      } else if ((store?.me?.role || "").toLowerCase() === "lawyer") {
+        navigate(`/courtfiles/ViewCourtfileLawyer/${it.id}`);
+      } else {
+        // fallback por si el rol es admin_user u otro
+        navigate(`/courtfiles/${it.id}`);
+      }
+    } else if (it.type === "lawyer") {
+      navigate(`/lawyers/view/${it.id}`);
+    } else if (it.type === "client") {
+      navigate(`/clients/view/${it.id}`);
+    } else if (it.type === "appointment") {
+      navigate(`/appointments/view/${it.id}`);
+    } else if (it.type === "deadline") {
+      navigate(`/deadlines/view/${it.id}`);
+    } else if (it.type === "document") {
+      navigate(`/documents/view/${it.id}`);
     }
-  } else if (it.type === "lawyer") {
-    navigate(`/lawyers/view/${it.id}`);
-  } else if (it.type === "client") {
-    navigate(`/clients/view/${it.id}`);
-  } else if (it.type === "appointment") {
-    navigate(`/appointments/view/${it.id}`);
-  } else if (it.type === "deadline") {
-    navigate(`/deadlines/view/${it.id}`);
-  } else if (it.type === "document") {
-    navigate(`/documents/view/${it.id}`);
-  }
-};
+  };
 
   return (
     <nav className="navbar navbar-expand navbar-dark bg-dark fixed-top py-2">
@@ -440,8 +440,8 @@ const NavbarLogin = () => {
             {open && (
               <div
                 className="dropdown-menu show phoenix-menu w-100 p-0"
-                // si querés corrido a la derecha:
-                // style={{ marginLeft: 12, width: 'calc(100% - 12px)' }}
+              // si querés corrido a la derecha:
+              // style={{ marginLeft: 12, width: 'calc(100% - 12px)' }}
               >
                 {loading && (
                   <div className="dropdown-item py-2 text-muted small">

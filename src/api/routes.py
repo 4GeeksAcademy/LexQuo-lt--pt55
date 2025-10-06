@@ -2339,6 +2339,7 @@ def get_courtfile_document():
                 "original_filename": getattr(d, "original_filename", None),
                 # <---- ¡LO NUEVO!
                 "category": getattr(d, "category", None),
+                "description": getattr(d, "description", None),
             })
         return jsonify(out), 200
 
