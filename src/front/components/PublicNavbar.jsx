@@ -1,7 +1,43 @@
-import react from 'react'
+import React from 'react'
 import { Link } from 'react-router-dom'
+import useGlobalReducer from '../hooks/useGlobalReducer';
 
 export const PublicNavbar = () => {
+    const { store } = useGlobalReducer();
+
+    const token = store?.auth?.token || null;
+    const me = store?.me || null;
+
+    const getRole = () => {
+        if (me?.role) return me.role.toLowerCase();
+        if (store?.auth?.role) return store.auth.role.toLowerCase();
+        try {
+            const persistedAuth = JSON.parse(localStorage.getItem("auth") || "null");
+            if (persistedAuth?.role) return persistedAuth.role.toLowerCase();
+        } catch (error) {
+            console.error('Error reading from localStorage:', error);
+        }
+
+        return null;
+    };
+
+    const role = getRole();
+    const isAuthenticated = !!token;
+
+    const getDashboardRoute = () => {
+        switch (role) {
+            case 'admin':
+            case 'admin_user':
+                return '/admins/dashboard';
+            case 'lawyer':
+                return '/DashboardLawyer';
+            case 'client':
+                return '/DashboardClient';
+            default:
+                return '/sign-up';
+        }
+    };
+
     return (
         <div className="bg-body-emphasis sticky-top">
             <nav className="navbar navbar-expand-lg container-small px-3 px-lg-7 px-xxl-3">
@@ -39,10 +75,25 @@ export const PublicNavbar = () => {
                     </ul>
 
                     <div className="d-grid d-lg-flex align-items-center">
-                        <Link className="btn btn-link text-body order-1 order-lg-0 ps-4 me-lg-2" to="/sign-in">Sign in</Link>
-                        <Link className="btn btn-phoenix-primary order-0" to="/sign-up">
-                            <span className="fw-bold">Sign up</span>
-                        </Link>
+                        {isAuthenticated ? (
+                            // Usuario autenticado - mostrar Dashboard
+                            <Link
+                                className="btn btn-phoenix-primary order-0"
+                                to={getDashboardRoute()}
+                            >
+                                <span className="fw-bold">Dashboard</span>
+                            </Link>
+                        ) : (
+                            // Usuario no autenticado - mostrar Sign in/Sign up
+                            <>
+                                <Link className="btn btn-link text-body order-1 order-lg-0 ps-4 me-lg-2" to="/sign-in">
+                                    Sign in
+                                </Link>
+                                <Link className="btn btn-phoenix-primary order-0" to="/sign-up">
+                                    <span className="fw-bold">Sign up</span>
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </div>
             </nav>

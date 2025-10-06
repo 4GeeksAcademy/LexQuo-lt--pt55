@@ -1,4 +1,3 @@
-import { LogoutButton } from "../../components/LogoutButton";
 import { Navigate, Link } from "react-router-dom";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import React, { useEffect, useState, useMemo } from "react";
@@ -773,14 +772,12 @@ export const DashboardLawyer = () => {
                                                             </ul>
                                                         </div>
                                                     </td>
-
                                                 </tr>
                                             );
                                         })}
                                     </tbody>
                                 </table>
                             </div>
-
                         )}
                     </div>
                 </div>
@@ -861,9 +858,6 @@ export const DashboardLawyer = () => {
                         </div>
                     </div>
                 </div>
-
-
-
             </div>
         </AppNavsShell >
     );
