@@ -34,7 +34,7 @@ export const PublicNavbar = () => {
             case 'client':
                 return '/DashboardClient';
             default:
-                return '/sign-up';
+                return '/sign-in';
         }
     };
 
