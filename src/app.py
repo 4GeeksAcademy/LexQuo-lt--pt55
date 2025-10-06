@@ -43,8 +43,6 @@ socketio = SocketIO(
     app,
     cors_allowed_origins=FRONTEND_ORIGINS,
     async_mode="eventlet",
-    allow_upgrades=False,
-    transports=["polling"],
     ping_timeout=25,
     ping_interval=20,
 )
