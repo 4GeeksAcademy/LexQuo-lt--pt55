@@ -357,14 +357,14 @@ export const ViewPayment = () => {
                   </div>
                 </div>
 
-                {/* Means / Currency */}
+                {/* Payment Methods / Currency */}
                 <div className="col-sm-4 border-start-sm border-translucent ps-sm-5">
                   <div className="d-inline-flex align-items-center">
                     <div className="d-flex bg-info-subtle rounded flex-center me-3" style={{ width: 32, height: 32 }}>
                       <i className="bi bi-credit-card text-info" />
                     </div>
                     <div className="text-start">
-                      <p className="fw-bold mb-1">Means</p>
+                      <p className="fw-bold mb-1">Payment Method</p>
                       <h4 className="fw-bolder text-nowrap mb-0">
                         {capitalizeFirstLetter(payment.means) || "—"}
                         {payment.currency ? ` · ${payment.currency}` : ""}

@@ -160,13 +160,13 @@ INICIALES = ["H. A.", "J. M.", "A. L.", "V. R.", "M. C.", "S. D.", "C. E.", "F. 
 
 # ===================== Avatares demo estables =====================
 AVATARS = [
-    "https://i.pravatar.cc/300?img=1",
-    "https://i.pravatar.cc/300?img=2",
-    "https://i.pravatar.cc/300?img=3",
-    "https://i.pravatar.cc/300?img=4",
-    "https://i.pravatar.cc/300?img=5",
+    "https://res.cloudinary.com/doxdmmj1o/image/upload/v1759343431/3_quriso.png",
+    "https://res.cloudinary.com/doxdmmj1o/image/upload/v1759343423/1_jaqjtf.png",
+    "https://res.cloudinary.com/doxdmmj1o/image/upload/v1759343431/4_kjzfgd.png",
+    "https://res.cloudinary.com/doxdmmj1o/image/upload/v1759343430/2_lye0ni.png",
+    "https://res.cloudinary.com/doxdmmj1o/image/upload/v1759343788/8_f7dke3.png",
     "https://i.pravatar.cc/300?img=6",
-    "https://i.pravatar.cc/300?img=7",
+    "https://res.cloudinary.com/doxdmmj1o/image/upload/v1759343781/7_sw6hik.png",
     "https://i.pravatar.cc/300?img=8",
     "https://i.pravatar.cc/300?img=9",
 ]
@@ -502,22 +502,22 @@ def seed_payments(session):
 
     rows = [
         # === approved (en el mes actual) ===
-        dict(amount=5000.0,  currency="ARS", status=PaymentStatus.approved,  paid_at=paid_1d, means="TDC",           stripe_payment_intent_id="pi_appr_001", updated_at=paid_1d, created_at=paid_1d),
-        dict(amount=12000.0, currency="ARS", status=PaymentStatus.approved,  paid_at=paid_3d, means="Transferencia", stripe_payment_intent_id="pi_appr_002", updated_at=paid_3d, created_at=paid_3d),
-        dict(amount=3500.0,  currency="USD", status=PaymentStatus.approved,  paid_at=paid_7d, means="TDC",           stripe_payment_intent_id="pi_appr_003", updated_at=paid_7d, created_at=paid_7d),
+        dict(amount=5000.0,  currency="ARS", status=PaymentStatus.approved,  paid_at=paid_1d, means="Credit Card",           stripe_payment_intent_id="pi_appr_001", updated_at=paid_1d, created_at=paid_1d),
+        dict(amount=12000.0, currency="ARS", status=PaymentStatus.approved,  paid_at=paid_3d, means="Credit Card", stripe_payment_intent_id="pi_appr_002", updated_at=paid_3d, created_at=paid_3d),
+        dict(amount=3500.0,  currency="USD", status=PaymentStatus.approved,  paid_at=paid_7d, means="Credit Card",           stripe_payment_intent_id="pi_appr_003", updated_at=paid_7d, created_at=paid_7d),
 
         # === pending ===
-        dict(amount=7500.0,  currency="USD", status=PaymentStatus.pending,   paid_at=None,   means="TDC",           stripe_payment_intent_id=None,           created_at=now - timedelta(days=2)),
-        dict(amount=8900.0,  currency="ARS", status=PaymentStatus.pending,   paid_at=None,   means="Link de pago",  stripe_payment_intent_id=None,           created_at=now - timedelta(days=5)),
-        dict(amount=4200.0,  currency="EUR", status=PaymentStatus.pending,   paid_at=None,   means="TDC",           stripe_payment_intent_id=None,           created_at=now - timedelta(days=8)),
+        dict(amount=7500.0,  currency="USD", status=PaymentStatus.pending,   paid_at=None,   means="Credit Card",           stripe_payment_intent_id=None,           created_at=now - timedelta(days=2)),
+        dict(amount=8900.0,  currency="ARS", status=PaymentStatus.pending,   paid_at=None,   means="Credit Card",  stripe_payment_intent_id=None,           created_at=now - timedelta(days=5)),
+        dict(amount=4200.0,  currency="EUR", status=PaymentStatus.pending,   paid_at=None,   means="Credit Card",           stripe_payment_intent_id=None,           created_at=now - timedelta(days=8)),
 
         # === processing ===
-        dict(amount=8500.0,  currency="EUR", status=PaymentStatus.processing, paid_at=None,  means="TDC",           stripe_payment_intent_id="pi_proc_001",  created_at=now - timedelta(days=4)),
-        dict(amount=6000.0,  currency="COP", status=PaymentStatus.processing, paid_at=None,  means="TDC",           stripe_payment_intent_id="pi_proc_002",  created_at=now - timedelta(days=6)),
+        dict(amount=8500.0,  currency="EUR", status=PaymentStatus.processing, paid_at=None,  means="Credit Card",           stripe_payment_intent_id="pi_proc_001",  created_at=now - timedelta(days=4)),
+        dict(amount=6000.0,  currency="COP", status=PaymentStatus.processing, paid_at=None,  means="Credit Card",           stripe_payment_intent_id="pi_proc_002",  created_at=now - timedelta(days=6)),
 
         # === rejected ===
-        dict(amount=12000.0, currency="ARS", status=PaymentStatus.rejected,  paid_at=None,   means="TDC",           stripe_payment_intent_id="pi_rej_001",   created_at=now - timedelta(days=9)),
-        dict(amount=3000.0,  currency="USD", status=PaymentStatus.rejected,  paid_at=None,   means="Transferencia", stripe_payment_intent_id="pi_rej_002",   created_at=now - timedelta(days=10)),
+        dict(amount=12000.0, currency="ARS", status=PaymentStatus.rejected,  paid_at=None,   means="Credit Card",           stripe_payment_intent_id="pi_rej_001",   created_at=now - timedelta(days=9)),
+        dict(amount=3000.0,  currency="USD", status=PaymentStatus.rejected,  paid_at=None,   means="Credit Card", stripe_payment_intent_id="pi_rej_002",   created_at=now - timedelta(days=10)),
     ]
 
     created = 0

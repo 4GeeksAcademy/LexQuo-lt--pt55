@@ -105,7 +105,7 @@ export default function SigIn() {
                     <input
                       id="password"
                       type={showPwd ? "text" : "password"}
-                      className="form-control form-icon-input pe-6"
+                      className="form-control form-icon-input pe-2"
                       placeholder="Password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}

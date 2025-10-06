@@ -493,7 +493,7 @@ export const Payments = () => {
                 <div className="card-body">
                   {/* Header con título y selector */}
                   <div className="d-flex justify-content-between align-items-center mb-2">
-                    <h5 className="fw-bold mb-0">Payment Means</h5>
+                    <h5 className="fw-bold mb-0">Payment Methods</h5>
                     <select
                       className="form-select form-select-sm"
                       style={{ maxWidth: 180 }}
@@ -651,7 +651,7 @@ export const Payments = () => {
                   <th>Amount</th>
                   <th>Currency</th>
                   <th>Status</th>
-                  <th>Means</th>
+                  <th>Payment Method</th>
                   <th>Created</th>
                   <th>Paid</th>
                   <th style={{ width: 60 }} className="text-center">

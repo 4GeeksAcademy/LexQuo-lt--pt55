@@ -26,6 +26,7 @@ stripe = "*"
 pypdf2 = "*"
 google-genai = "*"
 flask-socketio = "*"
+"google.generativeai" = "*"
 
 [requires]
 python_version = "3.13"
