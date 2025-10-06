@@ -83,7 +83,7 @@ export const ViewDocument = () => {
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
         setDocumentData(data);
-        
+
       } catch (err) {
         console.error("Error fetching document:", err);
         toast.error("Failed to load document data");
@@ -320,7 +320,7 @@ export const ViewDocument = () => {
     );
   }
 
- 
+
   // prefer created_at but keep backward compat with create_at
   const createdAt = documentData.created_at || documentData.create_at;
 
@@ -371,14 +371,16 @@ export const ViewDocument = () => {
                 {/* Download */}
                 <div className="d-flex justify-content-between align-items-center py-2">
                   <span className="fw-semibold text-muted">Download</span>
-                  <button
-                    onClick={() => handleDownload(documentData)}
+                  <a
+                    href={documentData.url_route}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="btn btn-phoenix btn-phoenix-success"
-                    title={`Download ${documentData.name || ""}`}
+                    title={`Abrir ${documentData.name || ""}`}
                   >
                     <i className="bi bi-download" />{" "}
                     {documentData.original_filename || documentData.name || "File"}
-                  </button>
+                  </a>
                 </div>
                 <hr className="my-2" />
 
