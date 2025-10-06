@@ -1,7 +1,10 @@
-import eventlet
-eventlet.monkey_patch() 
+import os  # 👈 primero
+USE_EVENTLET = os.getenv("USE_EVENTLET", "0") == "1"
 
-import os
+if USE_EVENTLET:
+    import eventlet
+    eventlet.monkey_patch()
+    
 from flask import Flask, request, jsonify, send_from_directory
 from flask_migrate import Migrate
 from flask_cors import CORS
@@ -42,10 +45,12 @@ CORS(
     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 )
 
+async_mode = "eventlet" if USE_EVENTLET else None
+
 socketio = SocketIO(
     app,
     cors_allowed_origins=FRONTEND_ORIGINS,
-    async_mode="eventlet",
+    async_mode=async_mode,
     ping_timeout=25,
     ping_interval=20,
 )

@@ -175,10 +175,16 @@ export default function ChatOnDemand(props) {
   useEffect(() => {
     if (!courtfileId || !API) return;
 
+    const isCodespaces =
+      window.location.hostname.includes("github.dev") ||
+      window.location.hostname.includes("preview.app.github.dev") ||
+      window.location.hostname.includes("localhost");
+
     // Configuración mejorada de Socket.IO
     const s = io(API, {
       path: "/socket.io",
-      transports: ["websocket", "polling"],
+      transports: isCodespaces ? ["polling"] : ["websocket", "polling"],
+      rememberUpgrade: false,
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
