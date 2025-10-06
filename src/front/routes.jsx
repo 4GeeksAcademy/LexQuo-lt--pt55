@@ -102,6 +102,8 @@ import { NotFound } from "./pages/NotFound.jsx";
 
 import Calendar from "./pages/Calendar.jsx";
 
+import HomeGate from "./pages/HomeGate";
+
 
 
 
@@ -120,7 +122,10 @@ export const router = createBrowserRouter(
       {/* Nested Routes: Defines sub-routes within the BaseHome component. */}
       <Route path="/403" element={<Forbidden />} />
 
-      <Route path="/" element={<Home />} />
+      <Route index element={<HomeGate />} />
+
+
+      <Route path="/home" element={<Home />} />
       <Route path="/about-us" element={<AboutUs />} />
       <Route path="/contact-us" element={<ContactUs />} />
       <Route path="/team" element={<Team />} />
