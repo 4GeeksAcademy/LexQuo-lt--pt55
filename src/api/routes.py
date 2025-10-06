@@ -44,6 +44,7 @@ os.getenv("FLASK_DEBUG")
 
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL") or os.getenv("FRONTEND_ORIGIN")
 
+
 def _base_url():
     b = FRONTEND_BASE_URL or request.url_root
     return b.rstrip("/")
@@ -3165,8 +3166,8 @@ def create_checkout_session(paymentId):
                 'quantity': 1,
             }],
             mode='payment',
-            success_url='https://congenial-acorn-57j7rv6jjx2vq49-3000.app.github.dev/payments',
-            cancel_url='https://congenial-acorn-57j7rv6jjx2vq49-3000.app.github.dev/',
+            success_url=f"{FRONTEND_BASE_URL}/payments"
+            cancel_url=f"{FRONTEND_BASE_URL}/payments"
             metadata={
                 'payment_id': str(payment.id),
                 'courtfile_id': str(payment_courtfile.courtfile_id) if payment_courtfile else 'none'
