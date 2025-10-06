@@ -178,7 +178,7 @@ export default function ChatOnDemand(props) {
     // Configuración mejorada de Socket.IO
     const s = io(API, {
       path: "/socket.io",
-      transports: ["polling"],
+      transports: ["websocket", "polling"],
       upgrade: false,
       rememberUpgrade: false,
       withCredentials: false,
