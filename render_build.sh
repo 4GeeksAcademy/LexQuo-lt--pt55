@@ -38,6 +38,7 @@ pip install cloudinary==1.41.0
 pip install "google-genai==1.0.0"
 pip install "openai==1.40.0" "httpx==0.27.2" --force-reinstall
 pip install PyPDF2==3.0.1
+pip install reportlab==4.0.9
 
 # Forms
 pip install wtforms==3.2.1
