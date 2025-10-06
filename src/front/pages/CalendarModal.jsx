@@ -78,7 +78,9 @@ const CalendarModal = ({ isOpen, onClose, event, onDelete, userRole }) => { // A
     isDeadline ? `/deadlines/${recordId}` :
       isAppointment ? `/appointments/${recordId}` : "#";
 
-  const detailsPath = editPath;
+  const detailsPath = 
+    isDeadline ? `/deadlines/view/${recordId}` :
+      isAppointment ? `/appointments/view/${recordId}` : "#";
 
   const fmtDate = (d) => {
     try {
