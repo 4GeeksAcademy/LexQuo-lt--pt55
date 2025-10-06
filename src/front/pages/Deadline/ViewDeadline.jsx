@@ -5,7 +5,6 @@ import AppNavsShell from "../../components/AppNavsShell";
 import DeadlineBadge from "../../components/DeadlineBadge";
 import { toast } from 'react-toastify';
 
-
 // ----------------- Helpers -----------------
 const dateYMDToDMY = (v) => {
   if (!v) return "—";
@@ -39,17 +38,9 @@ export const ViewDeadline = () => {
     [location.state]
   );
 
-  // Si vino por state desde un expediente, lo precargamos
-  const state = location.state || {};
-  const initialLinked =
-    state.courtfileId
-      ? { id: state.courtfileId, number: state.courtfileNumber, title: state.courtfileTitle }
-      : null;
-
   const [deadline, setDeadline] = useState(null);
-  const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
   const [loading, setLoading] = useState(true);
- 
+
 
   // Fetch principal
   useEffect(() => {
@@ -57,13 +48,25 @@ export const ViewDeadline = () => {
     const fetchDeadline = async () => {
       try {
         setLoading(true);
-        const resp = await fetch(`${API}/api/deadlines/${deadlineId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const resp = await fetch(
+          `${API}/api/deadlines-courtfiles?deadline_id=${deadlineId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
+        const row = Array.isArray(data) ? data[0] : null;
+        if (!row) throw new Error("Deadline not found or not visible");
         if (!abort) {
-          setDeadline(data);
+          setDeadline({
+            id: row.deadline_id ?? row.id,
+            type: row.deadline_type,
+            date: row.deadline_date,
+            hour: row.deadline_hour,
+            priority: row.priority,
+            courtfile_id: row.courtfile_id,
+            courtfile_number: row.courtfile_number,
+            courtfile_title: row.courtfile_title,
+          });
         }
       } catch (e) {
         if (!abort) {
@@ -77,61 +80,6 @@ export const ViewDeadline = () => {
     if (deadlineId && token) fetchDeadline();
     return () => { abort = true; };
   }, [API, token, deadlineId]);
-
-  // Si vino solo el id del courtfile, completar number/title
-  useEffect(() => {
-    let abort = false;
-    const loadCf = async () => {
-      try {
-        if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
-          const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (resp.ok) {
-            const d = await resp.json();
-            if (!abort) {
-              setLinkedCourtfile((cf) => ({
-                ...(cf || {}),
-                number: d.case_number,
-                title: d.title,
-              }));
-            }
-          }
-        }
-      } catch {
-        /* noop */
-      }
-    };
-    loadCf();
-    return () => { abort = true; };
-  }, [API, linkedCourtfile?.id, token]);
-
-  // Si no vino por state, buscá el link en la tabla de relaciones
-  useEffect(() => {
-    let abort = false;
-    const fetchLinked = async () => {
-      try {
-        if (linkedCourtfile || !deadlineId) return;
-        const resp = await fetch(`${API}/api/deadlines-courtfiles`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!resp.ok) return;
-        const rows = await resp.json();
-        const rel = (rows || []).find((r) => Number(r.deadline_id) === Number(deadlineId));
-        if (rel && !abort) {
-          setLinkedCourtfile({
-            id: rel.courtfile_id,
-            number: rel.courtfile_number,
-            title: rel.courtfile_title,
-          });
-        }
-      } catch {
-        /* noop */
-      }
-    };
-    fetchLinked();
-    return () => { abort = true; };
-  }, [API, token, deadlineId, linkedCourtfile]);
 
   // Delete
   const handleDelete = async () => {
@@ -186,16 +134,14 @@ export const ViewDeadline = () => {
         <div className="col-md-8 col-lg-8">
           {/* Header (title + actions) */}
           <div className="d-flex flex-column flex-md-row justify-content-between align-items-start mb-3">
-            {/* Título siempre a la izquierda */}
             <h1 className="h2 fw-bolder mb-0 line-clamp-1 fs-8 fs-md-5">
-              {deadline.deadline_type || "Deadline"}
+              {deadline?.type || "Deadline"}
             </h1>
 
-            {/* Botones: debajo en móvil, a la derecha en desktop */}
             {["lawyer", "admin_user"].includes(role) && (
               <div className="d-flex gap-2 mt-2 mt-md-0 align-self-end align-self-md-center">
                 <Link
-                  to={`/deadlines/${deadline.id}`}
+                  to={`/deadlines/${deadline?.id}`}
                   state={{ returnTo }}
                   className="btn btn-phoenix-secondary btn-sm fs-10 fs-md-9"
                 >
@@ -218,16 +164,13 @@ export const ViewDeadline = () => {
                 {/* Date */}
                 <div className="col-sm-4">
                   <div className="d-inline-flex align-items-center">
-                    <div
-                      className="d-flex bg-success-subtle rounded flex-center me-3"
-                      style={{ width: 32, height: 32 }}
-                    >
+                    <div className="d-flex bg-success-subtle rounded flex-center me-3" style={{ width: 32, height: 32 }}>
                       <i className="bi bi-calendar-event text-success" />
                     </div>
                     <div className="text-start">
                       <p className="fw-bold mb-1">Date</p>
                       <h4 className="fw-bolder text-nowrap mb-0">
-                        {deadline.deadline_date ? dateYMDToDMY(deadline.deadline_date) : "—"}
+                        {deadline?.date ? dateYMDToDMY(deadline.date) : "—"}
                       </h4>
                     </div>
                   </div>
@@ -236,16 +179,13 @@ export const ViewDeadline = () => {
                 {/* Time */}
                 <div className="col-sm-4 border-start-sm border-translucent ps-sm-5">
                   <div className="d-inline-flex align-items-center">
-                    <div
-                      className="d-flex bg-info-subtle rounded flex-center me-3"
-                      style={{ width: 32, height: 32 }}
-                    >
+                    <div className="d-flex bg-info-subtle rounded flex-center me-3" style={{ width: 32, height: 32 }}>
                       <i className="bi bi-clock-history text-info" />
                     </div>
                     <div className="text-start">
                       <p className="fw-bold mb-1">Time</p>
                       <h4 className="fw-bolder text-nowrap mb-0">
-                        {safeTime(deadline.deadline_hour) || "—"}
+                        {safeTime(deadline?.hour) || "—"}
                       </h4>
                     </div>
                   </div>
@@ -254,16 +194,13 @@ export const ViewDeadline = () => {
                 {/* Priority */}
                 <div className="col-sm-4 border-start-sm border-translucent ps-sm-5">
                   <div className="d-inline-flex align-items-center">
-                    <div
-                      className="d-flex bg-primary-subtle rounded flex-center me-3"
-                      style={{ width: 32, height: 32 }}
-                    >
+                    <div className="d-flex bg-primary-subtle rounded flex-center me-3" style={{ width: 32, height: 32 }}>
                       <i className="bi bi-flag text-primary" />
                     </div>
                     <div className="text-start">
                       <p className="fw-bold mb-1">Priority</p>
                       <div className="mt-1">
-                        <DeadlineBadge priority={deadline.priority} outline />
+                        <DeadlineBadge priority={deadline?.priority} outline />
                       </div>
                     </div>
                   </div>
@@ -272,32 +209,35 @@ export const ViewDeadline = () => {
             </div>
           </div>
 
-
-
           {/* Case File abajo */}
-          <div className="row g-3 mt-3">
-            <div className="col-12">
-              {linkedCourtfile && (
+          {deadline?.courtfile_id && (
+            <div className="row g-3 mt-3">
+              <div className="col-12">
                 <div className="mb-4 ms-2">
                   <div className="d-flex flex-column align-items-end align-items-sm-start">
                     <h3 className="fw-bold mb-1 text-muted fs-6 fs-sm-5 text-end text-sm-start">
                       Case File
                     </h3>
                     <Link
-                      to={`/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`}
+                      to={
+                        role === "client"
+                          ? `/courtfiles/viewclient/${deadline.courtfile_id}`
+                          : role === "lawyer"
+                          ? `/courtfiles/ViewCourtfileLawyer/${deadline.courtfile_id}`
+                          : `/courtfiles/${deadline.courtfile_id}`
+                      }
                       className="badge badge-phoenix badge-phoenix-secondary fs-9 fs-sm-8 mt-2"
-                      title={linkedCourtfile.title || ""}
+                      title={deadline?.courtfile_title || ""}
                     >
-                      {linkedCourtfile.number || `#${linkedCourtfile.id}`}
+                      {deadline?.courtfile_number || `#${deadline.courtfile_id}`}
                     </Link>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
-    </AppNavsShell >
+    </AppNavsShell>
   );
-
-}
+};
