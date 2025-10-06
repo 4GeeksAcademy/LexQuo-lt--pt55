@@ -32,7 +32,7 @@ export const AddPayment = () => {
     { value: "MXN", label: "MXN - Mexican Peso" }
   ];
 
-  const meansOptions = [{ value: "TDC", label: "TDC - Credit Card" }];
+  const meansOptions = [{ value: "Credit Card", label: "Credit Card" }];
 
   const [formData, setFormData] = useState({
     amount: "",
