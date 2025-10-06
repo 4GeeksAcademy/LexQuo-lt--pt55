@@ -349,7 +349,15 @@ const NavbarLogin = () => {
             <i className="bi bi-list" />
           </button>
 
-          <Link to="/DashboardLawyer" className="navbar-brand d-flex align-items-center gap-2 mb-0 text-white">
+          <Link
+            to={
+              role === "admin_user" ? "/DashboardAdminUser" :
+                role === "lawyer" ? "/DashboardLawyer" :
+                  role === "client" ? "/DashboardClient" :
+                    "/"
+            }
+            className="navbar-brand d-flex align-items-center gap-2 mb-0 text-white"
+          >
             <img src={LogoLexQuoB} style={{ height: "30px" }} />
           </Link>
         </div>

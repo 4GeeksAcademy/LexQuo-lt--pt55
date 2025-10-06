@@ -21,8 +21,9 @@ export default function HomeGate() {
 
   const to =
     role === "admin_user" ? "/DashboardAdminUser" :
-    role === "lawyer"     ? "/DashboardLawyer"   :
-                            "/DashboardClient";
+      role === "lawyer"     ? "/DashboardLawyer"   :
+        role === "client"     ? "/DashboardClient"   :
+                                  "/";
 
   return <Navigate to={to} replace />;
 }
