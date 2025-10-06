@@ -217,7 +217,9 @@ export const ViewClient = () => {
   // 5) Render
   if (loading) {
     return (
-      <div className="container mt-4">
+      <AppNavsShell>
+
+      <div className="container add-page">
         <div className="text-center">
           <div className="spinner-border" role="status">
             <span className="visually-hidden">Loading...</span>
@@ -225,6 +227,7 @@ export const ViewClient = () => {
           <p>Loading client...</p>
         </div>
       </div>
+      </AppNavsShell>
     );
   }
 

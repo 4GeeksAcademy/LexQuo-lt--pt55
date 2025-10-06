@@ -386,6 +386,14 @@ export const Payments = () => {
   const COLORS_STATUS = ["#27ae60", "#f6c343", "#3874ff", "#e63757"];
   const COLORS_MEANS = ["#3874ff", "#00c9db", "#f6c343", "#6c757d", "#27ae60", "#e63757"];
 
+  const courtfilePath = (id) => {
+    if (!id) return "#";
+    if (role === "lawyer") return `/courtfiles/ViewCourtfileLawyer/${id}`;
+    if (role === "client") return `/courtfiles/viewclient/${id}`;
+    // fallback (admin u otros)
+    return `/courtfiles/view/${id}`;
+  };
+
 
   return (
     <AppNavsShell>
@@ -662,7 +670,11 @@ export const Payments = () => {
                     <td className="text-start ps-2">{p.id}</td>
                     <td onClick={(e) => e.stopPropagation()}>
                       {p.courtfile_id ? (
-                        <Link to={`/courtfiles/view/${p.courtfile_id}`}>
+                        <Link
+                          to={courtfilePath(p.courtfile_id)}
+                          state={{ returnTo: location.pathname }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {p.courtfile_number || `${p.courtfile_id}`}
                         </Link>
                       ) : "—"}

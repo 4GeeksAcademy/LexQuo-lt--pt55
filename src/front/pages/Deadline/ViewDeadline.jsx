@@ -158,7 +158,7 @@ export const ViewDeadline = () => {
   if (loading) {
     return (
       <AppNavsShell>
-        <div className="container mt-4 text-center">
+        <div className="container add-page text-center">
           <div className="spinner-border" role="status">
             <span className="visually-hidden">Loading…</span>
           </div>

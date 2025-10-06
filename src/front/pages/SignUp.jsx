@@ -19,7 +19,7 @@ export default function SignUp() {
   const [showPwd, setShowPwd] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
- 
+
 
   const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
@@ -82,7 +82,7 @@ export default function SignUp() {
             <div className="col-sm-10 col-md-8 col-lg-5 col-xl-5 col-xxl-3 p-4">
               <Link className="d-flex flex-center text-decoration-none mb-4" to="/">
                 <div className="d-flex align-items-center fw-bolder fs-3 d-inline-block">
-                  <img src="https://res.cloudinary.com/doxdmmj1o/image/upload/v1758256779/documents/profile_jprfp2.png" alt="LexQuo" width="240" />
+                  <img src="https://res.cloudinary.com/doxdmmj1o/image/upload/v1759017461/LogoLexQuoN_hhfcks.png" alt="LexQuo" width="240" />
                 </div>
               </Link>
 
@@ -243,7 +243,7 @@ export default function SignUp() {
                   </div>
                 </div>
 
-               
+
                 <button
                   type="submit"
                   className="btn btn-primary w-100 mb-3"

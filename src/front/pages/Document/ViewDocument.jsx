@@ -83,7 +83,7 @@ export const ViewDocument = () => {
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const data = await resp.json();
         setDocumentData(data);
-        
+
       } catch (err) {
         console.error("Error fetching document:", err);
         toast.error("Failed to load document data");
@@ -243,7 +243,6 @@ export const ViewDocument = () => {
 
     } catch (e) {
       console.error("❌ AI Analysis error:", e);
-      toast.error(e.message || "Error analyzing document");
     } finally {
       setAiLoading(false);
     }
@@ -311,7 +310,7 @@ export const ViewDocument = () => {
   if (loading) {
     return (
       <AppNavsShell>
-        <div className="d-flex flex-column justify-content-center align-items-center min-vh-100">
+        <div className="container add-page text-center">
           <div className="spinner-border" role="status">
             <span className="visually-hidden">Loading…</span>
           </div>
@@ -321,7 +320,7 @@ export const ViewDocument = () => {
     );
   }
 
- 
+
   // prefer created_at but keep backward compat with create_at
   const createdAt = documentData.created_at || documentData.create_at;
 
@@ -335,7 +334,7 @@ export const ViewDocument = () => {
             <nav aria-label="breadcrumb" className="mb-2">
               <ol className="breadcrumb">
                 <li className="breadcrumb-item">
-                  <Link to={returnTo || "/documents"}>Documents</Link>
+                  <Link to={`/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`}>{linkedCourtfile.number}</Link>
                 </li>
                 <li className="breadcrumb-item active" aria-current="page">
                   Details
@@ -372,14 +371,16 @@ export const ViewDocument = () => {
                 {/* Download */}
                 <div className="d-flex justify-content-between align-items-center py-2">
                   <span className="fw-semibold text-muted">Download</span>
-                  <button
-                    onClick={() => handleDownload(documentData)}
+                  <a
+                    href={documentData.url_route}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="btn btn-phoenix btn-phoenix-success"
-                    title={`Download ${documentData.name || ""}`}
+                    title={`Abrir ${documentData.name || ""}`}
                   >
                     <i className="bi bi-download" />{" "}
                     {documentData.original_filename || documentData.name || "File"}
-                  </button>
+                  </a>
                 </div>
                 <hr className="my-2" />
 
@@ -566,7 +567,7 @@ export const ViewDocument = () => {
                                       returnTo: `/documents/view/${documentData.id}`,
                                     }}
                                   >
-                                    <i className="bi bi-file-earmark-plus me-2"></i> Document
+                                    <i className="bi bi-file-earmark-plus me-2"></i> Case record
                                   </Link>
                                 </li>
 

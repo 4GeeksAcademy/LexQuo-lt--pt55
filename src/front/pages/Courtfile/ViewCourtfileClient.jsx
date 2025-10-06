@@ -209,7 +209,7 @@ export const ViewCourtfileClient = () => {
   if (loading) {
     return (
       <AppNavsShell>
-        <div className="container-fluid px-0 px-md-3">
+        <div className="add-page text-center">
           <div className="row">
             <div className="col-12 col-xl-8 col-xxl-7 mx-auto">
               <div className="text-center py-5">
@@ -225,10 +225,10 @@ export const ViewCourtfileClient = () => {
     );
   }
 
-  
+
   return (
     <AppNavsShell>
-      <div className="container-fluid page-add pt-10">
+      <div className="container-fluid add-page">
 
         {/* ===== Breadcrumbs ===== */}
         <nav aria-label="breadcrumb" className="mb-2">
@@ -320,32 +320,32 @@ export const ViewCourtfileClient = () => {
                 </div>
 
                 {/* Description */}
-<div className="mt-4">
-  <div className="text-uppercase text-muted fw-bold small section-title mb-2">Description</div>
-  {(() => {
-    const fullText = courtfile?.description?.trim() || "—";
-    const needsClamp = fullText.length > 140;
+                <div className="mt-4">
+                  <div className="text-uppercase text-muted fw-bold small section-title mb-2">Description</div>
+                  {(() => {
+                    const fullText = courtfile?.description?.trim() || "—";
+                    const needsClamp = fullText.length > 140;
 
-    return (
-      <div className="p-3 rounded bg-body-secondary">
-        {isSmallScreen && needsClamp ? (
-          <>
-            {showMore ? fullText : fullText.slice(0, 140) + "…"}
-            <button
-              type="button"
-              className="btn btn-link btn-sm p-0 ms-2 align-baseline"
-              onClick={() => setShowMore((s) => !s)}
-            >
-              {showMore ? "Show less" : "Show more"}
-            </button>
-          </>
-        ) : (
-          fullText
-        )}
-      </div>
-    );
-  })()}
-</div>
+                    return (
+                      <div className="p-3 rounded bg-body-secondary">
+                        {isSmallScreen && needsClamp ? (
+                          <>
+                            {showMore ? fullText : fullText.slice(0, 140) + "…"}
+                            <button
+                              type="button"
+                              className="btn btn-link btn-sm p-0 ms-2 align-baseline"
+                              onClick={() => setShowMore((s) => !s)}
+                            >
+                              {showMore ? "Show less" : "Show more"}
+                            </button>
+                          </>
+                        ) : (
+                          fullText
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
             </div>
 
@@ -355,8 +355,8 @@ export const ViewCourtfileClient = () => {
             </div>
 
             {loadingAppointments && <p className="mt-2">Loading appointments…</p>}
-           
-            {!loadingAppointments && !appointmentsErr && caseAppointments.length === 0 && (
+
+            {!loadingAppointments && caseAppointments.length === 0 && (
               <div className="alert text-secondary bg-transparent border-0 mt-2">No appointments scheduled for this case.</div>
             )}
 
@@ -411,8 +411,8 @@ export const ViewCourtfileClient = () => {
                 </div>
 
                 {loadingPayments && <p className="mt-2">Loading payments…</p>}
-                
-                {!loadingPayments && !paymentsErr && casePayments.length === 0 && (
+
+                {!loadingPayments && casePayments.length === 0 && (
                   <div className="alert text-secondary bg-transparent border-0 mt-2">No payments for this case.</div>
                 )}
 
