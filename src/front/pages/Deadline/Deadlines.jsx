@@ -170,6 +170,14 @@ export const Deadlines = () => {
         ? "/DashboardClient"
         : "/DashboardLawyer";
 
+  const courtfilePath = (id) => {
+    if (!id) return "#";
+    if (role === "lawyer") return `/courtfiles/ViewCourtfileLawyer/${id}`;
+    if (role === "client") return `/courtfiles/viewclient/${id}`;
+    // fallback (admin u otros)
+    return `/courtfiles/view/${id}`;
+  };
+
   return (
     <AppNavsShell>
       <div className="container add-page">
@@ -353,8 +361,12 @@ export const Deadlines = () => {
                     <td className="text-start ps-2">{d.id}</td>
                     <td onClick={(e) => e.stopPropagation()}>
                       {d.courtfile_id ? (
-                        <Link to={`/courtfiles/view/${d.courtfile_id}`}>
-                          {d.courtfile_number || `#${d.courtfile_id}`}
+                        <Link
+                          to={courtfilePath(d.courtfile_id)}
+                          state={{ returnTo: location.pathname }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {d.courtfile_number || `${d.courtfile_id}`}
                         </Link>
                       ) : "—"}
                     </td>

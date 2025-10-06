@@ -190,6 +190,14 @@ export const Appointments = () => {
 
   const isClient = role === "client";
 
+  const courtfilePath = (id) => {
+    if (!id) return "#";
+    if (role === "lawyer") return `/courtfiles/ViewCourtfileLawyer/${id}`;
+    if (role === "client") return `/courtfiles/viewclient/${id}`;
+    // fallback (admin u otros)
+    return `/courtfiles/view/${id}`;
+  };
+
   return (
     <AppNavsShell>
       <div className="container add-page">
@@ -374,8 +382,12 @@ export const Appointments = () => {
                     <td className="text-start ps-2">{a.id}</td>
                     <td style={{ maxWidth: "80px" }} onClick={(e) => e.stopPropagation()}>
                       {a.courtfile_id ? (
-                        <Link to={`/courtfiles/view/${a.courtfile_id}`}>
-                          {a.courtfile_number || `#${a.courtfile_id}`}
+                        <Link
+                          to={courtfilePath(a.courtfile_id)}
+                          state={{ returnTo: location.pathname }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {a.courtfile_number || `${a.courtfile_id}`}
                         </Link>
                       ) : "—"}
                     </td>
