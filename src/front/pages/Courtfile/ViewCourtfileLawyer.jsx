@@ -1370,7 +1370,7 @@ export const ViewCourtfileLawyer = () => {
                         <td>{ap.appointment_date}</td>
                         <td>{ap.starts_at}</td>
                         <td>{ap.ends_at}</td>
-                        <td>{ap.appointment_location}</td>
+                        <td style={{ maxWidth: "250px" }}>{ap.appointment_location}</td>
                         <td className="text-center">
                           <KebabMenu>
                             <li>

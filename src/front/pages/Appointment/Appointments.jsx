@@ -125,11 +125,9 @@ export const Appointments = () => {
 
   // ---------- Helpers ----------
   const formatDate = (dateString) => {
-    if (!dateString) return "—";
-    const d = new Date(dateString);
-    if (Number.isNaN(d.getTime())) return dateString;
-    return d.toLocaleDateString();
-  };
+  if (!dateString) return "—";
+  return dateString; // mostrar tal cual viene del backend
+};
 
   const formatTime = (timeString) => {
     if (!timeString) return "—";
@@ -158,8 +156,8 @@ export const Appointments = () => {
       let res = 0;
 
       if (key === "date") {
-        const va = new Date(A.date).getTime() || 0;
-        const vb = new Date(B.date).getTime() || 0;
+        const va = A.date.getTime() || 0;
+        const vb = B.date.getTime() || 0;
         res = cmp(va, vb);
       } else if (key === "starts_at" || key === "ends_at") {
         const va = (A[key] || "").slice(0, 5); // HH:MM
