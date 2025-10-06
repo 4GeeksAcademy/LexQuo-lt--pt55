@@ -179,9 +179,6 @@ export default function ChatOnDemand(props) {
     const s = io(API, {
       path: "/socket.io",
       transports: ["websocket", "polling"],
-      upgrade: false,
-      rememberUpgrade: false,
-      withCredentials: false,
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
