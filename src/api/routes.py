@@ -3166,8 +3166,8 @@ def create_checkout_session(paymentId):
                 'quantity': 1,
             }],
             mode='payment',
-            success_url = f"{FRONTEND_BASE_URL}/payments"
-            cancel_url = f"{FRONTEND_BASE_URL}/payments"
+            success_url = f"{FRONTEND_BASE_URL}/payments",
+            cancel_url = f"{FRONTEND_BASE_URL}/payments",
             metadata={
                 'payment_id': str(payment.id),
                 'courtfile_id': str(payment_courtfile.courtfile_id) if payment_courtfile else 'none'
