@@ -175,7 +175,22 @@ export const AddAppointment = () => {
 
 
       toast.success("Appointment created and linked successfully!");
-      navigate(returnTo, { replace: true });
+      const cfId = Number(preselectedCourtfileId || formData.courtfile_id);
+
+      let to;
+      if (role === "lawyer") {
+        to = `/courtfiles/ViewCourtfileLawyer/${cfId}`;
+      } else if (role === "client") {
+        to = `/courtfiles/viewclient/${cfId}`;
+      } else {
+        // admin_user
+        to = `/courtfiles/${cfId}`;
+      }
+
+      navigate(to, {
+        replace: true,
+        state: { returnTo: returnTo || "/appointments" }
+      });
     } catch (err) {
       console.error("Error creating/linking appointment:", err);
       toast.error(err.message);
