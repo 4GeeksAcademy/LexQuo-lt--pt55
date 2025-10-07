@@ -95,12 +95,12 @@ const NavbarLogin = () => {
   const toAppointment = (row = {}) => {
     const a = row.appointment || row;
     return {
-      id: a.id ?? row.appointment_id,
+      id: row.appointment_id || a.id,  // ← Priorizar appointment_id
       title: a.title ?? row.appointment_title ?? "",
       date: a.date ?? row.appointment_date ?? "",
       starts_at: a.starts_at ?? row.starts_at ?? "",
       ends_at: a.ends_at ?? row.ends_at ?? "",
-      courtfile_number: row.courtfile_number || row.case_number || "", // << nuevo
+      courtfile_number: row.courtfile_number || row.case_number || "",
     };
   };
 

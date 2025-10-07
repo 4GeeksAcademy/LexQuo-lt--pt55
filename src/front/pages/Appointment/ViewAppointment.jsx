@@ -31,95 +31,77 @@ export const ViewAppointment = () => {
 
   const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
 
-  // ---------- Data fetch: APPOINTMENT "puro" por id ----------
-  useEffect(() => {
-  let abort = false;
-  const fetchAppointment = async () => {
-    try {
-      setLoading(true);
-      
-      // Determinar el endpoint según el rol
-      let endpoint;
-      let isDirectEndpoint = false;
-      
-      if (role === "admin_user") {
-        endpoint = `${API}/api/appointments/${appointmentId}`;
-        isDirectEndpoint = true;
-      } else {
-        endpoint = `${API}/api/appointments-courtfiles?appointment_id=${appointmentId}`;
-        isDirectEndpoint = false;
-      }
-
-      const response = await fetch(endpoint, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      
-      let data = await response.json();
-      
-      // Si es el endpoint de relaciones, extraer y transformar los datos
-      if (!isDirectEndpoint) {
-        // appointments-courtfiles devuelve un array
-        const appointmentRow = Array.isArray(data) ? data[0] : data;
-        if (appointmentRow) {
-          // Mapear los campos del endpoint de relaciones al formato esperado
-          data = {
-            id: appointmentRow.appointment_id || appointmentRow.id,
-            title: appointmentRow.appointment_title || appointmentRow.title,
-            date: appointmentRow.appointment_date || appointmentRow.date,
-            starts_at: appointmentRow.starts_at,
-            ends_at: appointmentRow.ends_at,
-            location: appointmentRow.location,
-            details: appointmentRow.details,
-            latitud: appointmentRow.latitud,
-            longitud: appointmentRow.longitud,
-            // ... otros campos que necesites
-          };
-        } else {
-          throw new Error("Appointment not found");
-        }
-      }
-      
-      if (!abort) setAppointment(data);
-      
-    } catch (err) {
-      console.error("Error fetching appointment:", err);
-      if (!abort) toast.error("Failed to load appointment data");
-    } finally {
-      if (!abort) setLoading(false);
-    }
-  };
-
-  if (appointmentId && token) fetchAppointment();
-  return () => { abort = true; };
-}, [API, appointmentId, token, role]); // ← añade role como dependencia
-  // ---------- Si no vino prelinkeado, buscamos la relación y armamos linkedCourtfile ----------
+  // ---------- Data fetch: APPOINTMENT ----------
   useEffect(() => {
     let abort = false;
-    const fetchLinked = async () => {
+    const fetchAppointment = async () => {
       try {
-        if (linkedCourtfile || !appointmentId) return;
-        const resp = await fetch(`${API}/api/appointments-courtfiles?appointment_id=${appointmentId}`, {
+        setLoading(true);
+
+        let endpoint;
+        let isDirectEndpoint = false;
+
+        if (role === "admin_user") {
+          endpoint = `${API}/api/appointments/${appointmentId}`;
+          isDirectEndpoint = true;
+        } else {
+          endpoint = `${API}/api/appointments-courtfiles?appointment_id=${appointmentId}`;
+          isDirectEndpoint = false;
+        }
+
+        const response = await fetch(endpoint, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        if (!resp.ok) return;
-        const rows = await resp.json();
-        const row = Array.isArray(rows) ? rows[0] : null;
-        if (row && !abort) {
-          setLinkedCourtfile({
-            id: row.courtfile_id,
-            number: row.courtfile_number,
-            title: row.courtfile_title
-          });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        let data = await response.json();
+
+        if (!isDirectEndpoint) {
+          // appointments-courtfiles devuelve un array
+          const appointmentRow = Array.isArray(data) ? data[0] : data;
+
+          if (appointmentRow && appointmentRow.appointment_id) {
+            // Mapear los campos EXACTAMENTE como vienen del endpoint
+            data = {
+              id: appointmentRow.appointment_id,  // ← Usar appointment_id
+              title: appointmentRow.appointment_title,
+              date: appointmentRow.appointment_date,
+              location: appointmentRow.appointment_location,
+              details: appointmentRow.appointment_details,
+              starts_at: appointmentRow.starts_at,
+              ends_at: appointmentRow.ends_at,
+              latitud: appointmentRow.latitud,     // Si existen en tu DB
+              longitud: appointmentRow.longitud,   // Si existen en tu DB
+            };
+
+            // Setear linkedCourtfile con la información del courtfile
+            if (appointmentRow.courtfile_id && !linkedCourtfile) {
+              setLinkedCourtfile({
+                id: appointmentRow.courtfile_id,
+                number: appointmentRow.courtfile_number,
+                title: appointmentRow.courtfile_title
+              });
+            }
+          } else {
+            throw new Error("Appointment not found or you don't have permission to view it");
+          }
         }
-      } catch {
-        /* noop */
+
+        if (!abort) setAppointment(data);
+
+      } catch (err) {
+        console.error("Error fetching appointment:", err);
+        if (!abort) toast.error("Failed to load appointment data");
+      } finally {
+        if (!abort) setLoading(false);
       }
     };
-    fetchLinked();
+
+    if (appointmentId && token) fetchAppointment();
     return () => { abort = true; };
-  }, [API, appointmentId, linkedCourtfile, token]);
+  }, [API, appointmentId, token, role, linkedCourtfile]);
+
 
   // ---------- Completar number/title si sólo vino el id por state ----------
   useEffect(() => {
@@ -291,8 +273,8 @@ export const ViewAppointment = () => {
                         role === "client"
                           ? `/courtfiles/viewclient/${linkedCourtfile.id}`
                           : role === "lawyer"
-                          ? `/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`
-                          : `/courtfiles/${linkedCourtfile.id}`
+                            ? `/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`
+                            : `/courtfiles/${linkedCourtfile.id}`
                       }
                       className="badge badge-phoenix badge-phoenix-secondary fs-8"
                       title={linkedCourtfile.title || ""}
