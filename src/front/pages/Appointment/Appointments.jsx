@@ -1,5 +1,5 @@
 // views/Appointments/Appointments.jsx
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate, useLocation } from "react-router-dom";
 import React, { useEffect, useMemo, useState } from "react";
 import useGlobalReducer from "../../hooks/useGlobalReducer";
 import AppNavsShell from "../../components/AppNavsShell";
@@ -9,6 +9,7 @@ export const Appointments = () => {
   const { store, dispatch } = useGlobalReducer();
   const API = import.meta.env.VITE_BACKEND_URL;
   const navigate = useNavigate();
+  const location = useLocation();
 
   const token = store?.auth?.token;
   const me = store?.me || null;
@@ -125,9 +126,9 @@ export const Appointments = () => {
 
   // ---------- Helpers ----------
   const formatDate = (dateString) => {
-  if (!dateString) return "—";
-  return dateString; // mostrar tal cual viene del backend
-};
+    if (!dateString) return "—";
+    return dateString; // mostrar tal cual viene del backend
+  };
 
   const formatTime = (timeString) => {
     if (!timeString) return "—";
@@ -145,6 +146,12 @@ export const Appointments = () => {
     });
   };
   const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+  const toTS = (v) => {
+    if (!v) return 0;
+    if (v instanceof Date) return v.getTime();
+    const t = Date.parse(v); // soporta 'YYYY-MM-DD' o ISO
+    return Number.isNaN(t) ? 0 : t;
+  };
 
   // ---- Lista ordenada ----
   const sorted = useMemo(() => {
@@ -156,8 +163,8 @@ export const Appointments = () => {
       let res = 0;
 
       if (key === "date") {
-        const va = A.date.getTime() || 0;
-        const vb = B.date.getTime() || 0;
+        const va = toTS(A.date);
+        const vb = toTS(B.date);
         res = cmp(va, vb);
       } else if (key === "starts_at" || key === "ends_at") {
         const va = (A[key] || "").slice(0, 5); // HH:MM
