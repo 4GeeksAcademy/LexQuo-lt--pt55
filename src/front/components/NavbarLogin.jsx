@@ -106,12 +106,21 @@ const NavbarLogin = () => {
 
   const toDeadline = (row = {}) => {
     const d = row.deadline || row.deadlines || row;
+
+    // Debug: ver qué datos llegan
+    if (row.deadline_id) {
+      console.log('Deadline row has deadline_id:', row.deadline_id);
+    }
+    if (row.id && !row.deadline_id) {
+      console.log('Deadline row has id but no deadline_id:', row.id);
+    }
+
     return {
-      id: d.id ?? row.deadline_id,
+      id: row.deadline_id || d.id || row.id,  // ← Priorizar deadline_id
       type: d.deadline_type ?? row.deadline_type ?? "",
       date: d.deadline_date ?? row.deadline_date ?? "",
       hour: d.deadline_hour ?? row.deadline_hour ?? "",
-      courtfile_number: row.courtfile_number || row.case_number || "", // << nuevo
+      courtfile_number: row.courtfile_number || row.case_number || "",
     };
   };
 

@@ -33,28 +33,67 @@ export const ViewAppointment = () => {
 
   // ---------- Data fetch: APPOINTMENT "puro" por id ----------
   useEffect(() => {
-    let abort = false;
-    const fetchAppointment = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(`${API}/api/appointments/${appointmentId}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = await response.json();
-        if (!abort) setAppointment(data);
-      } catch (err) {
-        console.error("Error fetching appointment:", err);
-        if (!abort) toast.error("Failed to load appointment data");
-      } finally {
-        if (!abort) setLoading(false);
+  let abort = false;
+  const fetchAppointment = async () => {
+    try {
+      setLoading(true);
+      
+      // Determinar el endpoint según el rol
+      let endpoint;
+      let isDirectEndpoint = false;
+      
+      if (role === "admin_user") {
+        endpoint = `${API}/api/appointments/${appointmentId}`;
+        isDirectEndpoint = true;
+      } else {
+        endpoint = `${API}/api/appointments-courtfiles?appointment_id=${appointmentId}`;
+        isDirectEndpoint = false;
       }
-    };
 
-    if (appointmentId && token) fetchAppointment();
-    return () => { abort = true; };
-  }, [API, appointmentId, token]);
+      const response = await fetch(endpoint, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      let data = await response.json();
+      
+      // Si es el endpoint de relaciones, extraer y transformar los datos
+      if (!isDirectEndpoint) {
+        // appointments-courtfiles devuelve un array
+        const appointmentRow = Array.isArray(data) ? data[0] : data;
+        if (appointmentRow) {
+          // Mapear los campos del endpoint de relaciones al formato esperado
+          data = {
+            id: appointmentRow.appointment_id || appointmentRow.id,
+            title: appointmentRow.appointment_title || appointmentRow.title,
+            date: appointmentRow.appointment_date || appointmentRow.date,
+            starts_at: appointmentRow.starts_at,
+            ends_at: appointmentRow.ends_at,
+            location: appointmentRow.location,
+            details: appointmentRow.details,
+            latitud: appointmentRow.latitud,
+            longitud: appointmentRow.longitud,
+            // ... otros campos que necesites
+          };
+        } else {
+          throw new Error("Appointment not found");
+        }
+      }
+      
+      if (!abort) setAppointment(data);
+      
+    } catch (err) {
+      console.error("Error fetching appointment:", err);
+      if (!abort) toast.error("Failed to load appointment data");
+    } finally {
+      if (!abort) setLoading(false);
+    }
+  };
 
+  if (appointmentId && token) fetchAppointment();
+  return () => { abort = true; };
+}, [API, appointmentId, token, role]); // ← añade role como dependencia
   // ---------- Si no vino prelinkeado, buscamos la relación y armamos linkedCourtfile ----------
   useEffect(() => {
     let abort = false;

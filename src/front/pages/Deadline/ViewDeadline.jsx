@@ -48,91 +48,80 @@ export const ViewDeadline = () => {
   const [linkedCourtfile, setLinkedCourtfile] = useState(initialLinked);
   const [loading, setLoading] = useState(true);
 
-  // ---------- Fetch principal: DEADLINE "puro" por id (sin join) ----------
-  useEffect(() => {
-    let abort = false;
-    const fetchDeadline = async () => {
-      try {
-        setLoading(true);
-        const resp = await fetch(`${API}/api/deadlines/${deadlineId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const d = await resp.json();
-        if (!abort) setDeadline(d);
-      } catch (e) {
-        if (!abort) {
-          console.error("Error fetching deadline:", e);
-          toast.error("Failed to load deadline data");
-        }
-      } finally {
-        if (!abort) setLoading(false);
+  // ---------- Fetch principal: DEADLINE ----------
+// ---------- Fetch principal: DEADLINE ----------
+useEffect(() => {
+  let abort = false;
+  const fetchDeadline = async () => {
+    try {
+      setLoading(true);
+      
+      let endpoint;
+      let isDirectEndpoint = false;
+      
+      if (role === "admin_user") {
+        endpoint = `${API}/api/deadlines/${deadlineId}`;
+        isDirectEndpoint = true;
+      } else {
+        endpoint = `${API}/api/deadlines-courtfiles?deadline_id=${deadlineId}`;
+        isDirectEndpoint = false;
       }
-    };
-    if (deadlineId && token) fetchDeadline();
-    return () => {
-      abort = true;
-    };
-  }, [API, token, deadlineId]);
 
-  // ---------- Si no vino prelinkeado, buscamos la relación y armamos linkedCourtfile ----------
-  useEffect(() => {
-    let abort = false;
-    const fetchLinked = async () => {
-      try {
-        if (linkedCourtfile || !deadlineId) return;
-        const resp = await fetch(`${API}/api/deadlines-courtfiles?deadline_id=${deadlineId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!resp.ok) return;
-        const rows = await resp.json();
-        const row = Array.isArray(rows) ? rows[0] : null;
-        if (row && !abort) {
-          setLinkedCourtfile({
-            id: row.courtfile_id,
-            number: row.courtfile_number,
-            title: row.courtfile_title,
-          });
-        }
-      } catch {
-        /* noop */
-      }
-    };
-    fetchLinked();
-    return () => {
-      abort = true;
-    };
-  }, [API, token, deadlineId, linkedCourtfile]);
-
-  // ---------- Completar number/title si sólo vino el id por state ----------
-  useEffect(() => {
-    let abort = false;
-    const loadCf = async () => {
-      try {
-        if (linkedCourtfile?.id && (!linkedCourtfile.number || !linkedCourtfile.title)) {
-          const resp = await fetch(`${API}/api/courtfiles/${linkedCourtfile.id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (resp.ok) {
-            const d = await resp.json();
-            if (!abort) {
-              setLinkedCourtfile((cf) => ({
-                ...(cf || {}),
-                number: d.case_number,
-                title: d.title,
-              }));
-            }
+      const resp = await fetch(endpoint, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      
+      let data = await resp.json();
+      
+      if (!isDirectEndpoint) {
+        // deadlines-courtfiles devuelve un array
+        const deadlineRow = Array.isArray(data) ? data[0] : data;
+        
+        if (deadlineRow && deadlineRow.deadline_id) {
+          // Mapear los campos según la estructura del endpoint
+          data = {
+            id: deadlineRow.deadline_id,  // ← Usar deadline_id en lugar de id
+            deadline_type: deadlineRow.deadline_type,
+            deadline_date: deadlineRow.deadline_date,
+            deadline_hour: deadlineRow.deadline_hour,
+            priority: deadlineRow.priority,
+            description: deadlineRow.description,
+            // También podemos setear el courtfile aquí directamente
+            courtfile_id: deadlineRow.courtfile_id,
+            courtfile_number: deadlineRow.courtfile_number,
+            courtfile_title: deadlineRow.courtfile_title
+          };
+          
+          // Si tenemos courtfile info, setear linkedCourtfile inmediatamente
+          if (deadlineRow.courtfile_id && !linkedCourtfile) {
+            setLinkedCourtfile({
+              id: deadlineRow.courtfile_id,
+              number: deadlineRow.courtfile_number,
+              title: deadlineRow.courtfile_title
+            });
           }
+        } else {
+          throw new Error("Deadline not found or you don't have permission to view it");
         }
-      } catch {
-        /* noop */
       }
-    };
-    loadCf();
-    return () => {
-      abort = true;
-    };
-  }, [API, linkedCourtfile?.id, token]);
+      
+      if (!abort) setDeadline(data);
+      
+    } catch (e) {
+      if (!abort) {
+        console.error("Error fetching deadline:", e);
+        toast.error(e.message || "Failed to load deadline data");
+      }
+    } finally {
+      if (!abort) setLoading(false);
+    }
+  };
+  
+  if (deadlineId && token) fetchDeadline();
+  return () => { abort = true; };
+}, [API, token, deadlineId, role, linkedCourtfile]);
 
   // ---------- Delete ----------
   const handleDelete = async () => {
@@ -278,8 +267,8 @@ export const ViewDeadline = () => {
                         role === "client"
                           ? `/courtfiles/viewclient/${linkedCourtfile.id}`
                           : role === "lawyer"
-                          ? `/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`
-                          : `/courtfiles/${linkedCourtfile.id}`
+                            ? `/courtfiles/ViewCourtfileLawyer/${linkedCourtfile.id}`
+                            : `/courtfiles/${linkedCourtfile.id}`
                       }
                       className="badge badge-phoenix badge-phoenix-secondary fs-9 fs-sm-8 mt-2"
                       title={linkedCourtfile.title || ""}
