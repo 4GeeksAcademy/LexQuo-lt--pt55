@@ -2202,6 +2202,8 @@ def get_appointments_courtfiles():
             'appointment_date': (ac.appointment.date.isoformat() if ac.appointment.date else None),
             'appointment_location': ac.appointment.location,
             'appointment_details': ac.appointment.details,
+            'latitud': ac.appointment.latitud if hasattr(ac.appointment, 'latitud') else None,
+            'longitud': ac.appointment.longitud if hasattr(ac.appointment, 'longitud') else None,
             'starts_at': (ac.appointment.starts_at.strftime('%H:%M') if ac.appointment.starts_at else None),
             'ends_at': (ac.appointment.ends_at.strftime('%H:%M') if ac.appointment.ends_at else None),
             'courtfile_number': ac.courtfile.case_number,

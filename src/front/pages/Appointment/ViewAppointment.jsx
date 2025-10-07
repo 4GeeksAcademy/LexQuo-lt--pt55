@@ -71,8 +71,8 @@ export const ViewAppointment = () => {
               details: appointmentRow.appointment_details,
               starts_at: appointmentRow.starts_at,
               ends_at: appointmentRow.ends_at,
-              latitud: appointmentRow.latitud,     // Si existen en tu DB
-              longitud: appointmentRow.longitud,   // Si existen en tu DB
+              latitud: appointmentRow.latitud,    
+              longitud: appointmentRow.longitud,  
             };
 
             // Setear linkedCourtfile con la información del courtfile
