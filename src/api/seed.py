@@ -644,59 +644,50 @@ def seed_documents(session):
 
 
 def seed_payments(session):
-    # Usá naive UTC para ser consistente con tus columnas DateTime (sin tz)
-    now = datetime.utcnow()
+    """
+    Genera 15 pagos (todos USD) en distintos días de OCTUBRE 2025.
+    - Primeros 10: se usarán para CF-2025-1001
+    - Últimos 5: se usarán para otros expedientes
+    - Métodos variados (incluye 'TDC' como sinónimo de tarjeta de crédito)
+    - Estados alternados Approved / Pending
+    - created_at/updated_at: día del registro
+    - paid_at: solo en Approved (mismo día 15:00 UTC)
+    """
+    from datetime import datetime, timedelta
 
-    # Helper: “x días atrás” pero SIN salir del mes actual
-    def days_back_same_month(days: int) -> datetime:
-        target = now - timedelta(days=days)
-        if target.year != now.year or target.month != now.month:
-            # clamp al primer día del mes actual (mediodía para evitar edge de 00:00)
-            target = now.replace(day=1, hour=12, minute=0,
-                                 second=0, microsecond=0)
-        else:
-            target = target.replace(hour=12, minute=0, second=0, microsecond=0)
-        return target
+    def day(d):  # medio día para evitar bordes (UTC)
+        return datetime(2025, 10, d, 12, 0, 0)
 
-    # Fechas “pagadas” dentro del mes actual
-    paid_1d = days_back_same_month(1)
-    paid_3d = days_back_same_month(3)
-    paid_7d = days_back_same_month(7)
+    # 10 días distintos para CF-2025-1001
+    days_main = [2, 3, 4, 6, 7, 9, 12, 15, 18, 21]
+    # 5 días distintos para otros expedientes
+    days_extra = [23, 25, 27, 29, 31]
 
-    rows = [
-        # === approved (en el mes actual) ===
-        dict(amount=5000.0,  currency="ARS", status=PaymentStatus.approved,  paid_at=paid_1d, means="Credit Card",
-             stripe_payment_intent_id="pi_appr_001", updated_at=paid_1d, created_at=paid_1d),
-        dict(amount=12000.0, currency="ARS", status=PaymentStatus.approved,  paid_at=paid_3d,
-             means="Credit Card", stripe_payment_intent_id="pi_appr_002", updated_at=paid_3d, created_at=paid_3d),
-        dict(amount=3500.0,  currency="USD", status=PaymentStatus.approved,  paid_at=paid_7d, means="Credit Card",
-             stripe_payment_intent_id="pi_appr_003", updated_at=paid_7d, created_at=paid_7d),
-
-        # === pending ===
-        dict(amount=7500.0,  currency="USD", status=PaymentStatus.pending,   paid_at=None,   means="Credit Card",
-             stripe_payment_intent_id=None,           created_at=now - timedelta(days=2)),
-        dict(amount=8900.0,  currency="ARS", status=PaymentStatus.pending,   paid_at=None,
-             means="Credit Card",  stripe_payment_intent_id=None,           created_at=now - timedelta(days=5)),
-        dict(amount=4200.0,  currency="EUR", status=PaymentStatus.pending,   paid_at=None,   means="Credit Card",
-             stripe_payment_intent_id=None,           created_at=now - timedelta(days=8)),
-
-        # === processing ===
-        dict(amount=8500.0,  currency="EUR", status=PaymentStatus.processing, paid_at=None,  means="Credit Card",
-             stripe_payment_intent_id="pi_proc_001",  created_at=now - timedelta(days=4)),
-        dict(amount=6000.0,  currency="COP", status=PaymentStatus.processing, paid_at=None,  means="Credit Card",
-             stripe_payment_intent_id="pi_proc_002",  created_at=now - timedelta(days=6)),
-
-        # === rejected ===
-        dict(amount=12000.0, currency="ARS", status=PaymentStatus.rejected,  paid_at=None,   means="Credit Card",
-             stripe_payment_intent_id="pi_rej_001",   created_at=now - timedelta(days=9)),
-        dict(amount=3000.0,  currency="USD", status=PaymentStatus.rejected,  paid_at=None,
-             means="Credit Card", stripe_payment_intent_id="pi_rej_002",   created_at=now - timedelta(days=10)),
+    methods = [
+        "Credit Card", "Cash", "Bank Transfer", "Debit Card", "PayPal",
+        "Wire Transfer", "TDC", "Credit Card", "Cash", "Debit Card",
+        "Bank Transfer", "PayPal", "Wire Transfer", "TDC", "Credit Card",
     ]
+
+    all_days = [day(d) for d in (days_main + days_extra)]
+
+    rows = []
+    for i, d in enumerate(all_days):
+        approved = (i % 2 == 0)
+        rows.append(dict(
+            amount=1000.0 + i * 220.0,      # montos distintos
+            currency="USD",
+            status=PaymentStatus.approved if approved else PaymentStatus.pending,
+            paid_at=(d.replace(hour=15) if approved else None),
+            means=methods[i],
+            stripe_payment_intent_id=(f"pi_oct25_{i:02d}" if approved else None),
+            created_at=d,
+            updated_at=d
+        ))
 
     created = 0
     for r in rows:
         unique = {
-            # Usá el intent_id como “casi-único” para evitar duplicados si re-seedeás
             "stripe_payment_intent_id": r.get("stripe_payment_intent_id"),
             "amount": r["amount"],
             "currency": r["currency"],
@@ -704,26 +695,24 @@ def seed_payments(session):
             "paid_at": r["paid_at"],
         }
         defaults = {
-            "means": r.get("means"),
-            # Si pasás created_at/updated_at explícitos, respetalos; si no, que aplique default
-            "created_at": r.get("created_at"),
-            "updated_at": r.get("updated_at") or r.get("created_at"),
+            "means": r["means"],
+            "created_at": r["created_at"],
+            "updated_at": r["updated_at"],
         }
         obj, was_created = get_or_create(session, Payment, unique, defaults)
         if was_created:
             created += 1
         else:
-            # Si ya existía, actualizá created/updated si los agregaste ahora
-            if r.get("created_at"):
-                obj.created_at = r["created_at"]
-            if r.get("updated_at") or r.get("created_at"):
-                obj.updated_at = r.get("updated_at") or r.get("created_at")
-            if r.get("paid_at") is not None:
-                obj.paid_at = r["paid_at"]
+            # refresco defensivo si ya existía
+            obj.means = r["means"]
+            obj.created_at = r["created_at"]
+            obj.updated_at = r["updated_at"]
+            obj.paid_at = r["paid_at"]
             session.add(obj)
             session.commit()
 
     print(f"Payments: agregados {created} (total deseado: {len(rows)})")
+
 
 # =============================== relaciones =============================== #
 
@@ -885,27 +874,26 @@ def seed_relations(session):
 
     # --------- Asignación controlada de pagos (10 en total) ----------
     pays = session.query(Payment).order_by(Payment.id.asc()).all()
-    if len(pays) >= 10:
-        # María (CF1) → 5 pagos: indices 0..4
+    if len(pays) >= 15:
+        # CF1 → 10 pagos: índices 0..9
         if cf1:
-            for p in pays[0:5]:
+            for p in pays[0:10]:
                 get_or_create_payment_courtfile(session, p.id, cf1.id)
 
-        # Lucía (CF2) → 3 pagos: indices 5..7
+         # CF2 → 3 pagos: índices 10..12
         if cf2:
-            for p in pays[5:8]:
+            for p in pays[10:13]:
                 get_or_create_payment_courtfile(session, p.id, cf2.id)
 
-        # Lucía (CF3) → 1 pago: index 8
+        # CF3 → 1 pago: índice 13
         if cf3:
-            get_or_create_payment_courtfile(session, pays[8].id, cf3.id)
+            get_or_create_payment_courtfile(session, pays[13].id, cf3.id)
 
-        # Juan (CF4) → 1 pago: index 9
+        # CF4 → 1 pago: índice 14
         if cf4:
-            # aseguramos que CF4 tenga a Juan (si no lo tiene, lo agregamos)
             if juan:
                 get_or_create_lawyer_courtfile(session, juan.id, cf4.id)
-            get_or_create_payment_courtfile(session, pays[9].id, cf4.id)
+            get_or_create_payment_courtfile(session, pays[14].id, cf4.id)
 
     print("Relaciones: listas (pagos distribuidos 5-3-1-1).")
 

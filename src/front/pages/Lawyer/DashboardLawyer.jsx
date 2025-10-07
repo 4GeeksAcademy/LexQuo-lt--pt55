@@ -833,7 +833,7 @@ export const DashboardLawyer = () => {
 
                                 <div className="d-flex justify-content-between align-items-center pt-3 pt-sm-4">
                                     <h6 className="mb-2 fs-7 fw-bold text-muted">Paid this month</h6>
-                                    <span className="badge bg-success fs-10 fs-sm-9">Total: ${fmtMoney(sumPaidThisMonth, paidThisMonth[0]?.currency || "USD")}</span>
+                                    
                                 </div>
 
                                 {paidThisMonth.length === 0 ? (
