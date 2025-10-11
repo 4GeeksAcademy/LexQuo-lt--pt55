@@ -26,7 +26,7 @@ ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
 static_file_dir = os.path.join(os.path.dirname(
     os.path.realpath(__file__)), '../dist/')
 
-# === 2) app, CORS y SocketIO (en ese orden) ===
+# === 2) app, CORS y SocketIO ===
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 
