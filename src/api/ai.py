@@ -74,9 +74,8 @@ def suggest_actions():
         return jsonify({"error": "description is required"}), 400
 
     try:
-        # Responses API con salida JSON “forzada”
         resp = client.chat.completions.create(
-            model=MODEL,  # ideal: gpt-4o-mini
+            model=MODEL, 
             temperature=0.2,
             response_format={"type": "json_object"},
             messages=[
@@ -87,14 +86,12 @@ def suggest_actions():
         )
         content = resp.choices[0].message.content
 
-        # Validación mínima: asegurar campo suggestions
         import json
         parsed = json.loads(content)
         suggestions = parsed.get("suggestions", [])
         if not isinstance(suggestions, list):
             suggestions = []
 
-        # recortar a 5 por las dudas
         suggestions = suggestions[:5]
 
         return jsonify({"suggestions": suggestions})
