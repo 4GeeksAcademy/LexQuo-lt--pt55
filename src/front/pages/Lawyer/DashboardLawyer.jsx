@@ -424,7 +424,7 @@ export const DashboardLawyer = () => {
 
                 </div>
 
-                {/* ===== TOP STATS: floating  ===== */}
+                {/* ===== TOP STATS ===== */}
                 <div className="row align-items-center g-4 mb-3 mt-3 top-stats">
 
                     {/* Courtfiles */}
