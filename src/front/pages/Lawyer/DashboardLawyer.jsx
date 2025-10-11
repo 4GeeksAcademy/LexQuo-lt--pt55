@@ -322,7 +322,7 @@ export const DashboardLawyer = () => {
     };
 
     // ---------------- HELPERS FOR HEADER ----------------
-    // ---- top stats (derived from existing state) ----
+    // ---- top stats ----
     const courtfilesCount = Array.isArray(cases) ? cases.length : 0;
     const pendingPaymentsCount = Array.isArray(pending) ? pending.length : 0;
     const unreadMessagesCount = Number.isFinite(totalUnread) ? totalUnread : 0;
